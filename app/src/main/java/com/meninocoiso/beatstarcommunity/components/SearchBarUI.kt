@@ -30,13 +30,15 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.meninocoiso.beatstarcommunity.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchBarUI() {
+fun SearchBarUI(modifier: Modifier? = Modifier) {
 	var query by remember { mutableStateOf("") }
 	var active by remember { mutableStateOf(false) }
 	val historyItems = remember {
@@ -49,6 +51,7 @@ fun SearchBarUI() {
 
 	Box(
 		Modifier
+			.then(modifier ?: Modifier)
 			.fillMaxWidth()
 			.semantics { isTraversalGroup = true },
 		contentAlignment = Alignment.Center
@@ -110,7 +113,7 @@ fun SearchBarUI() {
 				historyItems.forEach {
 					Row(modifier = Modifier.padding(all = 16.dp)) {
 						Icon(
-							imageVector = Icons.Default.DateRange,
+							painter = painterResource(id = R.drawable.round_history_24),
 							contentDescription = "History icon",
 							modifier = Modifier.padding(end = 10.dp)
 						)

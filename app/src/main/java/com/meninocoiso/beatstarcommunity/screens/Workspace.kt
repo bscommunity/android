@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -38,8 +40,10 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.components.WorkspaceTabs
 import com.meninocoiso.beatstarcommunity.components.WorkspaceTopBar
 import com.meninocoiso.beatstarcommunity.components.tabItems
+import java.io.Console
 
-val AppBarHeight = 150.dp
+val AppBarHeight = 173.dp
+val AppTabsHeight = 90.dp
 
 private class CollapsingAppBarNestedScrollConnection(
 	val appBarMaxHeight: Int
@@ -48,12 +52,20 @@ private class CollapsingAppBarNestedScrollConnection(
 	var appBarOffset: Int by mutableIntStateOf(0)
 		private set
 
+	var appBarOpacity: Float by mutableFloatStateOf(1f)
+		private set
+
 	override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
 		val delta = available.y.toInt()
 		val newOffset = appBarOffset + delta
 		val previousOffset = appBarOffset
 		appBarOffset = newOffset.coerceIn(-appBarMaxHeight, 0)
+		// println("MAX: $appBarMaxHeight")
+		// println("ACTUAL: $appBarOffset")
+		// println("SUBTRACTED: ${appBarOffset / appBarMaxHeight}")
 		val consumed = appBarOffset - previousOffset
+		appBarOpacity = 1f + (appBarOffset / appBarMaxHeight.toFloat())
+		// println("OPACITY: $appBarOpacity")
 		return Offset(0f, consumed.toFloat())
 	}
 }
@@ -66,8 +78,10 @@ fun Workspace(statusBarHeight: Dp) {
 	}
 
 	val appBarMaxHeightPx = with(LocalDensity.current) { AppBarHeight.roundToPx() }
+	val searchBarMaxHeightPx =
+		with(LocalDensity.current) { (AppBarHeight - AppTabsHeight).roundToPx() }
 	val connection = remember(appBarMaxHeightPx) {
-		CollapsingAppBarNestedScrollConnection(appBarMaxHeightPx)
+		CollapsingAppBarNestedScrollConnection(searchBarMaxHeightPx)
 	}
 	val density = LocalDensity.current
 	val spaceHeight by remember(density) {
@@ -84,6 +98,9 @@ fun Workspace(statusBarHeight: Dp) {
 				Modifier
 					.height(spaceHeight)
 			)
+			/*Row {
+
+			}*/
 			HorizontalPager(
 				state = pagerState
 			) { index ->
@@ -96,7 +113,11 @@ fun Workspace(statusBarHeight: Dp) {
 				}
 			}
 		}
-		WorkspaceTopBar(appBarOffset = connection.appBarOffset, pagerState)
+		WorkspaceTopBar(
+			appBarOffset = connection.appBarOffset,
+			appBarOpacity = connection.appBarOpacity,
+			pagerState
+		)
 	}
 }
 
