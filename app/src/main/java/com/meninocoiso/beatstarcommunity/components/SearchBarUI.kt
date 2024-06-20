@@ -1,5 +1,6 @@
 package com.meninocoiso.beatstarcommunity.components
 
+import android.view.Window
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -27,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
@@ -48,11 +50,10 @@ fun SearchBarUI() {
 	Box(
 		Modifier
 			.fillMaxWidth()
-			.padding(horizontal = 16.dp, vertical = 16.dp)
-			.semantics { isTraversalGroup = true }) {
+			.semantics { isTraversalGroup = true },
+		contentAlignment = Alignment.Center
+	) {
 		SearchBar(
-			modifier = Modifier
-				.fillMaxWidth(),
 			query = query,
 			onQueryChange = {
 				query = it
@@ -92,7 +93,10 @@ fun SearchBarUI() {
 				}
 			}
 		) {
-			Column(Modifier.verticalScroll(rememberScrollState())) {
+			Column(
+				Modifier
+					.verticalScroll(rememberScrollState())
+			) {
 				Text(
 					text = "Recent searches",
 					style = MaterialTheme.typography.titleSmall,

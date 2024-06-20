@@ -3,6 +3,7 @@ package com.meninocoiso.beatstarcommunity.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -11,6 +12,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -45,8 +47,18 @@ val tabItems = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WorkspaceTabs() {
+fun WorkspaceTabs(pagerState: PagerState) {
 	var selectedTabIndex by remember { mutableIntStateOf(0) }
+
+	LaunchedEffect(selectedTabIndex) {
+		pagerState.animateScrollToPage(selectedTabIndex)
+	}
+
+	LaunchedEffect(pagerState.currentPage, pagerState.isScrollInProgress) {
+		if (!pagerState.isScrollInProgress) {
+			selectedTabIndex = pagerState.currentPage
+		}
+	}
 
 	SecondaryTabRow(
 		modifier = Modifier.fillMaxWidth(),
