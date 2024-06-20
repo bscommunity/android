@@ -51,7 +51,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -72,11 +74,7 @@ class MainActivity : ComponentActivity() {
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		// This app draws behind the system bars, so we want to handle fitting system windows
-		enableEdgeToEdge(
-			statusBarStyle = SystemBarStyle.dark(
-				android.graphics.Color.TRANSPARENT,
-			)
-		)
+		enableEdgeToEdge()
 		setContent {
 			BeatstarCommunityTheme {
 				val navController = rememberNavController()
@@ -119,8 +117,8 @@ object SettingsScreen
 data class BottomNavigationItem(
 	val route: Any,
 	val title: String,
-	val selectedIcon: ImageVector,
-	val unselectedIcon: ImageVector,
+	val selectedIcon: Int,
+	val unselectedIcon: Int,
 	val hasNews: Boolean,
 	val badgeCount: Int? = null
 )
@@ -129,22 +127,22 @@ val bottomNavigationItems = listOf(
 	BottomNavigationItem(
 		route = WorkspaceScreen,
 		title = "Workspace",
-		selectedIcon = Icons.Filled.Home,
-		unselectedIcon = Icons.Outlined.Home,
+		selectedIcon = R.drawable.baseline_library_music_24,
+		unselectedIcon = R.drawable.outline_library_music_24,
 		hasNews = false
 	),
 	BottomNavigationItem(
 		route = UpdatesScreen,
 		title = "Updates",
-		selectedIcon = Icons.Filled.ThumbUp,
-		unselectedIcon = Icons.Outlined.ThumbUp,
+		selectedIcon = R.drawable.baseline_deployed_code_24,
+		unselectedIcon = R.drawable.outline_deployed_code_24,
 		hasNews = false
 	),
 	BottomNavigationItem(
 		route = SettingsScreen,
 		title = "Settings",
-		selectedIcon = Icons.Filled.Settings,
-		unselectedIcon = Icons.Outlined.Settings,
+		selectedIcon = R.drawable.baseline_settings_24,
+		unselectedIcon = R.drawable.outline_settings_24,
 		hasNews = false
 	)
 )
@@ -180,9 +178,9 @@ fun BottomNavigationComponent(navController: NavHostController) {
 						}
 					) {
 						Icon(
-							imageVector = if (index == selectedItemIndex) {
-								item.selectedIcon
-							} else item.unselectedIcon,
+							painter = if (index == selectedItemIndex) {
+								painterResource(id = item.selectedIcon)
+							} else painterResource(id = item.unselectedIcon),
 							contentDescription = item.title
 						)
 					}

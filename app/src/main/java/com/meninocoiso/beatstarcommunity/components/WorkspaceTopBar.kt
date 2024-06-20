@@ -15,20 +15,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.meninocoiso.beatstarcommunity.screens.AppBarHeight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WorkspaceTopBar(appBarOffset: Int, pagerState: PagerState) {
+fun WorkspaceTopBar(appBarOffset: Int, appBarOpacity: Float, pagerState: PagerState) {
 	Column(
 		modifier = Modifier
 			.offset { IntOffset(0, appBarOffset) }
 			.background(MaterialTheme.colorScheme.surfaceContainerLow),
-		verticalArrangement = Arrangement.spacedBy(16.dp)
+		verticalArrangement = Arrangement.spacedBy(2.dp)
 	) {
-		SearchBarUI()
+		SearchBarUI(modifier = Modifier.alpha(appBarOpacity))
 		Spacer(modifier = Modifier.height(8.dp))
+		WorkspaceTabs(pagerState = pagerState)
 	}
 }

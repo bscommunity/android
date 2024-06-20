@@ -78,6 +78,8 @@ fun WorkspaceTabs(pagerState: PagerState) {
 				onClick = {
 					selectedTabIndex = index
 				},
+				unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+				selectedContentColor = MaterialTheme.colorScheme.primary,
 				text = { Text(text = item.title, maxLines = 1, overflow = TextOverflow.Ellipsis) }
 			)
 		}
