@@ -124,6 +124,7 @@ fun Workspace(statusBarHeight: Dp) {
 @Composable
 fun ChartsSection(nestedScrollConnection: NestedScrollConnection) {
 	LazyColumn(
+		contentPadding = PaddingValues(vertical = 16.dp),
 		modifier = Modifier
 			.fillMaxSize()
 			.nestedScroll(nestedScrollConnection),
@@ -152,6 +153,7 @@ fun ChartsSection(nestedScrollConnection: NestedScrollConnection) {
 @Composable
 fun TourPassesSection(nestedScrollConnection: NestedScrollConnection) {
 	LazyColumn(
+		contentPadding = PaddingValues(vertical = 16.dp),
 		modifier = Modifier
 			.fillMaxSize()
 			.nestedScroll(nestedScrollConnection),
@@ -173,6 +175,7 @@ fun TourPassesSection(nestedScrollConnection: NestedScrollConnection) {
 @Composable
 fun ThemesSection(nestedScrollConnection: NestedScrollConnection) {
 	LazyColumn(
+		contentPadding = PaddingValues(vertical = 16.dp),
 		modifier = Modifier
 			.fillMaxSize()
 			.nestedScroll(nestedScrollConnection),
