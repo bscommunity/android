@@ -1,20 +1,15 @@
 package com.meninocoiso.beatstarcommunity.components
 
-import android.view.Window
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -113,7 +108,7 @@ fun SearchBarUI(modifier: Modifier? = Modifier) {
 				historyItems.forEach {
 					Row(modifier = Modifier.padding(all = 16.dp)) {
 						Icon(
-							painter = painterResource(id = R.drawable.round_history_24),
+							painter = painterResource(id = R.drawable.rounded_history_24),
 							contentDescription = "History icon",
 							modifier = Modifier.padding(end = 10.dp)
 						)

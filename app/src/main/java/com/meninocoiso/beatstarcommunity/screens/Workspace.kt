@@ -37,6 +37,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.components.WorkspaceTabs
 import com.meninocoiso.beatstarcommunity.components.WorkspaceTopBar
 import com.meninocoiso.beatstarcommunity.components.tabItems
@@ -70,9 +71,27 @@ private class CollapsingAppBarNestedScrollConnection(
 	}
 }
 
+data class WorkspaceChip(
+	val id: Int,
+	val title: String,
+	val icon: Int? = null,
+)
+
+val chipItems = listOf(
+	WorkspaceChip(
+		id = 1,
+		title = "Weekly Rank"
+	),
+	WorkspaceChip(
+		id = 2,
+		title = "Editor's Choice",
+		icon = R.drawable.rounded_award_star_24
+	),
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Workspace(statusBarHeight: Dp) {
+fun Workspace() {
 	val pagerState = rememberPagerState {
 		tabItems.size
 	}
@@ -92,15 +111,17 @@ fun Workspace(statusBarHeight: Dp) {
 		}
 	}
 
+	var selectedChipIndex by remember { mutableIntStateOf(0) }
+
 	Box {
 		Column() {
 			Spacer(
 				Modifier
 					.height(spaceHeight)
 			)
-			/*Row {
+			Row {
 
-			}*/
+			}
 			HorizontalPager(
 				state = pagerState
 			) { index ->

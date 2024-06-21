@@ -90,7 +90,7 @@ class MainActivity : ComponentActivity() {
 						startDestination = WorkspaceScreen,
 					) {
 						composable<WorkspaceScreen> {
-							Workspace(statusBarHeight = innerPadding.calculateTopPadding())
+							Workspace()
 						}
 						composable<UpdatesScreen> {
 							Updates()
