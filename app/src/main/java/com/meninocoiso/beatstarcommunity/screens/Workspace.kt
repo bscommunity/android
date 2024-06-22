@@ -71,7 +71,7 @@ private class CollapsingAppBarNestedScrollConnection(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Workspace() {
+fun Workspace(onNavigateToDetails: () -> Unit) {
 	val pagerState = rememberPagerState {
 		tabItems.size
 	}
@@ -104,7 +104,7 @@ fun Workspace() {
 				when (
 					index
 				) {
-					0 -> ChartsSection(connection)
+					0 -> ChartsSection(connection, onNavigateToDetails)
 					1 -> TourPassesSection(connection)
 					2 -> ThemesSection(connection)
 				}
@@ -141,7 +141,7 @@ fun SectionWrapper(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ChartsSection(nestedScrollConnection: NestedScrollConnection) {
+fun ChartsSection(nestedScrollConnection: NestedScrollConnection, onNavigateToDetails: () -> Unit) {
 	SectionWrapper(nestedScrollConnection = nestedScrollConnection) {
 		val list = (0..5).map { it.toString() }
 		items(count = list.size) {
@@ -149,6 +149,7 @@ fun ChartsSection(nestedScrollConnection: NestedScrollConnection) {
 				modifier = Modifier
 					.fillMaxWidth()
 					.padding(horizontal = 16.dp),
+				onNavigateToDetails = onNavigateToDetails,
 				chart = Chart(
 					id = 1,
 					song = Song(
