@@ -30,11 +30,8 @@ fun ChartDetails(
 	onReturn: () -> Unit
 ) {
 	val imageUrls = listOf(
-		"https://images.pexels.com/photos/19534459/pexels-photo-19534459/free-photo-of-aerial-view-of-a-river-winding-through-a-green-wetland.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+		"https://th.bing.com/th/id/OIP.Fnrr1lh0QpG1bhKXSptqzwAAAA?rs=1&pid=ImgDetMain",
 		"https://images.pexels.com/photos/19780240/pexels-photo-19780240/free-photo-of-a-forest-with-trees-and-fog-in-the-background.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-		"https://images.pexels.com/photos/9201513/pexels-photo-9201513.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-		"https://images.pexels.com/photos/1805164/pexels-photo-1805164.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-		"https://images.pexels.com/photos/5971314/pexels-photo-5971314.jpeg?auto=compress&cs=tinysrgb&w=600"
 	)
 
 	Scaffold(topBar = {
