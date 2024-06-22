@@ -1,6 +1,5 @@
 package com.meninocoiso.beatstarcommunity.utils
 
-import android.text.format.DateFormat
 import java.util.Calendar
 import java.util.Date
 import kotlin.random.Random
@@ -10,8 +9,6 @@ class DateUtils {
 		fun toRelativeString(date: Date): String {
 			val now = Date()
 			val diff = now.time - date.time
-
-			println("Current date: ${DateFormat.format("yyyy-MM-dd HH:mm:ss", now)}")
 
 			// seconds
 			if (diff < 60 * 1000) { // 1 minute
