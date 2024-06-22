@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.data
+package com.meninocoiso.beatstarcommunity.data.classes
 
 data class ChartVersion(
 	val version: Int,
