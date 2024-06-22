@@ -1,16 +1,20 @@
 package com.meninocoiso.beatstarcommunity.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -57,30 +61,19 @@ fun CoverArt(
 				.size(40.dp),
 			contentAlignment = Alignment.BottomEnd
 		) {
-			CoilImage(
-				imageModel = {
-					R.drawable.corner
-				},
+			Icon(
+				painter = painterResource(id = R.drawable.corner),
+				contentDescription = "Corner for chart song cover art",
+				tint = Color.Black,
 				modifier = Modifier
 					.size(40.dp),
-				imageOptions = ImageOptions(
-					contentScale = ContentScale.Fit,
-					alignment = Alignment.Center,
-					alpha = 1.0f
-				),
 			)
-			CoilImage(
-				imageModel = {
-					difficultyIcons.getValue(difficulty)
-				},
+			Image(
+				painter = painterResource(id = difficultyIcons.getValue(difficulty)),
 				modifier = Modifier
 					.size(24.dp)
 					.offset(x = 0.8.dp),
-				imageOptions = ImageOptions(
-					contentScale = ContentScale.Fit,
-					alignment = Alignment.Center,
-					alpha = 1.0f
-				),
+				contentDescription = "Difficulty icon for chart",
 			)
 		}
 	}

@@ -77,37 +77,41 @@ fun ChartPreview(
 ) {
 	val artistsNames = chart.song.artists.joinToString(", ") { it }
 
-	Row(
-		modifier = modifier
+	Box(
+		modifier = Modifier
 			.fillMaxWidth()
-			.padding(vertical = 16.dp)
-			.clickable {
+			.clickable() {
 				onNavigateToDetails()
-			},
-		// .background(Color.Red)
-		horizontalArrangement = Arrangement.spacedBy(16.dp)
-	) {
-		CoverArt(difficulty = chart.difficulty, url = chart.song.coverArtUrl)
-		Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-			Column {
-				Row(
-					modifier = Modifier.fillMaxWidth(),
-					horizontalArrangement = Arrangement.SpaceBetween
-				) {
-					Text(
-						text = chart.song.title,
-						style = MaterialTheme.typography.titleMedium,
-					)
-					Text(
-						style = MaterialTheme.typography.labelLarge,
-						text = DateUtils.toRelativeString(chart.lastUpdatedAt)
-					)
-				}
-				Text(style = MaterialTheme.typography.labelMedium, text = artistsNames)
 			}
-			ChartAuthors(authors = chart.authors)
-			if (isAdquired == true) {
-				Text(text = "Adquired")
+	) {
+		Row(
+			modifier = modifier
+				.padding(16.dp)
+				.fillMaxWidth(),
+			horizontalArrangement = Arrangement.spacedBy(16.dp)
+		) {
+			CoverArt(difficulty = chart.difficulty, url = chart.song.coverArtUrl)
+			Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+				Column {
+					Row(
+						modifier = Modifier.fillMaxWidth(),
+						horizontalArrangement = Arrangement.SpaceBetween
+					) {
+						Text(
+							text = chart.song.title,
+							style = MaterialTheme.typography.titleMedium,
+						)
+						Text(
+							style = MaterialTheme.typography.labelLarge,
+							text = DateUtils.toRelativeString(chart.lastUpdatedAt)
+						)
+					}
+					Text(style = MaterialTheme.typography.labelMedium, text = artistsNames)
+				}
+				ChartAuthors(authors = chart.authors)
+				if (isAdquired == true) {
+					Text(text = "Adquired")
+				}
 			}
 		}
 	}
