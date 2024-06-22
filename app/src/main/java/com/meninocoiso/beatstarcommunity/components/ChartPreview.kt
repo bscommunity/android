@@ -2,6 +2,7 @@ package com.meninocoiso.beatstarcommunity.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,13 +73,17 @@ fun ChartPreview(
 	isFeatured: Boolean? = null,
 	isRanked: Boolean? = null,
 	isAdquired: Boolean? = null,
+	onNavigateToDetails: () -> Unit = {}
 ) {
 	val artistsNames = chart.song.artists.joinToString(", ") { it }
 
 	Row(
 		modifier = modifier
 			.fillMaxWidth()
-			.padding(vertical = 16.dp),
+			.padding(vertical = 16.dp)
+			.clickable {
+				onNavigateToDetails()
+			},
 		// .background(Color.Red)
 		horizontalArrangement = Arrangement.spacedBy(16.dp)
 	) {
