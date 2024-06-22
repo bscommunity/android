@@ -1,60 +1,69 @@
 package com.meninocoiso.beatstarcommunity.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import android.widget.ImageView
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil.CoilImage
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.recyclerview.widget.RecyclerView
+import coil.load
+import com.google.android.material.carousel.CarouselLayoutManager
+import com.google.android.material.carousel.CarouselSnapHelper
+import com.google.android.material.carousel.HeroCarouselStrategy
+import com.google.android.material.carousel.MaskableFrameLayout
+import com.meninocoiso.beatstarcommunity.R
 
 @Composable
-fun Carousel(carouselItems: List<String>) {
-	LazyRow(
-		contentPadding = PaddingValues(horizontal = 16.dp),
-		horizontalArrangement = Arrangement.spacedBy(16.dp),
+fun Carousel(imageUrls: List<String>) {
+	val context = LocalContext.current
+
+	AndroidView(
+		factory = {
+			val recyclerView = RecyclerView(context).apply {
+				clipChildren = false
+				clipToPadding = false
+				layoutManager = CarouselLayoutManager(HeroCarouselStrategy())
+				adapter = CarouselAdapter(imageUrls)
+				CarouselSnapHelper().attachToRecyclerView(this)
+			}
+			recyclerView
+		},
 		modifier = Modifier
 			.fillMaxWidth()
+			.fillMaxHeight(0.5f)
 			.padding(vertical = 16.dp)
-	) {
-		for (item in carouselItems) {
-			item {
-				CarouselItem(imageUrl = item)
-			}
-		}
-	}
+	)
 }
 
-@Composable
-fun CarouselItem(imageUrl: String) {
-	val imageModifier = Modifier
-		.padding(8.dp)
-		.clip(RoundedCornerShape(48.dp))
-		.background(Color.Gray) // Placeholder color while loading
+class CarouselAdapter(private val imageUrls: List<String>) :
+	RecyclerView.Adapter<CarouselAdapter.ViewHolder>() {
 
-	Box(
-		modifier = Modifier
-			.fillMaxWidth()
-			.height(250.dp) // Set height for carousel items
-	) {
-		CoilImage(
-			imageModel = { imageUrl },
-			modifier = imageModifier,
-			imageOptions = ImageOptions(
-				contentScale = ContentScale.Crop,
-				alignment = Alignment.Center,
-			)
-		)
+	inner class ViewHolder(val maskableFrameLayout: MaskableFrameLayout) :
+		RecyclerView.ViewHolder(maskableFrameLayout) {
+		val imageView: ImageView = maskableFrameLayout.findViewById(R.id.carouselImageView)
 	}
+
+	override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+		val maskableFrameLayout = LayoutInflater.from(parent.context)
+			.inflate(R.layout.carousel_item, parent, false) as MaskableFrameLayout
+
+		/*val newShape = ShapeAppearanceModel().toBuilder().setAllCornerSizes(48f).build()
+		maskableFrameLayout.shapeAppearanceModel = newShape*/
+
+		return ViewHolder(maskableFrameLayout)
+	}
+
+	override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+		holder.imageView.load(imageUrls[position]) {
+			crossfade(true)
+		}
+	}
+
+	override fun getItemCount(): Int = imageUrls.size
 }
