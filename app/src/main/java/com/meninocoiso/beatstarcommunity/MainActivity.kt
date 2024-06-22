@@ -26,7 +26,9 @@ class MainActivity : ComponentActivity() {
 
 				NavHost(navController = navController, startDestination = MainRoute) {
 					composableWithTransitions<ChartDetailsScreen> {
-						ChartDetails()
+						ChartDetails(onReturn = {
+							navController.navigateUp()
+						})
 					}
 
 					composableWithTransitions<MainRoute> {

@@ -3,7 +3,6 @@ package com.meninocoiso.beatstarcommunity.screens
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -125,11 +124,9 @@ fun SectionWrapper(
 	content: LazyListScope.() -> Unit
 ) {
 	LazyColumn(
-		contentPadding = PaddingValues(vertical = 8.dp),
 		modifier = Modifier
 			.fillMaxSize()
 			.nestedScroll(nestedScrollConnection),
-		// verticalArrangement = Arrangement.spacedBy(8.dp)
 	) {
 		stickyHeader {
 			WorkspaceChips()
@@ -146,9 +143,6 @@ fun ChartsSection(nestedScrollConnection: NestedScrollConnection, onNavigateToDe
 		val list = (0..5).map { it.toString() }
 		items(count = list.size) {
 			ChartPreview(
-				modifier = Modifier
-					.fillMaxWidth()
-					.padding(horizontal = 16.dp),
 				onNavigateToDetails = onNavigateToDetails,
 				chart = Chart(
 					id = 1,
