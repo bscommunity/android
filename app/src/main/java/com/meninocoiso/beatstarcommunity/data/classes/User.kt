@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.data
+package com.meninocoiso.beatstarcommunity.data.classes
 
 import java.util.Date
 
@@ -7,5 +7,5 @@ data class User(
 	val email: String,
 	val avatarUrl: String,
 	val createdAt: Date,
-	val charts: List<Chart>
+	val charts: List<Chart>? = null
 )

@@ -1,27 +1,22 @@
 package com.meninocoiso.beatstarcommunity.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -30,18 +25,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.components.WorkspaceTabs
+import com.meninocoiso.beatstarcommunity.components.ChartPreview
+import com.meninocoiso.beatstarcommunity.components.WorkspaceChips
 import com.meninocoiso.beatstarcommunity.components.WorkspaceTopBar
 import com.meninocoiso.beatstarcommunity.components.tabItems
-import java.io.Console
+import com.meninocoiso.beatstarcommunity.data.classes.Chart
+import com.meninocoiso.beatstarcommunity.data.classes.Song
+import com.meninocoiso.beatstarcommunity.data.classes.User
+import com.meninocoiso.beatstarcommunity.data.enums.Difficulty
+import com.meninocoiso.beatstarcommunity.utils.DateUtils
+import java.util.Date
 
 val AppBarHeight = 173.dp
 val AppTabsHeight = 90.dp
@@ -71,24 +69,6 @@ private class CollapsingAppBarNestedScrollConnection(
 	}
 }
 
-data class WorkspaceChip(
-	val id: Int,
-	val title: String,
-	val icon: Int? = null,
-)
-
-val chipItems = listOf(
-	WorkspaceChip(
-		id = 1,
-		title = "Weekly Rank"
-	),
-	WorkspaceChip(
-		id = 2,
-		title = "Editor's Choice",
-		icon = R.drawable.rounded_award_star_24
-	),
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Workspace() {
@@ -111,17 +91,13 @@ fun Workspace() {
 		}
 	}
 
-	var selectedChipIndex by remember { mutableIntStateOf(0) }
-
 	Box {
 		Column() {
 			Spacer(
 				Modifier
 					.height(spaceHeight)
 			)
-			Row {
 
-			}
 			HorizontalPager(
 				state = pagerState
 			) { index ->
@@ -142,30 +118,71 @@ fun Workspace() {
 	}
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ChartsSection(nestedScrollConnection: NestedScrollConnection) {
+fun SectionWrapper(
+	nestedScrollConnection: NestedScrollConnection,
+	content: LazyListScope.() -> Unit
+) {
 	LazyColumn(
-		contentPadding = PaddingValues(vertical = 16.dp),
+		contentPadding = PaddingValues(vertical = 8.dp),
 		modifier = Modifier
 			.fillMaxSize()
 			.nestedScroll(nestedScrollConnection),
-		verticalArrangement = Arrangement.spacedBy(8.dp)
+		// verticalArrangement = Arrangement.spacedBy(8.dp)
 	) {
-		val list = (0..75).map { it.toString() }
+		stickyHeader {
+			WorkspaceChips()
+		}
+
+		content()
+	}
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun ChartsSection(nestedScrollConnection: NestedScrollConnection) {
+	SectionWrapper(nestedScrollConnection = nestedScrollConnection) {
+		val list = (0..5).map { it.toString() }
 		items(count = list.size) {
-			Text(
-				text = list[it],
-				style = MaterialTheme.typography.bodyLarge,
+			ChartPreview(
 				modifier = Modifier
 					.fillMaxWidth()
-					/*.then(
-						if (it.toInt() % 2 == 0) {
-							Modifier.background(Color.Red)
-						} else {
-							Modifier.background(Color.Blue)
-						}
-					)*/
-					.padding(horizontal = 16.dp)
+					.padding(horizontal = 16.dp),
+				chart = Chart(
+					id = 1,
+					song = Song(
+						title = "Overdrive",
+						artists = listOf("Metrik", "Grafix"),
+						isExplicit = false,
+						coverArtUrl = "https://picsum.photos/76",
+						uploadedBy = User(
+							username = "meninocoiso",
+							email = "william.henry.moody@my-own-personal-domain.com",
+							avatarUrl = "https://github.com/theduardomaciel.png",
+							createdAt = DateUtils.getRandomDateInYear(2023),
+						)
+					),
+					createdAt = DateUtils.getRandomDateInYear(2023),
+					lastUpdatedAt = DateUtils.getRandomDateInYear(2023),
+					url = "",
+					difficulty = Difficulty.EXTREME,
+					authors = listOf(
+						User(
+							username = "meninocoiso",
+							email = "teste@gmail.com",
+							avatarUrl = "https://github.com/theduardomaciel.png",
+							createdAt = Date(),
+							charts = null
+						),
+						User(
+							username = "oCosmo55",
+							email = "teste@gmail.com",
+							avatarUrl = "https://github.com/andre.png",
+							createdAt = Date(),
+						)
+					)
+				)
 			)
 		}
 	}
@@ -173,13 +190,7 @@ fun ChartsSection(nestedScrollConnection: NestedScrollConnection) {
 
 @Composable
 fun TourPassesSection(nestedScrollConnection: NestedScrollConnection) {
-	LazyColumn(
-		contentPadding = PaddingValues(vertical = 16.dp),
-		modifier = Modifier
-			.fillMaxSize()
-			.nestedScroll(nestedScrollConnection),
-		verticalArrangement = Arrangement.spacedBy(8.dp)
-	) {
+	SectionWrapper(nestedScrollConnection = nestedScrollConnection) {
 		val list = (0..25).map { it.toString() }
 		items(count = list.size) {
 			Text(
@@ -195,13 +206,7 @@ fun TourPassesSection(nestedScrollConnection: NestedScrollConnection) {
 
 @Composable
 fun ThemesSection(nestedScrollConnection: NestedScrollConnection) {
-	LazyColumn(
-		contentPadding = PaddingValues(vertical = 16.dp),
-		modifier = Modifier
-			.fillMaxSize()
-			.nestedScroll(nestedScrollConnection),
-		verticalArrangement = Arrangement.spacedBy(8.dp)
-	) {
+	SectionWrapper(nestedScrollConnection = nestedScrollConnection) {
 		val list = (0..5).map { it.toString() }
 		items(count = list.size) {
 			Text(

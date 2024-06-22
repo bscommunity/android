@@ -1,8 +1,8 @@
-package com.meninocoiso.beatstarcommunity.data
+package com.meninocoiso.beatstarcommunity.data.classes
 
 data class Song(
 	val title: String,
-	val artist: String,
+	val artists: List<String>,
 	val isExplicit: Boolean,
 	val coverArtUrl: String,
 	val uploadedBy: User

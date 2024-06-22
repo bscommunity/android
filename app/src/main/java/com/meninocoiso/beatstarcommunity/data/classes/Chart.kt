@@ -1,5 +1,6 @@
-package com.meninocoiso.beatstarcommunity.data
+package com.meninocoiso.beatstarcommunity.data.classes
 
+import com.meninocoiso.beatstarcommunity.data.enums.Difficulty
 import java.util.Date
 
 data class Chart(
@@ -7,9 +8,10 @@ data class Chart(
 	val song: Song,
 	val url: String, // URL to the chart .zip file (including: .chart, .config and song data)
 	val difficulty: Difficulty,
-	val isDeluxe: Boolean,
+	val isFeatured: Boolean? = null,
+	val isDeluxe: Boolean? = null,
 	val createdAt: Date,
 	val lastUpdatedAt: Date,
 	val authors: List<User>,
-	val versions: List<ChartVersion>
+	val versions: List<ChartVersion>? = null
 )
