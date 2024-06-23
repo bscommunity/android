@@ -19,7 +19,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.components.Carousel
+import com.meninocoiso.beatstarcommunity.components.ChartContributors
+import com.meninocoiso.beatstarcommunity.data.classes.User
 import kotlinx.serialization.Serializable
+import java.util.Date
 
 @Serializable
 object ChartDetailsScreen
@@ -69,6 +72,24 @@ fun ChartDetails(
 			horizontalAlignment = Alignment.CenterHorizontally
 		) {
 			Carousel(imageUrls)
+			ChartContributors(
+				listOf(
+					User(
+						username = "meninocoiso",
+						email = "teste@gmail.com",
+						avatarUrl = "https://github.com/theduardomaciel.png",
+						createdAt = Date(),
+						charts = null
+					),
+					User(
+						username = "oCosmo55",
+						email = "teste@gmail.com",
+						avatarUrl = "https://github.com/oCosmo55.png",
+						createdAt = Date(),
+					)
+				)
+			)
+			Text(text = "Paçoca é bom")
 		}
 	}
 }

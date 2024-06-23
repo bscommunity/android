@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.data.classes.Chart
 import com.meninocoiso.beatstarcommunity.data.classes.User
@@ -23,7 +24,23 @@ import com.meninocoiso.beatstarcommunity.utils.DateUtils
 import java.util.Date
 
 @Composable
-fun ChartAuthors(authors: List<User>) {
+fun AuthorsAvatars(
+	authors: List<User>,
+	avatarSize: Dp? = null
+) {
+	Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
+		for (author in authors) {
+			if (avatarSize != null) {
+				Avatar(url = author.avatarUrl, size = avatarSize)
+			} else {
+				Avatar(url = author.avatarUrl) // Use default size in Avatar
+			}
+		}
+	}
+}
+
+@Composable
+fun ChartAuthors(authors: List<User>, avatarSize: Dp? = null) {
 	Box(
 		modifier = Modifier.border(
 			BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
@@ -37,11 +54,7 @@ fun ChartAuthors(authors: List<User>) {
 			horizontalArrangement = Arrangement.spacedBy(8.dp),
 			verticalAlignment = Alignment.CenterVertically
 		) {
-			Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
-				for (author in authors) {
-					Avatar(url = author.avatarUrl)
-				}
-			}
+			AuthorsAvatars(authors = authors, avatarSize = avatarSize)
 			Text(
 				style = MaterialTheme.typography.bodySmall,
 				text = "Chart by ${authors[1].username}${if (authors.size > 2) " and ${authors.size - 2} more" else ""}"
