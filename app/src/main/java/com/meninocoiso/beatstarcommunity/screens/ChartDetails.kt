@@ -88,7 +88,7 @@ fun ChartDetails(
 						createdAt = Date(),
 					),
 					User(
-						username = "meninocoiso",
+						username = "extreme",
 						email = "teste@gmail.com",
 						avatarUrl = "https://github.com/theduardomaciel.png",
 						createdAt = Date(),

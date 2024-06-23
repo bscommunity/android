@@ -5,14 +5,15 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.data.classes.User
@@ -39,6 +39,11 @@ fun ChartContributors(authors: List<User>) {
 	var isExpanded by remember {
 		mutableStateOf(false)
 	}
+
+	/*
+	*   animatedVisibilityScope = this@AnimatedContent,
+		sharedTransitionScope = this@SharedTransitionLayout
+	* */
 
 	SharedTransitionLayout {
 		AnimatedContent(
@@ -68,9 +73,53 @@ fun ChartContributors(authors: List<User>) {
 	}
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun Layout() {
-
+private fun Layout(
+	onEvent: () -> Unit,
+	sharedTransitionScope: SharedTransitionScope,
+	animatedVisibilityScope: AnimatedVisibilityScope,
+	header: @Composable RowScope.() -> Unit,
+	content: @Composable () -> Unit
+) {
+	Column(
+		modifier = Modifier
+			.fillMaxWidth()
+		//.background(Color.Green)
+	) {
+		Box(
+			modifier = Modifier
+				.fillMaxWidth()
+				.clickable {
+					onEvent()
+				}
+		) {
+			Row(
+				modifier = Modifier
+					.fillMaxWidth()
+					.height(80.dp)
+					.padding(16.dp),
+				horizontalArrangement = Arrangement.SpaceBetween,
+				verticalAlignment = Alignment.CenterVertically,
+			) {
+				header(this)
+				with(sharedTransitionScope) {
+					Icon(
+						modifier = Modifier
+							.width(48.dp)
+							//.background(Color.Red)
+							.sharedElement(
+								rememberSharedContentState(key = "arrow-icon"),
+								animatedVisibilityScope = animatedVisibilityScope
+							),
+						imageVector = Icons.Default.KeyboardArrowDown,
+						contentDescription = "Collapse/expand chart contributors"
+					)
+				}
+			}
+		}
+		content()
+	}
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -83,29 +132,31 @@ private fun CollapsedContributors(
 ) {
 	val authorsNames = authors.joinToString(", ") { "@${it.username}" }
 
-	Box(
-		modifier = Modifier
-			.fillMaxWidth()
-			.clickable() {
-				onExpand()
-			}
-	) {
-		Row(
-			modifier = Modifier
-				.fillMaxWidth()
-				.padding(16.dp),
-			horizontalArrangement = Arrangement.SpaceBetween,
-			verticalAlignment = Alignment.CenterVertically
-		) {
+	Layout(
+		onEvent = onExpand,
+		sharedTransitionScope,
+		animatedVisibilityScope,
+		header = {
 			Row(
 				horizontalArrangement = Arrangement.spacedBy(16.dp),
 				verticalAlignment = Alignment.CenterVertically,
 				modifier = Modifier
-					//.background(Color.Green)
-					.weight(1f) // This ensures that this Row takes the available space
+					//.background(Color.Blue)
+					.weight(1f) // How to apply it here without import errors
 			) {
-				AuthorsAvatars(authors = authors, avatarSize = 48.dp)
 				with(sharedTransitionScope) {
+					Row(horizontalArrangement = Arrangement.spacedBy((-16).dp)) {
+						for (author in authors) {
+							Avatar(
+								modifier = Modifier.sharedElement(
+									rememberSharedContentState(key = "avatar-${author.username}"),
+									animatedVisibilityScope = animatedVisibilityScope
+								),
+								url = author.avatarUrl,
+								size = 48.dp
+							)
+						}
+					}
 					Column {
 						Text(
 							modifier = Modifier.sharedElement(
@@ -130,19 +181,8 @@ private fun CollapsedContributors(
 					}
 				}
 			}
-			with(sharedTransitionScope) {
-				Icon(
-					modifier = Modifier
-						.width(48.dp)
-					/*.sharedElement(
-						rememberSharedContentState(key = "arrow-icon"),
-						animatedVisibilityScope = animatedVisibilityScope
-					)*/,
-					imageVector = Icons.Default.KeyboardArrowDown,
-					contentDescription = "Collapse/expand chart contributors"
-				)
-			}
-		}
+		}) {
+
 	}
 }
 
@@ -154,67 +194,32 @@ private fun ExpandedContributors(
 	sharedTransitionScope: SharedTransitionScope,
 	animatedVisibilityScope: AnimatedVisibilityScope
 ) {
-	Column(
-		modifier = Modifier
-			.fillMaxWidth()
-			.background(Color.Green)
-	) {
-		Box(
-			modifier = Modifier
-				.fillMaxWidth()
-				.clickable() {
-					onCollapse()
-				}
-		) {
-			Row(
-				modifier = Modifier
-					.fillMaxWidth()
-					.padding(16.dp),
-				horizontalArrangement = Arrangement.SpaceBetween,
-				verticalAlignment = Alignment.CenterVertically,
-			) {
-				Row(
-					horizontalArrangement = Arrangement.spacedBy(16.dp),
-					verticalAlignment = Alignment.CenterVertically,
-					modifier = Modifier
-						//.background(Color.Green)
-						.weight(1f) // This ensures that this Row takes the available space
-				) {
-					with(sharedTransitionScope) {
-						Column {
-							Text(
-								modifier = Modifier.sharedElement(
-									rememberSharedContentState(key = "credits-title"),
-									animatedVisibilityScope = animatedVisibilityScope
-								),
-								text = "Credits",
-								style = MaterialTheme.typography.titleMedium
-							)
-							Text(
-								modifier = Modifier.sharedBounds(
-									rememberSharedContentState(key = "credits-description"),
-									animatedVisibilityScope = animatedVisibilityScope
-								),
-								text = "The following users contributed to this chart:",
-								style = MaterialTheme.typography.bodyMedium,
-							)
-						}
-					}
-				}
-				with(sharedTransitionScope) {
-					Icon(
-						modifier = Modifier
-							.width(48.dp)
-						/*.sharedElement(
-							rememberSharedContentState(key = "arrow-icon"),
+	Layout(
+		onEvent = onCollapse,
+		sharedTransitionScope,
+		animatedVisibilityScope,
+		header = {
+			with(sharedTransitionScope) {
+				Column {
+					Text(
+						modifier = Modifier.sharedElement(
+							rememberSharedContentState(key = "credits-title"),
 							animatedVisibilityScope = animatedVisibilityScope
-						)*/,
-						imageVector = Icons.Default.KeyboardArrowDown,
-						contentDescription = "Collapse/expand chart contributors"
+						),
+						text = "Credits",
+						style = MaterialTheme.typography.titleMedium
+					)
+					Text(
+						modifier = Modifier.sharedBounds(
+							rememberSharedContentState(key = "credits-description"),
+							animatedVisibilityScope = animatedVisibilityScope
+						),
+						text = "The following users contributed to this chart:",
+						style = MaterialTheme.typography.bodyMedium,
 					)
 				}
 			}
-		}
+		}) {
 		LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp)) {
 			for (author in authors) {
 				item {
@@ -225,7 +230,16 @@ private fun ExpandedContributors(
 						horizontalArrangement = Arrangement.spacedBy(16.dp),
 						verticalAlignment = Alignment.CenterVertically
 					) {
-						Avatar(url = author.avatarUrl, size = 32.dp)
+						with(sharedTransitionScope) {
+							Avatar(
+								url = author.avatarUrl,
+								size = 32.dp,
+								modifier = Modifier.sharedElement(
+									rememberSharedContentState(key = "avatar-${author.username}"),
+									animatedVisibilityScope = animatedVisibilityScope
+								)
+							)
+						}
 						Column {
 							Text(
 								text = "@${author.username}",

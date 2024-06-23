@@ -4,7 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -43,7 +43,6 @@ fun CoverArt(
 			imageOptions = ImageOptions(
 				contentScale = ContentScale.Fit,
 				alignment = Alignment.Center,
-				alpha = 1.0f
 			),
 			component = rememberImageComponent {
 				+ShimmerPlugin(
@@ -81,8 +80,9 @@ fun CoverArt(
 
 @Composable
 fun Avatar(
+	modifier: Modifier? = Modifier,
 	size: Dp = 18.dp,
-	url: String
+	url: String,
 ) {
 	val pixelSize = with(LocalDensity.current) { size.toPx() }.toInt()
 
@@ -91,12 +91,14 @@ fun Avatar(
 			url
 		},
 		modifier = Modifier
+			.then(
+				modifier ?: Modifier
+			)
 			.size(size)
-			.clip(RoundedCornerShape(150.dp)),
+			.clip(CircleShape),
 		imageOptions = ImageOptions(
 			contentScale = ContentScale.Fit,
 			alignment = Alignment.Center,
-			alpha = 1.0f,
 			requestSize = IntSize(
 				pixelSize,
 				pixelSize
