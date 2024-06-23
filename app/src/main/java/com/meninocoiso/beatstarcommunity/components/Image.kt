@@ -19,23 +19,21 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.data.enums.Difficulty
+import com.meninocoiso.beatstarcommunity.data.difficultiesList
+import com.meninocoiso.beatstarcommunity.data.enums.DifficultyEnum
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil.CoilImage
 import com.skydoves.landscapist.components.rememberImageComponent
 import com.skydoves.landscapist.placeholder.shimmer.Shimmer
 import com.skydoves.landscapist.placeholder.shimmer.ShimmerPlugin
 
-val difficultyIcons = mapOf(
-	Difficulty.HARD to R.drawable.hard,
-	Difficulty.EXTREME to R.drawable.extreme,
-)
-
 @Composable
 fun CoverArt(
-	difficulty: Difficulty,
+	difficulty: DifficultyEnum,
 	url: String
 ) {
+	val difficultyIcon = difficultiesList.first { it.id == difficulty }.icon
+
 	Box(modifier = Modifier.size(76.dp), contentAlignment = Alignment.BottomEnd) {
 		CoilImage(
 			imageModel = {
@@ -56,25 +54,27 @@ fun CoverArt(
 				)
 			}
 		)
-		Box(
-			modifier = Modifier
-				.size(40.dp),
-			contentAlignment = Alignment.BottomEnd
-		) {
-			Icon(
-				painter = painterResource(id = R.drawable.corner),
-				contentDescription = "Corner for chart song cover art",
-				tint = Color.Black,
+		if (difficultyIcon != null) {
+			Box(
 				modifier = Modifier
 					.size(40.dp),
-			)
-			Image(
-				painter = painterResource(id = difficultyIcons.getValue(difficulty)),
-				modifier = Modifier
-					.size(24.dp)
-					.offset(x = 0.8.dp),
-				contentDescription = "Difficulty icon for chart",
-			)
+				contentAlignment = Alignment.BottomEnd
+			) {
+				Icon(
+					painter = painterResource(id = R.drawable.corner),
+					contentDescription = "Corner for chart song cover art",
+					tint = Color.Black,
+					modifier = Modifier
+						.size(40.dp),
+				)
+				Image(
+					painter = painterResource(id = difficultyIcon),
+					modifier = Modifier
+						.size(24.dp)
+						.offset(x = 0.8.dp),
+					contentDescription = "Difficulty icon for chart",
+				)
+			}
 		}
 	}
 }

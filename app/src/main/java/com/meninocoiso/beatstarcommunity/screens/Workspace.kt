@@ -36,7 +36,7 @@ import com.meninocoiso.beatstarcommunity.components.tabItems
 import com.meninocoiso.beatstarcommunity.data.classes.Chart
 import com.meninocoiso.beatstarcommunity.data.classes.Song
 import com.meninocoiso.beatstarcommunity.data.classes.User
-import com.meninocoiso.beatstarcommunity.data.enums.Difficulty
+import com.meninocoiso.beatstarcommunity.data.enums.DifficultyEnum
 import com.meninocoiso.beatstarcommunity.utils.DateUtils
 import java.util.Date
 
@@ -161,7 +161,7 @@ fun ChartsSection(nestedScrollConnection: NestedScrollConnection, onNavigateToDe
 					createdAt = DateUtils.getRandomDateInYear(2023),
 					lastUpdatedAt = DateUtils.getRandomDateInYear(2023),
 					url = "",
-					difficulty = Difficulty.EXTREME,
+					difficulty = DifficultyEnum.EXTREME,
 					authors = listOf(
 						User(
 							username = "meninocoiso",

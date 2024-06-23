@@ -86,7 +86,14 @@ fun ChartDetails(
 						email = "teste@gmail.com",
 						avatarUrl = "https://github.com/oCosmo55.png",
 						createdAt = Date(),
-					)
+					),
+					User(
+						username = "meninocoiso",
+						email = "teste@gmail.com",
+						avatarUrl = "https://github.com/theduardomaciel.png",
+						createdAt = Date(),
+						charts = null
+					),
 				)
 			)
 			Text(text = "Paçoca é bom")
