@@ -13,11 +13,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import coil.ImageLoader
+import coil.request.ImageRequest
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.data.difficultiesList
 import com.meninocoiso.beatstarcommunity.data.enums.DifficultyEnum
@@ -83,26 +86,54 @@ fun Avatar(
 	modifier: Modifier? = Modifier,
 	size: Dp = 18.dp,
 	url: String,
+	key: String? = null
 ) {
+	val context = LocalContext.current
 	val pixelSize = with(LocalDensity.current) { size.toPx() }.toInt()
 
-	CoilImage(
-		imageModel = {
-			url
-		},
-		modifier = Modifier
-			.then(
-				modifier ?: Modifier
-			)
-			.size(size)
-			.clip(CircleShape),
-		imageOptions = ImageOptions(
-			contentScale = ContentScale.Fit,
-			alignment = Alignment.Center,
-			requestSize = IntSize(
-				pixelSize,
-				pixelSize
-			)
-		),
+	val customModifier = Modifier
+		.then(
+			modifier ?: Modifier
+		)
+		.size(size)
+		.clip(CircleShape)
+
+	val imageOptions = ImageOptions(
+		contentScale = ContentScale.Fit,
+		alignment = Alignment.Center,
+		requestSize = IntSize(
+			pixelSize,
+			pixelSize
+		)
 	)
+
+	if (key != null) {
+		CoilImage(
+			imageRequest = {
+				ImageRequest.Builder(context)
+					.data(url)
+					.crossfade(true)
+					.placeholderMemoryCacheKey(key) //  same key as shared element key
+					.memoryCacheKey(key) // same key as shared element key
+					.build()
+			},
+			imageLoader = {
+				ImageLoader.Builder(context)
+					.memoryCache(
+						coil.memory.MemoryCache.Builder(context)
+							.maxSizePercent(1.0)
+							.build()
+					)
+					.build()
+			},
+			modifier = customModifier,
+			imageOptions = imageOptions,
+		)
+	} else {
+		CoilImage(
+			imageModel = { url },
+			modifier = customModifier,
+			imageOptions = imageOptions,
+		)
+	}
 }

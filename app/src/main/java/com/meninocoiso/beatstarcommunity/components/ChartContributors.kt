@@ -5,6 +5,8 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.data.classes.User
@@ -40,10 +43,10 @@ fun ChartContributors(authors: List<User>) {
 		mutableStateOf(false)
 	}
 
-	/*
-	*   animatedVisibilityScope = this@AnimatedContent,
-		sharedTransitionScope = this@SharedTransitionLayout
-	* */
+	val transition = updateTransition(targetState = isExpanded, label = "transition")
+	val iconRotationDeg by transition.animateFloat(label = "iconRotation") {
+		if (it) 180f else 0f
+	}
 
 	SharedTransitionLayout {
 		AnimatedContent(
@@ -56,6 +59,7 @@ fun ChartContributors(authors: List<User>) {
 					onExpand = {
 						isExpanded = true
 					},
+					iconRotationDeg = iconRotationDeg,
 					animatedVisibilityScope = this@AnimatedContent,
 					sharedTransitionScope = this@SharedTransitionLayout
 				)
@@ -65,6 +69,7 @@ fun ChartContributors(authors: List<User>) {
 					onCollapse = {
 						isExpanded = false
 					},
+					iconRotationDeg = iconRotationDeg,
 					animatedVisibilityScope = this@AnimatedContent,
 					sharedTransitionScope = this@SharedTransitionLayout
 				)
@@ -77,8 +82,7 @@ fun ChartContributors(authors: List<User>) {
 @Composable
 private fun Layout(
 	onEvent: () -> Unit,
-	sharedTransitionScope: SharedTransitionScope,
-	animatedVisibilityScope: AnimatedVisibilityScope,
+	iconRotationDeg: Float,
 	header: @Composable RowScope.() -> Unit,
 	content: @Composable () -> Unit
 ) {
@@ -103,19 +107,13 @@ private fun Layout(
 				verticalAlignment = Alignment.CenterVertically,
 			) {
 				header(this)
-				with(sharedTransitionScope) {
-					Icon(
-						modifier = Modifier
-							.width(48.dp)
-							//.background(Color.Red)
-							.sharedElement(
-								rememberSharedContentState(key = "arrow-icon"),
-								animatedVisibilityScope = animatedVisibilityScope
-							),
-						imageVector = Icons.Default.KeyboardArrowDown,
-						contentDescription = "Collapse/expand chart contributors"
-					)
-				}
+				Icon(
+					modifier = Modifier
+						.width(48.dp)
+						.rotate(iconRotationDeg),
+					imageVector = Icons.Default.KeyboardArrowDown,
+					contentDescription = "Collapse/expand chart contributors"
+				)
 			}
 		}
 		content()
@@ -127,6 +125,7 @@ private fun Layout(
 private fun CollapsedContributors(
 	authors: List<User>,
 	onExpand: () -> Unit,
+	iconRotationDeg: Float,
 	sharedTransitionScope: SharedTransitionScope,
 	animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -134,8 +133,7 @@ private fun CollapsedContributors(
 
 	Layout(
 		onEvent = onExpand,
-		sharedTransitionScope,
-		animatedVisibilityScope,
+		iconRotationDeg,
 		header = {
 			Row(
 				horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -153,6 +151,7 @@ private fun CollapsedContributors(
 									animatedVisibilityScope = animatedVisibilityScope
 								),
 								url = author.avatarUrl,
+								key = "avatar-${author.username}",
 								size = 48.dp
 							)
 						}
@@ -191,13 +190,13 @@ private fun CollapsedContributors(
 private fun ExpandedContributors(
 	authors: List<User>,
 	onCollapse: () -> Unit,
+	iconRotationDeg: Float,
 	sharedTransitionScope: SharedTransitionScope,
 	animatedVisibilityScope: AnimatedVisibilityScope
 ) {
 	Layout(
 		onEvent = onCollapse,
-		sharedTransitionScope,
-		animatedVisibilityScope,
+		iconRotationDeg,
 		header = {
 			with(sharedTransitionScope) {
 				Column {
@@ -233,6 +232,7 @@ private fun ExpandedContributors(
 						with(sharedTransitionScope) {
 							Avatar(
 								url = author.avatarUrl,
+								key = "avatar-${author.username}",
 								size = 32.dp,
 								modifier = Modifier.sharedElement(
 									rememberSharedContentState(key = "avatar-${author.username}"),
