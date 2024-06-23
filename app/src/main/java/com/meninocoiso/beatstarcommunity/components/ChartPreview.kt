@@ -24,22 +24,6 @@ import com.meninocoiso.beatstarcommunity.utils.DateUtils
 import java.util.Date
 
 @Composable
-fun AuthorsAvatars(
-	authors: List<User>,
-	avatarSize: Dp? = null
-) {
-	Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
-		for (author in authors) {
-			if (avatarSize != null) {
-				Avatar(url = author.avatarUrl, size = avatarSize)
-			} else {
-				Avatar(url = author.avatarUrl) // Use default size in Avatar
-			}
-		}
-	}
-}
-
-@Composable
 fun ChartAuthors(authors: List<User>, avatarSize: Dp? = null) {
 	Box(
 		modifier = Modifier.border(
@@ -54,7 +38,11 @@ fun ChartAuthors(authors: List<User>, avatarSize: Dp? = null) {
 			horizontalArrangement = Arrangement.spacedBy(8.dp),
 			verticalAlignment = Alignment.CenterVertically
 		) {
-			AuthorsAvatars(authors = authors, avatarSize = avatarSize)
+			Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
+				for (author in authors) {
+					Avatar(url = author.avatarUrl)
+				}
+			}
 			Text(
 				style = MaterialTheme.typography.bodySmall,
 				text = "Chart by ${authors[1].username}${if (authors.size > 2) " and ${authors.size - 2} more" else ""}"

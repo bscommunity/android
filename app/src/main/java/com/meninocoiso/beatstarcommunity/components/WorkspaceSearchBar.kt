@@ -49,7 +49,13 @@ fun WorkspaceSearchBar(modifier: Modifier? = Modifier) {
 		)
 	}
 
-	val filterSheetState = rememberModalBottomSheetState()
+	// TODO: Currently, the BottomSheet reset it's state to partiallyExpanded when any children are resized (collapsable, tags being reorganized after selection, etc.)
+	val filterSheetState = rememberModalBottomSheetState(
+		skipPartiallyExpanded = true,
+		/*confirmValueChange = {
+			false
+		}*/
+	)
 	val scope = rememberCoroutineScope()
 	var isFilterSheetOpen by rememberSaveable {
 		mutableStateOf(false)
