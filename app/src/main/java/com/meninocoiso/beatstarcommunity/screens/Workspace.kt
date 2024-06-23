@@ -173,7 +173,7 @@ fun ChartsSection(nestedScrollConnection: NestedScrollConnection, onNavigateToDe
 						User(
 							username = "oCosmo55",
 							email = "teste@gmail.com",
-							avatarUrl = "https://github.com/andre.png",
+							avatarUrl = "https://github.com/oCosmo55.png",
 							createdAt = Date(),
 						)
 					)
