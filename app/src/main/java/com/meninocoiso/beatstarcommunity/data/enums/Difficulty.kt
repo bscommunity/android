@@ -1,6 +1,6 @@
 package com.meninocoiso.beatstarcommunity.data.enums
 
-enum class Difficulty {
+enum class DifficultyEnum {
 	NORMAL,
 	HARD,
 	EXTREME

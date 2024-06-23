@@ -55,6 +55,10 @@ fun WorkspaceSearchBar(modifier: Modifier? = Modifier) {
 		mutableStateOf(false)
 	}
 
+	val filtersList = remember {
+		mutableStateListOf<String>()
+	}
+
 	Box(
 		Modifier
 			.then(modifier ?: Modifier)
@@ -140,14 +144,18 @@ fun WorkspaceSearchBar(modifier: Modifier? = Modifier) {
 	}
 
 	if (isFilterSheetOpen) {
-		WorkspaceFilterBottomSheet(filterSheetState, onDismissRequest = {
-			isFilterSheetOpen = false
-		}, onClose = {
-			scope.launch { filterSheetState.hide() }.invokeOnCompletion {
-				if (!filterSheetState.isVisible) {
-					isFilterSheetOpen = false
+		WorkspaceFilterBottomSheet(
+			filtersList = filtersList,
+			sheetState = filterSheetState,
+			onDismissRequest = {
+				isFilterSheetOpen = false
+			},
+			onClose = {
+				scope.launch { filterSheetState.hide() }.invokeOnCompletion {
+					if (!filterSheetState.isVisible) {
+						isFilterSheetOpen = false
+					}
 				}
-			}
-		})
+			})
 	}
 }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -19,18 +20,51 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.data.enums.Difficulty
+import com.meninocoiso.beatstarcommunity.data.difficultiesList
 import com.meninocoiso.beatstarcommunity.data.genresList
 import java.util.Locale
+
+@Composable
+fun ExtendedFilterChip(
+	id: String,
+	filtersList: SnapshotStateList<String>,
+	leadingIcon: @Composable() (() -> Unit)? = null,
+	label: @Composable () -> Unit
+) {
+	FilterChip(
+		selected = filtersList.contains(id),
+		onClick = {
+			if (filtersList.contains(id)) {
+				filtersList.remove(id)
+			} else {
+				filtersList.add(id)
+			}
+		},
+		leadingIcon = {
+			if (filtersList.contains(id)) {
+				Icon(
+					modifier = Modifier.size(18.dp),
+					imageVector = Icons.Default.Check,
+					contentDescription = "Selected"
+				)
+			} else {
+				leadingIcon?.invoke()
+			}
+		},
+		label = label
+	)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkspaceFilterBottomSheet(
+	filtersList: SnapshotStateList<String>,
 	sheetState: SheetState,
 	onDismissRequest: () -> Unit,
 	onClose: () -> Unit
@@ -53,9 +87,9 @@ fun WorkspaceFilterBottomSheet(
 			}
 		}
 		CollapsableSection(title = "Awarded") {
-			FilterChip(
-				selected = false,
-				onClick = { /*TODO*/ },
+			ExtendedFilterChip(
+				filtersList = filtersList,
+				id = "editor_choice",
 				leadingIcon = {
 					Icon(
 						modifier = Modifier.size(22.dp),
@@ -67,9 +101,9 @@ fun WorkspaceFilterBottomSheet(
 					Text(text = "Editor’s Choice")
 				}
 			)
-			FilterChip(
-				selected = false,
-				onClick = { /*TODO*/ },
+			ExtendedFilterChip(
+				filtersList = filtersList,
+				id = "featured",
 				leadingIcon = {
 					Icon(
 						modifier = Modifier.size(22.dp),
@@ -81,9 +115,9 @@ fun WorkspaceFilterBottomSheet(
 					Text(text = "Featured")
 				}
 			)
-			FilterChip(
-				selected = false,
-				onClick = { /*TODO*/ },
+			ExtendedFilterChip(
+				filtersList = filtersList,
+				id = "trending",
 				leadingIcon = {
 					Icon(
 						modifier = Modifier.size(22.dp),
@@ -97,22 +131,21 @@ fun WorkspaceFilterBottomSheet(
 			)
 		}
 		CollapsableSection(title = "Difficulty") {
-			Difficulty.entries.forEach {
-				FilterChip(
-					selected = false,
-					onClick = { /*TODO*/ },
+			difficultiesList.forEach {
+				ExtendedFilterChip(
+					filtersList = filtersList,
+					id = it.id.toString().lowercase(Locale.ROOT),
 					label = {
-						Text(text = it.name.lowercase()
-							.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() })
+						Text(text = it.name)
 					}
 				)
 			}
 		}
 		CollapsableSection(title = "Genre") {
 			genresList.forEach {
-				FilterChip(
-					selected = false,
-					onClick = { /*TODO*/ },
+				ExtendedFilterChip(
+					filtersList = filtersList,
+					id = it.name,
 					leadingIcon = {
 						Icon(
 							painter = painterResource(id = it.icon),
@@ -127,16 +160,16 @@ fun WorkspaceFilterBottomSheet(
 			}
 		}
 		CollapsableSection(title = "Version") {
-			FilterChip(
-				selected = false,
-				onClick = { /*TODO*/ },
+			ExtendedFilterChip(
+				filtersList = filtersList,
+				id = "default",
 				label = {
 					Text(text = "Default")
 				}
 			)
-			FilterChip(
-				selected = false,
-				onClick = { /*TODO*/ },
+			ExtendedFilterChip(
+				filtersList = filtersList,
+				id = "deluxe",
 				label = {
 					Text(text = "Deluxe")
 				}

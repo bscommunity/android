@@ -71,7 +71,6 @@ fun CollapsableSection(
 			)
 		}
 		CollapsableSectionContent(content = content, isExpanded = isExpanded)
-
 	}
 }
 

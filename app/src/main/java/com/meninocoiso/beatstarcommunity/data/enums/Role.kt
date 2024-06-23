@@ -1,6 +1,6 @@
 package com.meninocoiso.beatstarcommunity.data.enums
 
-enum class Role {
+enum class RoleEnum {
 	CREATOR,
 	EFFECT,
 	AUDIO_MIX,
