@@ -11,14 +11,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Icon
@@ -219,37 +217,37 @@ private fun ExpandedContributors(
 				}
 			}
 		}) {
-		LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp)) {
+		Column(
+			modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+		) {
 			for (author in authors) {
-				item {
-					Row(
-						Modifier.padding(
-							vertical = 8.dp
-						),
-						horizontalArrangement = Arrangement.spacedBy(16.dp),
-						verticalAlignment = Alignment.CenterVertically
-					) {
-						with(sharedTransitionScope) {
-							Avatar(
-								url = author.avatarUrl,
-								key = "avatar-${author.username}",
-								size = 32.dp,
-								modifier = Modifier.sharedElement(
-									rememberSharedContentState(key = "avatar-${author.username}"),
-									animatedVisibilityScope = animatedVisibilityScope
-								)
+				Row(
+					Modifier.padding(
+						vertical = 8.dp
+					),
+					horizontalArrangement = Arrangement.spacedBy(16.dp),
+					verticalAlignment = Alignment.CenterVertically
+				) {
+					with(sharedTransitionScope) {
+						Avatar(
+							url = author.avatarUrl,
+							key = "avatar-${author.username}",
+							size = 32.dp,
+							modifier = Modifier.sharedElement(
+								rememberSharedContentState(key = "avatar-${author.username}"),
+								animatedVisibilityScope = animatedVisibilityScope
 							)
-						}
-						Column {
-							Text(
-								text = "@${author.username}",
-								style = MaterialTheme.typography.labelLarge
-							)
-							Text(
-								text = "Test, test 2",
-								style = MaterialTheme.typography.bodySmall,
-							)
-						}
+						)
+					}
+					Column {
+						Text(
+							text = "@${author.username}",
+							style = MaterialTheme.typography.labelLarge
+						)
+						Text(
+							text = "Test, test 2",
+							style = MaterialTheme.typography.bodySmall,
+						)
 					}
 				}
 			}

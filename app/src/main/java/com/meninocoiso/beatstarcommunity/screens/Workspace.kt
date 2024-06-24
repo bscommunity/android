@@ -94,7 +94,8 @@ fun Workspace(onNavigateToDetails: () -> Unit) {
 		Column() {
 			Spacer(
 				Modifier
-					.height(spaceHeight)
+					// TODO: Very hard-coded approach currently being used, search better alternatives
+					.height(spaceHeight - 20.dp)
 			)
 
 			HorizontalPager(
@@ -128,7 +129,7 @@ fun SectionWrapper(
 			.fillMaxSize()
 			.nestedScroll(nestedScrollConnection),
 	) {
-		stickyHeader {
+		item {
 			WorkspaceChips()
 		}
 
@@ -136,48 +137,57 @@ fun SectionWrapper(
 	}
 }
 
+val placeholderChart = Chart(
+	id = 1,
+	song = Song(
+		title = "Overdrive",
+		duration = 1532.25f,
+		artists = listOf("Metrik", "Grafix"),
+		isExplicit = false,
+		coverArtUrl = "https://picsum.photos/76",
+		uploadedBy = User(
+			username = "meninocoiso",
+			email = "william.henry.moody@my-own-personal-domain.com",
+			avatarUrl = "https://github.com/theduardomaciel.png",
+			createdAt = DateUtils.getRandomDateInYear(2023),
+		)
+	),
+	createdAt = DateUtils.getRandomDateInYear(2023),
+	lastUpdatedAt = DateUtils.getRandomDateInYear(2023),
+	url = "",
+	difficulty = DifficultyEnum.EXTREME,
+	notesAmount = 435,
+	knownIssues = listOf(
+		"Missing clap effects on bridge",
+		"Wrong direction swipe effect",
+		"Unsyncronized section after drop"
+	),
+	authors = listOf(
+		User(
+			username = "meninocoiso",
+			email = "teste@gmail.com",
+			avatarUrl = "https://github.com/theduardomaciel.png",
+			createdAt = Date(),
+			charts = null
+		),
+		User(
+			username = "oCosmo55",
+			email = "teste@gmail.com",
+			avatarUrl = "https://github.com/oCosmo55.png",
+			createdAt = Date(),
+		)
+	)
+)
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChartsSection(nestedScrollConnection: NestedScrollConnection, onNavigateToDetails: () -> Unit) {
 	SectionWrapper(nestedScrollConnection = nestedScrollConnection) {
-		val list = (0..5).map { it.toString() }
+		val list = (0..10).map { it.toString() }
 		items(count = list.size) {
 			ChartPreview(
 				onNavigateToDetails = onNavigateToDetails,
-				chart = Chart(
-					id = 1,
-					song = Song(
-						title = "Overdrive",
-						artists = listOf("Metrik", "Grafix"),
-						isExplicit = false,
-						coverArtUrl = "https://picsum.photos/76",
-						uploadedBy = User(
-							username = "meninocoiso",
-							email = "william.henry.moody@my-own-personal-domain.com",
-							avatarUrl = "https://github.com/theduardomaciel.png",
-							createdAt = DateUtils.getRandomDateInYear(2023),
-						)
-					),
-					createdAt = DateUtils.getRandomDateInYear(2023),
-					lastUpdatedAt = DateUtils.getRandomDateInYear(2023),
-					url = "",
-					difficulty = DifficultyEnum.EXTREME,
-					authors = listOf(
-						User(
-							username = "meninocoiso",
-							email = "teste@gmail.com",
-							avatarUrl = "https://github.com/theduardomaciel.png",
-							createdAt = Date(),
-							charts = null
-						),
-						User(
-							username = "oCosmo55",
-							email = "teste@gmail.com",
-							avatarUrl = "https://github.com/oCosmo55.png",
-							createdAt = Date(),
-						)
-					)
-				)
+				chart = placeholderChart
 			)
 		}
 	}
