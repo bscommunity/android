@@ -2,14 +2,29 @@ package com.meninocoiso.beatstarcommunity.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -17,10 +32,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.components.Carousel
 import com.meninocoiso.beatstarcommunity.components.ChartContributors
 import com.meninocoiso.beatstarcommunity.data.classes.User
+import com.meninocoiso.beatstarcommunity.utils.DateUtils
 import kotlinx.serialization.Serializable
 import java.util.Date
 
@@ -32,46 +50,95 @@ object ChartDetailsScreen
 fun ChartDetails(
 	onReturn: () -> Unit
 ) {
+	val chart = placeholderChart
+
 	val imageUrls = listOf(
 		"https://th.bing.com/th/id/OIP.Fnrr1lh0QpG1bhKXSptqzwAAAA?rs=1&pid=ImgDetMain",
 		"https://images.pexels.com/photos/19780240/pexels-photo-19780240/free-photo-of-a-forest-with-trees-and-fog-in-the-background.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
 	)
 
-	Scaffold(topBar = {
-		TopAppBar(
-			modifier = Modifier.padding(horizontal = 16.dp),
-			navigationIcon = {
-				Icon(
-					modifier = Modifier
-						.padding(end = 12.dp)
-						.clickable { onReturn() },
-					imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-					tint = MaterialTheme.colorScheme.onSurface,
-					contentDescription = "Return"
-				)
-			},
-			actions = {
-				Icon(
-					imageVector = Icons.Outlined.FavoriteBorder,
-					contentDescription = "Like content"
-				)
-			},
-			title = {
-				Column {
-					Text("We Live Forever", style = MaterialTheme.typography.titleLarge)
-					Text("The Prodigy", style = MaterialTheme.typography.titleMedium)
+	val scrollState = rememberScrollState()
+
+	Scaffold(
+		topBar = {
+			TopAppBar(
+				modifier = Modifier.padding(horizontal = 16.dp),
+				navigationIcon = {
+					Icon(
+						modifier = Modifier
+							.padding(end = 12.dp)
+							.clickable { onReturn() },
+						imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+						tint = MaterialTheme.colorScheme.onSurface,
+						contentDescription = "Return"
+					)
+				},
+				actions = {
+					Icon(
+						imageVector = Icons.Outlined.FavoriteBorder,
+						contentDescription = "Like content"
+					)
+				},
+				title = {
+					Column {
+						Text("We Live Forever", style = MaterialTheme.typography.titleLarge)
+						Text("The Prodigy", style = MaterialTheme.typography.titleMedium)
+					}
 				}
-			}
-		)
-	}) { innerPadding ->
+			)
+		},
+		bottomBar = {
+			BottomAppBar(
+				actions = {
+					IconButton(onClick = { /* TODO */ }) {
+						Icon(
+							Icons.Filled.MoreVert,
+							contentDescription = "More options"
+						)
+					}
+					IconButton(onClick = { /* TODO */ }) {
+						Icon(
+							Icons.Outlined.Delete,
+							contentDescription = "Delete chart",
+						)
+					}
+					IconButton(onClick = { /* TODO */ }) {
+						Icon(
+							Icons.Outlined.Share,
+							contentDescription = "Share chart",
+						)
+					}
+				},
+				floatingActionButton = {
+					ExtendedFloatingActionButton(
+						text = { Text("Download") },
+						icon = {
+							Icon(
+								painter = painterResource(id = R.drawable.rounded_download_24),
+								contentDescription = ""
+							)
+						},
+						containerColor = BottomAppBarDefaults.bottomAppBarFabColor,
+						elevation = FloatingActionButtonDefaults.bottomAppBarFabElevation(),
+						onClick = {
+							/* TODO */
+						},
+					)
+				}
+			)
+		}
+	) { innerPadding ->
 		Column(
 			modifier = Modifier
 				.fillMaxSize()
+				.verticalScroll(scrollState)
 				.padding(innerPadding),
 			verticalArrangement = Arrangement.Top,
-			horizontalAlignment = Alignment.CenterHorizontally
+			horizontalAlignment = Alignment.CenterHorizontally,
 		) {
 			Carousel(imageUrls)
+
+			// Credits
 			ChartContributors(
 				listOf(
 					User(
@@ -96,7 +163,98 @@ fun ChartDetails(
 					),
 				)
 			)
-			Text(text = "Paçoca é bom")
+
+			// Stats
+			Section(
+				title = "Stats"
+			) {
+				Column(modifier = Modifier.padding(vertical = 8.dp)) {
+					StatListItem(
+						title = "~${chart.song.duration} minutes",
+						icon = R.drawable.outline_access_time_24
+					)
+					StatListItem(
+						title = "${chart.notesAmount} notes",
+						icon = R.drawable.rounded_music_note_24
+					)
+					StatListItem(
+						title = "+${chart.notesAmount} downloads",
+						icon = R.drawable.rounded_download_24
+					)
+					StatListItem(
+						title = "Updated ${DateUtils.toRelativeString(chart.lastUpdatedAt)}",
+						icon = R.drawable.rounded_calendar_today_24
+					)
+				}
+			}
+
+			// Known Issues
+			Section(
+				title = "Known Issues"
+			) {
+				if (chart.knownIssues?.isEmpty() == true) {
+					Text(text = "No known issues", style = MaterialTheme.typography.bodyLarge)
+				} else {
+					Box(modifier = Modifier.padding(16.dp)) {
+						Column(
+							modifier = Modifier
+								.fillMaxWidth()
+								.padding(16.dp),
+							horizontalAlignment = Alignment.Start,
+							verticalArrangement = Arrangement.spacedBy(8.dp),
+						) {
+							chart.knownIssues?.forEach {
+								Text(text = "•   $it", style = MaterialTheme.typography.bodyLarge)
+							}
+						}
+					}
+				}
+			}
 		}
+	}
+}
+
+@Composable
+fun StatListItem(
+	title: String,
+	icon: Int
+) {
+	ListItem(
+		headlineContent = {
+			Text(
+				text = title,
+				style = MaterialTheme.typography.titleMedium,
+			)
+		},
+		leadingContent = {
+			Box(
+				modifier = Modifier
+					//.background(Color.Red)
+					.size(48.dp),
+				contentAlignment = Alignment.Center
+			) {
+				Icon(
+					painter = painterResource(id = icon),
+					contentDescription = "Stat icon",
+					modifier = Modifier.size(24.dp)
+				)
+			}
+		}
+	)
+}
+
+@Composable
+private fun Section(
+	title: String,
+	content: @Composable () -> Unit
+) {
+	Column(modifier = Modifier.fillMaxWidth()) {
+		HorizontalDivider()
+		Text(
+			text = title,
+			style = MaterialTheme.typography.labelLarge,
+			modifier = Modifier.padding(start = 16.dp, top = 16.dp)
+		)
+		content()
 	}
 }

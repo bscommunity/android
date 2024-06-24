@@ -60,7 +60,9 @@ val bottomNavigationItems = listOf(
 
 @Composable
 fun BottomNavigationComponent(navController: NavHostController) {
-	NavigationBar {
+	NavigationBar(
+		/*containerColor = Color.Red*/
+	) {
 		var selectedItemIndex by rememberSaveable {
 			mutableIntStateOf(0)
 		}

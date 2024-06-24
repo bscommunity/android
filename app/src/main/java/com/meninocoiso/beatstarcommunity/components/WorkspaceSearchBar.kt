@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -67,9 +68,11 @@ fun WorkspaceSearchBar(modifier: Modifier? = Modifier) {
 
 	Box(
 		Modifier
-			.then(modifier ?: Modifier)
 			.fillMaxWidth()
-			.semantics { isTraversalGroup = true },
+			//.background(Color.Red)
+			.wrapContentHeight()
+			.semantics { isTraversalGroup = true }
+			.then(modifier ?: Modifier),
 		contentAlignment = Alignment.Center
 	) {
 		SearchBar(
