@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,9 +29,9 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.components.ChartPreview
-import com.meninocoiso.beatstarcommunity.components.WorkspaceChips
-import com.meninocoiso.beatstarcommunity.components.WorkspaceTopBar
-import com.meninocoiso.beatstarcommunity.components.tabItems
+import com.meninocoiso.beatstarcommunity.components.workspace.WorkspaceChips
+import com.meninocoiso.beatstarcommunity.components.workspace.WorkspaceTopBar
+import com.meninocoiso.beatstarcommunity.components.workspace.tabItems
 import com.meninocoiso.beatstarcommunity.data.classes.Chart
 import com.meninocoiso.beatstarcommunity.data.classes.Song
 import com.meninocoiso.beatstarcommunity.data.classes.User
@@ -40,8 +39,8 @@ import com.meninocoiso.beatstarcommunity.data.enums.DifficultyEnum
 import com.meninocoiso.beatstarcommunity.utils.DateUtils
 import java.util.Date
 
-val AppBarHeight = 173.dp
-val AppTabsHeight = 90.dp
+val AppBarHeight = 155.dp
+val AppTabsHeight = 80.dp
 
 private class CollapsingAppBarNestedScrollConnection(
 	val appBarMaxHeight: Int
@@ -58,17 +57,12 @@ private class CollapsingAppBarNestedScrollConnection(
 		val newOffset = appBarOffset + delta
 		val previousOffset = appBarOffset
 		appBarOffset = newOffset.coerceIn(-appBarMaxHeight, 0)
-		// println("MAX: $appBarMaxHeight")
-		// println("ACTUAL: $appBarOffset")
-		// println("SUBTRACTED: ${appBarOffset / appBarMaxHeight}")
 		val consumed = appBarOffset - previousOffset
 		appBarOpacity = 1f + (appBarOffset / appBarMaxHeight.toFloat())
-		// println("OPACITY: $appBarOpacity")
 		return Offset(0f, consumed.toFloat())
 	}
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Workspace(onNavigateToDetails: () -> Unit) {
 	val pagerState = rememberPagerState {
@@ -94,8 +88,7 @@ fun Workspace(onNavigateToDetails: () -> Unit) {
 		Column() {
 			Spacer(
 				Modifier
-					// TODO: Very hard-coded approach currently being used, search better alternatives
-					.height(spaceHeight - 20.dp)
+					.height(spaceHeight)
 			)
 
 			HorizontalPager(

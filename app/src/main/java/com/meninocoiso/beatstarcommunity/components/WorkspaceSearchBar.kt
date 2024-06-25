@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -30,18 +31,22 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
+import com.meninocoiso.beatstarcommunity.components.workspace.WorkspaceFilterBottomSheet
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkspaceSearchBar(modifier: Modifier? = Modifier) {
-	var query by remember { mutableStateOf("") }
-	var active by remember { mutableStateOf(false) }
+	var query by rememberSaveable { mutableStateOf("") }
+	var isExpanded by rememberSaveable { mutableStateOf(false) }
+
 	val historyItems = remember {
 		mutableStateListOf(
 			"Stars",
@@ -76,51 +81,46 @@ fun WorkspaceSearchBar(modifier: Modifier? = Modifier) {
 		contentAlignment = Alignment.Center
 	) {
 		SearchBar(
-			query = query,
-			onQueryChange = {
-				query = it
-			},
-			onSearch = {
-				historyItems.add(it)
-				active = false
-				query = ""
-			},
-			tonalElevation = 2.dp,
-			active = active,
-			onActiveChange = {
-				active = it
-			},
-			placeholder = {
-				Text(text = "Search in workshop")
-			},
-			colors = SearchBarDefaults.colors(
-				containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-			),
-			leadingIcon = {
-				Icon(imageVector = Icons.Default.Search, contentDescription = "Search icon")
-			},
-			trailingIcon = {
-				if (active) {
-					Icon(
-						modifier = Modifier.clickable {
-							if (query.isNotEmpty()) {
-								query = ""
-							} else {
-								active = false
+			modifier = Modifier
+				.align(Alignment.TopCenter)
+				.semantics { traversalIndex = 0f },
+			inputField = {
+				SearchBarDefaults.InputField(
+					modifier = Modifier
+						.width(LocalConfiguration.current.screenWidthDp.dp - 32.dp),
+					query = query,
+					onQueryChange = { query = it },
+					onSearch = { isExpanded = false },
+					expanded = isExpanded,
+					onExpandedChange = { isExpanded = it },
+					placeholder = { Text("Search in workshop") },
+					leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+					trailingIcon = {
+						if (isExpanded) {
+							Icon(
+								modifier = Modifier.clickable {
+									if (query.isNotEmpty()) {
+										query = ""
+									} else {
+										isExpanded = false
+									}
+								},
+								imageVector = Icons.Default.Close,
+								contentDescription = "Close search icon",
+							)
+						} else {
+							IconButton(onClick = { isFilterSheetOpen = true }) {
+								Icon(
+									painter = painterResource(id = R.drawable.outline_filter_alt_24),
+									contentDescription = "Filter icon",
+								)
 							}
-						},
-						imageVector = Icons.Default.Close,
-						contentDescription = "Close search icon",
-					)
-				} else {
-					IconButton(onClick = { isFilterSheetOpen = true }) {
-						Icon(
-							painter = painterResource(id = R.drawable.outline_filter_alt_24),
-							contentDescription = "Filter icon",
-						)
+						}
 					}
-				}
-			}
+				)
+			},
+			expanded = isExpanded,
+			onExpandedChange = { isExpanded = it },
 		) {
 			Column(
 				Modifier

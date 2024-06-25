@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.components
+package com.meninocoiso.beatstarcommunity.components.workspace
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement

@@ -1,16 +1,13 @@
-package com.meninocoiso.beatstarcommunity.components
+package com.meninocoiso.beatstarcommunity.components.workspace
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -26,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
+import com.meninocoiso.beatstarcommunity.components.CollapsableSection
 import com.meninocoiso.beatstarcommunity.data.difficultiesList
 import com.meninocoiso.beatstarcommunity.data.genresList
 import java.util.Locale
@@ -72,7 +70,6 @@ fun WorkspaceFilterBottomSheet(
 	ModalBottomSheet(
 		sheetState = sheetState,
 		onDismissRequest = onDismissRequest,
-		windowInsets = BottomSheetDefaults.windowInsets.only(WindowInsetsSides.Bottom)
 	) {
 		Row(
 			modifier = Modifier
