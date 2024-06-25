@@ -38,6 +38,7 @@ import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.components.Carousel
 import com.meninocoiso.beatstarcommunity.components.ChartContributors
 import com.meninocoiso.beatstarcommunity.data.classes.User
+import com.meninocoiso.beatstarcommunity.data.placeholderChart
 import com.meninocoiso.beatstarcommunity.utils.DateUtils
 import kotlinx.serialization.Serializable
 import java.util.Date

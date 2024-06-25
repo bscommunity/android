@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.components.workspace
+package com.meninocoiso.beatstarcommunity.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.pager.PagerState
@@ -21,31 +21,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
-data class WorkspaceTabsItem(
+data class TabItem(
 	val title: String,
 	val hasNews: Boolean,
 	val badgeCount: Int? = null
 )
 
-val tabItems = listOf(
-	WorkspaceTabsItem(
-		title = "Charts",
-		hasNews = false
-	),
-	WorkspaceTabsItem(
-		title = "Tour Passes",
-		hasNews = false,
-		badgeCount = 3
-	),
-	WorkspaceTabsItem(
-		title = "Themes",
-		hasNews = false
-	)
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WorkspaceTabs(pagerState: PagerState) {
+fun Tabs(pagerState: PagerState, tabs: List<TabItem>) {
 	var selectedTabIndex by remember { mutableIntStateOf(0) }
 
 	LaunchedEffect(selectedTabIndex) {
@@ -70,7 +54,7 @@ fun WorkspaceTabs(pagerState: PagerState) {
 		},
 		containerColor = Color.Transparent
 	) {
-		tabItems.forEachIndexed { index, item ->
+		tabs.forEachIndexed { index, item ->
 			Tab(
 				selected = index == selectedTabIndex,
 				onClick = {
