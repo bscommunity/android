@@ -1,7 +1,5 @@
-package com.meninocoiso.beatstarcommunity.components
+package com.meninocoiso.beatstarcommunity.components.workspace
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
