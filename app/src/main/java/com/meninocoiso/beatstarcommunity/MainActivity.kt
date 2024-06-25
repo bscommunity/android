@@ -9,6 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import com.meninocoiso.beatstarcommunity.navigation.MainNav
 import com.meninocoiso.beatstarcommunity.navigation.MainRoute
 import com.meninocoiso.beatstarcommunity.navigation.composableWithTransitions
+import com.meninocoiso.beatstarcommunity.navigation.composableWithoutTransitions
 import com.meninocoiso.beatstarcommunity.screens.ChartDetails
 import com.meninocoiso.beatstarcommunity.screens.ChartDetailsScreen
 import com.meninocoiso.beatstarcommunity.ui.theme.BeatstarCommunityTheme
@@ -31,7 +32,7 @@ class MainActivity : ComponentActivity() {
 						})
 					}
 
-					composableWithTransitions<MainRoute> {
+					composableWithoutTransitions<MainRoute> {
 						MainNav(bottomNavController, navController)
 					}
 				}
