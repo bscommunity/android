@@ -47,6 +47,7 @@ fun WorkspaceTopBar(appBarOffset: Int, appBarOpacity: Float, pagerState: PagerSt
 		) {
 			WorkspaceSearchBar(modifier = Modifier.alpha(appBarOpacity))
 		}
+		Spacer(modifier = Modifier.height(4.dp))
 		WorkspaceTabs(pagerState = pagerState)
 	}
 }
