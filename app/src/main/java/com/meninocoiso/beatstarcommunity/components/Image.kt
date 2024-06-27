@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -32,20 +33,32 @@ import com.skydoves.landscapist.placeholder.shimmer.ShimmerPlugin
 
 @Composable
 fun CoverArt(
-	difficulty: DifficultyEnum,
+	difficulty: DifficultyEnum? = null,
+	borderRadius: Dp = 0.dp,
+	size: Dp = 76.dp,
 	url: String
 ) {
-	val difficultyIcon = difficultiesList.first { it.id == difficulty }.icon
+	val sizeInPx = with(LocalDensity.current) { size.roundToPx() }
 
-	Box(modifier = Modifier.size(76.dp), contentAlignment = Alignment.BottomEnd) {
+	val difficultyIcon =
+		if (difficulty != null) difficultiesList.first { it.id == difficulty }.icon else null
+
+	Box(
+		modifier = Modifier
+			.size(size)
+			.clip(RoundedCornerShape(borderRadius)),
+		contentAlignment = Alignment.BottomEnd
+	) {
 		CoilImage(
 			imageModel = {
 				url
 			},
-			modifier = Modifier.size(76.dp),
+			modifier = Modifier
+				.size(size),
 			imageOptions = ImageOptions(
 				contentScale = ContentScale.Fit,
 				alignment = Alignment.Center,
+				requestSize = IntSize(sizeInPx, sizeInPx)
 			),
 			component = rememberImageComponent {
 				+ShimmerPlugin(
@@ -91,10 +104,7 @@ fun Avatar(
 	val context = LocalContext.current
 	val pixelSize = with(LocalDensity.current) { size.toPx() }.toInt()
 
-	val customModifier = Modifier
-		.then(
-			modifier ?: Modifier
-		)
+	val customModifier = (modifier ?: Modifier)
 		.size(size)
 		.clip(CircleShape)
 

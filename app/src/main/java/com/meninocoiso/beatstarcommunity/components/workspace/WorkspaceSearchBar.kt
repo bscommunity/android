@@ -1,13 +1,10 @@
 package com.meninocoiso.beatstarcommunity.components.workspace
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -29,13 +26,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.isTraversalGroup
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
 import kotlinx.coroutines.launch
@@ -70,82 +63,70 @@ fun WorkspaceSearchBar(modifier: Modifier? = Modifier) {
 		mutableStateListOf<String>()
 	}
 
-	Box(
-		Modifier
-			.fillMaxWidth()
-			//.background(Color.Red)
-			.wrapContentHeight()
-			.semantics { isTraversalGroup = true }
-			.then(modifier ?: Modifier),
-		contentAlignment = Alignment.Center
-	) {
-		SearchBar(
-			modifier = Modifier
-				.align(Alignment.TopCenter)
-				.semantics { traversalIndex = 0f },
-			inputField = {
-				SearchBarDefaults.InputField(
-					modifier = Modifier
-						.width(LocalConfiguration.current.screenWidthDp.dp - 32.dp),
-					query = query,
-					onQueryChange = { query = it },
-					onSearch = { isExpanded = false },
-					expanded = isExpanded,
-					onExpandedChange = { isExpanded = it },
-					placeholder = { Text("Search in workshop") },
-					leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-					trailingIcon = {
-						if (isExpanded) {
+	SearchBar(
+		modifier = modifier ?: Modifier,
+		inputField = {
+			SearchBarDefaults.InputField(
+				modifier = Modifier
+					.width(LocalConfiguration.current.screenWidthDp.dp - 32.dp),
+				query = query,
+				onQueryChange = { query = it },
+				onSearch = { isExpanded = false },
+				expanded = isExpanded,
+				onExpandedChange = { isExpanded = it },
+				placeholder = { Text("Search in workshop") },
+				leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+				trailingIcon = {
+					if (isExpanded) {
+						Icon(
+							modifier = Modifier.clickable {
+								if (query.isNotEmpty()) {
+									query = ""
+								} else {
+									isExpanded = false
+								}
+							},
+							imageVector = Icons.Default.Close,
+							contentDescription = "Close search icon",
+						)
+					} else {
+						IconButton(onClick = { isFilterSheetOpen = true }) {
 							Icon(
-								modifier = Modifier.clickable {
-									if (query.isNotEmpty()) {
-										query = ""
-									} else {
-										isExpanded = false
-									}
-								},
-								imageVector = Icons.Default.Close,
-								contentDescription = "Close search icon",
+								painter = painterResource(id = R.drawable.outline_filter_alt_24),
+								contentDescription = "Filter icon",
 							)
-						} else {
-							IconButton(onClick = { isFilterSheetOpen = true }) {
-								Icon(
-									painter = painterResource(id = R.drawable.outline_filter_alt_24),
-									contentDescription = "Filter icon",
-								)
-							}
 						}
 					}
-				)
-			},
-			expanded = isExpanded,
-			onExpandedChange = { isExpanded = it },
+				}
+			)
+		},
+		expanded = isExpanded,
+		onExpandedChange = { isExpanded = it },
+	) {
+		Column(
+			Modifier
+				.verticalScroll(rememberScrollState())
 		) {
-			Column(
-				Modifier
-					.verticalScroll(rememberScrollState())
-			) {
-				Text(
-					text = "Recent searches",
-					style = MaterialTheme.typography.titleSmall,
-					modifier = Modifier.padding(
-						start = 16.dp,
-						end = 16.dp,
-						top = 24.dp,
-						bottom = 8.dp
-					)
+			Text(
+				text = "Recent searches",
+				style = MaterialTheme.typography.titleSmall,
+				modifier = Modifier.padding(
+					start = 16.dp,
+					end = 16.dp,
+					top = 24.dp,
+					bottom = 8.dp
 				)
-				historyItems.forEach {
-					Row(modifier = Modifier.padding(all = 16.dp)) {
-						Icon(
-							painter = painterResource(id = R.drawable.rounded_history_24),
-							contentDescription = "History icon",
-							modifier = Modifier.padding(end = 10.dp)
-						)
-						Text(
-							text = it
-						)
-					}
+			)
+			historyItems.forEach {
+				Row(modifier = Modifier.padding(all = 16.dp)) {
+					Icon(
+						painter = painterResource(id = R.drawable.rounded_history_24),
+						contentDescription = "History icon",
+						modifier = Modifier.padding(end = 10.dp)
+					)
+					Text(
+						text = it
+					)
 				}
 			}
 		}

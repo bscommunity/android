@@ -29,7 +29,7 @@ data class TabItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Tabs(pagerState: PagerState, tabs: List<TabItem>) {
+fun Tabs(pagerState: PagerState, tabs: List<TabItem>, modifier: Modifier? = Modifier) {
 	var selectedTabIndex by remember { mutableIntStateOf(0) }
 
 	LaunchedEffect(selectedTabIndex) {
@@ -43,7 +43,8 @@ fun Tabs(pagerState: PagerState, tabs: List<TabItem>) {
 	}
 
 	SecondaryTabRow(
-		modifier = Modifier.fillMaxWidth(),
+		modifier = (modifier ?: Modifier) // Combined modifier
+			.fillMaxWidth(),
 		selectedTabIndex = selectedTabIndex,
 		indicator = {
 			TabRowDefaults.SecondaryIndicator(

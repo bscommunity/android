@@ -1,6 +1,7 @@
 package com.meninocoiso.beatstarcommunity.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -69,24 +71,24 @@ fun ChartAuthorsPreview() {
 
 @Composable
 fun ChartPreview(
-	modifier: Modifier = Modifier,
 	chart: Chart,
+	modifier: Modifier? = Modifier,
 	isFeatured: Boolean? = null,
 	isRanked: Boolean? = null,
-	isAdquired: Boolean? = null,
+	isAcquired: Boolean? = null,
 	onNavigateToDetails: () -> Unit = {}
 ) {
 	val artistsNames = chart.song.artists.joinToString(", ") { it }
 
 	Box(
-		modifier = Modifier
+		modifier = (modifier ?: Modifier)
 			.fillMaxWidth()
 			.clickable() {
 				onNavigateToDetails()
 			}
 	) {
 		Row(
-			modifier = modifier
+			modifier = Modifier
 				.padding(16.dp)
 				.fillMaxWidth(),
 			horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -110,7 +112,7 @@ fun ChartPreview(
 					Text(style = MaterialTheme.typography.labelMedium, text = artistsNames)
 				}
 				ChartAuthors(authors = chart.authors)
-				if (isAdquired == true) {
+				if (isAcquired == true) {
 					Text(text = "Adquired")
 				}
 			}
@@ -120,9 +122,52 @@ fun ChartPreview(
 
 @Composable
 fun LocalChartPreview(
-	modifier: Modifier = Modifier,
 	chart: Chart,
+	modifier: Modifier? = Modifier,
 	version: Int,
+	onNavigateToDetails: () -> Unit = {}
 ) {
+	val artistsNames = chart.song.artists.joinToString(", ") { it }
 
+	Box(
+		modifier = (modifier ?: Modifier)
+			.fillMaxWidth()
+			.clip(RoundedCornerShape(16.dp))
+			.clickable() {
+				onNavigateToDetails()
+			}
+	) {
+		Row(
+			modifier = Modifier
+				.background(MaterialTheme.colorScheme.surfaceContainerLow)
+				.padding(16.dp)
+				.fillMaxWidth(),
+			horizontalArrangement = Arrangement.spacedBy(16.dp)
+		) {
+			CoverArt(
+				difficulty = chart.difficulty,
+				url = chart.song.coverArtUrl,
+				borderRadius = 8.dp
+			)
+			Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+				Column {
+					Row(
+						modifier = Modifier.fillMaxWidth(),
+						horizontalArrangement = Arrangement.SpaceBetween
+					) {
+						Text(
+							text = chart.song.title,
+							style = MaterialTheme.typography.titleMedium,
+						)
+						Text(
+							style = MaterialTheme.typography.labelLarge,
+							text = "v$version"
+						)
+					}
+					Text(style = MaterialTheme.typography.labelMedium, text = artistsNames)
+				}
+				ChartAuthors(authors = chart.authors)
+			}
+		}
+	}
 }
