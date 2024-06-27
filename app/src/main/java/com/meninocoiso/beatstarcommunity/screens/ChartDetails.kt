@@ -21,7 +21,6 @@ import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -37,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.components.Carousel
 import com.meninocoiso.beatstarcommunity.components.ChartContributors
+import com.meninocoiso.beatstarcommunity.components.Section
 import com.meninocoiso.beatstarcommunity.data.classes.User
 import com.meninocoiso.beatstarcommunity.data.placeholderChart
 import com.meninocoiso.beatstarcommunity.utils.DateUtils
@@ -169,7 +169,7 @@ fun ChartDetails(
 			Section(
 				title = "Stats"
 			) {
-				Column(modifier = Modifier.padding(vertical = 8.dp)) {
+				Column(modifier = Modifier.padding(bottom = 8.dp)) {
 					StatListItem(
 						title = "~${chart.song.duration} minutes",
 						icon = R.drawable.outline_access_time_24
@@ -200,7 +200,7 @@ fun ChartDetails(
 						Column(
 							modifier = Modifier
 								.fillMaxWidth()
-								.padding(16.dp),
+								.padding(start = 16.dp),
 							horizontalAlignment = Alignment.Start,
 							verticalArrangement = Arrangement.spacedBy(8.dp),
 						) {
@@ -216,7 +216,7 @@ fun ChartDetails(
 }
 
 @Composable
-fun StatListItem(
+private fun StatListItem(
 	title: String,
 	icon: Int
 ) {
@@ -242,20 +242,4 @@ fun StatListItem(
 			}
 		}
 	)
-}
-
-@Composable
-private fun Section(
-	title: String,
-	content: @Composable () -> Unit
-) {
-	Column(modifier = Modifier.fillMaxWidth()) {
-		HorizontalDivider()
-		Text(
-			text = title,
-			style = MaterialTheme.typography.labelLarge,
-			modifier = Modifier.padding(start = 16.dp, top = 16.dp)
-		)
-		content()
-	}
 }

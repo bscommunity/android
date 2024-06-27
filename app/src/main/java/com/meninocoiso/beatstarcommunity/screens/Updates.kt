@@ -1,33 +1,63 @@
 package com.meninocoiso.beatstarcommunity.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.meninocoiso.beatstarcommunity.R
+import com.meninocoiso.beatstarcommunity.components.CoverArt
+import com.meninocoiso.beatstarcommunity.components.LocalChartPreview
+import com.meninocoiso.beatstarcommunity.components.Section
 import com.meninocoiso.beatstarcommunity.components.TabItem
 import com.meninocoiso.beatstarcommunity.components.Tabs
+import com.meninocoiso.beatstarcommunity.data.classes.Chart
+import com.meninocoiso.beatstarcommunity.data.placeholderChart
 import com.meninocoiso.beatstarcommunity.utils.CollapsingAppBarNestedScrollConnection
 
 val updatesTabsItems = listOf(
@@ -41,88 +71,242 @@ val updatesTabsItems = listOf(
 	)
 )
 
-val TabsHeight = 80.dp
+val tabsHeight = 80.dp
 
 @Composable
 fun Updates() {
-	Column(
-		modifier = Modifier
-			.fillMaxSize(),
-		verticalArrangement = Arrangement.Top,
-		horizontalAlignment = Alignment.CenterHorizontally
-	) {
-		val pagerState = rememberPagerState {
-			updatesTabsItems.size
-		}
+	val chartsToUpdate = (0..3).map {
+		placeholderChart
+	}
 
-		val appBarMaxHeightPx = with(LocalDensity.current) { TabsHeight.roundToPx() }
-		val connection = remember(appBarMaxHeightPx) {
-			CollapsingAppBarNestedScrollConnection(appBarMaxHeightPx)
-		}
-		val density = LocalDensity.current
-		val spaceHeight by remember(density) {
-			derivedStateOf {
-				with(density) {
-					(appBarMaxHeightPx + connection.appBarOffset).toDp()
-				}
+	val downloadedCharts = (0..25).map {
+		placeholderChart
+	}
+
+	val pagerState = rememberPagerState {
+		updatesTabsItems.size
+	}
+
+	val appBarMaxHeightPx = with(LocalDensity.current) { tabsHeight.roundToPx() }
+	val connection = remember(appBarMaxHeightPx) {
+		CollapsingAppBarNestedScrollConnection(appBarMaxHeightPx)
+	}
+	val density = LocalDensity.current
+	val spaceHeight by remember(density) {
+		derivedStateOf {
+			with(density) {
+				(appBarMaxHeightPx + connection.appBarOffset).toDp()
 			}
 		}
+	}
 
-		Box {
-			Column() {
-				Spacer(
-					Modifier
-						.height(spaceHeight)
+	Column {
+		Spacer(
+			Modifier
+				.height(spaceHeight)
+		)
+
+		HorizontalPager(
+			state = pagerState
+		) { index ->
+			when (
+				index
+			) {
+				0 -> WorkspaceSection(
+					chartsToUpdate = chartsToUpdate,
+					downloadedCharts = downloadedCharts,
+					connection
 				)
 
-				HorizontalPager(
-					state = pagerState
-				) { index ->
-					when (
-						index
-					) {
-						0 -> WorkspaceSection(connection)
-						1 -> InstallationsSection(connection)
-					}
-				}
-			}
-
-			Box(
-				modifier = Modifier
-					.offset { IntOffset(0, connection.appBarOffset) }
-					.heightIn(min = TabsHeight)
-					.defaultMinSize(minHeight = TabsHeight),
-				contentAlignment = Alignment.BottomCenter
-			) {
-				Tabs(pagerState = pagerState, tabs = updatesTabsItems)
+				1 -> InstallationsSection(connection)
 			}
 		}
+	}
+	Box(
+		modifier = Modifier
+			.offset { IntOffset(0, connection.appBarOffset) }
+			.heightIn(min = tabsHeight)
+			.statusBarsPadding()
+			.defaultMinSize(minHeight = tabsHeight),
+		contentAlignment = Alignment.BottomCenter
+	) {
+		Tabs(
+			pagerState = pagerState,
+			tabs = updatesTabsItems,
+			modifier = Modifier.background(MaterialTheme.colorScheme.background)
+		)
 	}
 }
 
 @Composable
 private fun SectionWrapper(
 	nestedScrollConnection: NestedScrollConnection,
-	content: LazyListScope.() -> Unit
+	content: @Composable () -> Unit
 ) {
-	LazyColumn(
+	Column(
 		modifier = Modifier
 			.fillMaxSize()
+			.verticalScroll(rememberScrollState())
 			.nestedScroll(nestedScrollConnection),
-		contentPadding = PaddingValues(16.dp)
 	) {
+		Spacer(modifier = Modifier.height(16.dp))
 		content()
+		Spacer(modifier = Modifier.height(16.dp))
+	}
+}
+
+private val UpdatableChartPreviewHeight = 70.dp
+private val LocalChartPreviewHeight = 108.dp
+
+@Composable
+private fun DownloadsSectionsTitle(
+	title: String
+) {
+	Box(
+		modifier = Modifier
+			.fillMaxWidth()
+			.padding(16.dp, 0.dp, 0.dp, 4.dp)
+	) {
+		Text(text = title, style = MaterialTheme.typography.labelLarge)
 	}
 }
 
 @Composable
 private fun WorkspaceSection(
+	chartsToUpdate: List<Chart>,
+	downloadedCharts: List<Chart>,
 	nestedScrollConnection: NestedScrollConnection,
 ) {
-	SectionWrapper(nestedScrollConnection = nestedScrollConnection) {
-		val list = (0..100).map { it.toString() }
-		items(count = list.size) {
-			Text(text = "Teste - $it")
+	val verticalGap = 8.dp
+
+	var selectedIndex by remember { mutableIntStateOf(0) }
+	val options = listOf("Charts", "Tour Passes", "Themes")
+
+	SectionWrapper(nestedScrollConnection) {
+		Section(
+			title = "Updates available (${chartsToUpdate.size})",
+			thickness = 0.dp,
+			titleModifier = Modifier.padding(top = 8.dp),
+		) {
+			LazyColumn(
+				modifier = Modifier.height(
+					(UpdatableChartPreviewHeight * chartsToUpdate.size) + (verticalGap * (chartsToUpdate.size - 1))
+				),
+				userScrollEnabled = false,
+				contentPadding = PaddingValues(horizontal = 16.dp),
+				verticalArrangement = Arrangement.spacedBy(verticalGap),
+				horizontalAlignment = Alignment.CenterHorizontally
+			) {
+				items(chartsToUpdate) { chart ->
+					ListItem(
+						modifier = Modifier
+							.height(UpdatableChartPreviewHeight)
+							.clip(RoundedCornerShape(16.dp)),
+						colors = ListItemDefaults.colors(
+							containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+						),
+						leadingContent = {
+							CoverArt(
+								difficulty = null,
+								borderRadius = 2.dp,
+								url = chart.song.coverArtUrl,
+								size = 40.dp
+							)
+						},
+						headlineContent = {
+							Text(
+								text = chart.song.title,
+								style = MaterialTheme.typography.titleMedium,
+							)
+						},
+						supportingContent = {
+							Text(
+								text = chart.song.artists.joinToString(", "),
+								style = MaterialTheme.typography.bodyMedium,
+							)
+						},
+						trailingContent = {
+							IconButton(
+								onClick = { /*TODO*/ },
+								colors = IconButtonDefaults.iconButtonColors(
+									containerColor = MaterialTheme.colorScheme.primary,
+									contentColor = MaterialTheme.colorScheme.onPrimary
+								)
+							) {
+								Icon(
+									painter = painterResource(id = R.drawable.rounded_download_24),
+									contentDescription = "Update icon"
+								)
+							}
+						}
+					)
+				}
+			}
+			FilledTonalButton(
+				onClick = { /*TODO*/ },
+				colors = ButtonDefaults.filledTonalButtonColors(
+					containerColor = MaterialTheme.colorScheme.primaryContainer,
+					contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+				),
+				modifier = Modifier
+					.fillMaxWidth()
+					.padding(start = 16.dp, end = 16.dp, top = 8.dp)
+			) {
+				Row(
+					horizontalArrangement = Arrangement.spacedBy(8.dp),
+					verticalAlignment = Alignment.CenterVertically
+				) {
+					Icon(
+						modifier = Modifier.size(18.dp),
+						painter = painterResource(id = R.drawable.rounded_autorenew_24),
+						contentDescription = "Check for updates icon"
+					)
+					Text(text = "Check for updates")
+				}
+			}
+		}
+		Section(
+			title = "Downloaded (${downloadedCharts.size})",
+			modifier = Modifier.padding(top = 16.dp),
+		) {
+			SingleChoiceSegmentedButtonRow(
+				modifier = Modifier
+					.fillMaxWidth()
+					.padding(16.dp, 0.dp, 16.dp, 16.dp)
+			) {
+				options.forEachIndexed { index, label ->
+					SegmentedButton(
+						shape = SegmentedButtonDefaults.itemShape(
+							index = index,
+							count = options.size
+						),
+						onClick = { selectedIndex = index },
+						selected = index == selectedIndex
+					) {
+						Text(label)
+					}
+				}
+			}
+			LazyColumn(
+				modifier = Modifier.height(
+					(LocalChartPreviewHeight * downloadedCharts.size) + (verticalGap * (downloadedCharts.size - 1))
+				),
+				userScrollEnabled = false,
+				contentPadding = PaddingValues(horizontal = 16.dp),
+				verticalArrangement = Arrangement.spacedBy(verticalGap),
+				horizontalAlignment = Alignment.CenterHorizontally
+			) {
+				/*item {
+					DownloadsSectionsTitle("Charts")
+				}*/
+				items(downloadedCharts) { chart ->
+					LocalChartPreview(
+						chart = chart,
+						version = 1,
+						modifier = Modifier.height(LocalChartPreviewHeight)
+					)
+				}
+			}
 		}
 	}
 }
@@ -132,9 +316,11 @@ private fun InstallationsSection(
 	nestedScrollConnection: NestedScrollConnection,
 ) {
 	SectionWrapper(nestedScrollConnection = nestedScrollConnection) {
-		val list = (0..25).map { it.toString() }
-		items(count = list.size) {
-			Text(text = "Parte 2 - $it")
+		val list = (0..100).map { it.toString() }
+		LazyColumn {
+			items(count = list.size) {
+				Text(text = "Parte 2 - $it")
+			}
 		}
 	}
 }

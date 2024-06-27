@@ -4,22 +4,24 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.components.TabItem
 import com.meninocoiso.beatstarcommunity.components.Tabs
-import com.meninocoiso.beatstarcommunity.screens.AppBarHeightPercentage
-import com.meninocoiso.beatstarcommunity.screens.AppTabsHeight
+import com.meninocoiso.beatstarcommunity.screens.SearchBarHeight
+import com.meninocoiso.beatstarcommunity.screens.WorkspaceTabsHeight
 
 val workspaceTabsItems = listOf(
 	TabItem(
@@ -39,25 +41,38 @@ val workspaceTabsItems = listOf(
 
 @Composable
 fun WorkspaceTopBar(appBarOffset: Int, appBarOpacity: Float, pagerState: PagerState) {
-	val appBarHeight = (AppBarHeightPercentage * LocalConfiguration.current.screenHeightDp / 100).dp
+	val statusBarHeight = WindowInsets.systemBars.asPaddingValues().calculateTopPadding()
 
 	Column(
 		modifier = Modifier
 			.offset { IntOffset(0, appBarOffset) }
-			.heightIn(min = appBarHeight)
-			.defaultMinSize(minHeight = AppTabsHeight)
+			.defaultMinSize(minHeight = SearchBarHeight + WorkspaceTabsHeight + statusBarHeight)
+			.fillMaxWidth()
 			.background(MaterialTheme.colorScheme.surfaceContainerLow),
 		verticalArrangement = Arrangement.SpaceBetween,
 		horizontalAlignment = Alignment.CenterHorizontally
 	) {
-		//Spacer(modifier = Modifier.height(8.dp))
 		Box(
-			contentAlignment = Alignment.Center,
-			//modifier = Modifier.absoluteOffset(y = 2.dp)
+			modifier = Modifier
+				.defaultMinSize(
+					minHeight = SearchBarHeight
+				),
+			contentAlignment = Alignment.Center
 		) {
-			WorkspaceSearchBar(modifier = Modifier.alpha(appBarOpacity))
+			WorkspaceSearchBar(
+				modifier = Modifier
+					.alpha(appBarOpacity)
+			)
 		}
-		//Spacer(modifier = Modifier.height(4.dp))
-		Tabs(pagerState = pagerState, tabs = workspaceTabsItems)
+		Box(
+			modifier = Modifier
+				//.background(Color.Blue)
+				.height(WorkspaceTabsHeight),
+			contentAlignment = Alignment.Center
+		) {
+			//Text(text = "Tabs")
+			Tabs(pagerState = pagerState, tabs = workspaceTabsItems)
+		}
+		//
 	}
 }
