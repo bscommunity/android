@@ -48,6 +48,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
@@ -157,6 +158,7 @@ private fun SectionWrapper(
 
 private val UpdatableChartPreviewHeight = 70.dp
 private val LocalChartPreviewHeight = 108.dp
+private val DownloadSectionTitleHeight = 24.dp
 
 @Composable
 private fun DownloadsSectionsTitle(
@@ -165,7 +167,8 @@ private fun DownloadsSectionsTitle(
 	Box(
 		modifier = Modifier
 			.fillMaxWidth()
-			.padding(16.dp, 0.dp, 0.dp, 4.dp)
+			.height(DownloadSectionTitleHeight)
+			.padding(16.dp, 0.dp, 0.dp, 0.dp)
 	) {
 		Text(text = title, style = MaterialTheme.typography.labelLarge)
 	}
@@ -179,7 +182,7 @@ private fun WorkspaceSection(
 ) {
 	val verticalGap = 8.dp
 
-	var selectedIndex by remember { mutableIntStateOf(0) }
+	var selectedIndex by remember { mutableIntStateOf(-1) }
 	val options = listOf("Charts", "Tour Passes", "Themes")
 
 	SectionWrapper(nestedScrollConnection) {
@@ -221,7 +224,7 @@ private fun WorkspaceSection(
 						},
 						supportingContent = {
 							Text(
-								text = chart.song.artists.joinToString(", "),
+								text = "Update from v1 → v2",
 								style = MaterialTheme.typography.bodyMedium,
 							)
 						},
@@ -280,10 +283,16 @@ private fun WorkspaceSection(
 							index = index,
 							count = options.size
 						),
-						onClick = { selectedIndex = index },
+						onClick = {
+							selectedIndex = if (selectedIndex != index) {
+								index
+							} else {
+								-1
+							}
+						},
 						selected = index == selectedIndex
 					) {
-						Text(label)
+						Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
 					}
 				}
 			}
@@ -296,9 +305,9 @@ private fun WorkspaceSection(
 				verticalArrangement = Arrangement.spacedBy(verticalGap),
 				horizontalAlignment = Alignment.CenterHorizontally
 			) {
-				/*item {
+				item {
 					DownloadsSectionsTitle("Charts")
-				}*/
+				}
 				items(downloadedCharts) { chart ->
 					LocalChartPreview(
 						chart = chart,
