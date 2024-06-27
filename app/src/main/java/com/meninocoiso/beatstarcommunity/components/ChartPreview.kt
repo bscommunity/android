@@ -7,6 +7,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -69,6 +71,7 @@ fun ChartAuthorsPreview() {
 	)
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ChartPreview(
 	chart: Chart,
@@ -96,9 +99,9 @@ fun ChartPreview(
 			CoverArt(difficulty = chart.difficulty, url = chart.song.coverArtUrl)
 			Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
 				Column {
-					Row(
+					FlowRow(
 						modifier = Modifier.fillMaxWidth(),
-						horizontalArrangement = Arrangement.SpaceBetween
+						horizontalArrangement = Arrangement.SpaceBetween,
 					) {
 						Text(
 							text = chart.song.title,
@@ -120,6 +123,7 @@ fun ChartPreview(
 	}
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun LocalChartPreview(
 	chart: Chart,
@@ -151,7 +155,7 @@ fun LocalChartPreview(
 			)
 			Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
 				Column {
-					Row(
+					FlowRow(
 						modifier = Modifier.fillMaxWidth(),
 						horizontalArrangement = Arrangement.SpaceBetween
 					) {

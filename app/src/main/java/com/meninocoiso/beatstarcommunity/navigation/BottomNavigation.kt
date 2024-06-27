@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.navigation.NavHostController
 import com.meninocoiso.beatstarcommunity.R
 import kotlinx.serialization.Serializable
@@ -89,7 +90,7 @@ fun BottomNavigationComponent(navController: NavHostController) {
 					}
 				},
 				label = {
-					Text(text = item.title)
+					Text(text = item.title, textAlign = TextAlign.Center)
 				},
 				alwaysShowLabel = true,
 				icon = {

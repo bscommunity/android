@@ -1,10 +1,13 @@
 package com.meninocoiso.beatstarcommunity.components.workspace
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -83,94 +86,98 @@ fun WorkspaceFilterBottomSheet(
 				Icon(imageVector = Icons.Default.Close, contentDescription = "Close BottomSheet")
 			}
 		}
-		CollapsableSection(title = "Awarded") {
-			ExtendedFilterChip(
-				filtersList = filtersList,
-				id = "editor_choice",
-				leadingIcon = {
-					Icon(
-						modifier = Modifier.size(22.dp),
-						painter = painterResource(id = R.drawable.rounded_award_star_24),
-						contentDescription = "Editor's Choice"
-					)
-				},
-				label = {
-					Text(text = "Editor’s Choice")
-				}
-			)
-			ExtendedFilterChip(
-				filtersList = filtersList,
-				id = "featured",
-				leadingIcon = {
-					Icon(
-						modifier = Modifier.size(22.dp),
-						painter = painterResource(id = R.drawable.rounded_local_fire_department_24),
-						contentDescription = "Featured"
-					)
-				},
-				label = {
-					Text(text = "Featured")
-				}
-			)
-			ExtendedFilterChip(
-				filtersList = filtersList,
-				id = "trending",
-				leadingIcon = {
-					Icon(
-						modifier = Modifier.size(22.dp),
-						painter = painterResource(id = R.drawable.rounded_trending_up_24),
-						contentDescription = "Trending"
-					)
-				},
-				label = {
-					Text(text = "Trending")
-				}
-			)
-		}
-		CollapsableSection(title = "Difficulty") {
-			difficultiesList.forEach {
+		Column(
+			modifier = Modifier.verticalScroll(rememberScrollState())
+		) {
+			CollapsableSection(title = "Awarded") {
 				ExtendedFilterChip(
 					filtersList = filtersList,
-					id = it.id.toString().lowercase(Locale.ROOT),
-					label = {
-						Text(text = it.name)
-					}
-				)
-			}
-		}
-		CollapsableSection(title = "Genre") {
-			genresList.forEach {
-				ExtendedFilterChip(
-					filtersList = filtersList,
-					id = it.name,
+					id = "editor_choice",
 					leadingIcon = {
 						Icon(
-							painter = painterResource(id = it.icon),
-							contentDescription = it.name
+							modifier = Modifier.size(22.dp),
+							painter = painterResource(id = R.drawable.rounded_award_star_24),
+							contentDescription = "Editor's Choice"
 						)
 					},
 					label = {
-						Text(text = it.name.lowercase()
-							.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() })
+						Text(text = "Editor’s Choice")
+					}
+				)
+				ExtendedFilterChip(
+					filtersList = filtersList,
+					id = "featured",
+					leadingIcon = {
+						Icon(
+							modifier = Modifier.size(22.dp),
+							painter = painterResource(id = R.drawable.rounded_local_fire_department_24),
+							contentDescription = "Featured"
+						)
+					},
+					label = {
+						Text(text = "Featured")
+					}
+				)
+				ExtendedFilterChip(
+					filtersList = filtersList,
+					id = "trending",
+					leadingIcon = {
+						Icon(
+							modifier = Modifier.size(22.dp),
+							painter = painterResource(id = R.drawable.rounded_trending_up_24),
+							contentDescription = "Trending"
+						)
+					},
+					label = {
+						Text(text = "Trending")
 					}
 				)
 			}
-		}
-		CollapsableSection(title = "Version") {
-			ExtendedFilterChip(
-				filtersList = filtersList,
-				id = "default",
-				label = {
-					Text(text = "Default")
+			CollapsableSection(title = "Difficulty") {
+				difficultiesList.forEach {
+					ExtendedFilterChip(
+						filtersList = filtersList,
+						id = it.id.toString().lowercase(Locale.ROOT),
+						label = {
+							Text(text = it.name)
+						}
+					)
 				}
-			)
-			ExtendedFilterChip(
-				filtersList = filtersList,
-				id = "deluxe",
-				label = {
-					Text(text = "Deluxe")
+			}
+			CollapsableSection(title = "Genre") {
+				genresList.forEach {
+					ExtendedFilterChip(
+						filtersList = filtersList,
+						id = it.name,
+						leadingIcon = {
+							Icon(
+								painter = painterResource(id = it.icon),
+								contentDescription = it.name
+							)
+						},
+						label = {
+							Text(text = it.name.lowercase()
+								.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() })
+						}
+					)
 				}
-			)
+			}
+			CollapsableSection(title = "Version") {
+				ExtendedFilterChip(
+					filtersList = filtersList,
+					id = "default",
+					label = {
+						Text(text = "Default")
+					}
+				)
+				ExtendedFilterChip(
+					filtersList = filtersList,
+					id = "deluxe",
+					label = {
+						Text(text = "Deluxe")
+					}
+				)
+			}
 		}
 	}
 }
