@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,7 +51,7 @@ fun ExtendedFilterChip(
 		leadingIcon = {
 			if (filtersList.contains(id)) {
 				Icon(
-					modifier = Modifier.size(18.dp),
+					modifier = Modifier.size(FilterChipDefaults.IconSize),
 					imageVector = Icons.Default.Check,
 					contentDescription = "Selected"
 				)
@@ -95,7 +96,7 @@ fun WorkspaceFilterBottomSheet(
 					id = "editor_choice",
 					leadingIcon = {
 						Icon(
-							modifier = Modifier.size(22.dp),
+							modifier = Modifier.size(FilterChipDefaults.IconSize),
 							painter = painterResource(id = R.drawable.rounded_award_star_24),
 							contentDescription = "Editor's Choice"
 						)
@@ -109,7 +110,7 @@ fun WorkspaceFilterBottomSheet(
 					id = "featured",
 					leadingIcon = {
 						Icon(
-							modifier = Modifier.size(22.dp),
+							modifier = Modifier.size(FilterChipDefaults.IconSize),
 							painter = painterResource(id = R.drawable.rounded_local_fire_department_24),
 							contentDescription = "Featured"
 						)
@@ -123,7 +124,7 @@ fun WorkspaceFilterBottomSheet(
 					id = "trending",
 					leadingIcon = {
 						Icon(
-							modifier = Modifier.size(22.dp),
+							modifier = Modifier.size(FilterChipDefaults.IconSize),
 							painter = painterResource(id = R.drawable.rounded_trending_up_24),
 							contentDescription = "Trending"
 						)
