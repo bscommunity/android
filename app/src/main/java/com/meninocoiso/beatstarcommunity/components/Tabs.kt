@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 
 data class TabItem(
 	val title: String,
@@ -44,7 +45,8 @@ fun Tabs(pagerState: PagerState, tabs: List<TabItem>, modifier: Modifier? = Modi
 
 	SecondaryTabRow(
 		modifier = (modifier ?: Modifier) // Combined modifier
-			.fillMaxWidth(),
+			.fillMaxWidth()
+			.zIndex(-1f),
 		selectedTabIndex = selectedTabIndex,
 		indicator = {
 			TabRowDefaults.SecondaryIndicator(
