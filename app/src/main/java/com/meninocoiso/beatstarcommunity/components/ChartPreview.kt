@@ -29,7 +29,11 @@ import com.meninocoiso.beatstarcommunity.utils.DateUtils
 import java.util.Date
 
 @Composable
-fun ChartAuthors(authors: List<User>, avatarSize: Dp? = null) {
+fun ChartAuthors(
+	authors: List<User>,
+	modifier: Modifier? = Modifier,
+	avatarSize: Dp = 18.dp,
+) {
 	Box(
 		modifier = Modifier.border(
 			BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
@@ -45,12 +49,15 @@ fun ChartAuthors(authors: List<User>, avatarSize: Dp? = null) {
 		) {
 			Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
 				for (author in authors) {
-					Avatar(url = author.avatarUrl)
+					Avatar(url = author.avatarUrl, size = avatarSize)
 				}
 			}
 			Text(
 				style = MaterialTheme.typography.bodySmall,
-				text = "Chart by ${authors[1].username}${if (authors.size > 2) " and ${authors.size - 2} more" else ""}"
+				text = "Chart by @${authors[0].username}${if (authors.size > 1) " and others" else ""}",
+				maxLines = 1,
+				overflow = TextOverflow.Ellipsis,
+				modifier = (modifier ?: Modifier)
 			)
 		}
 	}
@@ -103,22 +110,20 @@ fun ChartPreview(
 					FlowRow(
 						modifier = Modifier.fillMaxWidth(),
 						horizontalArrangement = Arrangement.SpaceBetween,
+						verticalArrangement = Arrangement.Center,
 					) {
 						Text(
 							text = chart.song.title,
 							style = MaterialTheme.typography.titleMedium,
 						)
 						Text(
-							style = MaterialTheme.typography.labelLarge,
+							style = MaterialTheme.typography.labelMedium,
 							text = DateUtils.toRelativeString(chart.lastUpdatedAt)
 						)
 					}
 					Text(style = MaterialTheme.typography.labelMedium, text = artistsNames)
 				}
-				ChartAuthors(authors = chart.authors)
-				if (isAcquired == true) {
-					Text(text = "Adquired")
-				}
+				ChartAuthors(authors = chart.authors, modifier = Modifier.fillMaxWidth(0.7f))
 			}
 		}
 	}

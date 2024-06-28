@@ -1,6 +1,5 @@
 package com.meninocoiso.beatstarcommunity.components.workspace
 
-import NonClippingLayout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +13,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
@@ -44,6 +45,7 @@ fun WorkspaceTopBar(
 	pagerState: PagerState
 ) {
 	val (collapsibleHeight, fixedHeight, statusBarHeight) = appBarHeights
+	val screenHeight = LocalConfiguration.current.screenHeightDp
 
 	Column(
 		modifier = Modifier
@@ -51,22 +53,43 @@ fun WorkspaceTopBar(
 			.height(collapsibleHeight + fixedHeight + statusBarHeight)
 			.fillMaxWidth()
 			.background(MaterialTheme.colorScheme.surfaceContainerLow),
-		verticalArrangement = Arrangement.SpaceBetween,
+		verticalArrangement = Arrangement.Bottom,
 		horizontalAlignment = Alignment.CenterHorizontally
 	) {
-		NonClippingLayout {
-			Box(
+		Box(
+			modifier = Modifier
+				.weight(1f)
+				.zIndex(2f)
+				.layout { measurable, constraints ->
+					// Measure the composable
+					val placeable = measurable.measure(
+						constraints.copy(
+							maxWidth = constraints.maxWidth,
+							maxHeight = screenHeight * 3,
+						)
+					)
+
+					// Define the width and height of the layout
+					val width = constraints.maxWidth
+					val height = constraints.maxHeight
+
+					// Define the layout
+					layout(width, height) {
+						// Place the composable at (0, 0) coordinates
+						placeable.placeRelative(0, 0)
+					}
+				}
+				//.background(Color.Red)
+				.fillMaxWidth(),
+			contentAlignment = Alignment.Center
+		) {
+			WorkspaceSearchBar(
+				topOffset = statusBarHeight,
 				modifier = Modifier
-					.zIndex(2f)
-					.fillMaxWidth(),
-				contentAlignment = Alignment.Center
-			) {
-				WorkspaceSearchBar(
-					modifier = Modifier
-						.alpha(connection.appBarOpacity)
-				)
-			}
+					//.background(Color.Green)
+					.alpha(connection.appBarOpacity)
+			)
 		}
-		Tabs(pagerState = pagerState, tabs = workspaceTabsItems)
+		Tabs(pagerState = pagerState, tabs = workspaceTabsItems, modifier = Modifier.zIndex(-1f))
 	}
 }

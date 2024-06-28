@@ -3,6 +3,7 @@ package com.meninocoiso.beatstarcommunity.components.workspace
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -29,13 +30,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WorkspaceSearchBar(modifier: Modifier? = Modifier) {
+fun WorkspaceSearchBar(
+	topOffset: Dp,
+	modifier: Modifier? = Modifier
+) {
 	var query by rememberSaveable { mutableStateOf("") }
 	var isExpanded by rememberSaveable { mutableStateOf(false) }
 
@@ -64,7 +69,9 @@ fun WorkspaceSearchBar(modifier: Modifier? = Modifier) {
 	}
 
 	SearchBar(
-		modifier = modifier ?: Modifier,
+		windowInsets = WindowInsets(0.dp, topOffset, 0.dp, 0.dp),
+		modifier = (modifier ?: Modifier),
+		// TODO: Workaround for some hidden property of SearchBar I was unable to found. It applies some padding to the component top
 		inputField = {
 			SearchBarDefaults.InputField(
 				modifier = Modifier

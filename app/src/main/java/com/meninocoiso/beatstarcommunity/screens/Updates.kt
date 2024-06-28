@@ -48,7 +48,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.em
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.components.CoverArt
 import com.meninocoiso.beatstarcommunity.components.LocalChartPreview
@@ -153,9 +153,9 @@ private val UpdatableChartPreviewHeight = 70.dp
 private val LocalChartPreviewHeight = 108.dp
 private val DownloadSectionTitleHeight = 24.dp
 
-val TextUnit.nonScaledSp
+val TextUnit.nonScaledEm
 	@Composable
-	get() = (this.value / LocalDensity.current.fontScale).sp
+	get() = (this.value / LocalDensity.current.fontScale).em
 
 @Composable
 private fun DownloadsSectionsTitle(
@@ -217,7 +217,6 @@ private fun WorkspaceSection(
 							Text(
 								text = chart.song.title,
 								style = MaterialTheme.typography.titleMedium,
-								//fontSize = MaterialTheme.typography.titleMedium.fontSize.nonScaledSp,
 								maxLines = 1,
 								overflow = TextOverflow.Ellipsis,
 								lineHeight = TextUnit(1f, TextUnitType.Em)
@@ -227,7 +226,6 @@ private fun WorkspaceSection(
 							Text(
 								text = "Update from v1 → v2",
 								style = MaterialTheme.typography.bodyMedium,
-								//fontSize = MaterialTheme.typography.bodyMedium.fontSize.nonScaledSp,
 								lineHeight = TextUnit(1f, TextUnitType.Em)
 							)
 						},
@@ -259,11 +257,11 @@ private fun WorkspaceSection(
 					.padding(start = 16.dp, end = 16.dp, top = 8.dp)
 			) {
 				Row(
-					horizontalArrangement = Arrangement.spacedBy(8.dp),
+					horizontalArrangement = Arrangement.spacedBy(ButtonDefaults.IconSpacing),
 					verticalAlignment = Alignment.CenterVertically
 				) {
 					Icon(
-						modifier = Modifier.size(18.dp),
+						modifier = Modifier.size(ButtonDefaults.IconSize),
 						painter = painterResource(id = R.drawable.rounded_autorenew_24),
 						contentDescription = "Check for updates icon"
 					)
@@ -329,7 +327,9 @@ private fun InstallationsSection(
 ) {
 	SectionWrapper(nestedScrollConnection = nestedScrollConnection) {
 		val list = (0..100).map { it.toString() }
-		LazyColumn {
+		LazyColumn(
+			modifier = Modifier.height(500.dp)
+		) {
 			items(count = list.size) {
 				Text(text = "Parte 2 - $it")
 			}
