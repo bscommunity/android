@@ -2,13 +2,10 @@ package com.meninocoiso.beatstarcommunity.screens
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.pager.HorizontalPager
@@ -16,46 +13,30 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.components.ChartPreview
 import com.meninocoiso.beatstarcommunity.components.workspace.WorkspaceChips
 import com.meninocoiso.beatstarcommunity.components.workspace.WorkspaceTopBar
 import com.meninocoiso.beatstarcommunity.components.workspace.workspaceTabsItems
 import com.meninocoiso.beatstarcommunity.data.placeholderChart
-import com.meninocoiso.beatstarcommunity.utils.CollapsingAppBarNestedScrollConnection
+import com.meninocoiso.beatstarcommunity.utils.AppBarUtils
 
-val SearchBarHeight = 72.dp
-val WorkspaceTabsHeight = 48.dp
+private val SearchBarHeight = 80.dp
+private val TabsHeight = 48.dp
 
 @Composable
 fun Workspace(onNavigateToDetails: () -> Unit) {
-	val pagerState = rememberPagerState {
+	val horizontalPagerState = rememberPagerState {
 		workspaceTabsItems.size
 	}
 
-	val statusBarHeight = WindowInsets.systemBars.asPaddingValues().calculateTopPadding()
-	val appBarMaxHeightPx =
-		with(LocalDensity.current) { (SearchBarHeight + WorkspaceTabsHeight + statusBarHeight).roundToPx() }
-	val searchBarMaxHeightPx =
-		with(LocalDensity.current) { SearchBarHeight.roundToPx() }
-	val connection = remember(appBarMaxHeightPx) {
-		CollapsingAppBarNestedScrollConnection(searchBarMaxHeightPx)
-	}
-	val density = LocalDensity.current
-	val spaceHeight by remember(density) {
-		derivedStateOf {
-			with(density) {
-				(appBarMaxHeightPx + connection.appBarOffset).toDp()
-			}
-		}
-	}
+	val (connection, spaceHeight, statusBarHeight) = AppBarUtils.getConnection(
+		collapsableHeight = SearchBarHeight,
+		fixedHeight = TabsHeight
+	)
 
 	Column {
 		Spacer(
@@ -64,7 +45,7 @@ fun Workspace(onNavigateToDetails: () -> Unit) {
 		)
 
 		HorizontalPager(
-			state = pagerState
+			state = horizontalPagerState
 		) { index ->
 			when (
 				index
@@ -77,9 +58,9 @@ fun Workspace(onNavigateToDetails: () -> Unit) {
 	}
 
 	WorkspaceTopBar(
-		appBarOffset = connection.appBarOffset,
-		appBarOpacity = connection.appBarOpacity,
-		pagerState
+		connection = connection,
+		appBarHeights = Triple(SearchBarHeight, TabsHeight, statusBarHeight),
+		pagerState = horizontalPagerState,
 	)
 }
 

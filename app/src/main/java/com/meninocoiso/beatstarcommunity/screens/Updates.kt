@@ -1,21 +1,17 @@
 package com.meninocoiso.beatstarcommunity.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
@@ -36,7 +32,6 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -50,7 +45,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.components.CoverArt
 import com.meninocoiso.beatstarcommunity.components.LocalChartPreview
@@ -59,7 +57,7 @@ import com.meninocoiso.beatstarcommunity.components.TabItem
 import com.meninocoiso.beatstarcommunity.components.Tabs
 import com.meninocoiso.beatstarcommunity.data.classes.Chart
 import com.meninocoiso.beatstarcommunity.data.placeholderChart
-import com.meninocoiso.beatstarcommunity.utils.CollapsingAppBarNestedScrollConnection
+import com.meninocoiso.beatstarcommunity.utils.AppBarUtils
 
 val updatesTabsItems = listOf(
 	TabItem(
@@ -72,7 +70,7 @@ val updatesTabsItems = listOf(
 	)
 )
 
-val tabsHeight = 80.dp
+private val TabsHeight = 55.dp
 
 @Composable
 fun Updates() {
@@ -84,22 +82,11 @@ fun Updates() {
 		placeholderChart
 	}
 
-	val pagerState = rememberPagerState {
+	val horizontalPagerState = rememberPagerState {
 		updatesTabsItems.size
 	}
 
-	val appBarMaxHeightPx = with(LocalDensity.current) { tabsHeight.roundToPx() }
-	val connection = remember(appBarMaxHeightPx) {
-		CollapsingAppBarNestedScrollConnection(appBarMaxHeightPx)
-	}
-	val density = LocalDensity.current
-	val spaceHeight by remember(density) {
-		derivedStateOf {
-			with(density) {
-				(appBarMaxHeightPx + connection.appBarOffset).toDp()
-			}
-		}
-	}
+	val (connection, spaceHeight, statusBarHeight) = AppBarUtils.getConnection(collapsableHeight = TabsHeight)
 
 	Column {
 		Spacer(
@@ -108,7 +95,7 @@ fun Updates() {
 		)
 
 		HorizontalPager(
-			state = pagerState
+			state = horizontalPagerState
 		) { index ->
 			when (
 				index
@@ -123,18 +110,16 @@ fun Updates() {
 			}
 		}
 	}
+
 	Box(
 		modifier = Modifier
 			.offset { IntOffset(0, connection.appBarOffset) }
-			.heightIn(min = tabsHeight)
-			.statusBarsPadding()
-			.defaultMinSize(minHeight = tabsHeight),
+			.height(TabsHeight + statusBarHeight),
 		contentAlignment = Alignment.BottomCenter
 	) {
 		Tabs(
-			pagerState = pagerState,
 			tabs = updatesTabsItems,
-			modifier = Modifier.background(MaterialTheme.colorScheme.background)
+			pagerState = horizontalPagerState,
 		)
 	}
 }
@@ -144,21 +129,33 @@ private fun SectionWrapper(
 	nestedScrollConnection: NestedScrollConnection,
 	content: @Composable () -> Unit
 ) {
-	Column(
+	Box(
 		modifier = Modifier
 			.fillMaxSize()
-			.verticalScroll(rememberScrollState())
 			.nestedScroll(nestedScrollConnection),
 	) {
-		Spacer(modifier = Modifier.height(16.dp))
-		content()
-		Spacer(modifier = Modifier.height(16.dp))
+		Column(
+			modifier = Modifier
+				.verticalScroll(rememberScrollState()),
+		) {
+			Spacer(modifier = Modifier.height(16.dp))
+			content()
+			Spacer(modifier = Modifier.height(16.dp))
+		}
 	}
 }
 
+// Currently using fixed heights because of Compose lack of support for nested scrollable columns.
+// This is hard to set but works well for now.
+// Unfortunately, this approach raises some accessibility issues that need to be addressed in the future.
+// For now, some effort was put into making the texts visible in phones with larger scale settings.
 private val UpdatableChartPreviewHeight = 70.dp
 private val LocalChartPreviewHeight = 108.dp
 private val DownloadSectionTitleHeight = 24.dp
+
+val TextUnit.nonScaledSp
+	@Composable
+	get() = (this.value / LocalDensity.current.fontScale).sp
 
 @Composable
 private fun DownloadsSectionsTitle(
@@ -220,12 +217,18 @@ private fun WorkspaceSection(
 							Text(
 								text = chart.song.title,
 								style = MaterialTheme.typography.titleMedium,
+								//fontSize = MaterialTheme.typography.titleMedium.fontSize.nonScaledSp,
+								maxLines = 1,
+								overflow = TextOverflow.Ellipsis,
+								lineHeight = TextUnit(1f, TextUnitType.Em)
 							)
 						},
 						supportingContent = {
 							Text(
 								text = "Update from v1 → v2",
 								style = MaterialTheme.typography.bodyMedium,
+								//fontSize = MaterialTheme.typography.bodyMedium.fontSize.nonScaledSp,
+								lineHeight = TextUnit(1f, TextUnitType.Em)
 							)
 						},
 						trailingContent = {

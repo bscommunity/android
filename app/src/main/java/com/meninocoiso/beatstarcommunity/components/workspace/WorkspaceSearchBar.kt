@@ -118,7 +118,11 @@ fun WorkspaceSearchBar(modifier: Modifier? = Modifier) {
 				)
 			)
 			historyItems.forEach {
-				Row(modifier = Modifier.padding(all = 16.dp)) {
+				Row(modifier = Modifier
+					.padding(all = 16.dp)
+					.clickable {
+						query = it
+					}) {
 					Icon(
 						painter = painterResource(id = R.drawable.rounded_history_24),
 						contentDescription = "History icon",

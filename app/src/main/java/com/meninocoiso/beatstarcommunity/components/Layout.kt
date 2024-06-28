@@ -19,7 +19,7 @@ fun Section(
 	title: String,
 	modifier: Modifier? = Modifier,
 	titleModifier: Modifier? = Modifier,
-	thickness: Dp? = null,
+	thickness: Dp = DividerDefaults.Thickness,
 	verticalArrangement: Arrangement.Vertical = Arrangement.Top,
 	horizontalAlignment: Alignment.Horizontal = Alignment.Start,
 	content: @Composable () -> Unit
@@ -30,7 +30,9 @@ fun Section(
 		modifier = (modifier ?: Modifier)
 			.fillMaxWidth()
 	) {
-		HorizontalDivider(thickness = thickness ?: DividerDefaults.Thickness)
+		if (thickness != 0.dp) {
+			HorizontalDivider(thickness = thickness)
+		}
 		Text(
 			text = title,
 			style = MaterialTheme.typography.labelLarge,
