@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.data.classes
+package com.meninocoiso.beatstarcommunity.domain.model
 
 // HIP-HOP, POP, R&B, ROCK, DANCE, ALTERNATIVE, COUNTRY
 

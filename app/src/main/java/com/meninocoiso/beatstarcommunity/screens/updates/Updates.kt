@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.screens
+package com.meninocoiso.beatstarcommunity.screens.updates
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,9 +55,9 @@ import com.meninocoiso.beatstarcommunity.components.LocalChartPreview
 import com.meninocoiso.beatstarcommunity.components.Section
 import com.meninocoiso.beatstarcommunity.components.TabItem
 import com.meninocoiso.beatstarcommunity.components.Tabs
-import com.meninocoiso.beatstarcommunity.data.classes.Chart
 import com.meninocoiso.beatstarcommunity.data.placeholderChart
-import com.meninocoiso.beatstarcommunity.utils.AppBarUtils
+import com.meninocoiso.beatstarcommunity.domain.model.Chart
+import com.meninocoiso.beatstarcommunity.util.AppBarUtils
 
 val updatesTabsItems = listOf(
 	TabItem(
@@ -73,7 +73,7 @@ val updatesTabsItems = listOf(
 private val TabsHeight = 55.dp
 
 @Composable
-fun Updates() {
+fun UpdatesScreen() {
 	val chartsToUpdate = (0..3).map {
 		placeholderChart
 	}

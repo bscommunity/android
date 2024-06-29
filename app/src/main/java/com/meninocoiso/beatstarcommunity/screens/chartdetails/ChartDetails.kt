@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.screens
+package com.meninocoiso.beatstarcommunity.screens.chartdetails
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,9 +37,9 @@ import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.components.Carousel
 import com.meninocoiso.beatstarcommunity.components.ChartContributors
 import com.meninocoiso.beatstarcommunity.components.Section
-import com.meninocoiso.beatstarcommunity.data.classes.User
 import com.meninocoiso.beatstarcommunity.data.placeholderChart
-import com.meninocoiso.beatstarcommunity.utils.DateUtils
+import com.meninocoiso.beatstarcommunity.domain.model.User
+import com.meninocoiso.beatstarcommunity.util.DateUtils
 import kotlinx.serialization.Serializable
 import java.util.Date
 

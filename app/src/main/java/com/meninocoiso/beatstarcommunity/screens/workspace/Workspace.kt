@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.screens
+package com.meninocoiso.beatstarcommunity.screens.workspace
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -22,13 +22,13 @@ import com.meninocoiso.beatstarcommunity.components.workspace.WorkspaceChips
 import com.meninocoiso.beatstarcommunity.components.workspace.WorkspaceTopBar
 import com.meninocoiso.beatstarcommunity.components.workspace.workspaceTabsItems
 import com.meninocoiso.beatstarcommunity.data.placeholderChart
-import com.meninocoiso.beatstarcommunity.utils.AppBarUtils
+import com.meninocoiso.beatstarcommunity.util.AppBarUtils
 
 private val SearchBarHeight = 80.dp
 private val TabsHeight = 48.dp
 
 @Composable
-fun Workspace(onNavigateToDetails: () -> Unit) {
+fun WorkspaceScreen(onNavigateToDetails: () -> Unit) {
 	val horizontalPagerState = rememberPagerState {
 		workspaceTabsItems.size
 	}

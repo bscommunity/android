@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
 import com.meninocoiso.beatstarcommunity.components.TabItem
 import com.meninocoiso.beatstarcommunity.components.Tabs
-import com.meninocoiso.beatstarcommunity.utils.AppBarUtils
+import com.meninocoiso.beatstarcommunity.util.AppBarUtils
 
 val workspaceTabsItems = listOf(
 	TabItem(

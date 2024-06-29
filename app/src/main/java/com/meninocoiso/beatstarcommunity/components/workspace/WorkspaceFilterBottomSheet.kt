@@ -28,8 +28,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.components.CollapsableSection
-import com.meninocoiso.beatstarcommunity.data.lists.difficultiesList
-import com.meninocoiso.beatstarcommunity.data.lists.genresList
+import com.meninocoiso.beatstarcommunity.domain.lists.difficultiesList
+import com.meninocoiso.beatstarcommunity.domain.lists.genresList
 import java.util.Locale
 
 @Composable

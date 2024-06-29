@@ -10,19 +10,30 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.painterResource
 import com.meninocoiso.beatstarcommunity.R
+import com.meninocoiso.beatstarcommunity.domain.enums.ThemePreference
+import java.util.Locale
 
-fun onConfirmation() {
-	println("Concluded")
-}
+val ThemeStrings = mapOf<ThemePreference, String>(
+	ThemePreference.SYSTEM to "System",
+	ThemePreference.LIGHT to "Light",
+	ThemePreference.DARK to "Dark"
+)
 
 @Composable
-fun ThemeDialog() {
+fun ThemeDialog(
+	option: ThemePreference,
+	onThemeSelected: (ThemePreference) -> Unit
+) {
 	val (isOpened, setIsOpened) = remember { mutableStateOf(false) }
 
 	Button(onClick = {
 		setIsOpened(true)
 	}) {
-		Text(text = "System")
+		ThemeStrings[option]?.let {
+			Text(
+				text = it
+			)
+		}
 	}
 	when {
 		isOpened -> {
@@ -39,14 +50,16 @@ fun ThemeDialog() {
 				},
 				text = {
 					RadioGroupUI(
-						radioOptions = listOf("System", "Light", "Dark"),
+						initialSelected = ThemeStrings[option]!!,
+						radioOptions = ThemePreference.entries.map {
+							ThemeStrings[it]!!
+						},
 						onOptionSelected = {
-							println(it)
+							onThemeSelected(ThemePreference.valueOf(it.uppercase(Locale.ROOT)))
 						})
 				},
 				dismissButton = {
 					TextButton(onClick = {
-						onConfirmation()
 						setIsOpened(false)
 					}) {
 						Text(text = "Cancel")
@@ -54,7 +67,7 @@ fun ThemeDialog() {
 				},
 				confirmButton = {
 					Button(onClick = {
-						onConfirmation()
+						onThemeSelected(option)
 						setIsOpened(false)
 					}) {
 						Text(text = "Confirm")

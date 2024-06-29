@@ -1,7 +1,7 @@
-package com.meninocoiso.beatstarcommunity.data.lists
+package com.meninocoiso.beatstarcommunity.domain.lists
 
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.data.classes.Genre
+import com.meninocoiso.beatstarcommunity.domain.model.Genre
 
 // In the future, in case of featuring multiple languages on the app,
 // remove the "name" property in favor of a dictionary for each language

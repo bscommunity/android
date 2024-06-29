@@ -23,9 +23,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.meninocoiso.beatstarcommunity.data.classes.Chart
-import com.meninocoiso.beatstarcommunity.data.classes.User
-import com.meninocoiso.beatstarcommunity.utils.DateUtils
+import com.meninocoiso.beatstarcommunity.domain.model.Chart
+import com.meninocoiso.beatstarcommunity.domain.model.User
+import com.meninocoiso.beatstarcommunity.util.DateUtils
 import java.util.Date
 
 @Composable

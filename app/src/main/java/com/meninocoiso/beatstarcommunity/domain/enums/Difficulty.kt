@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.data.enums
+package com.meninocoiso.beatstarcommunity.domain.enums
 
 enum class DifficultyEnum {
 	NORMAL,

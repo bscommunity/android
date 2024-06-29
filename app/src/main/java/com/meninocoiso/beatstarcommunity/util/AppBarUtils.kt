@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.utils
+package com.meninocoiso.beatstarcommunity.util
 
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
