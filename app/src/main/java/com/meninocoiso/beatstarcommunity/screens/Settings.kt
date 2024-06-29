@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.components.ExposedDropdownMenuBoxUI
 import com.meninocoiso.beatstarcommunity.components.SwitchUI
+import com.meninocoiso.beatstarcommunity.components.ThemeDialog
 
 @Composable
 private fun SettingsCard(
@@ -152,7 +153,7 @@ fun Settings() {
 			)
 		}
 
-		SettingsCard(title = "Account") {
+		SettingsCard(title = "Preferences") {
 			ListItem(
 				modifier = Modifier.settingsCard(),
 				headlineContent = {
@@ -165,7 +166,7 @@ fun Settings() {
 				},
 				trailingContent = {
 					SwitchUI(
-						defaultChecked = true,
+						defaultChecked = false,
 						onCheckedChange = { /* TODO */ }
 					)
 				}
@@ -215,18 +216,15 @@ fun Settings() {
 			ListItem(
 				modifier = Modifier.settingsCard(),
 				headlineContent = {
-					HeadlineText("Dark Mode")
+					HeadlineText("Theme")
 				},
 				supportingContent = {
 					SupportingText(
-						"Toggle between light and dark mode"
+						"Choose between your system preference, light and dark mode"
 					)
 				},
 				trailingContent = {
-					SwitchUI(
-						defaultChecked = true,
-						onCheckedChange = { /* TODO */ }
-					)
+					ThemeDialog()
 				}
 			)
 		}

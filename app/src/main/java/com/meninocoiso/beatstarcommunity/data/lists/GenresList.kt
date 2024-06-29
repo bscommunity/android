@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.data
+package com.meninocoiso.beatstarcommunity.data.lists
 
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.data.classes.Genre
