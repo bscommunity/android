@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.utils
+package com.meninocoiso.beatstarcommunity.util
 
 import java.util.Calendar
 import java.util.Date

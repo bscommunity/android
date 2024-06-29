@@ -7,10 +7,10 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import com.meninocoiso.beatstarcommunity.components.LaunchAppButton
-import com.meninocoiso.beatstarcommunity.screens.ChartDetailsScreen
-import com.meninocoiso.beatstarcommunity.screens.Settings
-import com.meninocoiso.beatstarcommunity.screens.Updates
-import com.meninocoiso.beatstarcommunity.screens.Workspace
+import com.meninocoiso.beatstarcommunity.screens.chartdetails.ChartDetailsScreen
+import com.meninocoiso.beatstarcommunity.screens.settings.SettingsScreen
+import com.meninocoiso.beatstarcommunity.screens.updates.UpdatesScreen
+import com.meninocoiso.beatstarcommunity.screens.workspace.WorkspaceScreen
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -35,15 +35,15 @@ fun MainNav(
 			startDestination = WorkspaceScreen,
 		) {
 			composableWithFade<WorkspaceScreen> {
-				Workspace(onNavigateToDetails = {
+				WorkspaceScreen(onNavigateToDetails = {
 					navController.navigate(ChartDetailsScreen)
 				})
 			}
 			composableWithFade<UpdatesScreen> {
-				Updates()
+				UpdatesScreen()
 			}
 			composableWithFade<SettingsScreen> {
-				Settings()
+				SettingsScreen()
 			}
 		}
 	}

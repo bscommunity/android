@@ -32,7 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.meninocoiso.beatstarcommunity.data.classes.User
+import com.meninocoiso.beatstarcommunity.domain.model.User
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable

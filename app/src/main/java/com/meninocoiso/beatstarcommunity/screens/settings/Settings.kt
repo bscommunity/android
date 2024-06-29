@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.screens
+package com.meninocoiso.beatstarcommunity.screens.settings
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.border
@@ -30,14 +30,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.components.ExposedDropdownMenuBoxUI
 import com.meninocoiso.beatstarcommunity.components.SwitchUI
 import com.meninocoiso.beatstarcommunity.components.ThemeDialog
 
@@ -105,7 +107,12 @@ private fun SupportingText(title: String) {
 }
 
 @Composable
-fun Settings() {
+fun SettingsScreen(
+	viewModel: SettingsViewModel = hiltViewModel()
+) {
+	val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+	println("Uistate $uiState")
+
 	Column(
 		modifier = Modifier
 			.fillMaxSize()
@@ -166,12 +173,14 @@ fun Settings() {
 				},
 				trailingContent = {
 					SwitchUI(
-						defaultChecked = false,
-						onCheckedChange = { /* TODO */ }
+						checked = uiState.allowExplicitContent,
+						onCheckedChange = {
+							viewModel.allowExplicitContent(it)
+						}
 					)
 				}
 			)
-			ListDivider()
+			/*ListDivider()
 			ListItem(
 				modifier = Modifier.settingsCard(),
 				headlineContent = {
@@ -191,7 +200,7 @@ fun Settings() {
 						)
 					}
 				}
-			)
+			)*/
 		}
 
 		SettingsCard(title = "Customization") {
@@ -207,8 +216,10 @@ fun Settings() {
 				},
 				trailingContent = {
 					SwitchUI(
-						defaultChecked = true,
-						onCheckedChange = { /* TODO */ }
+						checked = uiState.useDynamicColors,
+						onCheckedChange = {
+							viewModel.useDynamicColors(it)
+						}
 					)
 				}
 			)
@@ -224,7 +235,12 @@ fun Settings() {
 					)
 				},
 				trailingContent = {
-					ThemeDialog()
+					ThemeDialog(
+						option = uiState.theme,
+						onThemeSelected = {
+							viewModel.updateAppTheme(it)
+						}
+					)
 				}
 			)
 		}

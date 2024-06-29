@@ -21,9 +21,10 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun RadioGroupUI(
 	radioOptions: List<String>,
+	initialSelected: String = radioOptions[0],
 	onOptionSelected: (String) -> Unit
 ) {
-	val (selectedOption, onSelected) = remember { mutableStateOf(radioOptions[0]) }
+	val (selectedOption, onSelected) = remember { mutableStateOf(initialSelected) }
 
 	// Modifier.selectableGroup() is essential to ensure correct accessibility behavior
 	Column(Modifier.selectableGroup()) {

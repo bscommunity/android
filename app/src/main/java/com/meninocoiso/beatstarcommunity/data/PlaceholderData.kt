@@ -1,13 +1,13 @@
 package com.meninocoiso.beatstarcommunity.data
 
-import com.meninocoiso.beatstarcommunity.data.classes.Chart
-import com.meninocoiso.beatstarcommunity.data.classes.Song
-import com.meninocoiso.beatstarcommunity.data.classes.User
-import com.meninocoiso.beatstarcommunity.data.enums.DifficultyEnum
-import com.meninocoiso.beatstarcommunity.utils.DateUtils
+import com.meninocoiso.beatstarcommunity.domain.enums.DifficultyEnum
+import com.meninocoiso.beatstarcommunity.domain.model.Chart
+import com.meninocoiso.beatstarcommunity.domain.model.Song
+import com.meninocoiso.beatstarcommunity.domain.model.User
+import com.meninocoiso.beatstarcommunity.util.DateUtils
 import java.util.Date
 
-val placeholderChart = Chart(
+var placeholderChart = Chart(
 	id = 1,
 	song = Song(
 		title = "What You Know Of Me",

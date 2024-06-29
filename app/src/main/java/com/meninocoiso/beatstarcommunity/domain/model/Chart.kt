@@ -1,6 +1,6 @@
-package com.meninocoiso.beatstarcommunity.data.classes
+package com.meninocoiso.beatstarcommunity.domain.model
 
-import com.meninocoiso.beatstarcommunity.data.enums.DifficultyEnum
+import com.meninocoiso.beatstarcommunity.domain.enums.DifficultyEnum
 import java.util.Date
 
 data class Chart(
