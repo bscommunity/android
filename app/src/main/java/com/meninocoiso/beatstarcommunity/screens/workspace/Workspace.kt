@@ -1,10 +1,14 @@
 package com.meninocoiso.beatstarcommunity.screens.workspace
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -13,11 +17,16 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.meninocoiso.beatstarcommunity.components.ChartPreview
+import com.meninocoiso.beatstarcommunity.components.workspace.WorkspaceChip
 import com.meninocoiso.beatstarcommunity.components.workspace.WorkspaceChips
 import com.meninocoiso.beatstarcommunity.components.workspace.WorkspaceTopBar
 import com.meninocoiso.beatstarcommunity.components.workspace.workspaceTabsItems
@@ -26,6 +35,7 @@ import com.meninocoiso.beatstarcommunity.util.AppBarUtils
 
 private val SearchBarHeight = 80.dp
 private val TabsHeight = 48.dp
+private val WorkspaceChipsHeight = 56.dp
 
 @Composable
 fun WorkspaceScreen(onNavigateToDetails: () -> Unit) {
@@ -35,14 +45,22 @@ fun WorkspaceScreen(onNavigateToDetails: () -> Unit) {
 
 	val (connection, spaceHeight, statusBarHeight) = AppBarUtils.getConnection(
 		collapsableHeight = SearchBarHeight,
-		fixedHeight = TabsHeight
+		fixedHeight = TabsHeight,
+		bottomCollapsableHeight = WorkspaceChipsHeight,
 	)
 
 	Column {
-		Spacer(
+		Column(
 			Modifier
-				.height(spaceHeight)
-		)
+				.height(spaceHeight),
+			verticalArrangement = Arrangement.Bottom,
+		) {
+			WorkspaceChips(
+				modifier = Modifier
+					.fillMaxWidth()
+					.zIndex(5f)
+			)
+		}
 
 		HorizontalPager(
 			state = horizontalPagerState
@@ -74,10 +92,6 @@ private fun SectionWrapper(
 			.fillMaxSize()
 			.nestedScroll(nestedScrollConnection),
 	) {
-		item {
-			WorkspaceChips()
-		}
-
 		content()
 	}
 }

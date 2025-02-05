@@ -19,9 +19,13 @@ import androidx.compose.ui.unit.dp
 
 class AppBarUtils {
 	class CollapsingAppBarNestedScrollConnection(
-		private val appBarMaxHeight: Int
+		private val appBarMaxHeight: Int,
+		private val additionalHeight: Int?
 	) : NestedScrollConnection {
 		var appBarOffset: Int by mutableIntStateOf(0)
+			private set
+
+		var appBarAdditionalOffset: Int by mutableIntStateOf(additionalHeight ?: 0)
 			private set
 
 		var appBarOpacity: Float by mutableFloatStateOf(1f)
@@ -31,7 +35,14 @@ class AppBarUtils {
 			val delta = available.y.toInt()
 			val newOffset = appBarOffset + delta
 			val previousOffset = appBarOffset
+
 			appBarOffset = newOffset.coerceIn(-appBarMaxHeight, 0)
+
+			if (additionalHeight != null) {
+				val additionalOffset = appBarAdditionalOffset + delta
+				appBarAdditionalOffset = additionalOffset.coerceIn(-additionalHeight * 2, additionalHeight)
+			}
+
 			val consumed = appBarOffset - previousOffset
 			appBarOpacity = 1f + (appBarOffset / appBarMaxHeight.toFloat())
 			return Offset(0f, consumed.toFloat())
@@ -48,6 +59,7 @@ class AppBarUtils {
 		fun getConnection(
 			collapsableHeight: Dp,
 			fixedHeight: Dp = 0.dp,
+			bottomCollapsableHeight: Dp? = null
 		): Triple<CollapsingAppBarNestedScrollConnection, Dp, Dp> {
 			val density = LocalDensity.current
 			val statusBarHeight = getStatusBarHeight()
@@ -65,14 +77,18 @@ class AppBarUtils {
 				}
 			}
 
+			val bottomCollapsableHeightPx = bottomCollapsableHeight?.let {
+				with(density) { it.roundToPx() }
+			}
+
 			val connection = remember(appBarMaxHeightPx) {
-				CollapsingAppBarNestedScrollConnection(fixedAppBarHeightPx)
+				CollapsingAppBarNestedScrollConnection(fixedAppBarHeightPx, bottomCollapsableHeightPx)
 			}
 
 			val spaceHeight by remember(density) {
 				derivedStateOf {
 					with(density) {
-						(appBarMaxHeightPx + connection.appBarOffset).toDp()
+						(appBarMaxHeightPx + (connection.appBarAdditionalOffset.takeIf { bottomCollapsableHeight != null } ?: connection.appBarOffset)).toDp()
 					}
 				}
 			}
