@@ -48,14 +48,14 @@ val chipItems = listOf(
 )
 
 @Composable
-fun WorkspaceChips() {
+fun WorkspaceChips(
+	modifier: Modifier = Modifier,
+) {
 	var selectedChipIndex by remember { mutableIntStateOf(0) }
 
 	Row(
-		modifier = Modifier
+		modifier = modifier
 			.fillMaxWidth()
-			.padding(top = 8.dp)
-			// .background(Color.Red)
 			.horizontalScroll(rememberScrollState()),
 		horizontalArrangement = Arrangement.spacedBy(8.dp),
 	) {
