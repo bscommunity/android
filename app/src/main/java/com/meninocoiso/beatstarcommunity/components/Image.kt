@@ -32,6 +32,20 @@ import com.skydoves.landscapist.placeholder.shimmer.Shimmer
 import com.skydoves.landscapist.placeholder.shimmer.ShimmerPlugin
 
 @Composable
+fun imageLoaderSingleton(): ImageLoader {
+	val context = LocalContext.current
+	return ImageLoader.Builder(context)
+		.allowHardware(false) // Disable hardware bitmaps for shared transitions
+		.crossfade(true)
+		.memoryCache(
+			coil.memory.MemoryCache.Builder(context)
+				.maxSizePercent(0.25)
+				.build()
+		)
+		.build()
+}
+
+@Composable
 fun CoverArt(
 	difficulty: DifficultyEnum? = null,
 	borderRadius: Dp = 0.dp,
@@ -122,20 +136,13 @@ fun Avatar(
 			imageRequest = {
 				ImageRequest.Builder(context)
 					.data(url)
+					.allowHardware(false) // Disable hardware bitmaps for shared transitions
 					.crossfade(true)
-					.placeholderMemoryCacheKey(key) //  same key as shared element key
-					.memoryCacheKey(key) // same key as shared element key
+					.placeholderMemoryCacheKey(key) // Use the same key for caching
+					.memoryCacheKey(key)
 					.build()
 			},
-			imageLoader = {
-				ImageLoader.Builder(context)
-					.memoryCache(
-						coil.memory.MemoryCache.Builder(context)
-							.maxSizePercent(1.0)
-							.build()
-					)
-					.build()
-			},
+			imageLoader = { imageLoaderSingleton() },
 			modifier = customModifier,
 			imageOptions = imageOptions,
 		)
