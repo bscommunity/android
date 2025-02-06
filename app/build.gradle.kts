@@ -5,11 +5,12 @@ plugins {
 
 	alias(libs.plugins.ksp)
 	alias(libs.plugins.hilt)
+	alias(libs.plugins.kotlin.compose)
 }
 
 android {
 	namespace = "com.meninocoiso.beatstarcommunity"
-	compileSdk = 34
+	compileSdk = 35
 
 	defaultConfig {
 		applicationId = "com.meninocoiso.beatstarcommunity"

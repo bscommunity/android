@@ -72,6 +72,9 @@ fun BottomNavigationComponent(navController: NavHostController) {
 			NavigationBarItem(
 				selected = selectedItemIndex == index,
 				onClick = {
+					// Prevent navigating to the same destination
+					if (selectedItemIndex == index) return@NavigationBarItem
+
 					selectedItemIndex = index
 					navController.navigate(item.route) {
 						// Pop up to the start destination of the graph to
