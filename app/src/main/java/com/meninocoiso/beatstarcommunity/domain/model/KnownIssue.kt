@@ -5,12 +5,9 @@ import kotlinx.serialization.Serializable
 import java.time.LocalDate
 
 @Serializable
-data class User(
+data class KnownIssue(
     val id: String,
-    val username: String,
-    val email: String,
-    val imageUrl: String?,
-    val discordId: String?,
+    val description: String,
     @Serializable(with = LocalDateSerializer::class)
     val createdAt: LocalDate
 )

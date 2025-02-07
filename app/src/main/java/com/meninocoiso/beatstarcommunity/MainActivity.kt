@@ -25,8 +25,8 @@ import com.meninocoiso.beatstarcommunity.presentation.navigation.MainNav
 import com.meninocoiso.beatstarcommunity.presentation.navigation.MainRoute
 import com.meninocoiso.beatstarcommunity.presentation.navigation.composableWithTransitions
 import com.meninocoiso.beatstarcommunity.presentation.navigation.composableWithoutTransitions
-import com.meninocoiso.beatstarcommunity.presentation.screens.chartdetails.ChartDetails
-import com.meninocoiso.beatstarcommunity.presentation.screens.chartdetails.ChartDetailsScreen
+import com.meninocoiso.beatstarcommunity.presentation.screens.ChartDetails
+import com.meninocoiso.beatstarcommunity.presentation.screens.ChartDetailsScreen
 import com.meninocoiso.beatstarcommunity.presentation.ui.theme.BeatstarCommunityTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.onEach

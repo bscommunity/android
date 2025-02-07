@@ -43,7 +43,7 @@ fun FeedbackDialogPreview(
     )
 }
 
-const val maxLength = 200
+private const val maxLength = 200
 
 @Composable
 fun FeedbackDialog(

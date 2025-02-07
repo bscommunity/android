@@ -14,7 +14,9 @@ android {
 
 	defaultConfig {
 		applicationId = "com.meninocoiso.bscm"
-		minSdk = 24
+		// Was previously 24, but was needed to be changed to 26
+		// to use the new Date API, since desugar is not working
+		minSdk = 26
 		targetSdk = 35
 		versionCode = 1
 		versionName = "1.0"
@@ -38,6 +40,9 @@ android {
 	compileOptions {
 		sourceCompatibility = JavaVersion.VERSION_11
 		targetCompatibility = JavaVersion.VERSION_11
+
+		// Enable core library desugaring
+		isCoreLibraryDesugaringEnabled  = false
 	}
 	kotlinOptions {
 		jvmTarget = "11"
@@ -72,6 +77,7 @@ dependencies {
 	implementation(libs.androidx.constraintlayout.compose)
 	implementation(libs.androidx.datastore.preferences)
 	implementation(libs.androidx.core.splashscreen)
+	implementation(libs.desugar.jdk.libs)
 	testImplementation(libs.junit)
 	androidTestImplementation(libs.androidx.junit)
 	androidTestImplementation(libs.androidx.espresso.core)
@@ -83,10 +89,13 @@ dependencies {
 	implementation(libs.ktor.client.json)
 	implementation(libs.ktor.client.serialization)
 	implementation(libs.ktor.client.logging)
-
+	implementation(libs.ktor.client.content.negotiation)
+	implementation(libs.ktor.serialization.kotlinx.json)
 
 	implementation(libs.navigation.compose)
 	implementation(libs.kotlinx.serialization.json)
+
+	/*coreLibraryDesugaring(libs.desugar.jdk.libs)*/
 
 	// Hilt
 	implementation(libs.androidx.hilt.navigation.compose)

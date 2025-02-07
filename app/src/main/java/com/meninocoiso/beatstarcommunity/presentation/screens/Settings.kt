@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.presentation.screens.settings
+package com.meninocoiso.beatstarcommunity.presentation.screens
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.border
@@ -42,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.SwitchUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.ThemeDialog
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.SettingsViewModel
 
 @Composable
 private fun SettingsCard(
@@ -111,7 +112,7 @@ fun SettingsScreen(
 	viewModel: SettingsViewModel = hiltViewModel()
 ) {
 	val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-	println("Uistate $uiState")
+	// println("UiState: $uiState")
 
 	Column(
 		modifier = Modifier

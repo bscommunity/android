@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.presentation.screens.settings
+package com.meninocoiso.beatstarcommunity.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

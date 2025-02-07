@@ -1,6 +1,7 @@
 package com.meninocoiso.beatstarcommunity.presentation.ui.components.layout
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
@@ -8,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +32,7 @@ import com.skydoves.landscapist.coil.CoilImage
 import com.skydoves.landscapist.components.rememberImageComponent
 import com.skydoves.landscapist.placeholder.shimmer.Shimmer
 import com.skydoves.landscapist.placeholder.shimmer.ShimmerPlugin
+import java.util.Locale
 
 @Composable
 fun imageLoaderSingleton(): ImageLoader {
@@ -55,7 +58,8 @@ fun CoverArt(
 	val sizeInPx = with(LocalDensity.current) { size.roundToPx() }
 
 	val difficultyIcon =
-		if (difficulty != null) difficultiesList.first { it.id == difficulty }.icon else null
+		if (difficulty != null) difficultiesList.first { it.difficultyEnum == difficulty }.icon
+		else null
 
 	Box(
 		modifier = Modifier
@@ -131,26 +135,38 @@ fun Avatar(
 		)
 	)
 
-	if (key != null) {
-		CoilImage(
-			imageRequest = {
-				ImageRequest.Builder(context)
-					.data(url)
-					.allowHardware(false) // Disable hardware bitmaps for shared transitions
-					.crossfade(true)
-					.placeholderMemoryCacheKey(key) // Use the same key for caching
-					.memoryCacheKey(key)
-					.build()
-			},
-			imageLoader = { imageLoaderSingleton() },
-			modifier = customModifier,
-			imageOptions = imageOptions,
-		)
+	if (!url.contains("https")) {
+		Box(
+			modifier = Modifier
+				.size(size)
+				.background(MaterialTheme.colorScheme.primary)
+			,
+			contentAlignment = Alignment.Center,
+		) {
+			Text(text = url.first().toString().uppercase(Locale.getDefault()), style = MaterialTheme.typography.bodySmall)
+		}
 	} else {
-		CoilImage(
-			imageModel = { url },
-			modifier = customModifier,
-			imageOptions = imageOptions,
-		)
+		if (key != null) {
+			CoilImage(
+				imageRequest = {
+					ImageRequest.Builder(context)
+						.data(url)
+						.allowHardware(false) // Disable hardware bitmaps for shared transitions
+						.crossfade(true)
+						.placeholderMemoryCacheKey(key) // Use the same key for caching
+						.memoryCacheKey(key)
+						.build()
+				},
+				imageLoader = { imageLoaderSingleton() },
+				modifier = customModifier,
+				imageOptions = imageOptions,
+			)
+		} else {
+			CoilImage(
+				imageModel = { url },
+				modifier = customModifier,
+				imageOptions = imageOptions,
+			)
+		}
 	}
 }

@@ -56,7 +56,7 @@ fun ExtendedFilterChip(
 					contentDescription = "Selected"
 				)
 			} else {
-				leadingIcon?.invoke()
+				/*leadingIcon?.invoke()*/
 			}
 		},
 		label = label
@@ -138,9 +138,9 @@ fun WorkspaceFilterBottomSheet(
 				difficultiesList.forEach {
 					ExtendedFilterChip(
 						filtersList = filtersList,
-						id = it.id.toString().lowercase(Locale.ROOT),
+						id = it.id.lowercase(Locale.ROOT),
 						label = {
-							Text(text = it.name)
+							Text(text = it.id)
 						}
 					)
 				}

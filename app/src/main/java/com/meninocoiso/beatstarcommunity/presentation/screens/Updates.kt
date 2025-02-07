@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.presentation.screens.updates
+package com.meninocoiso.beatstarcommunity.presentation.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -50,12 +50,10 @@ import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.LocalChartPreview
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabItem
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabsUI
-import com.meninocoiso.beatstarcommunity.data.placeholderChart
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.util.AppBarUtils
 
@@ -74,13 +72,13 @@ private val TabsHeight = 55.dp
 
 @Composable
 fun UpdatesScreen() {
-	val chartsToUpdate = (0..3).map {
+	/*val chartsToUpdate = (0..3).map {
 		placeholderChart
 	}
 
 	val downloadedCharts = (0..25).map {
 		placeholderChart
-	}
+	}*/
 
 	val horizontalPagerState = rememberPagerState {
 		updatesTabsItems.size
@@ -97,17 +95,17 @@ fun UpdatesScreen() {
 		HorizontalPager(
 			state = horizontalPagerState
 		) { index ->
-			when (
+			/*when (
 				index
 			) {
-				0 -> WorkspaceSection(
+				*//*0 -> WorkspaceSection(
 					chartsToUpdate = chartsToUpdate,
 					downloadedCharts = downloadedCharts,
 					connection
 				)
 
-				1 -> InstallationsSection(connection)
-			}
+				1 -> InstallationsSection(connection)*//*
+			}*/
 		}
 	}
 
@@ -206,21 +204,21 @@ private fun WorkspaceSection(
 							containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
 						),
 						leadingContent = {
-							CoverArt(
+							/*CoverArt(
 								difficulty = null,
 								borderRadius = 2.dp,
 								url = chart.song.coverArtUrl,
 								size = 40.dp
-							)
+							)*/
 						},
 						headlineContent = {
-							Text(
+							/*Text(
 								text = chart.song.title,
 								style = MaterialTheme.typography.titleMedium,
 								maxLines = 1,
 								overflow = TextOverflow.Ellipsis,
 								lineHeight = TextUnit(1f, TextUnitType.Em)
-							)
+							)*/
 						},
 						supportingContent = {
 							Text(
