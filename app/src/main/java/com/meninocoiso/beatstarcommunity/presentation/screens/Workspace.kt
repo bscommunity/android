@@ -16,10 +16,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -73,7 +75,9 @@ fun WorkspaceScreen(onNavigateToDetails: () -> Unit) {
 		}
 
 		HorizontalPager(
-			state = horizontalPagerState
+			state = horizontalPagerState,
+			key = { it }, // Recompose the pager when the page changes
+			beyondViewportPageCount = 1 // Keep the next page in memory
 		) { index ->
 			when (
 				index
@@ -163,6 +167,7 @@ fun StatusMessage(
 	}
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChartsSection(
 	nestedScrollConnection: NestedScrollConnection,
@@ -170,6 +175,7 @@ private fun ChartsSection(
 	viewModel: ChartViewModel = hiltViewModel()
 ) {
 	val charts by viewModel.charts.collectAsState()
+	val isRefreshing by viewModel.isRefreshing.collectAsState()
 
 	LaunchedEffect(Unit) {
 		viewModel.fetchCharts()
@@ -186,12 +192,17 @@ private fun ChartsSection(
 					buttonLabel = "Clear filters"
 				)
 			} else {
-				SectionWrapper(nestedScrollConnection = nestedScrollConnection) {
-					items(data) { chart ->
-						ChartPreview(
-							onNavigateToDetails = onNavigateToDetails,
-							chart = chart
-						)
+				PullToRefreshBox(
+					isRefreshing = isRefreshing,
+					onRefresh = { viewModel.fetchCharts() },
+				) {
+					SectionWrapper(nestedScrollConnection = nestedScrollConnection) {
+						items(data) { chart ->
+							ChartPreview(
+								onNavigateToDetails = onNavigateToDetails,
+								chart = chart
+							)
+						}
 					}
 				}
 			}
