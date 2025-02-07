@@ -7,10 +7,10 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.LaunchAppButton
-import com.meninocoiso.beatstarcommunity.presentation.screens.chartdetails.ChartDetailsScreen
-import com.meninocoiso.beatstarcommunity.presentation.screens.settings.SettingsScreen
-import com.meninocoiso.beatstarcommunity.presentation.screens.updates.UpdatesScreen
-import com.meninocoiso.beatstarcommunity.presentation.screens.workspace.WorkspaceScreen
+import com.meninocoiso.beatstarcommunity.presentation.screens.ChartDetailsScreen
+import com.meninocoiso.beatstarcommunity.presentation.screens.SettingsScreen
+import com.meninocoiso.beatstarcommunity.presentation.screens.UpdatesScreen
+import com.meninocoiso.beatstarcommunity.presentation.screens.WorkspaceScreen
 import kotlinx.serialization.Serializable
 
 @Serializable

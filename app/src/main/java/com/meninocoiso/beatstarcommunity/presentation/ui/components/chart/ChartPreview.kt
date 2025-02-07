@@ -23,19 +23,22 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.meninocoiso.beatstarcommunity.data.remote.dto.ContributorUserDto
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
-import com.meninocoiso.beatstarcommunity.domain.model.User
+import com.meninocoiso.beatstarcommunity.domain.model.Contributor
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Avatar
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.beatstarcommunity.util.DateUtils
-import java.util.Date
+import java.time.LocalDate
 
 @Composable
 fun ChartAuthors(
-	authors: List<User>,
+	authors: List<Contributor>,
 	modifier: Modifier? = Modifier,
 	avatarSize: Dp = 18.dp,
 ) {
+	if (authors.isEmpty()) return
+
 	Box(
 		modifier = Modifier.border(
 			BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
@@ -51,12 +54,12 @@ fun ChartAuthors(
 		) {
 			Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
 				for (author in authors) {
-					Avatar(url = author.avatarUrl, size = avatarSize)
+					Avatar(url = author.user.imageUrl ?: author.user.username, size = avatarSize)
 				}
 			}
 			Text(
 				style = MaterialTheme.typography.bodySmall,
-				text = "Chart by @${authors[0].username}${if (authors.size > 1) " and others" else ""}",
+				text = "Chart by @${authors[0].user.username}${if (authors.size > 1) " and others" else ""}",
 				maxLines = 1,
 				overflow = TextOverflow.Ellipsis,
 				modifier = (modifier ?: Modifier)
@@ -70,13 +73,17 @@ fun ChartAuthors(
 fun ChartAuthorsPreview() {
 	ChartAuthors(
 		authors = listOf(
-			User(
-				"meninocoiso",
-				"eduardomacielbr@gmail.com",
-				"https://github.com/theduardomaciel.png",
-				Date(),
-				emptyList()
-			)
+			Contributor(
+				user = ContributorUserDto(
+                    id = "1",
+                    username = "user1",
+                    imageUrl = "https://example.com/image1.jpg",
+                    createdAt = LocalDate.now(),
+                ),
+				chartId = "1",
+				roles = emptyList(),
+				joinedAt = LocalDate.now()
+			),
 		)
 	)
 }
@@ -91,7 +98,7 @@ fun ChartPreview(
 	isAcquired: Boolean? = null,
 	onNavigateToDetails: () -> Unit = {}
 ) {
-	val artistsNames = chart.song.artists.joinToString(", ") { it }
+	val lastVersion = chart.versions.last()
 
 	Box(
 		modifier = (modifier ?: Modifier)
@@ -106,7 +113,7 @@ fun ChartPreview(
 				.fillMaxWidth(),
 			horizontalArrangement = Arrangement.spacedBy(16.dp)
 		) {
-			CoverArt(difficulty = chart.difficulty, url = chart.song.coverArtUrl)
+			CoverArt(difficulty = chart.difficulty, url = chart.coverUrl)
 			Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
 				Column {
 					FlowRow(
@@ -115,17 +122,17 @@ fun ChartPreview(
 						verticalArrangement = Arrangement.Center,
 					) {
 						Text(
-							text = chart.song.title,
+							text = chart.track,
 							style = MaterialTheme.typography.titleMedium,
 						)
 						Text(
 							style = MaterialTheme.typography.labelMedium,
-							text = DateUtils.toRelativeString(chart.lastUpdatedAt)
+							text = DateUtils.toRelativeString(lastVersion.publishedAt)
 						)
 					}
-					Text(style = MaterialTheme.typography.labelMedium, text = artistsNames)
+					Text(style = MaterialTheme.typography.labelMedium, text = chart.artist)
 				}
-				ChartAuthors(authors = chart.authors, modifier = Modifier.fillMaxWidth(0.7f))
+				ChartAuthors(authors = chart.contributors, modifier = Modifier.fillMaxWidth(0.7f))
 			}
 		}
 	}
@@ -139,8 +146,6 @@ fun LocalChartPreview(
 	version: Int,
 	onNavigateToDetails: () -> Unit = {}
 ) {
-	val artistsNames = chart.song.artists.joinToString(", ") { it }
-
 	Box(
 		modifier = (modifier ?: Modifier)
 			.fillMaxWidth()
@@ -158,7 +163,7 @@ fun LocalChartPreview(
 		) {
 			CoverArt(
 				difficulty = chart.difficulty,
-				url = chart.song.coverArtUrl,
+				url = chart.coverUrl,
 				borderRadius = 8.dp
 			)
 			Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -168,7 +173,7 @@ fun LocalChartPreview(
 						horizontalArrangement = Arrangement.SpaceBetween
 					) {
 						Text(
-							text = chart.song.title,
+							text = chart.track,
 							style = MaterialTheme.typography.titleMedium,
 							maxLines = 1,
 							overflow = TextOverflow.Ellipsis,
@@ -179,9 +184,9 @@ fun LocalChartPreview(
 							text = "v$version"
 						)
 					}
-					Text(style = MaterialTheme.typography.labelMedium, text = artistsNames)
+					Text(style = MaterialTheme.typography.labelMedium, text = chart.artist)
 				}
-				ChartAuthors(authors = chart.authors)
+				ChartAuthors(authors = chart.contributors)
 			}
 		}
 	}

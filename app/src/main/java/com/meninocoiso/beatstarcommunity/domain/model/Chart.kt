@@ -1,19 +1,20 @@
 package com.meninocoiso.beatstarcommunity.domain.model
 
 import com.meninocoiso.beatstarcommunity.domain.enums.DifficultyEnum
-import java.util.Date
+import kotlinx.serialization.Serializable
+import java.util.*
 
+@Serializable
 data class Chart(
-	val id: Int,
-	val song: Song,
-	val notesAmount: Int,
-	val knownIssues: List<String>? = null,
-	val url: String, // URL to the chart .zip file (including: .chart, .config and song data)
-	val difficulty: DifficultyEnum,
-	val isFeatured: Boolean? = null,
-	val isDeluxe: Boolean? = null,
-	val createdAt: Date,
-	val lastUpdatedAt: Date,
-	val authors: List<User>,
-	val versions: List<ChartVersion>? = null
+    val id: String,
+    val artist: String,
+    val track: String,
+    val album: String?,
+    val coverUrl: String,
+    val difficulty: DifficultyEnum,
+    val isDeluxe: Boolean,
+    val isExplicit: Boolean,
+    val isFeatured: Boolean,
+    val versions: List<Version> = emptyList(),
+    val contributors: List<Contributor> = emptyList()
 )

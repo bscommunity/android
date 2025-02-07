@@ -1,11 +1,10 @@
-package com.meninocoiso.beatstarcommunity.presentation.screens.chartdetails
+package com.meninocoiso.beatstarcommunity.presentation.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -35,13 +34,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.CarouselUI
-import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartContributors
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
-import com.meninocoiso.beatstarcommunity.data.placeholderChart
-import com.meninocoiso.beatstarcommunity.domain.model.User
-import com.meninocoiso.beatstarcommunity.util.DateUtils
 import kotlinx.serialization.Serializable
-import java.util.Date
 
 @Serializable
 object ChartDetailsScreen
@@ -51,8 +45,6 @@ object ChartDetailsScreen
 fun ChartDetails(
 	onReturn: () -> Unit
 ) {
-	val chart = placeholderChart
-
 	val imageUrls = listOf(
 		"https://th.bing.com/th/id/OIP.Fnrr1lh0QpG1bhKXSptqzwAAAA?rs=1&pid=ImgDetMain",
 		"https://images.pexels.com/photos/19780240/pexels-photo-19780240/free-photo-of-a-forest-with-trees-and-fog-in-the-background.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
@@ -140,37 +132,37 @@ fun ChartDetails(
 			CarouselUI(imageUrls)
 
 			// Credits
-			ChartContributors(
+			/*ChartContributors(
 				listOf(
 					User(
 						username = "meninocoiso",
 						email = "teste@gmail.com",
-						avatarUrl = "https://github.com/theduardomaciel.png",
+						imageUrl = "https://github.com/theduardomaciel.png",
 						createdAt = Date(),
 						charts = null
 					),
 					User(
 						username = "oCosmo55",
 						email = "teste@gmail.com",
-						avatarUrl = "https://github.com/oCosmo55.png",
+						imageUrl = "https://github.com/oCosmo55.png",
 						createdAt = Date(),
 					),
 					User(
 						username = "extreme",
 						email = "teste@gmail.com",
-						avatarUrl = "https://github.com/theduardomaciel.png",
+						imageUrl = "https://github.com/theduardomaciel.png",
 						createdAt = Date(),
 						charts = null
 					),
 				)
-			)
+			)*/
 
 			// Stats
 			Section(
 				title = "Stats"
 			) {
 				Column(modifier = Modifier.padding(bottom = 8.dp)) {
-					StatListItem(
+					/*StatListItem(
 						title = "~${chart.song.duration} minutes",
 						icon = R.drawable.outline_access_time_24
 					)
@@ -185,7 +177,7 @@ fun ChartDetails(
 					StatListItem(
 						title = "Updated ${DateUtils.toRelativeString(chart.lastUpdatedAt)}",
 						icon = R.drawable.rounded_calendar_today_24
-					)
+					)*/
 				}
 			}
 
@@ -193,7 +185,7 @@ fun ChartDetails(
 			Section(
 				title = "Known Issues"
 			) {
-				if (chart.knownIssues?.isEmpty() == true) {
+				/*if (chart.knownIssues?.isEmpty() == true) {
 					Text(text = "No known issues", style = MaterialTheme.typography.bodyLarge)
 				} else {
 					Box(modifier = Modifier.padding(16.dp)) {
@@ -209,7 +201,7 @@ fun ChartDetails(
 							}
 						}
 					}
-				}
+				}*/
 			}
 		}
 	}

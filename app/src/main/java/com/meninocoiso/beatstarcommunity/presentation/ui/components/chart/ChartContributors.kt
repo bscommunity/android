@@ -144,15 +144,15 @@ private fun CollapsedContributors(
 				with(sharedTransitionScope) {
 					Row(horizontalArrangement = Arrangement.spacedBy((-16).dp)) {
 						for (author in authors) {
-							Avatar(
+							/*Avatar(
 								modifier = Modifier.sharedElement(
 									rememberSharedContentState(key = "avatar-${author.username}"),
 									animatedVisibilityScope = animatedVisibilityScope
 								),
-								url = author.avatarUrl,
+								url = author.imageUrl,
 								key = "avatar-${author.username}",
 								size = 48.dp
-							)
+							)*/
 						}
 					}
 					Column {
@@ -230,15 +230,15 @@ private fun ExpandedContributors(
 					verticalAlignment = Alignment.CenterVertically
 				) {
 					with(sharedTransitionScope) {
-						Avatar(
-							url = author.avatarUrl,
+						/*Avatar(
+							url = author.imageUrl,
 							key = "avatar-${author.username}",
 							size = 32.dp,
 							modifier = Modifier.sharedElement(
 								rememberSharedContentState(key = "avatar-${author.username}"),
 								animatedVisibilityScope = animatedVisibilityScope
 							)
-						)
+						)*/
 					}
 					Column {
 						Text(

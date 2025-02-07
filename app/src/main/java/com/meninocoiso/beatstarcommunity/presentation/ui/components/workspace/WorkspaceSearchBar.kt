@@ -151,11 +151,11 @@ fun WorkspaceSearchBar(
 				isFilterSheetOpen = false
 			},
 			onClose = {
-				scope.launch { filterSheetState.hide() }.invokeOnCompletion {
+				/*scope.launch { filterSheetState.hide() }.invokeOnCompletion {
 					if (!filterSheetState.isVisible) {
 						isFilterSheetOpen = false
 					}
-				}
+				}*/
 			})
 	}
 }

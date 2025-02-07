@@ -1,28 +1,46 @@
-package com.meninocoiso.beatstarcommunity.presentation.screens.workspace
+package com.meninocoiso.beatstarcommunity.presentation.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartPreview
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace.WorkspaceChips
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace.WorkspaceTopBar
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace.workspaceTabsItems
-import com.meninocoiso.beatstarcommunity.data.placeholderChart
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ChartViewModel
 import com.meninocoiso.beatstarcommunity.util.AppBarUtils
 
 private val SearchBarHeight = 80.dp
@@ -88,19 +106,113 @@ private fun SectionWrapper(
 	}
 }
 
+@Preview
+@Composable
+fun StatusMessagePreview() {
+	StatusMessage(
+		title = "No internet connection",
+		message = "Please check your connection and try again",
+		icon = R.drawable.rounded_wifi_off_24,
+		onClick = {},
+		buttonLabel = "Try again"
+	)
+}
+
+@Composable
+fun StatusMessage(
+	title: String,
+	message: String,
+	icon: Int,
+	onClick: () -> Unit,
+	buttonLabel: String = "Try again"
+) {
+	Column(
+		modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+		verticalArrangement = Arrangement.spacedBy(
+			space = 16.dp,
+			alignment = Alignment.CenterVertically
+		),
+		horizontalAlignment = Alignment.CenterHorizontally,
+	) {
+		Icon(
+			painter = painterResource(id = icon),
+			modifier = Modifier.size(56.dp),
+			contentDescription = ""
+		)
+		Text(
+			text = title,
+			textAlign = TextAlign.Center,
+			style = MaterialTheme.typography.titleLarge,
+			modifier = Modifier
+				.fillMaxWidth()
+				.padding(horizontal = 16.dp)
+		)
+		Text(
+			text = message,
+			textAlign = TextAlign.Center,
+			style = MaterialTheme.typography.bodyMedium,
+			modifier = Modifier
+				.fillMaxWidth()
+				.padding(horizontal = 16.dp)
+		)
+		OutlinedButton(
+            onClick = { onClick() },
+        ) {
+			Text(buttonLabel)
+		}
+	}
+}
+
 @Composable
 private fun ChartsSection(
 	nestedScrollConnection: NestedScrollConnection,
-	onNavigateToDetails: () -> Unit
+	onNavigateToDetails: () -> Unit,
+	viewModel: ChartViewModel = hiltViewModel()
 ) {
-	SectionWrapper(nestedScrollConnection = nestedScrollConnection) {
-		val list = (0..10).map { it.toString() }
-		items(count = list.size) {
-			ChartPreview(
-				onNavigateToDetails = onNavigateToDetails,
-				chart = placeholderChart
+	val charts by viewModel.charts.collectAsState()
+
+	LaunchedEffect(Unit) {
+		viewModel.fetchCharts()
+	}
+
+	charts?.fold(
+		onSuccess = { data ->
+			if (data.isEmpty()) {
+				StatusMessage(
+					title = "We couldn't find anything based on your search",
+					message = "Try removing some filters or searching for something else",
+					icon = R.drawable.rounded_sentiment_dissatisfied_24,
+					onClick = { },
+					buttonLabel = "Clear filters"
+				)
+			} else {
+				SectionWrapper(nestedScrollConnection = nestedScrollConnection) {
+					items(data) { chart ->
+						ChartPreview(
+							onNavigateToDetails = onNavigateToDetails,
+							chart = chart
+						)
+					}
+				}
+			}
+		},
+		onFailure = { error ->
+			StatusMessage(
+				title = "Looks like something went wrong...",
+				message = "\"${error.message}\"\nPlease try again or check Discord with error above to see if it’s already a known issue",
+				icon = R.drawable.rounded_hourglass_disabled_24,
+				onClick = { viewModel.fetchCharts() }
 			)
 		}
+	) ?: Box(
+		modifier = Modifier.fillMaxSize(),
+		contentAlignment = Alignment.Center,
+	) {
+		CircularProgressIndicator(
+			modifier = Modifier.width(36.dp),
+			color = MaterialTheme.colorScheme.secondary,
+			trackColor = MaterialTheme.colorScheme.surfaceVariant,
+		)
 	}
 }
 

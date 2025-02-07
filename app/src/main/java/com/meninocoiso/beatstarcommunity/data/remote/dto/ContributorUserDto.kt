@@ -1,16 +1,14 @@
-package com.meninocoiso.beatstarcommunity.domain.model
+package com.meninocoiso.beatstarcommunity.data.remote.dto
 
 import LocalDateSerializer
 import kotlinx.serialization.Serializable
 import java.time.LocalDate
 
 @Serializable
-data class User(
+data class ContributorUserDto(
     val id: String,
     val username: String,
-    val email: String,
     val imageUrl: String?,
-    val discordId: String?,
     @Serializable(with = LocalDateSerializer::class)
-    val createdAt: LocalDate
+    val createdAt: LocalDate,
 )
