@@ -6,12 +6,15 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -19,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -34,36 +38,39 @@ import java.time.LocalDate
 @Composable
 fun ChartAuthors(
 	authors: List<Contributor>,
-	modifier: Modifier? = Modifier,
 	avatarSize: Dp = 18.dp,
 ) {
 	if (authors.isEmpty()) return
 
-	Box(
-		modifier = Modifier.border(
-			BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-			RoundedCornerShape(150.dp)
-		)
-	) {
-		Row(
-			modifier = Modifier
-				//.background(Color.Blue)
-				.padding(start = 6.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
-			horizontalArrangement = Arrangement.spacedBy(8.dp),
-			verticalAlignment = Alignment.CenterVertically
-		) {
-			Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
-				for (author in authors) {
-					Avatar(url = author.user.imageUrl ?: author.user.username, size = avatarSize)
-				}
-			}
-			Text(
-				style = MaterialTheme.typography.bodySmall,
-				text = "Chart by @${authors[0].user.username}${if (authors.size > 1) " and others" else ""}",
-				maxLines = 1,
-				overflow = TextOverflow.Ellipsis,
-				modifier = (modifier ?: Modifier)
+	BoxWithConstraints {
+		val maxWidthFraction = 0.7f // 70% of the parent's width
+		val maxWidthDp = maxWidth * maxWidthFraction
+
+		Box(
+			modifier = Modifier.border(
+				BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+				RoundedCornerShape(150.dp)
 			)
+		) {
+			Row(
+				modifier = Modifier
+					.padding(start = 6.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+				horizontalArrangement = Arrangement.spacedBy(8.dp),
+				verticalAlignment = Alignment.CenterVertically
+			) {
+				Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
+					for (author in authors) {
+						Avatar(url = author.user.imageUrl ?: author.user.username, size = avatarSize)
+					}
+				}
+				Text(
+					style = MaterialTheme.typography.bodySmall,
+					text = "Chart by @${authors[0].user.username}${if (authors.size > 1) " and others" else ""}",
+					maxLines = 1,
+					overflow = TextOverflow.Ellipsis,
+					modifier = Modifier.sizeIn(maxWidth = maxWidthDp)
+				)
+			}
 		}
 	}
 }
@@ -132,7 +139,7 @@ fun ChartPreview(
 					}
 					Text(style = MaterialTheme.typography.labelMedium, text = chart.artist)
 				}
-				ChartAuthors(authors = chart.contributors, modifier = Modifier.fillMaxWidth(0.7f))
+				ChartAuthors(authors = chart.contributors)
 			}
 		}
 	}

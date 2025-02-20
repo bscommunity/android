@@ -139,7 +139,7 @@ fun Avatar(
 		Box(
 			modifier = Modifier
 				.size(size)
-				.background(MaterialTheme.colorScheme.primary)
+				.background(Color.Red)
 			,
 			contentAlignment = Alignment.Center,
 		) {

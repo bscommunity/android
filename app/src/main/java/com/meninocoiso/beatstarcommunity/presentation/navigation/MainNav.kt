@@ -3,9 +3,15 @@ package com.meninocoiso.beatstarcommunity.presentation.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavOptions
 import androidx.navigation.compose.NavHost
+import androidx.navigation.toRoute
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.LaunchAppButton
 import com.meninocoiso.beatstarcommunity.presentation.screens.ChartDetailsScreen
 import com.meninocoiso.beatstarcommunity.presentation.screens.SettingsScreen
@@ -21,28 +27,44 @@ fun MainNav(
 	bottomNavController: NavHostController,
 	navController: NavHostController
 ) {
+	var selectedItemIndex by rememberSaveable {
+		mutableIntStateOf(0)
+	}
+
 	Scaffold(
 		bottomBar = {
-			BottomNavigationComponent(navController = bottomNavController)
+			BottomNavigationComponent(
+				selectedItemIndex,
+				setItemIndex = { selectedItemIndex = it },
+				navController = bottomNavController
+			)
 		},
 		floatingActionButton = {
-			LaunchAppButton()
+			LaunchAppButton(
+				onNavigateToUpdates = {
+					bottomNavController.navigate(
+						route = Updates(section = UpdatesSection.Installations)
+					)
+					selectedItemIndex = 1
+				}
+			)
 		}
 	) { innerPadding ->
 		NavHost(
 			modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
 			navController = bottomNavController,
-			startDestination = WorkspaceScreen,
+			startDestination = Workspace,
 		) {
-			composableWithFade<WorkspaceScreen> {
+			composableWithFade<Workspace> {
 				WorkspaceScreen(onNavigateToDetails = {
 					navController.navigate(ChartDetailsScreen)
 				})
 			}
-			composableWithFade<UpdatesScreen> {
-				UpdatesScreen()
+			composableWithFade<Updates> { backStackEntry ->
+				val updates: Updates = backStackEntry.toRoute()
+				UpdatesScreen(updates.section)
 			}
-			composableWithFade<SettingsScreen> {
+			composableWithFade<Settings> {
 				SettingsScreen()
 			}
 		}

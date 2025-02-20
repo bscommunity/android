@@ -32,6 +32,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -50,11 +51,15 @@ import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import com.meninocoiso.beatstarcommunity.R
+import com.meninocoiso.beatstarcommunity.domain.enums.DifficultyEnum
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.LocalChartPreview
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabItem
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabsUI
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
+import com.meninocoiso.beatstarcommunity.domain.model.Version
+import com.meninocoiso.beatstarcommunity.presentation.navigation.UpdatesSection
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.beatstarcommunity.util.AppBarUtils
 
 val updatesTabsItems = listOf(
@@ -71,17 +76,53 @@ val updatesTabsItems = listOf(
 private val TabsHeight = 55.dp
 
 @Composable
-fun UpdatesScreen() {
-	/*val chartsToUpdate = (0..3).map {
-		placeholderChart
+fun UpdatesScreen(
+	section: UpdatesSection? = UpdatesSection.Workshop
+) {
+	val chartsToUpdate = (0..3).map {
+		Chart(
+			isDeluxe = false,
+			versions = listOf(),
+			difficulty = DifficultyEnum.Extreme,
+			coverUrl = "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/92/9f/69/929f69f1-9977-3a44-d674-11f70c852d1b/24UMGIM36186.rgb.jpg/592x592bb.webp",
+			track = "teste",
+			id = "2342432",
+			contributors = listOf(),
+			album = "teste",
+			artist = "teste",
+			isExplicit = false,
+			isFeatured = false,
+		)
 	}
 
 	val downloadedCharts = (0..25).map {
-		placeholderChart
-	}*/
+		Chart(
+			isDeluxe = false,
+			versions = listOf(),
+			difficulty = DifficultyEnum.Extreme,
+			coverUrl = "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/92/9f/69/929f69f1-9977-3a44-d674-11f70c852d1b/24UMGIM36186.rgb.jpg/592x592bb.webp",
+			track = "teste",
+			id = "2342432",
+			contributors = listOf(),
+			album = "teste",
+			artist = "teste",
+			isExplicit = false,
+			isFeatured = false,
+		)
+	}
 
-	val horizontalPagerState = rememberPagerState {
+	val horizontalPagerState = rememberPagerState() {
 		updatesTabsItems.size
+	}
+
+	LaunchedEffect(section) {
+		println("section: $section")
+		val pageIndex = when (section) {
+			UpdatesSection.Workshop -> 0
+			UpdatesSection.Installations -> 1
+			null -> UpdatesSection.Workshop.ordinal
+		}
+		horizontalPagerState.requestScrollToPage(pageIndex)
 	}
 
 	val (connection, spaceHeight, statusBarHeight) = AppBarUtils.getConnection(collapsableHeight = TabsHeight)
@@ -95,17 +136,17 @@ fun UpdatesScreen() {
 		HorizontalPager(
 			state = horizontalPagerState
 		) { index ->
-			/*when (
+			when (
 				index
 			) {
-				*//*0 -> WorkspaceSection(
+				0 -> WorkspaceSection(
 					chartsToUpdate = chartsToUpdate,
 					downloadedCharts = downloadedCharts,
 					connection
 				)
 
-				1 -> InstallationsSection(connection)*//*
-			}*/
+				1 -> InstallationsSection(connection)
+			}
 		}
 	}
 
@@ -204,21 +245,21 @@ private fun WorkspaceSection(
 							containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
 						),
 						leadingContent = {
-							/*CoverArt(
+							CoverArt(
 								difficulty = null,
 								borderRadius = 2.dp,
-								url = chart.song.coverArtUrl,
+								url = chart.coverUrl,
 								size = 40.dp
-							)*/
+							)
 						},
 						headlineContent = {
-							/*Text(
-								text = chart.song.title,
+							Text(
+								text = chart.track,
 								style = MaterialTheme.typography.titleMedium,
 								maxLines = 1,
 								overflow = TextOverflow.Ellipsis,
 								lineHeight = TextUnit(1f, TextUnitType.Em)
-							)*/
+							)
 						},
 						supportingContent = {
 							Text(

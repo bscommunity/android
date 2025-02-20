@@ -4,6 +4,10 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <queries>
+        <package android:name="com.spaceapegames.beatclon" />
+    </queries>
+
     <application
         android:name=".BaseApplication"
         android:allowBackup="true"
