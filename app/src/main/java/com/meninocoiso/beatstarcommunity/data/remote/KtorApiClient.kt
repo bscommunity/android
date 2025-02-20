@@ -26,7 +26,7 @@ class KtorApiClient @Inject constructor() : ApiClient {
             })
         }
         install(HttpTimeout) {
-            requestTimeoutMillis = 15000
+            requestTimeoutMillis = 10000
         }
         defaultRequest {
             url {

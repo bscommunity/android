@@ -18,13 +18,18 @@ import com.meninocoiso.beatstarcommunity.R
 import kotlinx.serialization.Serializable
 
 @Serializable
-object WorkspaceScreen
+object Workspace
+
+enum class UpdatesSection {
+	Workshop,
+	Installations
+}
 
 @Serializable
-object UpdatesScreen
+data class Updates(val section: UpdatesSection? = null)
 
 @Serializable
-object SettingsScreen
+object Settings
 
 data class BottomNavigationItem(
 	val route: Any,
@@ -37,21 +42,21 @@ data class BottomNavigationItem(
 
 val bottomNavigationItems = listOf(
 	BottomNavigationItem(
-		route = WorkspaceScreen,
+		route = Workspace,
 		title = "Workspace",
 		selectedIcon = R.drawable.baseline_library_music_24,
 		unselectedIcon = R.drawable.outline_library_music_24,
 		hasNews = false
 	),
 	BottomNavigationItem(
-		route = UpdatesScreen,
+		route = Updates(section = UpdatesSection.Workshop),
 		title = "Updates",
 		selectedIcon = R.drawable.baseline_deployed_code_24,
 		unselectedIcon = R.drawable.outline_deployed_code_24,
 		hasNews = false
 	),
 	BottomNavigationItem(
-		route = SettingsScreen,
+		route = Settings,
 		title = "Settings",
 		selectedIcon = R.drawable.baseline_settings_24,
 		unselectedIcon = R.drawable.outline_settings_24,
@@ -60,14 +65,14 @@ val bottomNavigationItems = listOf(
 )
 
 @Composable
-fun BottomNavigationComponent(navController: NavHostController) {
+fun BottomNavigationComponent(
+	selectedItemIndex: Int,
+	setItemIndex: (Int) -> Unit,
+	navController: NavHostController,
+) {
 	NavigationBar(
 		/*containerColor = Color.Red*/
 	) {
-		var selectedItemIndex by rememberSaveable {
-			mutableIntStateOf(0)
-		}
-
 		bottomNavigationItems.forEachIndexed { index, item ->
 			NavigationBarItem(
 				selected = selectedItemIndex == index,
@@ -75,7 +80,8 @@ fun BottomNavigationComponent(navController: NavHostController) {
 					// Prevent navigating to the same destination
 					if (selectedItemIndex == index) return@NavigationBarItem
 
-					selectedItemIndex = index
+					setItemIndex(index)
+
 					navController.navigate(item.route) {
 						// Pop up to the start destination of the graph to
 						// avoid building up a large stack of destinations
@@ -89,7 +95,7 @@ fun BottomNavigationComponent(navController: NavHostController) {
 						launchSingleTop = true
 
 						// Restore state when reselecting a previously selected item
-						restoreState = true
+						// restoreState = true
 					}
 				},
 				label = {
