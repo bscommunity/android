@@ -18,15 +18,17 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.meninocoiso.beatstarcommunity.MainActivityUiState.Loading
 import com.meninocoiso.beatstarcommunity.MainActivityUiState.Success
 import com.meninocoiso.beatstarcommunity.domain.enums.ThemePreference
+import com.meninocoiso.beatstarcommunity.presentation.navigation.BottomNav
 import com.meninocoiso.beatstarcommunity.presentation.navigation.MainNav
 import com.meninocoiso.beatstarcommunity.presentation.navigation.MainRoute
 import com.meninocoiso.beatstarcommunity.presentation.navigation.composableWithTransitions
 import com.meninocoiso.beatstarcommunity.presentation.navigation.composableWithoutTransitions
-import com.meninocoiso.beatstarcommunity.presentation.screens.ChartDetails
 import com.meninocoiso.beatstarcommunity.presentation.screens.ChartDetailsScreen
+import com.meninocoiso.beatstarcommunity.presentation.screens.ChartDetails
 import com.meninocoiso.beatstarcommunity.presentation.ui.theme.BeatstarCommunityTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.onEach
@@ -94,20 +96,7 @@ class MainActivity : ComponentActivity() {
 				darkTheme = darkTheme,
 				dynamicColor = shouldUseDynamicTheming(uiState),
 			) {
-				val navController = rememberNavController()
-				val bottomNavController = rememberNavController()
-
-				NavHost(navController = navController, startDestination = MainRoute) {
-					composableWithTransitions<ChartDetailsScreen> {
-						ChartDetails(onReturn = {
-							navController.navigateUp()
-						})
-					}
-
-					composableWithoutTransitions<MainRoute> {
-						MainNav(bottomNavController, navController)
-					}
-				}
+				MainNav()
 			}
 		}
 	}

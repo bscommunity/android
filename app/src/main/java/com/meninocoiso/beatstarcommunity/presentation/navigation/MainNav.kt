@@ -1,72 +1,27 @@
 package com.meninocoiso.beatstarcommunity.presentation.navigation
 
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.navigation.NavHostController
-import androidx.navigation.NavOptions
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.LaunchAppButton
+import com.meninocoiso.beatstarcommunity.presentation.screens.ChartDetails
 import com.meninocoiso.beatstarcommunity.presentation.screens.ChartDetailsScreen
-import com.meninocoiso.beatstarcommunity.presentation.screens.SettingsScreen
-import com.meninocoiso.beatstarcommunity.presentation.screens.UpdatesScreen
-import com.meninocoiso.beatstarcommunity.presentation.screens.WorkspaceScreen
-import kotlinx.serialization.Serializable
-
-@Serializable
-object MainRoute
 
 @Composable
-fun MainNav(
-	bottomNavController: NavHostController,
-	navController: NavHostController
-) {
-	var selectedItemIndex by rememberSaveable {
-		mutableIntStateOf(0)
-	}
+fun MainNav() {
+    val navController = rememberNavController()
+    val bottomNavController = rememberNavController()
 
-	Scaffold(
-		bottomBar = {
-			BottomNavigationComponent(
-				selectedItemIndex,
-				setItemIndex = { selectedItemIndex = it },
-				navController = bottomNavController
-			)
-		},
-		floatingActionButton = {
-			LaunchAppButton(
-				onNavigateToUpdates = {
-					bottomNavController.navigate(
-						route = Updates(section = UpdatesSection.Installations)
-					)
-					selectedItemIndex = 1
-				}
-			)
-		}
-	) { innerPadding ->
-		NavHost(
-			modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
-			navController = bottomNavController,
-			startDestination = Workspace,
-		) {
-			composableWithFade<Workspace> {
-				WorkspaceScreen(onNavigateToDetails = {
-					navController.navigate(ChartDetailsScreen)
-				})
-			}
-			composableWithFade<Updates> { backStackEntry ->
-				val updates: Updates = backStackEntry.toRoute()
-				UpdatesScreen(updates.section)
-			}
-			composableWithFade<Settings> {
-				SettingsScreen()
-			}
-		}
-	}
+    NavHost(navController = navController, startDestination = MainRoute) {
+        composableWithTransitions<ChartDetails> { backStackEntry ->
+            val chartDetails: ChartDetails = backStackEntry.toRoute()
+            ChartDetailsScreen(onReturn = {
+                navController.navigateUp()
+            })
+        }
+
+        composableWithoutTransitions<MainRoute> {
+            BottomNav(bottomNavController, navController)
+        }
+    }
 }
