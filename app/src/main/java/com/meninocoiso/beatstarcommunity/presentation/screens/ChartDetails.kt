@@ -38,18 +38,13 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Secti
 import kotlinx.serialization.Serializable
 
 @Serializable
-object ChartDetailsScreen
+object ChartDetails
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChartDetails(
+fun ChartDetailsScreen(
 	onReturn: () -> Unit
 ) {
-	val imageUrls = listOf(
-		"https://th.bing.com/th/id/OIP.Fnrr1lh0QpG1bhKXSptqzwAAAA?rs=1&pid=ImgDetMain",
-		"https://images.pexels.com/photos/19780240/pexels-photo-19780240/free-photo-of-a-forest-with-trees-and-fog-in-the-background.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-	)
-
 	val scrollState = rememberScrollState()
 
 	Scaffold(
@@ -129,7 +124,7 @@ fun ChartDetails(
 			verticalArrangement = Arrangement.Top,
 			horizontalAlignment = Alignment.CenterHorizontally,
 		) {
-			CarouselUI(imageUrls)
+			/*CarouselUI(imageUrls)*/
 
 			// Credits
 			/*ChartContributors(
