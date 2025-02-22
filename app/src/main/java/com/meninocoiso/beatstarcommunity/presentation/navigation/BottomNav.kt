@@ -11,8 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.toRoute
-import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.LaunchAppButton
+import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.screens.ChartDetails
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.LaunchAppButton
 import com.meninocoiso.beatstarcommunity.presentation.screens.SettingsScreen
 import com.meninocoiso.beatstarcommunity.presentation.screens.UpdatesScreen
 import com.meninocoiso.beatstarcommunity.presentation.screens.WorkspaceScreen
@@ -55,8 +56,11 @@ fun BottomNav(
 			startDestination = Workspace,
 		) {
 			composableWithFade<Workspace> {
-				WorkspaceScreen(onNavigateToDetails = {
-					navController.navigate(ChartDetails)
+				WorkspaceScreen(onNavigateToDetails = { chart ->
+					println("Navigating to chart details: $chart")
+					navController.navigate(route = ChartDetails(
+						chart = chart
+					))
 				})
 			}
 			composableWithFade<Updates> { backStackEntry ->

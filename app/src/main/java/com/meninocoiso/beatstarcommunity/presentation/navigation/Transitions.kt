@@ -12,7 +12,9 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavType
 import androidx.navigation.compose.composable
+import kotlin.reflect.KType
 
 const val FADE_DURATION = 200
 const val TRANSITION_DURATION = 350
@@ -46,9 +48,11 @@ inline fun <reified T : Any> NavGraphBuilder.composableWithFade(
 }
 
 inline fun <reified T : Any> NavGraphBuilder.composableWithTransitions(
-	noinline content: @Composable AnimatedContentScope.(NavBackStackEntry) -> Unit
-) {
+	typeMap: Map<KType, @JvmSuppressWildcards NavType<*>> = emptyMap(),
+	noinline content: @Composable AnimatedContentScope.(NavBackStackEntry) -> Unit,
+	) {
 	composable<T>(
+		typeMap = typeMap,
 		enterTransition = { enterTransition(this) },
 		exitTransition = { exitTransition(this) },
 		popEnterTransition = { popEnterTransition(this) },

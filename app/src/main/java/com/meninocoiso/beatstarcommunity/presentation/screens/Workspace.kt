@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.meninocoiso.beatstarcommunity.R
+import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartPreview
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace.WorkspaceChips
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace.WorkspaceTopBar
@@ -50,7 +51,7 @@ private val TabsHeight = 48.dp
 private val WorkspaceChipsHeight = 56.dp
 
 @Composable
-fun WorkspaceScreen(onNavigateToDetails: () -> Unit) {
+fun WorkspaceScreen(onNavigateToDetails: OnNavigateToDetails) {
 	val horizontalPagerState = rememberPagerState {
 		workspaceTabsItems.size
 	}
@@ -171,7 +172,7 @@ fun StatusMessage(
 @Composable
 private fun ChartsSection(
 	nestedScrollConnection: NestedScrollConnection,
-	onNavigateToDetails: () -> Unit,
+	onNavigateToDetails: OnNavigateToDetails,
 	viewModel: ChartViewModel = hiltViewModel()
 ) {
 	val charts by viewModel.charts.collectAsState()
@@ -199,7 +200,7 @@ private fun ChartsSection(
 					SectionWrapper(nestedScrollConnection = nestedScrollConnection) {
 						items(data) { chart ->
 							ChartPreview(
-								onNavigateToDetails = onNavigateToDetails,
+								onNavigateToDetails = {onNavigateToDetails(chart)},
 								chart = chart
 							)
 						}

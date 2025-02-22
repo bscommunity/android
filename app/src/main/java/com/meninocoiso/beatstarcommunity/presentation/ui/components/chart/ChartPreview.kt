@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.data.remote.dto.ContributorUserDto
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.model.Contributor
+import com.meninocoiso.beatstarcommunity.presentation.screens.OnNavigateToDetails
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Avatar
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.beatstarcommunity.util.DateUtils
@@ -103,16 +104,14 @@ fun ChartPreview(
 	isFeatured: Boolean? = null,
 	isRanked: Boolean? = null,
 	isAcquired: Boolean? = null,
-	onNavigateToDetails: () -> Unit = {}
+	onNavigateToDetails: () -> Unit
 ) {
 	val lastVersion = chart.versions.last()
 
 	Box(
 		modifier = (modifier ?: Modifier)
 			.fillMaxWidth()
-			.clickable() {
-				onNavigateToDetails()
-			}
+			.clickable(onClick = onNavigateToDetails)
 	) {
 		Row(
 			modifier = Modifier
@@ -151,14 +150,19 @@ fun LocalChartPreview(
 	chart: Chart,
 	modifier: Modifier? = Modifier,
 	version: Int,
-	onNavigateToDetails: () -> Unit = {}
+	onNavigateToDetails: OnNavigateToDetails
 ) {
 	Box(
 		modifier = (modifier ?: Modifier)
 			.fillMaxWidth()
 			.clip(RoundedCornerShape(16.dp))
 			.clickable() {
-				onNavigateToDetails()
+				onNavigateToDetails(
+					/* TODO */
+					chart.copy(
+						versions = chart.versions/*.filter { it.id == version }*/
+					)
+				)
 			}
 	) {
 		Row(

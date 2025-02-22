@@ -7,19 +7,20 @@ junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 lifecycleRuntimeKtx = "2.8.7"
 activityCompose = "1.10.0"
-composeBom = "2025.01.01"
-composeNavigation = "2.8.6"
+composeBom = "2025.02.00"
+composeNavigation = "2.8.7"
 landscapistCoil = "2.4.6"
 landscapistPlaceholder = "2.4.6"
 material = "1.13.0-alpha10"
 constraintlayoutCompose = "1.1.0"
 hilt = "2.55"
-ksp = "2.1.10-1.0.29"
+ksp = "2.1.20-RC-1.0.30"
 datastorePreferences = "1.1.2"
 androidxHiltNavigationCompose = "1.2.0"
 coreSplashscreen = "1.2.0-alpha02"
 ktor = "3.0.3"
 desugar_jdk_libs = "2.1.4"
+kotlin-parcelize = "2.1.20-RC"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -62,3 +63,4 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin-parcelize" }

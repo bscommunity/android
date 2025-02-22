@@ -32,12 +32,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.meninocoiso.beatstarcommunity.domain.model.User
+import com.meninocoiso.beatstarcommunity.domain.model.Contributor
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Avatar
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun ChartContributors(authors: List<User>) {
+fun ChartContributors(authors: List<Contributor>) {
 	var isExpanded by remember {
 		mutableStateOf(false)
 	}
@@ -77,7 +77,6 @@ fun ChartContributors(authors: List<User>) {
 	}
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun Layout(
 	onEvent: () -> Unit,
@@ -122,13 +121,14 @@ private fun Layout(
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun CollapsedContributors(
-	authors: List<User>,
+	authors: List<Contributor>,
 	onExpand: () -> Unit,
 	iconRotationDeg: Float,
 	sharedTransitionScope: SharedTransitionScope,
 	animatedVisibilityScope: AnimatedVisibilityScope
 ) {
-	val authorsNames = authors.joinToString(", ") { "@${it.username}" }
+	val users = authors.map(Contributor::user)
+	val authorsNames = users.joinToString(", ") { "@${it.username}" }
 
 	Layout(
 		onEvent = onExpand,
@@ -143,8 +143,8 @@ private fun CollapsedContributors(
 			) {
 				with(sharedTransitionScope) {
 					Row(horizontalArrangement = Arrangement.spacedBy((-16).dp)) {
-						for (author in authors) {
-							/*Avatar(
+						for (author in users) {
+							Avatar(
 								modifier = Modifier.sharedElement(
 									rememberSharedContentState(key = "avatar-${author.username}"),
 									animatedVisibilityScope = animatedVisibilityScope
@@ -152,7 +152,7 @@ private fun CollapsedContributors(
 								url = author.imageUrl,
 								key = "avatar-${author.username}",
 								size = 48.dp
-							)*/
+							)
 						}
 					}
 					Column {
@@ -187,7 +187,7 @@ private fun CollapsedContributors(
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ExpandedContributors(
-	authors: List<User>,
+	authors: List<Contributor>,
 	onCollapse: () -> Unit,
 	iconRotationDeg: Float,
 	sharedTransitionScope: SharedTransitionScope,
@@ -230,23 +230,23 @@ private fun ExpandedContributors(
 					verticalAlignment = Alignment.CenterVertically
 				) {
 					with(sharedTransitionScope) {
-						/*Avatar(
-							url = author.imageUrl,
-							key = "avatar-${author.username}",
+						Avatar(
+							url = author.user.imageUrl,
+							key = "avatar-${author.user.username}",
 							size = 32.dp,
 							modifier = Modifier.sharedElement(
-								rememberSharedContentState(key = "avatar-${author.username}"),
+								rememberSharedContentState(key = "avatar-${author.user.username}"),
 								animatedVisibilityScope = animatedVisibilityScope
 							)
-						)*/
+						)
 					}
 					Column {
 						Text(
-							text = "@${author.username}",
+							text = "@${author.user.username}",
 							style = MaterialTheme.typography.labelLarge
 						)
 						Text(
-							text = "Test, test 2",
+							text = author.roles.joinToString(", "),
 							style = MaterialTheme.typography.bodySmall,
 						)
 					}

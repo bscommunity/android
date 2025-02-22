@@ -116,7 +116,7 @@ fun CoverArt(
 fun Avatar(
 	modifier: Modifier? = Modifier,
 	size: Dp = 18.dp,
-	url: String,
+	url: String? = null,
 	key: String? = null
 ) {
 	val context = LocalContext.current
@@ -135,7 +135,7 @@ fun Avatar(
 		)
 	)
 
-	if (!url.contains("https")) {
+	if (url != null && !url.contains("https")) {
 		Box(
 			modifier = Modifier
 				.size(size)
