@@ -33,18 +33,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
+import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.CarouselUI
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartContributors
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
+import com.meninocoiso.beatstarcommunity.util.DownloadUtils.Companion.downloadChart
 import kotlinx.serialization.Serializable
 
 @Serializable
-object ChartDetails
+data class ChartDetails(val chart: Chart)
+
+typealias OnNavigateToDetails = (chart: Chart) -> Unit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChartDetailsScreen(
+	chart: Chart,
 	onReturn: () -> Unit
 ) {
+	println("ChartDetailsScreen: $chart")
 	val scrollState = rememberScrollState()
 
 	Scaffold(
@@ -69,8 +76,8 @@ fun ChartDetailsScreen(
 				},
 				title = {
 					Column {
-						Text("We Live Forever", style = MaterialTheme.typography.titleLarge)
-						Text("The Prodigy", style = MaterialTheme.typography.titleMedium)
+						Text(chart.track, style = MaterialTheme.typography.titleLarge)
+						Text(chart.artist, style = MaterialTheme.typography.titleMedium)
 					}
 				}
 			)
@@ -108,9 +115,7 @@ fun ChartDetailsScreen(
 						},
 						containerColor = BottomAppBarDefaults.bottomAppBarFabColor,
 						elevation = FloatingActionButtonDefaults.bottomAppBarFabElevation(),
-						onClick = {
-							/* TODO */
-						},
+						onClick = { downloadChart(chart.id, chart.versions.last().chartUrl) }
 					)
 				}
 			)
@@ -124,33 +129,10 @@ fun ChartDetailsScreen(
 			verticalArrangement = Arrangement.Top,
 			horizontalAlignment = Alignment.CenterHorizontally,
 		) {
-			/*CarouselUI(imageUrls)*/
+			CarouselUI(listOf(chart.coverUrl))
 
 			// Credits
-			/*ChartContributors(
-				listOf(
-					User(
-						username = "meninocoiso",
-						email = "teste@gmail.com",
-						imageUrl = "https://github.com/theduardomaciel.png",
-						createdAt = Date(),
-						charts = null
-					),
-					User(
-						username = "oCosmo55",
-						email = "teste@gmail.com",
-						imageUrl = "https://github.com/oCosmo55.png",
-						createdAt = Date(),
-					),
-					User(
-						username = "extreme",
-						email = "teste@gmail.com",
-						imageUrl = "https://github.com/theduardomaciel.png",
-						createdAt = Date(),
-						charts = null
-					),
-				)
-			)*/
+			ChartContributors(chart.contributors)
 
 			// Stats
 			Section(

@@ -1,10 +1,12 @@
 package com.meninocoiso.beatstarcommunity.domain.model
 
+import android.os.Parcelable
 import com.meninocoiso.beatstarcommunity.domain.enums.DifficultyEnum
+import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
-import java.util.*
 
 @Serializable
+@Parcelize
 data class Chart(
     val id: String,
     val artist: String,
@@ -15,6 +17,6 @@ data class Chart(
     val isDeluxe: Boolean,
     val isExplicit: Boolean,
     val isFeatured: Boolean,
-    val versions: List<Version> = emptyList(),
-    val contributors: List<Contributor> = emptyList()
-)
+    val versions: List<Version>,
+    val contributors: List<Contributor>
+) : Parcelable

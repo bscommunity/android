@@ -352,7 +352,8 @@ private fun WorkspaceSection(
 					LocalChartPreview(
 						chart = chart,
 						version = 1,
-						modifier = Modifier.height(LocalChartPreviewHeight)
+						modifier = Modifier.height(LocalChartPreviewHeight),
+						onNavigateToDetails = { /*TODO*/ }
 					)
 				}
 			}

@@ -51,6 +51,10 @@ class KtorApiClient @Inject constructor() : ApiClient {
     }
 
     override suspend fun getCharts(): List<Chart> {
-        return client.get("charts").body()
+        return client.get("charts"){
+            url {
+                parameters.append("fetchContributors", "true")
+            }
+        }.body()
     }
 }
