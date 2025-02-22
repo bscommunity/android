@@ -116,7 +116,7 @@ fun CoverArt(
 fun Avatar(
 	modifier: Modifier? = Modifier,
 	size: Dp = 18.dp,
-	url: String? = null,
+	url: String,
 	key: String? = null
 ) {
 	val context = LocalContext.current
@@ -135,15 +135,22 @@ fun Avatar(
 		)
 	)
 
-	if (url != null && !url.contains("https")) {
+	if (!url.contains("https")) {
 		Box(
 			modifier = Modifier
 				.size(size)
-				.background(Color.Red)
+				.clip(CircleShape)
+				.background(MaterialTheme.colorScheme.surfaceContainerHigh)
 			,
 			contentAlignment = Alignment.Center,
 		) {
-			Text(text = url.first().toString().uppercase(Locale.getDefault()), style = MaterialTheme.typography.bodySmall)
+			Text(
+				text = url.first().toString().uppercase(Locale.getDefault()),
+				style = (size > 24.dp).let {
+					if (it) MaterialTheme.typography.titleMedium
+					else MaterialTheme.typography.labelSmall
+				},
+			)
 		}
 	} else {
 		if (key != null) {
