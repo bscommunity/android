@@ -16,5 +16,12 @@ class DateUtils {
 			// weeks
 			return "$diff weeks ago"
 		}
+
+		fun toDurationString(seconds: Float): String {
+			val minutes = (seconds % 3600) / 60
+			val formattedSeconds = seconds % 60
+
+			return "${minutes.toInt()}m${formattedSeconds.toInt()}s"
+		}
 	}
 }
