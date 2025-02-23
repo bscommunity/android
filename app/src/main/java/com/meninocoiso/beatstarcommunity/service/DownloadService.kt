@@ -1,8 +1,6 @@
-package com.meninocoiso.beatstarcommunity.util
+package com.meninocoiso.beatstarcommunity.service
 
-import java.time.LocalDate
-
-class DownloadUtils {
+class DownloadService {
 	companion object {
 		fun downloadChart(id: String, chartUrl: String) {
 			// Download chart
