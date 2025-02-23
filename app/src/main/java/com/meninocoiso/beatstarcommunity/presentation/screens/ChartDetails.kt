@@ -12,12 +12,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.BottomAppBarDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
@@ -29,6 +31,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -39,7 +45,7 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.CarouselUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartContributors
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
 import com.meninocoiso.beatstarcommunity.util.DateUtils
-import com.meninocoiso.beatstarcommunity.util.DownloadUtils.Companion.downloadChart
+import com.meninocoiso.beatstarcommunity.service.DownloadService.Companion.downloadChart
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -55,7 +61,9 @@ fun ChartDetailsScreen(
 ) {
     //println("ChartDetailsScreen: $chart")
     val lastVersion = chart.versions.last()
+
     val scrollState = rememberScrollState()
+    var moreOptionsExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -72,10 +80,27 @@ fun ChartDetailsScreen(
                     )
                 },
                 actions = {
-                    Icon(
-                        imageVector = Icons.Outlined.FavoriteBorder,
-                        contentDescription = "Like content"
-                    )
+                    IconButton(onClick = { moreOptionsExpanded = !moreOptionsExpanded }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "More options menu"
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = moreOptionsExpanded,
+                        onDismissRequest = { moreOptionsExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Share") },
+                            leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
+                            onClick = { /* TODO */ }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Delete chart") },
+                            leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
+                            onClick = { /* TODO */ }
+                        )
+                    }
                 },
                 title = {
                     Column {
@@ -90,20 +115,14 @@ fun ChartDetailsScreen(
                 actions = {
                     IconButton(onClick = { /* TODO */ }) {
                         Icon(
-                            Icons.Filled.MoreVert,
-                            contentDescription = "More options"
+                            painter = painterResource(id = R.drawable.baseline_artist_24),
+                            contentDescription = "Track link"
                         )
                     }
                     IconButton(onClick = { /* TODO */ }) {
                         Icon(
-                            Icons.Outlined.Delete,
-                            contentDescription = "Delete chart",
-                        )
-                    }
-                    IconButton(onClick = { /* TODO */ }) {
-                        Icon(
-                            Icons.Outlined.Share,
-                            contentDescription = "Share chart",
+                            Icons.Default.FavoriteBorder,
+                            contentDescription = "Like chart",
                         )
                     }
                 },
