@@ -16,20 +16,26 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import javax.inject.Singleton
 
-private const val USER_PREFERENCES_NAME = "user_preferences"
+private const val SETTINGS_NAME = "settings"
 
 @InstallIn(SingletonComponent::class)
 @Module
 object DataStoreModule {
 
+	/**
+	 * Provides a singleton instance of DataStore<Preferences>.
+	 *
+	 * @param appContext The application context used to create the DataStore.
+	 * @return A DataStore<Preferences> instance.
+	 */
 	@Singleton
 	@Provides
-	fun providePreferencesDataStore(@ApplicationContext appContext: Context): DataStore<Preferences> {
+	fun provideSettingsDataStore(@ApplicationContext appContext: Context): DataStore<Preferences> {
 		return PreferenceDataStoreFactory.create(
-			corruptionHandler = null,
-			migrations = listOf(SharedPreferencesMigration(appContext, USER_PREFERENCES_NAME)),
-			scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
-			produceFile = { appContext.preferencesDataStoreFile(USER_PREFERENCES_NAME) }
+			corruptionHandler = null, // No corruption handler is provided.
+			migrations = listOf(SharedPreferencesMigration(appContext, SETTINGS_NAME)), // Migrate from SharedPreferences.
+			scope = CoroutineScope(Dispatchers.IO + SupervisorJob()), // Use IO dispatcher with a SupervisorJob.
+			produceFile = { appContext.preferencesDataStoreFile(SETTINGS_NAME) } // Produce the file for DataStore.
 		)
 	}
 }

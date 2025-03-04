@@ -2,8 +2,8 @@ package com.meninocoiso.beatstarcommunity
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.meninocoiso.beatstarcommunity.data.local.UserPreferencesRepository
-import com.meninocoiso.beatstarcommunity.domain.model.UserPreferences
+import com.meninocoiso.beatstarcommunity.data.repository.SettingsRepository
+import com.meninocoiso.beatstarcommunity.domain.model.Settings
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,15 +17,15 @@ import javax.inject.Inject
 sealed interface MainActivityUiState {
 	data object Loading : MainActivityUiState
 	data class Success(
-		val userPreferences: UserPreferences
+		val settings: Settings
 	) : MainActivityUiState
 }
 
 @HiltViewModel
 class MainActivityViewModel @Inject constructor(
-    userDataRepository: UserPreferencesRepository,
+	settingsRepository: SettingsRepository,
 ) : ViewModel() {
-	val uiState: StateFlow<MainActivityUiState> = userDataRepository.userPreferencesFlow.map {
+	val uiState: StateFlow<MainActivityUiState> = settingsRepository.settingsFlow.map {
 		MainActivityUiState.Success(it)
 	}.stateIn(
 		scope = viewModelScope,

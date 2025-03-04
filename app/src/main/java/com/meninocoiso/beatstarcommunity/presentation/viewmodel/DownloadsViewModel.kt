@@ -29,7 +29,9 @@ class DownloadsViewModel @Inject constructor(
         fetchLocalCharts()
     }
 
-    fun fetchLocalCharts() {
+    fun refresh() = fetchLocalCharts()
+
+    private fun fetchLocalCharts() {
         _downloadsState.value = DownloadsState.Loading
         viewModelScope.launch {
             chartRepository.getCharts().collect { result ->
@@ -40,4 +42,6 @@ class DownloadsViewModel @Inject constructor(
             }
         }
     }
+
+    /**/
 }
