@@ -11,80 +11,61 @@ import com.meninocoiso.beatstarcommunity.domain.enums.ThemePreference
 import com.meninocoiso.beatstarcommunity.domain.model.Settings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.IOException
 import javax.inject.Inject
+import javax.inject.Singleton
 
-/**
- * Class that handles saving and retrieving user preferences
- */
+@Singleton
 class SettingsRepository @Inject constructor(
 	private val dataStore: DataStore<Preferences>
 ) {
-	private val tag = this::class.java.simpleName
-
-	private object SettingsKeys {
+	companion object SettingsKeys {
 		val ALLOW_EXPLICIT_CONTENT = booleanPreferencesKey("allow_explicit_content")
 		val USE_MATERIAL_YOU = booleanPreferencesKey("use_material_you")
 		val THEME = stringPreferencesKey("theme")
+		val FOLDER_URI = stringPreferencesKey("folder_uri")
 	}
 
-	/**
-	 * Enable / disable permission of explicit content
-	 */
-	suspend fun allowExplicitContent(allow: Boolean) {
-		// Data updates are handled transactionally, ensuring that if the permission is
-		// updated at the same time from another thread, we won't have conflicts
-		dataStore.edit { preferences ->
-			preferences[SettingsKeys.ALLOW_EXPLICIT_CONTENT] = allow
-		}
-	}
-
-	/**
-	 * Enable / disable use of Material You
-	 */
-	suspend fun useDynamicColors(use: Boolean) {
-		// Data updates are handled transactionally, ensuring that if the permission is
-		// updated at the same time from another thread, we won't have conflicts
-		dataStore.edit { preferences ->
-			preferences[SettingsKeys.USE_MATERIAL_YOU] = use
-		}
-	}
-
-	suspend fun updateAppTheme(theme: ThemePreference) {
-		println("Theme: $theme")
-		dataStore.edit { preferences ->
-			preferences[SettingsKeys.THEME] = theme.name
-		}
-	}
-
-	/**
-	 * Get the stream of Settings
-	 */
 	val settingsFlow: Flow<Settings> = dataStore.data
 		.catch { exception ->
-			// "dataStore.data" throws an IOException when an error is encountered when reading data
-			if (exception is IOException) {
-				Log.e(tag, "Error reading preferences.", exception)
-				emit(emptyPreferences())
-			} else {
-				throw exception
+			when (exception) {
+				is IOException -> {
+					Log.e("SettingsRepository", "Error reading preferences", exception)
+					emit(emptyPreferences())
+				}
+				else -> throw exception
 			}
-		}.map { preferences ->
+		}
+		.map { preferences ->
 			mapSettings(preferences)
 		}
 
-	private fun mapSettings(preferences: Preferences): Settings {
-		// Get the theme from preferences and convert it to a [ThemePreference] object
-		val theme =
-			ThemePreference.valueOf(
-				preferences[SettingsKeys.THEME] ?: ThemePreference.SYSTEM.name
-			)
+	suspend fun setExplicitContent(allow: Boolean) =
+		dataStore.edit { it[ALLOW_EXPLICIT_CONTENT] = allow }
 
-		// Get our boolean values, defaulting to false if not set:
-		val allowExplicitContent = preferences[SettingsKeys.ALLOW_EXPLICIT_CONTENT] ?: false
-		val useDynamicColors = preferences[SettingsKeys.USE_MATERIAL_YOU] ?: true
+	suspend fun setDynamicColors(use: Boolean) =
+		dataStore.edit { it[USE_MATERIAL_YOU] = use }
 
-		return Settings(allowExplicitContent, useDynamicColors, theme)
+	suspend fun setAppTheme(theme: ThemePreference) =
+		dataStore.edit { it[THEME] = theme.name }
+
+	suspend fun setFolderUri(uri: String) =
+		dataStore.edit { it[FOLDER_URI] = uri }
+
+	suspend fun getFolderUri(): String? {
+		return dataStore.data.first()[FOLDER_URI]
 	}
+
+	private fun mapSettings(preferences: Preferences): Settings = Settings(
+		allowExplicitContent = preferences[ALLOW_EXPLICIT_CONTENT]
+			?: Settings().allowExplicitContent,
+		useDynamicColors = preferences[USE_MATERIAL_YOU]
+			?: Settings().useDynamicColors,
+		theme = preferences[THEME]?.let { ThemePreference.valueOf(it) }
+			?: Settings().theme,
+		folderUri = preferences[FOLDER_URI]
+			?: Settings().folderUri
+	)
 }

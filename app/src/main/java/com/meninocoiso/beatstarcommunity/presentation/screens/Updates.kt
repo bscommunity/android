@@ -49,8 +49,8 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabItem
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabsUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.LocalChartPreview
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
-import com.meninocoiso.beatstarcommunity.presentation.viewmodel.DownloadsState
-import com.meninocoiso.beatstarcommunity.presentation.viewmodel.DownloadsViewModel
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.UpdatesState
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.UpdatesViewModel
 import com.meninocoiso.beatstarcommunity.util.AppBarUtils
 
 val updatesTabsItems = listOf(
@@ -69,7 +69,7 @@ private val TabsHeight = 55.dp
 @Composable
 fun UpdatesScreen(
 	section: UpdatesSection? = UpdatesSection.Workshop,
-	viewModel: DownloadsViewModel = hiltViewModel(),
+	viewModel: UpdatesViewModel = hiltViewModel(),
 ) {
 	val downloadsState by viewModel.downloadsState.collectAsState()
 
@@ -185,7 +185,7 @@ private fun DownloadsSectionsTitle(
 @Composable
 fun WorkspaceSection(
 	chartsToUpdate: List<Chart>,
-	downloadsState: DownloadsState,
+	downloadsState: UpdatesState,
 	nestedScrollConnection: NestedScrollConnection,
 ) {
 	val verticalGap = 8.dp
@@ -205,7 +205,7 @@ fun WorkspaceSection(
 		// Downloaded section
 		Section(
 			title = when (downloadsState) {
-				is DownloadsState.Success -> "Downloaded (${downloadsState.charts.size})"
+				is UpdatesState.Success -> "Downloaded (${downloadsState.charts.size})"
 				else -> "Downloaded"
 			},
 			modifier = Modifier.padding(top = 16.dp),
@@ -230,7 +230,7 @@ fun WorkspaceSection(
 			}
 
 			when (downloadsState) {
-				is DownloadsState.Loading -> {
+				is UpdatesState.Loading -> {
 					Box(
 						modifier = Modifier.fillMaxSize(),
 						contentAlignment = Alignment.Center
@@ -238,14 +238,14 @@ fun WorkspaceSection(
 						CircularProgressIndicator(modifier = Modifier.padding(16.dp))
 					}
 				}
-				is DownloadsState.Error -> {
+				is UpdatesState.Error -> {
 					StatusMessageUI(
 						title = "Looks like something went wrong...",
 						message = "\"${downloadsState.message}\"\nPlease try again or check Discord with error above to see if it’s already a known issue",
 						icon = R.drawable.rounded_hourglass_disabled_24
 					)
 				}
-				is DownloadsState.Success -> {
+				is UpdatesState.Success -> {
 					val chartsList = downloadsState.charts
 					if (chartsList.isEmpty()) {
 						Text(text = "No downloaded charts available", modifier = Modifier.padding(16.dp))

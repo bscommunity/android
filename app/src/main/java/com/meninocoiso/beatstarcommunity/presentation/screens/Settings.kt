@@ -112,7 +112,6 @@ fun SettingsScreen(
 	viewModel: SettingsViewModel = hiltViewModel()
 ) {
 	val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-	// println("UiState: $uiState")
 
 	Column(
 		modifier = Modifier

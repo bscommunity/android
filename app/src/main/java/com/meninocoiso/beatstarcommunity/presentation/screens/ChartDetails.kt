@@ -28,23 +28,33 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.CarouselUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartContributors
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.SettingsViewModel
+import com.meninocoiso.beatstarcommunity.service.DownloadService
 import com.meninocoiso.beatstarcommunity.util.DateUtils
+import com.meninocoiso.beatstarcommunity.util.StoragePermissionDialog
+import com.meninocoiso.beatstarcommunity.util.StoragePermissionHandler
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -56,15 +66,30 @@ typealias OnNavigateToDetails = (chart: Chart) -> Unit
 @Composable
 fun ChartDetailsScreen(
     chart: Chart,
-    onReturn: () -> Unit
+    onReturn: () -> Unit,
+    viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    //println("ChartDetailsScreen: $chart")
     val lastVersion = chart.versions.last()
+    val downloadUrl = "https://cdn.discordapp.com/attachments/954166390619783268/1343421514770415727/HOT_TO_GO.zip?ex=67c86b08&is=67c71988&hm=74388cc07990dcb67e9efabecfee62b0149a70efe3f3619031712a20b6e4b45e&"
+
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val scrollState = rememberScrollState()
     var moreOptionsExpanded by remember { mutableStateOf(false) }
+    var showStoragePermissionDialog by remember { mutableStateOf(false) }
+    var hasStoragePermission by remember { mutableStateOf(false) }
+
+    // Check for storage permission
+    StoragePermissionHandler(
+        onPermissionGranted = { hasStoragePermission = true },
+        content = {},
+        viewModel = viewModel
+    )
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 modifier = Modifier.padding(horizontal = 16.dp),
@@ -92,12 +117,18 @@ fun ChartDetailsScreen(
                         DropdownMenuItem(
                             text = { Text("Share") },
                             leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
-                            onClick = { /* TODO */ }
+                            onClick = {
+                                moreOptionsExpanded = false
+                                // Implement share functionality
+                            }
                         )
                         DropdownMenuItem(
                             text = { Text("Delete chart") },
                             leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
-                            onClick = { /* TODO */ }
+                            onClick = {
+                                moreOptionsExpanded = false
+                                // Implement delete functionality
+                            }
                         )
                     }
                 },
@@ -112,13 +143,13 @@ fun ChartDetailsScreen(
         bottomBar = {
             BottomAppBar(
                 actions = {
-                    IconButton(onClick = { /* TODO */ }) {
+                    IconButton(onClick = { /* TODO: Open track link */ }) {
                         Icon(
                             painter = painterResource(id = R.drawable.baseline_artist_24),
                             contentDescription = "Track link"
                         )
                     }
-                    IconButton(onClick = { /* TODO */ }) {
+                    IconButton(onClick = { /* TODO: Favorite functionality */ }) {
                         Icon(
                             Icons.Default.FavoriteBorder,
                             contentDescription = "Like chart",
@@ -131,12 +162,28 @@ fun ChartDetailsScreen(
                         icon = {
                             Icon(
                                 painter = painterResource(id = R.drawable.rounded_download_24),
-                                contentDescription = ""
+                                contentDescription = "Download chart"
                             )
                         },
                         containerColor = BottomAppBarDefaults.bottomAppBarFabColor,
                         elevation = FloatingActionButtonDefaults.bottomAppBarFabElevation(),
-                        onClick = { /*TODO */ /*downloadChart(chart.id, lastVersion.chartUrl)*/ }
+                        onClick = {
+                            if (hasStoragePermission) {
+                                // Start download service
+                                DownloadService.startDownload(
+                                    context = context,
+                                    chartUrl = downloadUrl,
+                                    chartName = "${chart.artist} - ${chart.track}"
+                                )
+
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("Downloading chart...")
+                                }
+                            } else {
+                                // Show storage permission dialog
+                                showStoragePermissionDialog = true
+                            }
+                        }
                     )
                 }
             )
@@ -156,9 +203,7 @@ fun ChartDetailsScreen(
             ChartContributors(chart.contributors)
 
             // Stats
-            Section(
-                title = "Stats"
-            ) {
+            Section(title = "Stats") {
                 Column(modifier = Modifier.padding(bottom = 8.dp)) {
                     StatListItem(
                         title = "~${DateUtils.toDurationString(lastVersion.duration)}",
@@ -180,9 +225,7 @@ fun ChartDetailsScreen(
             }
 
             // Known Issues
-            Section(
-                title = "Known Issues"
-            ) {
+            Section(title = "Known Issues") {
                 Box(modifier = Modifier.padding(16.dp)) {
                     Column(
                         modifier = Modifier
@@ -193,7 +236,9 @@ fun ChartDetailsScreen(
                     ) {
                         if (lastVersion.knownIssues.isEmpty()) {
                             Text(
-                                modifier = Modifier.fillMaxWidth().align(Alignment.CenterHorizontally),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .align(Alignment.CenterHorizontally),
                                 text = "No known issues",
                                 style = MaterialTheme.typography.bodyLarge
                             )
@@ -209,6 +254,31 @@ fun ChartDetailsScreen(
                 }
             }
         }
+    }
+
+    // Show storage permission dialog if needed
+    if (showStoragePermissionDialog) {
+        StoragePermissionDialog(
+            viewModel = viewModel,
+            onPermissionGranted = {
+                hasStoragePermission = true
+                showStoragePermissionDialog = false
+
+                // Start download immediately after permission is granted
+                DownloadService.startDownload(
+                    context = context,
+                    chartUrl = downloadUrl,
+                    chartName = "${chart.artist} - ${chart.track}"
+                )
+
+                scope.launch {
+                    snackbarHostState.showSnackbar("Downloading chart...")
+                }
+            },
+            onDismiss = {
+                showStoragePermissionDialog = false
+            }
+        )
     }
 }
 
@@ -227,7 +297,6 @@ private fun StatListItem(
         leadingContent = {
             Box(
                 modifier = Modifier
-                    //.background(Color.Red)
                     .size(48.dp),
                 contentAlignment = Alignment.Center
             ) {
