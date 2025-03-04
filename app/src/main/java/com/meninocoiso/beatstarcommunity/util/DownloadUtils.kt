@@ -53,12 +53,32 @@ class DownloadUtils @Inject constructor(
     val downloadState: Flow<DownloadState> = _downloadState.asStateFlow()
 
     /**
+     * Sets the folder URI in the settings repository.
+     *
+     * @param uri The URI of the folder to be set.
+     */
+    suspend fun setFolderUri(uri: String) {
+        settingsRepository.setFolderUri(uri)
+    }
+
+    /**
+     * Retrieves the folder URI from the settings repository.
+     *
+     * @return The URI of the folder, or null if not set.
+     */
+    suspend fun getFolderUri(): String? {
+        return settingsRepository.getFolderUri()
+    }
+
+    /**
      * Downloads and extracts a chart to the beatstar folder
      * @param url URL of the chart zip file
      * @param chartName Name to use for the chart folder
      */
     suspend fun downloadChart(url: String, chartName: String) {
-        println("downloadChart")
+        // Reset state
+        _downloadState.value = DownloadState.Idle
+
         try {
             _downloadState.value = DownloadState.Downloading(0f)
 

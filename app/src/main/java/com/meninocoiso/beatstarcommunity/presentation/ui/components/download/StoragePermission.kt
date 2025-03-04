@@ -22,14 +22,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ChartDetailsViewModel
+import com.meninocoiso.beatstarcommunity.util.DownloadUtils
 import kotlinx.coroutines.launch
 
 @Composable
 fun StoragePermissionDialog(
     onPermissionGranted: () -> Unit,
     onDismiss: () -> Unit,
-    viewModel: ChartDetailsViewModel
+    downloadUtils: DownloadUtils
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -47,7 +47,7 @@ fun StoragePermissionDialog(
 
             // Save the URI
             scope.launch {
-                viewModel.setFolderUri(uri.toString())
+                downloadUtils.setFolderUri(uri.toString())
                 onPermissionGranted()
             }
         } else {
@@ -103,13 +103,13 @@ fun StoragePermissionDialog(
 @Composable
 fun StoragePermissionHandler(
     onPermissionGranted: () -> Unit,
-    viewModel: ChartDetailsViewModel
+    downloadUtils: DownloadUtils
 ) {
     val context = LocalContext.current
 
     // Check if we already have a valid folder URI
     LaunchedEffect(Unit) {
-        val folderUri = viewModel.getFolderUri()
+        val folderUri = downloadUtils.getFolderUri()
         if (!folderUri.isNullOrEmpty()) {
             try {
                 val uri = Uri.parse(folderUri)
