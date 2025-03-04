@@ -45,6 +45,7 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace.Wo
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace.WorkspaceTopBar
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace.workspaceTabsItems
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ChartViewModel
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ChartsState
 import com.meninocoiso.beatstarcommunity.util.AppBarUtils
 
 private val SearchBarHeight = 80.dp
@@ -114,61 +115,77 @@ private fun SectionWrapper(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ChartsSection(
+fun ChartsSection(
 	nestedScrollConnection: NestedScrollConnection,
 	onNavigateToDetails: OnNavigateToDetails,
 	viewModel: ChartViewModel = hiltViewModel()
 ) {
-	val charts by viewModel.charts.collectAsState()
-	val isRefreshing by viewModel.isRefreshing.collectAsState()
+	val chartsState by viewModel.charts.collectAsState()
 
-	LaunchedEffect(Unit) {
-		viewModel.fetchCharts()
-	}
-
-	charts?.fold(
-		onSuccess = { data ->
+	when (chartsState) {
+		is ChartsState.Loading -> {
+			Box(
+				modifier = Modifier.fillMaxSize(),
+				contentAlignment = Alignment.Center,
+			) {
+				CircularProgressIndicator(
+					modifier = Modifier.width(36.dp),
+					color = MaterialTheme.colorScheme.secondary,
+					trackColor = MaterialTheme.colorScheme.surfaceVariant,
+				)
+			}
+		}
+		is ChartsState.Success -> {
+			val data = (chartsState as ChartsState.Success).charts
 			if (data.isEmpty()) {
 				StatusMessageUI(
 					title = "We couldn't find anything based on your search",
 					message = "Try removing some filters or searching for something else",
 					icon = R.drawable.rounded_sentiment_dissatisfied_24,
-					onClick = { },
+					onClick = { /* Optionally trigger a refresh or clear filters */ },
 					buttonLabel = "Clear filters"
 				)
 			} else {
 				PullToRefreshBox(
-					isRefreshing = isRefreshing,
-					onRefresh = { viewModel.fetchCharts() },
+					isRefreshing = false,
+					onRefresh = { viewModel.refresh() }
 				) {
 					SectionWrapper(nestedScrollConnection = nestedScrollConnection) {
 						items(data) { chart ->
 							ChartPreview(
-								onNavigateToDetails = {onNavigateToDetails(chart)},
+								onNavigateToDetails = { onNavigateToDetails(chart) },
 								chart = chart
 							)
 						}
 					}
 				}
 			}
-		},
-		onFailure = { error ->
+		}
+		is ChartsState.Error -> {
+			val errorMessage = (chartsState as ChartsState.Error).message ?: "Unknown error"
+
+			// We handle no internet connection separately
+			val (title, message, icon) = if (errorMessage == "No internet connection") {
+				Triple(
+					"No Internet Connection",
+					"Please check your connection and try again.",
+					R.drawable.rounded_wifi_off_24
+				)
+			} else {
+				Triple(
+					"Looks like something went wrong...",
+					"\"$errorMessage\"\nPlease try again or check Discord to see if it’s a known issue",
+					R.drawable.rounded_hourglass_disabled_24
+				)
+			}
+
 			StatusMessageUI(
-				title = "Looks like something went wrong...",
-				message = "\"${error.message}\"\nPlease try again or check Discord with error above to see if it’s already a known issue",
-				icon = R.drawable.rounded_hourglass_disabled_24,
-				onClick = { viewModel.fetchCharts() }
+				title = title,
+				message = message,
+				icon = icon,
+				onClick = { viewModel.refresh() }
 			)
 		}
-	) ?: Box(
-		modifier = Modifier.fillMaxSize(),
-		contentAlignment = Alignment.Center,
-	) {
-		CircularProgressIndicator(
-			modifier = Modifier.width(36.dp),
-			color = MaterialTheme.colorScheme.secondary,
-			trackColor = MaterialTheme.colorScheme.surfaceVariant,
-		)
 	}
 }
 

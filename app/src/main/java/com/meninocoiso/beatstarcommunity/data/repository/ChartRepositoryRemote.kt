@@ -31,6 +31,10 @@ class ChartRepositoryRemote @Inject constructor(
         }
     }.flowOn(dispatcher)
 
+    override suspend fun insertCharts(charts: List<Chart>): Flow<Result<Boolean>> {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun deleteChart(chart: Chart): Flow<Result<Boolean>> {
         TODO("Not yet implemented")
     }
