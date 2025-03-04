@@ -46,6 +46,24 @@ class ChartRepositoryLocal(
         }
     }.flowOn(dispatcher)
 
+    override suspend fun updateChart(chart: Chart): Flow<Result<Boolean>> = flow {
+        try {
+            chartDao.update(chart)
+            emit(Result.success(true))
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }.flowOn(dispatcher)
+
+    override suspend fun updateChart(id: String, isInstalled: Boolean?): Flow<Result<Boolean>> = flow {
+        try {
+            chartDao.update(isInstalled, id)
+            emit(Result.success(true))
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }.flowOn(dispatcher)
+
     override suspend fun deleteChart(chart: Chart): Flow<Result<Boolean>> = flow<Result<Boolean>> {
         try {
             chartDao.delete(chart)

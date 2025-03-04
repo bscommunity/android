@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 
 @Dao
@@ -21,6 +22,16 @@ interface ChartDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(charts: List<Chart>)
+
+    @Update
+    fun update(chart: Chart)
+
+    /**
+     * Updating only is_installed field
+     * By chart id
+     */
+    @Query("UPDATE charts SET is_installed = :isInstalled WHERE id =:id")
+    fun update(isInstalled: Boolean?, id: String)
 
     @Delete
     fun delete(chart: Chart)
