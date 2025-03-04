@@ -17,12 +17,9 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -36,57 +33,34 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.CarouselUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartContributors
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.download.DownloadButton
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
-import com.meninocoiso.beatstarcommunity.presentation.viewmodel.SettingsViewModel
-import com.meninocoiso.beatstarcommunity.service.DownloadService
 import com.meninocoiso.beatstarcommunity.util.DateUtils
-import com.meninocoiso.beatstarcommunity.util.StoragePermissionDialog
-import com.meninocoiso.beatstarcommunity.util.StoragePermissionHandler
-import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class ChartDetails(val chart: Chart)
-
-typealias OnNavigateToDetails = (chart: Chart) -> Unit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChartDetailsScreen(
     chart: Chart,
     onReturn: () -> Unit,
-    viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val lastVersion = chart.versions.last()
-    val downloadUrl = "https://cdn.discordapp.com/attachments/954166390619783268/1343421514770415727/HOT_TO_GO.zip?ex=67c86b08&is=67c71988&hm=74388cc07990dcb67e9efabecfee62b0149a70efe3f3619031712a20b6e4b45e&"
-
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
 
     val scrollState = rememberScrollState()
+    val snackbarHostState = remember { SnackbarHostState() }
     var moreOptionsExpanded by remember { mutableStateOf(false) }
-    var showStoragePermissionDialog by remember { mutableStateOf(false) }
-    var hasStoragePermission by remember { mutableStateOf(false) }
-
-    // Check for storage permission
-    StoragePermissionHandler(
-        onPermissionGranted = { hasStoragePermission = true },
-        content = {},
-        viewModel = viewModel
-    )
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -157,33 +131,9 @@ fun ChartDetailsScreen(
                     }
                 },
                 floatingActionButton = {
-                    ExtendedFloatingActionButton(
-                        text = { Text("Download") },
-                        icon = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.rounded_download_24),
-                                contentDescription = "Download chart"
-                            )
-                        },
-                        containerColor = BottomAppBarDefaults.bottomAppBarFabColor,
-                        elevation = FloatingActionButtonDefaults.bottomAppBarFabElevation(),
-                        onClick = {
-                            if (hasStoragePermission) {
-                                // Start download service
-                                DownloadService.startDownload(
-                                    context = context,
-                                    chartUrl = downloadUrl,
-                                    chartName = "${chart.artist} - ${chart.track}"
-                                )
-
-                                scope.launch {
-                                    snackbarHostState.showSnackbar("Downloading chart...")
-                                }
-                            } else {
-                                // Show storage permission dialog
-                                showStoragePermissionDialog = true
-                            }
-                        }
+                    DownloadButton(
+                        chart = chart,
+                        snackbarHostState
                     )
                 }
             )
@@ -197,6 +147,7 @@ fun ChartDetailsScreen(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            // Cover image
             CarouselUI(listOf(chart.coverUrl))
 
             // Credits
@@ -255,31 +206,6 @@ fun ChartDetailsScreen(
             }
         }
     }
-
-    // Show storage permission dialog if needed
-    if (showStoragePermissionDialog) {
-        StoragePermissionDialog(
-            viewModel = viewModel,
-            onPermissionGranted = {
-                hasStoragePermission = true
-                showStoragePermissionDialog = false
-
-                // Start download immediately after permission is granted
-                DownloadService.startDownload(
-                    context = context,
-                    chartUrl = downloadUrl,
-                    chartName = "${chart.artist} - ${chart.track}"
-                )
-
-                scope.launch {
-                    snackbarHostState.showSnackbar("Downloading chart...")
-                }
-            },
-            onDismiss = {
-                showStoragePermissionDialog = false
-            }
-        )
-    }
 }
 
 @Composable
@@ -309,3 +235,5 @@ private fun StatListItem(
         }
     )
 }
+
+typealias OnNavigateToDetails = (chart: Chart) -> Unit

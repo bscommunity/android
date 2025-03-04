@@ -65,20 +65,4 @@ class SettingsViewModel @Inject constructor(
 			settingsRepository.setAppTheme(theme)
 		}
 	}
-
-	/**
-	 * Set the folder uri
-	 */
-	fun setFolderUri(uri: String) {
-		viewModelScope.launch {
-			settingsRepository.setFolderUri(uri)
-		}
-	}
-
-	/*
-	* Get the current folder uri
-	* */
-	suspend fun getFolderUri(): String? {
-		return settingsRepository.getFolderUri()
-	}
 }

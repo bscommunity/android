@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.util
+package com.meninocoiso.beatstarcommunity.presentation.ui.components.download
 
 import android.content.Intent
 import android.net.Uri
@@ -15,20 +15,21 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.meninocoiso.beatstarcommunity.presentation.viewmodel.SettingsViewModel
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ChartDetailsViewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun StoragePermissionDialog(
     onPermissionGranted: () -> Unit,
     onDismiss: () -> Unit,
-    viewModel: SettingsViewModel
+    viewModel: ChartDetailsViewModel
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -102,14 +103,12 @@ fun StoragePermissionDialog(
 @Composable
 fun StoragePermissionHandler(
     onPermissionGranted: () -> Unit,
-    content: @Composable () -> Unit,
-    viewModel: SettingsViewModel
+    viewModel: ChartDetailsViewModel
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
 
     // Check if we already have a valid folder URI
-    scope.launch {
+    LaunchedEffect(Unit) {
         val folderUri = viewModel.getFolderUri()
         if (!folderUri.isNullOrEmpty()) {
             try {
@@ -122,13 +121,11 @@ fun StoragePermissionHandler(
 
                 if (flags) {
                     onPermissionGranted()
-                    return@launch
+                    return@LaunchedEffect
                 }
             } catch (e: Exception) {
                 Log.e("StoragePermission", "Error checking URI permissions", e)
             }
         }
     }
-
-    content()
 }
