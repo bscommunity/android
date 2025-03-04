@@ -19,6 +19,7 @@ import okhttp3.Request
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import javax.inject.Inject
@@ -31,10 +32,10 @@ private const val BEATSTAR_FOLDER_NAME = "beatstar"
  * Download state for tracking download progress
  */
 sealed class DownloadState {
-    object Idle : DownloadState()
+    data object Idle : DownloadState()
     data class Downloading(val progress: Float) : DownloadState()
     data class Extracting(val progress: Float) : DownloadState()
-    object Completed : DownloadState()
+    data object Completed : DownloadState()
     data class Error(val message: String) : DownloadState()
 }
 
@@ -83,34 +84,25 @@ class DownloadUtils @Inject constructor(
 
     /**
      * Gets or creates the beatstar folder URI
-     * Handles different storage approaches based on Android version
      */
-    suspend fun getBeatstarFolderUri(): Uri? = withContext(Dispatchers.IO) {
+    private suspend fun getBeatstarFolderUri(): Uri? = withContext(Dispatchers.IO) {
         try {
-            // First, try to get the folder URI from settings
             val savedFolderUri = settingsRepository.getFolderUri()
-
-            println("savedFolderUri: $savedFolderUri")
 
             if (!savedFolderUri.isNullOrEmpty()) {
                 val savedUri = Uri.parse(savedFolderUri)
 
-                println("savedUri1: $savedUri")
+                val destinationFolder = DocumentFile.fromTreeUri(context, savedUri)
+                destinationFolder?.listFiles()
 
-                // Verify if the URI still exists and is accessible
-                if (isUriAccessible(savedUri)) {
-                    println("savedUri2: $savedUri")
-                    return@withContext savedUri
-                }
+                return@withContext savedUri
             }
 
-            println("createBeatstarFolder")
-
-            // If no URI is saved or it's not accessible, create a new folder
+            // If no saved URI or it fails, create a new folder
             return@withContext createBeatstarFolder()
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get or create beatstar folder", e)
-            return@withContext null
+            Log.e(TAG, "Failed to get or use saved folder, creating new", e)
+            return@withContext createBeatstarFolder()
         }
     }
 
@@ -216,14 +208,11 @@ class DownloadUtils @Inject constructor(
     ) = withContext(Dispatchers.IO) {
         _downloadState.value = DownloadState.Extracting(0f)
 
+        println(DocumentsContract.isDocumentUri(context, destinationFolderUri))
+        println(destinationFolderUri.path)
+
         try {
-            val destinationFolder = if (DocumentsContract.isDocumentUri(context, destinationFolderUri)) {
-                // Storage Access Framework
-                DocumentFile.fromTreeUri(context, destinationFolderUri)
-            } else {
-                // Direct file access
-                DocumentFile.fromFile(File(destinationFolderUri.path!!))
-            }
+            val destinationFolder = DocumentFile.fromTreeUri(context, destinationFolderUri)
 
             // Make sure we have the destination folder
             if (destinationFolder == null || !destinationFolder.exists()) {
@@ -245,7 +234,8 @@ class DownloadUtils @Inject constructor(
                 val buffer = ByteArray(8192)
 
                 while (entry != null) {
-                    val entryName = entry.name.substringAfterLast('/')
+                    val entryName = entry.name.substringAfterLast('/').replace("\\", "")
+                        .lowercase(Locale.getDefault())
 
                     if (!entry.isDirectory && entryName.isNotEmpty()) {
                         // Create the file in the destination folder
@@ -288,28 +278,6 @@ class DownloadUtils @Inject constructor(
             }
         }
         count
-    }
-
-    /**
-     * Check if a URI is accessible
-     */
-    private suspend fun isUriAccessible(uri: Uri): Boolean = withContext(Dispatchers.IO) {
-        try {
-            println("isUriAccessible: $uri, scheme: ${uri.scheme}, path: ${uri.path}")
-            if (DocumentsContract.isDocumentUri(context, uri)) {
-                val docFile = DocumentFile.fromTreeUri(context, uri)
-
-                return@withContext docFile?.exists() == true && docFile.canRead() && docFile.canWrite()
-            } else if (uri.scheme == "file") {
-                val file = File(uri.path!!)
-
-                return@withContext file.exists() && file.canRead() && file.canWrite()
-            }
-            return@withContext false
-        } catch (e: Exception) {
-            Log.e(TAG, "Error checking URI accessibility", e)
-            return@withContext false
-        }
     }
 
     /**

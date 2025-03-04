@@ -1,5 +1,6 @@
 package com.meninocoiso.beatstarcommunity.data.repository
 
+import android.util.Log
 import com.meninocoiso.beatstarcommunity.data.local.dao.ChartDao
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import kotlinx.coroutines.CoroutineDispatcher
@@ -7,6 +8,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+
+private const val TAG = "ChartRepositoryLocal"
 
 class ChartRepositoryLocal(
     private val chartDao: ChartDao,
@@ -33,8 +36,10 @@ class ChartRepositoryLocal(
     override suspend fun insertCharts(charts: List<Chart>): Flow<Result<Boolean>> = flow {
         try {
             chartDao.insert(charts)
-            println("inserted charts: $charts")
-            println("getAll: ${chartDao.getAll()}")
+
+            Log.d(TAG, "inserted charts: $charts")
+            Log.d(TAG, "getAll: ${chartDao.getAll()}")
+
             emit(Result.success(true))
         } catch (e: Exception) {
             emit(Result.failure(e))

@@ -7,7 +7,14 @@ import com.meninocoiso.beatstarcommunity.data.local.dao.ChartDao
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.serialization.Converters
 
-@Database(entities = [Chart::class], version = 1, exportSchema = false)
+@Database(
+    version = 1,
+    entities = [
+        Chart::class,
+        /*Contributor::class,
+        Version::class*/
+    ]
+)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun chartDao(): ChartDao
@@ -25,5 +32,4 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
     }*/
-
 }
