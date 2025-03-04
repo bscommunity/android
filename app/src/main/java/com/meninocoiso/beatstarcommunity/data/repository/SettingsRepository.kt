@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.data.local
+package com.meninocoiso.beatstarcommunity.data.repository
 
 import android.util.Log
 import androidx.datastore.core.DataStore
@@ -8,7 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.meninocoiso.beatstarcommunity.domain.enums.ThemePreference
-import com.meninocoiso.beatstarcommunity.domain.model.UserPreferences
+import com.meninocoiso.beatstarcommunity.domain.model.Settings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -18,12 +18,12 @@ import javax.inject.Inject
 /**
  * Class that handles saving and retrieving user preferences
  */
-class UserPreferencesRepository @Inject constructor(
+class SettingsRepository @Inject constructor(
 	private val dataStore: DataStore<Preferences>
 ) {
 	private val tag = this::class.java.simpleName
 
-	private object PreferencesKeys {
+	private object SettingsKeys {
 		val ALLOW_EXPLICIT_CONTENT = booleanPreferencesKey("allow_explicit_content")
 		val USE_MATERIAL_YOU = booleanPreferencesKey("use_material_you")
 		val THEME = stringPreferencesKey("theme")
@@ -36,7 +36,7 @@ class UserPreferencesRepository @Inject constructor(
 		// Data updates are handled transactionally, ensuring that if the permission is
 		// updated at the same time from another thread, we won't have conflicts
 		dataStore.edit { preferences ->
-			preferences[PreferencesKeys.ALLOW_EXPLICIT_CONTENT] = allow
+			preferences[SettingsKeys.ALLOW_EXPLICIT_CONTENT] = allow
 		}
 	}
 
@@ -47,21 +47,21 @@ class UserPreferencesRepository @Inject constructor(
 		// Data updates are handled transactionally, ensuring that if the permission is
 		// updated at the same time from another thread, we won't have conflicts
 		dataStore.edit { preferences ->
-			preferences[PreferencesKeys.USE_MATERIAL_YOU] = use
+			preferences[SettingsKeys.USE_MATERIAL_YOU] = use
 		}
 	}
 
 	suspend fun updateAppTheme(theme: ThemePreference) {
 		println("Theme: $theme")
 		dataStore.edit { preferences ->
-			preferences[PreferencesKeys.THEME] = theme.name
+			preferences[SettingsKeys.THEME] = theme.name
 		}
 	}
 
 	/**
-	 * Get the stream of UserPreferences
+	 * Get the stream of Settings
 	 */
-	val userPreferencesFlow: Flow<UserPreferences> = dataStore.data
+	val settingsFlow: Flow<Settings> = dataStore.data
 		.catch { exception ->
 			// "dataStore.data" throws an IOException when an error is encountered when reading data
 			if (exception is IOException) {
@@ -71,20 +71,20 @@ class UserPreferencesRepository @Inject constructor(
 				throw exception
 			}
 		}.map { preferences ->
-			mapUserPreferences(preferences)
+			mapSettings(preferences)
 		}
 
-	private fun mapUserPreferences(preferences: Preferences): UserPreferences {
+	private fun mapSettings(preferences: Preferences): Settings {
 		// Get the theme from preferences and convert it to a [ThemePreference] object
 		val theme =
 			ThemePreference.valueOf(
-				preferences[PreferencesKeys.THEME] ?: ThemePreference.SYSTEM.name
+				preferences[SettingsKeys.THEME] ?: ThemePreference.SYSTEM.name
 			)
 
 		// Get our boolean values, defaulting to false if not set:
-		val allowExplicitContent = preferences[PreferencesKeys.ALLOW_EXPLICIT_CONTENT] ?: false
-		val useDynamicColors = preferences[PreferencesKeys.USE_MATERIAL_YOU] ?: true
+		val allowExplicitContent = preferences[SettingsKeys.ALLOW_EXPLICIT_CONTENT] ?: false
+		val useDynamicColors = preferences[SettingsKeys.USE_MATERIAL_YOU] ?: true
 
-		return UserPreferences(allowExplicitContent, useDynamicColors, theme)
+		return Settings(allowExplicitContent, useDynamicColors, theme)
 	}
 }

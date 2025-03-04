@@ -17,6 +17,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
+    // Chart
     @Provides
     fun provideChartDao(appDatabase: AppDatabase): ChartDao {
         return appDatabase.chartDao()
@@ -29,13 +30,19 @@ object DatabaseModule {
         chartDao: ChartDao
     ): ChartRepository = ChartRepositoryLocal(chartDao)
 
+    /**
+     * Provides a singleton instance of AppDatabase.
+     *
+     * @param context The application context used to create the database.
+     * @return An instance of AppDatabase.
+     */
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
         return Room.databaseBuilder(
             context = context,
             AppDatabase::class.java,
-            "chart_database"
+            "local_database"
         )
             .fallbackToDestructiveMigration()
             .build()

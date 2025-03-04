@@ -2,7 +2,7 @@ package com.meninocoiso.beatstarcommunity.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.meninocoiso.beatstarcommunity.data.local.UserPreferencesRepository
+import com.meninocoiso.beatstarcommunity.data.repository.SettingsRepository
 import com.meninocoiso.beatstarcommunity.domain.enums.ThemePreference
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,7 +37,7 @@ private data class SettingsViewModelState(
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-	private val userPreferencesRepository: UserPreferencesRepository
+	private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 	private val viewModelState = MutableStateFlow(value = SettingsViewModelState())
 
@@ -53,12 +53,12 @@ class SettingsViewModel @Inject constructor(
 
 	private fun watchAppConfigurationStream() {
 		viewModelScope.launch {
-			userPreferencesRepository.userPreferencesFlow.collectLatest { userPreferences ->
+			settingsRepository.settingsFlow.collectLatest { settings ->
 				viewModelState.update { state ->
 					state.copy(
-						allowExplicitContent = userPreferences.allowExplicitContent,
-						useDynamicColors = userPreferences.useDynamicColors,
-						themePreference = userPreferences.theme
+						allowExplicitContent = settings.allowExplicitContent,
+						useDynamicColors = settings.useDynamicColors,
+						themePreference = settings.theme
 					)
 				}
 
@@ -67,21 +67,22 @@ class SettingsViewModel @Inject constructor(
 		}
 	}
 
+	// Functions to update the user preferences
 	fun allowExplicitContent(allow: Boolean) {
 		viewModelScope.launch {
-			userPreferencesRepository.allowExplicitContent(allow)
+			settingsRepository.allowExplicitContent(allow)
 		}
 	}
 
 	fun useDynamicColors(use: Boolean) {
 		viewModelScope.launch {
-			userPreferencesRepository.useDynamicColors(use)
+			settingsRepository.useDynamicColors(use)
 		}
 	}
 
 	fun updateAppTheme(theme: ThemePreference) {
 		viewModelScope.launch {
-			userPreferencesRepository.updateAppTheme(theme)
+			settingsRepository.updateAppTheme(theme)
 		}
 	}
 }
