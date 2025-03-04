@@ -2,7 +2,7 @@ package com.meninocoiso.beatstarcommunity.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.meninocoiso.beatstarcommunity.data.UserPreferencesRepository
+import com.meninocoiso.beatstarcommunity.data.local.UserPreferencesRepository
 import com.meninocoiso.beatstarcommunity.domain.enums.ThemePreference
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

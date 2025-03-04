@@ -39,6 +39,7 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartPreview
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace.WorkspaceChips
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace.WorkspaceTopBar
@@ -111,63 +112,6 @@ private fun SectionWrapper(
 	}
 }
 
-@Preview
-@Composable
-fun StatusMessagePreview() {
-	StatusMessage(
-		title = "No internet connection",
-		message = "Please check your connection and try again",
-		icon = R.drawable.rounded_wifi_off_24,
-		onClick = {},
-		buttonLabel = "Try again"
-	)
-}
-
-@Composable
-fun StatusMessage(
-	title: String,
-	message: String,
-	icon: Int,
-	onClick: () -> Unit,
-	buttonLabel: String = "Try again"
-) {
-	Column(
-		modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-		verticalArrangement = Arrangement.spacedBy(
-			space = 16.dp,
-			alignment = Alignment.CenterVertically
-		),
-		horizontalAlignment = Alignment.CenterHorizontally,
-	) {
-		Icon(
-			painter = painterResource(id = icon),
-			modifier = Modifier.size(56.dp),
-			contentDescription = ""
-		)
-		Text(
-			text = title,
-			textAlign = TextAlign.Center,
-			style = MaterialTheme.typography.titleLarge,
-			modifier = Modifier
-				.fillMaxWidth()
-				.padding(horizontal = 16.dp)
-		)
-		Text(
-			text = message,
-			textAlign = TextAlign.Center,
-			style = MaterialTheme.typography.bodyMedium,
-			modifier = Modifier
-				.fillMaxWidth()
-				.padding(horizontal = 16.dp)
-		)
-		OutlinedButton(
-            onClick = { onClick() },
-        ) {
-			Text(buttonLabel)
-		}
-	}
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChartsSection(
@@ -185,7 +129,7 @@ private fun ChartsSection(
 	charts?.fold(
 		onSuccess = { data ->
 			if (data.isEmpty()) {
-				StatusMessage(
+				StatusMessageUI(
 					title = "We couldn't find anything based on your search",
 					message = "Try removing some filters or searching for something else",
 					icon = R.drawable.rounded_sentiment_dissatisfied_24,
@@ -209,7 +153,7 @@ private fun ChartsSection(
 			}
 		},
 		onFailure = { error ->
-			StatusMessage(
+			StatusMessageUI(
 				title = "Looks like something went wrong...",
 				message = "\"${error.message}\"\nPlease try again or check Discord with error above to see if it’s already a known issue",
 				icon = R.drawable.rounded_hourglass_disabled_24,

@@ -63,7 +63,6 @@ android {
 }
 
 dependencies {
-
 	implementation(libs.androidx.core.ktx)
 	implementation(libs.androidx.lifecycle.runtime.ktx)
 	implementation(libs.androidx.activity.compose)
@@ -79,6 +78,9 @@ dependencies {
 	implementation(libs.androidx.datastore.preferences)
 	implementation(libs.androidx.core.splashscreen)
 	implementation(libs.desugar.jdk.libs)
+    implementation(libs.androidx.room.runtime)
+	implementation(libs.androidx.room.ktx)
+	implementation(libs.androidx.room.compiler)
 	testImplementation(libs.junit)
 	androidTestImplementation(libs.androidx.junit)
 	androidTestImplementation(libs.androidx.espresso.core)
@@ -92,13 +94,18 @@ dependencies {
 	implementation(libs.ktor.client.logging)
 	implementation(libs.ktor.client.content.negotiation)
 	implementation(libs.ktor.serialization.kotlinx.json)
-
-	implementation(libs.navigation.compose)
 	implementation(libs.kotlinx.serialization.json)
+	implementation(libs.navigation.compose)
 
+	// Room (local database)
+	implementation(libs.androidx.room.runtime)
+	implementation(libs.androidx.room.ktx)
+	ksp(libs.androidx.room.compiler)
+
+	// Desugaring (new Date API/Java 8)
 	/*coreLibraryDesugaring(libs.desugar.jdk.libs)*/
 
-	// Hilt
+	// Hilt (dependency injection)
 	implementation(libs.androidx.hilt.navigation.compose)
 	implementation(libs.hilt.android)
 	ksp(libs.hilt.compiler)
@@ -107,4 +114,8 @@ java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(17)
 	}
+}
+
+configurations.implementation {
+	exclude(group = "com.intellij", module = "annotations")
 }

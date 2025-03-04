@@ -2,7 +2,7 @@ package com.meninocoiso.beatstarcommunity
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.meninocoiso.beatstarcommunity.data.UserPreferencesRepository
+import com.meninocoiso.beatstarcommunity.data.local.UserPreferencesRepository
 import com.meninocoiso.beatstarcommunity.domain.model.UserPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,7 +23,7 @@ sealed interface MainActivityUiState {
 
 @HiltViewModel
 class MainActivityViewModel @Inject constructor(
-	userDataRepository: UserPreferencesRepository,
+    userDataRepository: UserPreferencesRepository,
 ) : ViewModel() {
 	val uiState: StateFlow<MainActivityUiState> = userDataRepository.userPreferencesFlow.map {
 		MainActivityUiState.Success(it)
