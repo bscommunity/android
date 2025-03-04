@@ -3,6 +3,7 @@ package com.meninocoiso.beatstarcommunity.data.local.dao
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 
@@ -18,8 +19,8 @@ interface ChartDao {
             "artist LIKE :last LIMIT 1")
     fun findByName(first: String, last: String): Chart
 
-    @Insert
-    fun insertAll(vararg charts: Chart)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(charts: List<Chart>)
 
     @Delete
     fun delete(chart: Chart)

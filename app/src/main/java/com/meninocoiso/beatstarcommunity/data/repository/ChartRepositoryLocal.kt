@@ -13,20 +13,39 @@ class ChartRepositoryLocal(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ChartRepository {
     override suspend fun getCharts(): Flow<Result<List<Chart>>> = flow {
-        emit(Result.success(chartDao.getAll()))
+        try {
+            emit(Result.success(chartDao.getAll()))
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
     }.flowOn(dispatcher)
 
     override suspend fun getChart(id: String): Flow<Result<Chart>> = flow {
-        chartDao.loadAllByIds(listOf(id)).first().let {
-            emit(Result.success(it))
+        try {
+            chartDao.loadAllByIds(listOf(id)).first().let {
+                emit(Result.success(it))
+            }
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }.flowOn(dispatcher)
+
+    override suspend fun insertCharts(charts: List<Chart>): Flow<Result<Boolean>> = flow {
+        try {
+            chartDao.insert(charts)
+            println("inserted charts: $charts")
+            println("getAll: ${chartDao.getAll()}")
+            emit(Result.success(true))
+        } catch (e: Exception) {
+            emit(Result.failure(e))
         }
     }.flowOn(dispatcher)
 
     override suspend fun deleteChart(chart: Chart): Flow<Result<Boolean>> = flow<Result<Boolean>> {
-        /*chartDao.loadAllByIds(listOf(id)).first().let {
-            chartDao.delete(it)
-            emit(Result.success(true))
-        }*/
-        chartDao.delete(chart)
+        try {
+            chartDao.delete(chart)
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
     }.flowOn(dispatcher)
 }

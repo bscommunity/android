@@ -45,7 +45,6 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.CarouselUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartContributors
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
 import com.meninocoiso.beatstarcommunity.util.DateUtils
-import com.meninocoiso.beatstarcommunity.service.DownloadService.Companion.downloadChart
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -137,7 +136,7 @@ fun ChartDetailsScreen(
                         },
                         containerColor = BottomAppBarDefaults.bottomAppBarFabColor,
                         elevation = FloatingActionButtonDefaults.bottomAppBarFabElevation(),
-                        onClick = { downloadChart(chart.id, lastVersion.chartUrl) }
+                        onClick = { /*TODO */ /*downloadChart(chart.id, lastVersion.chartUrl)*/ }
                     )
                 }
             )
