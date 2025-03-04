@@ -12,36 +12,32 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Named
 
-sealed class DownloadsState {
-    data object Loading : DownloadsState()
-    data class Success(val charts: List<Chart>) : DownloadsState()
-    data class Error(val message: String?) : DownloadsState()
+sealed class UpdatesState {
+    data object Loading : UpdatesState()
+    data class Success(val charts: List<Chart>) : UpdatesState()
+    data class Error(val message: String?) : UpdatesState()
 }
 
 @HiltViewModel
-class DownloadsViewModel @Inject constructor(
+class UpdatesViewModel @Inject constructor(
     @Named("Local") private val chartRepository: ChartRepository
 ) : ViewModel() {
-    private val _downloadsState = MutableStateFlow<DownloadsState>(DownloadsState.Loading)
-    val downloadsState: StateFlow<DownloadsState> = _downloadsState.asStateFlow()
+    private val _downloadsState = MutableStateFlow<UpdatesState>(UpdatesState.Loading)
+    val downloadsState: StateFlow<UpdatesState> = _downloadsState.asStateFlow()
 
     init {
         fetchLocalCharts()
     }
-
-    fun refresh() = fetchLocalCharts()
-
+    
     private fun fetchLocalCharts() {
-        _downloadsState.value = DownloadsState.Loading
+        _downloadsState.value = UpdatesState.Loading
         viewModelScope.launch {
             chartRepository.getCharts().collect { result ->
                 _downloadsState.value = result.fold(
-                    onSuccess = { charts -> DownloadsState.Success(charts) },
-                    onFailure = { error -> DownloadsState.Error(error.message) }
+                    onSuccess = { charts -> UpdatesState.Success(charts) },
+                    onFailure = { error -> UpdatesState.Error(error.message) }
                 )
             }
         }
     }
-
-    /**/
 }

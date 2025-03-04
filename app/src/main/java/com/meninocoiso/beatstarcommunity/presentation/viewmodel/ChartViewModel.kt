@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.io.IOException
 import javax.inject.Inject
 import javax.inject.Named
 
@@ -46,9 +45,11 @@ class ChartViewModel @Inject constructor(
                 val localResult = localChartRepository.getCharts().first()
 
                 if (localResult.isSuccess && localResult.getOrNull()?.isNotEmpty() == true) {
+                    println("Local data found: ${localResult.getOrThrow()}")
                     _charts.value = ChartsState.Success(localResult.getOrThrow())
                 } else {
                     // If no local data, attempt to fetch from remote repository
+                    println("No local data found")
                     val remoteResult = remoteChartRepository.getCharts().first()
                     if (remoteResult.isSuccess) {
                         val chartsList = remoteResult.getOrThrow()
@@ -57,21 +58,17 @@ class ChartViewModel @Inject constructor(
                         localChartRepository.insertCharts(chartsList)
                     } else {
                         val error = remoteResult.exceptionOrNull()
-                        // Check if the error indicates a network issue
-                        if (error is IOException) {
+
+                        _charts.value = ChartsState.Error(error?.message)
+                        /*if (error is IOException) {
                             _charts.value = ChartsState.Error("No internet connection")
                         } else {
                             _charts.value = ChartsState.Error(error?.message)
-                        }
+                        }*/
                     }
                 }
             } catch (e: Exception) {
-                // Also handle any thrown exceptions during fetching
-                if (e is IOException) {
-                    _charts.value = ChartsState.Error("No internet connection")
-                } else {
-                    _charts.value = ChartsState.Error(e.message)
-                }
+                _charts.value = ChartsState.Error(e.message)
             }
         }
     }
