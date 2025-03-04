@@ -1,7 +1,7 @@
 package com.meninocoiso.beatstarcommunity.data.repository
 
 import com.meninocoiso.beatstarcommunity.data.remote.ApiClient
-import com.meninocoiso.beatstarcommunity.domain.model.User
+import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import jakarta.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -9,25 +9,29 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 
-class UserRepositoryImpl @Inject constructor(
+class ChartRepositoryRemote @Inject constructor(
     private val apiClient: ApiClient,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
-) : UserRepository {
-    override suspend fun getUsers(): Flow<Result<List<User>>> = flow {
+) : ChartRepository {
+    override suspend fun getCharts(): Flow<Result<List<Chart>>> = flow {
         try {
-            val users = apiClient.getUsers()
+            val users = apiClient.getCharts()
             emit(Result.success(users))
         } catch (e: Exception) {
             emit(Result.failure(e))
         }
     }.flowOn(dispatcher)
 
-    override suspend fun getUser(id: String): Flow<Result<User>> = flow {
+    override suspend fun getChart(id: String): Flow<Result<Chart>> = flow {
         try {
-            val user = apiClient.getUser(id)
+            val user = apiClient.getChart(id)
             emit(Result.success(user))
         } catch (e: Exception) {
             emit(Result.failure(e))
         }
     }.flowOn(dispatcher)
+
+    override suspend fun deleteChart(chart: Chart): Flow<Result<Boolean>> {
+        TODO("Not yet implemented")
+    }
 }

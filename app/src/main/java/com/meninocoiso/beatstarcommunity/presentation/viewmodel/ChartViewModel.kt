@@ -10,10 +10,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import javax.inject.Named
 
 @HiltViewModel
 class ChartViewModel @Inject constructor(
-    private val chartRepository: ChartRepository
+    @Named("Remote") private val chartRepository: ChartRepository
 ) : ViewModel() {
     private val _charts = MutableStateFlow<Result<List<Chart>>?>(null)
     val charts: StateFlow<Result<List<Chart>>?> = _charts.asStateFlow()

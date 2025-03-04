@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.data
+package com.meninocoiso.beatstarcommunity.data.local
 
 import android.util.Log
 import androidx.datastore.core.DataStore
