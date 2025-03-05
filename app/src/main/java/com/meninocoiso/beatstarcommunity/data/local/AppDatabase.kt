@@ -8,12 +8,13 @@ import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.serialization.Converters
 
 @Database(
-    version = 1,
+    version = 2,
     entities = [
         Chart::class,
         /*Contributor::class,
         Version::class*/
-    ]
+    ],
+    exportSchema = false
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {

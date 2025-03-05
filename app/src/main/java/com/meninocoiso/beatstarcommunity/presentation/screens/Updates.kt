@@ -86,6 +86,7 @@ fun UpdatesScreen(
 			artist = "teste",
 			isExplicit = false,
 			isFeatured = false,
+			isInstalled = false
 		)
 	}
 
