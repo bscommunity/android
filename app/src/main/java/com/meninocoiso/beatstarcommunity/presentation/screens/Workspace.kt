@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -14,11 +15,16 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -27,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.meninocoiso.beatstarcommunity.R
+import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartPreview
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace.WorkspaceChips
@@ -109,53 +116,68 @@ fun ChartsSection(
 	viewModel: ChartViewModel = hiltViewModel()
 ) {
 	val chartsState by viewModel.charts.collectAsState()
+	val snackbarHostState = remember { SnackbarHostState() }
+	val (cachedCharts, setCachedCharts) = remember { mutableStateOf(emptyList<Chart>()) }
 
-	when (chartsState) {
-		is ChartsState.Loading -> {
-			Box(
-				modifier = Modifier.fillMaxSize(),
-				contentAlignment = Alignment.Center,
-			) {
-				CircularProgressIndicator(
-					modifier = Modifier.width(36.dp),
-					color = MaterialTheme.colorScheme.secondary,
-					trackColor = MaterialTheme.colorScheme.surfaceVariant,
-				)
+	LaunchedEffect(chartsState) {
+		when (chartsState) {
+			is ChartsState.Success -> {
+				setCachedCharts((chartsState as ChartsState.Success).charts)
 			}
+			is ChartsState.Error -> {
+				/*val errorMsg = (chartsState as ChartsState.Error).message ?: "Unknown error"*/
+				if (cachedCharts.isNotEmpty()) {
+					snackbarHostState.showSnackbar(
+						"Failed to fetch new data. Please check your connection and try again",
+					)
+				}
+			}
+			else -> {}
 		}
-		is ChartsState.Success -> {
-			val data = (chartsState as ChartsState.Success).charts
-			if (data.isEmpty()) {
-				StatusMessageUI(
-					title = "We couldn't find anything based on your search",
-					message = "Try removing some filters or searching for something else",
-					icon = R.drawable.rounded_sentiment_dissatisfied_24,
-					onClick = { /* Optionally trigger a refresh or clear filters */ },
-					buttonLabel = "Clear filters"
-				)
-			} else {
-				PullToRefreshBox(
-					isRefreshing = false,
-					onRefresh = { viewModel.refresh() }
-				) {
-					SectionWrapper(nestedScrollConnection = nestedScrollConnection) {
-						items(data) { chart ->
-							ChartPreview(
-								onNavigateToDetails = { onNavigateToDetails(chart) },
-								chart = chart
-							)
+	}
+
+	Scaffold(
+		snackbarHost = { SnackbarHost(snackbarHostState) }
+	) { innerPadding ->
+		Box(
+			modifier = Modifier.fillMaxSize().padding(bottom = innerPadding.calculateBottomPadding()),
+			contentAlignment = Alignment.TopCenter,
+		) {
+			when {
+				(cachedCharts.isEmpty() && chartsState is ChartsState.Loading) -> {
+					// Show spinner if no cached data
+					Box(Modifier.fillMaxSize(), Alignment.Center) {
+						CircularProgressIndicator(Modifier.width(36.dp))
+					}
+				}
+
+				cachedCharts.isNotEmpty() -> {
+					// Show cached data and pull-to-refresh
+					PullToRefreshBox(
+						isRefreshing = chartsState is ChartsState.Loading,
+						onRefresh = { viewModel.refresh() }
+					) {
+						SectionWrapper(nestedScrollConnection) {
+							items(cachedCharts) { chart ->
+								ChartPreview(
+									onNavigateToDetails = { onNavigateToDetails(chart) },
+									chart = chart
+								)
+							}
 						}
 					}
 				}
+
+				chartsState is ChartsState.Error -> {
+					// Display error with a retry option
+					StatusMessageUI(
+						title = "Looks like something went wrong...",
+						message = "Please check your connection and try again",
+						icon = R.drawable.rounded_emergency_home_24,
+						onClick = { viewModel.refresh() }
+					)
+				}
 			}
-		}
-		is ChartsState.Error -> {
-			StatusMessageUI(
-				title = "Looks like something went wrong...",
-				message = "Please check your connection and try again",
-				icon = R.drawable.rounded_emergency_home_24,
-				onClick = { viewModel.refresh() }
-			)
 		}
 	}
 }

@@ -86,9 +86,9 @@ class ChartViewModel @Inject constructor(
                         .collect()
                 } else {
                     val error = remoteResult.exceptionOrNull()
-                    Log.e(TAG, "Error fetching remote data", error)
-
                     _charts.value = ChartsState.Error(error?.message)
+
+                    Log.e(TAG, "Error fetching remote data", error)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error fetching data", e)
