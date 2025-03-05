@@ -2,6 +2,7 @@ package com.meninocoiso.beatstarcommunity.domain.model
 
 import LocalDateSerializer
 import android.os.Parcelable
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import kotlinx.parcelize.Parcelize
@@ -13,14 +14,14 @@ import java.time.LocalDate
 @Parcelize
 data class Version(
     @PrimaryKey val id: Int,
-    val chartId: String,
+    @ColumnInfo(name = "chart_id") val chartId: String,
     val duration: Float,
-    val notesAmount: Int,
-    val effectsAmount: Int,
+    @ColumnInfo(name = "notes_amount") val notesAmount: Int,
+    @ColumnInfo(name = "effects_amount") val effectsAmount: Int,
     val bpm: Int,
-    val chartUrl: String,
-    val downloadsAmount: Int = 0,
-    val knownIssues: List<KnownIssue> = emptyList(),
+    @ColumnInfo(name = "chart_url") val chartUrl: String,
+    @ColumnInfo(name = "downloads_amount") val downloadsAmount: Int = 0,
+    @ColumnInfo(name = "known_issues") val knownIssues: List<KnownIssue> = emptyList(),
     @Serializable(with = LocalDateSerializer::class)
-    val publishedAt: LocalDate,
+    @ColumnInfo(name = "published_at") val publishedAt: LocalDate,
 ) : Parcelable

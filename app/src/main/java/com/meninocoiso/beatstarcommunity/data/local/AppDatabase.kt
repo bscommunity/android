@@ -5,14 +5,14 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.meninocoiso.beatstarcommunity.data.local.dao.ChartDao
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
+import com.meninocoiso.beatstarcommunity.domain.model.Version
 import com.meninocoiso.beatstarcommunity.domain.serialization.Converters
 
 @Database(
-    version = 2,
+    version = 3,
     entities = [
         Chart::class,
-        /*Contributor::class,
-        Version::class*/
+        Version::class
     ],
     exportSchema = false
 )

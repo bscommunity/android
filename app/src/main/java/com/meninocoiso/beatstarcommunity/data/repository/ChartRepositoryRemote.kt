@@ -2,6 +2,7 @@ package com.meninocoiso.beatstarcommunity.data.repository
 
 import com.meninocoiso.beatstarcommunity.data.remote.ApiClient
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
+import com.meninocoiso.beatstarcommunity.domain.model.Version
 import jakarta.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -15,8 +16,26 @@ class ChartRepositoryRemote @Inject constructor(
 ) : ChartRepository {
     override suspend fun getCharts(): Flow<Result<List<Chart>>> = flow {
         try {
-            val users = apiClient.getCharts()
-            emit(Result.success(users))
+            val charts = apiClient.getCharts()
+            emit(Result.success(charts))
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }.flowOn(dispatcher)
+
+    override suspend fun getChartsById(ids: List<String>): Flow<Result<List<Chart>>> = flow {
+        try {
+            val charts = apiClient.getChartsById(ids)
+            emit(Result.success(charts))
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }.flowOn(dispatcher)
+
+    override suspend fun getLatestVersionsByChartIds(ids: List<String>): Flow<Result<List<Version>>> = flow {
+        try {
+            val charts = apiClient.getLatestVersionsByChartIds(ids)
+            emit(Result.success(charts))
         } catch (e: Exception) {
             emit(Result.failure(e))
         }
@@ -24,8 +43,8 @@ class ChartRepositoryRemote @Inject constructor(
 
     override suspend fun getChart(id: String): Flow<Result<Chart>> = flow {
         try {
-            val user = apiClient.getChart(id)
-            emit(Result.success(user))
+            val chart = apiClient.getChart(id)
+            emit(Result.success(chart))
         } catch (e: Exception) {
             emit(Result.failure(e))
         }

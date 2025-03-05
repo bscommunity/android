@@ -1,9 +1,7 @@
 package com.meninocoiso.beatstarcommunity.presentation.screens
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,11 +9,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
@@ -33,22 +30,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.domain.enums.DifficultyEnum
-import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.navigation.UpdatesSection
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabItem
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabsUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.LocalChartPreview
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.LocalChartsState
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.UpdatesState
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.UpdatesViewModel
 import com.meninocoiso.beatstarcommunity.util.AppBarUtils
@@ -71,29 +64,14 @@ fun UpdatesScreen(
 	section: UpdatesSection? = UpdatesSection.Workshop,
 	viewModel: UpdatesViewModel = hiltViewModel(),
 ) {
-	val downloadsState by viewModel.downloadsState.collectAsState()
-
-	val chartsToUpdate = (0..3).map {
-		Chart(
-			isDeluxe = false,
-			versions = listOf(),
-			difficulty = DifficultyEnum.Extreme,
-			coverUrl = "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/92/9f/69/929f69f1-9977-3a44-d674-11f70c852d1b/24UMGIM36186.rgb.jpg/592x592bb.webp",
-			track = "teste",
-			id = "2342432",
-			contributors = listOf(),
-			album = "teste",
-			artist = "teste",
-			isExplicit = false,
-			isFeatured = false,
-			isInstalled = false
-		)
-	}
+	val updatesState by viewModel.updatesState.collectAsState()
+	val localChartsState by viewModel.localChartsState.collectAsState()
 
 	val horizontalPagerState = rememberPagerState {
 		updatesTabsItems.size
 	}
 
+	// Scroll (horizontally) to the correct section
 	LaunchedEffect(section) {
 		val pageIndex = when (section) {
 			UpdatesSection.Workshop -> 0
@@ -114,8 +92,8 @@ fun UpdatesScreen(
 		HorizontalPager(state = horizontalPagerState) { index ->
 			when (index) {
 				0 -> WorkspaceSection(
-					chartsToUpdate = chartsToUpdate,
-					downloadsState = downloadsState,  // Pass the sealed state here
+					updatesState = updatesState,
+					localChartsState = localChartsState,
 					nestedScrollConnection = connection
 				)
 				1 -> InstallationsSection(connection)
@@ -139,74 +117,60 @@ fun UpdatesScreen(
 @Composable
 private fun SectionWrapper(
 	nestedScrollConnection: NestedScrollConnection,
-	content: @Composable () -> Unit
+	content: LazyListScope.() -> Unit
 ) {
-	Box(
+	LazyColumn(
 		modifier = Modifier
 			.fillMaxSize()
 			.nestedScroll(nestedScrollConnection),
 	) {
-		Column(
-			modifier = Modifier
-				.verticalScroll(rememberScrollState()),
-		) {
+		item {
 			Spacer(modifier = Modifier.height(16.dp))
-			content()
+		}
+		content()
+		item {
 			Spacer(modifier = Modifier.height(16.dp))
 		}
 	}
 }
 
-// Currently using fixed heights because of Compose lack of support for nested scrollable columns.
-// This is hard to set but works well for now.
-// Unfortunately, this approach raises some accessibility issues that need to be addressed in the future.
-// For now, some effort was put into making the texts visible in phones with larger scale settings.
-private val UpdatableChartPreviewHeight = 70.dp
-private val LocalChartPreviewHeight = 108.dp
-private val DownloadSectionTitleHeight = 24.dp
-
-val TextUnit.nonScaledEm
-	@Composable
-	get() = (this.value / LocalDensity.current.fontScale).em
-
 @Composable
-private fun DownloadsSectionsTitle(
-	title: String
-) {
+private fun DownloadsSectionsTitle(title: String) {
 	Box(
 		modifier = Modifier
 			.fillMaxWidth()
-			.height(DownloadSectionTitleHeight)
 			.padding(16.dp, 0.dp, 0.dp, 0.dp)
 	) {
-		Text(text = title, style = MaterialTheme.typography.labelLarge)
+		Text(
+			text = title,
+			style = MaterialTheme.typography.labelLarge
+		)
 	}
 }
 
 @Composable
 fun WorkspaceSection(
-	chartsToUpdate: List<Chart>,
-	downloadsState: UpdatesState,
+	updatesState: UpdatesState,
+	localChartsState: LocalChartsState,
 	nestedScrollConnection: NestedScrollConnection,
 ) {
-	val verticalGap = 8.dp
 	var selectedIndex by remember { mutableIntStateOf(-1) }
 	val options = listOf("Charts", "Tour Passes", "Themes")
 
-	SectionWrapper(nestedScrollConnection) {
+	Column {
 		// Updates section remains unchanged
-		Section(
-			title = "Updates available (${chartsToUpdate.size})",
+		/*Section(
+			title = "Updates available (${updatesState.size})",
 			thickness = 0.dp,
 			titleModifier = Modifier.padding(top = 8.dp),
 		) {
-			// ... Your LazyColumn for chartsToUpdate ...
-		}
+			//
+		}*/
 
 		// Downloaded section
 		Section(
-			title = when (downloadsState) {
-				is UpdatesState.Success -> "Downloaded (${downloadsState.charts.size})"
+			title = when (localChartsState) {
+				is LocalChartsState.Success -> "Downloaded (${localChartsState.charts.size})"
 				else -> "Downloaded"
 			},
 			modifier = Modifier.padding(top = 16.dp),
@@ -230,8 +194,8 @@ fun WorkspaceSection(
 				}
 			}
 
-			when (downloadsState) {
-				is UpdatesState.Loading -> {
+			when (localChartsState) {
+				is LocalChartsState.Loading -> {
 					Box(
 						modifier = Modifier.fillMaxSize(),
 						contentAlignment = Alignment.Center
@@ -239,28 +203,21 @@ fun WorkspaceSection(
 						CircularProgressIndicator(modifier = Modifier.padding(16.dp))
 					}
 				}
-				is UpdatesState.Error -> {
+				is LocalChartsState.Error -> {
 					StatusMessageUI(
 						title = "Looks like something went wrong...",
-						message = "\"${downloadsState.message}\"\nPlease try again or check Discord with error above to see if it’s already a known issue",
+						message = "\"${localChartsState.message}\"\nPlease try again or check Discord with error above to see if it’s already a known issue",
 						icon = R.drawable.rounded_hourglass_disabled_24
 					)
 				}
-				is UpdatesState.Success -> {
-					val chartsList = downloadsState.charts
+				is LocalChartsState.Success -> {
+					val chartsList = localChartsState.charts
 					if (chartsList.isEmpty()) {
 						Text(text = "No downloaded charts available", modifier = Modifier.padding(16.dp))
 					} else {
-						LazyColumn(
-							modifier = Modifier.height(
-								(LocalChartPreviewHeight * chartsList.size) +
-										(verticalGap * (chartsList.size - 1))
-							),
-							userScrollEnabled = false,
-							contentPadding = PaddingValues(horizontal = 16.dp),
-							verticalArrangement = Arrangement.spacedBy(verticalGap),
-							horizontalAlignment = Alignment.CenterHorizontally
-						) {
+						SectionWrapper(
+							nestedScrollConnection = nestedScrollConnection
+						){
 							item {
 								DownloadsSectionsTitle("Charts")
 							}
@@ -268,7 +225,6 @@ fun WorkspaceSection(
 								LocalChartPreview(
 									chart = chart,
 									version = 1,
-									modifier = Modifier.height(LocalChartPreviewHeight),
 									onNavigateToDetails = { /*TODO*/ }
 								)
 							}
@@ -285,14 +241,14 @@ fun WorkspaceSection(
 private fun InstallationsSection(
 	nestedScrollConnection: NestedScrollConnection,
 ) {
-	SectionWrapper(nestedScrollConnection = nestedScrollConnection) {
-		val list = (0..100).map { it.toString() }
-		LazyColumn(
-			modifier = Modifier.height(500.dp)
-		) {
-			items(count = list.size) {
-				Text(text = "Parte 2 - $it")
-			}
-		}
+	Box(
+		modifier = Modifier.fillMaxSize(),
+		contentAlignment = Alignment.Center,
+	) {
+		StatusMessageUI(
+			title = "Work in progress!",
+			message = "This feature still needs some work\nPlease, check back later",
+			icon = R.drawable.rounded_hourglass_24,
+		)
 	}
 }

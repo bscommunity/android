@@ -22,6 +22,6 @@ data class Chart(
     @ColumnInfo(name = "is_explicit") val isExplicit: Boolean,
     @ColumnInfo(name = "is_featured") val isFeatured: Boolean,
     @ColumnInfo(name = "is_installed") val isInstalled: Boolean? = false,
-    val versions: List<Version>,
+    @ColumnInfo(name = "latest_version") val latestVersion: Version,
     val contributors: List<Contributor>
 ) : Parcelable
