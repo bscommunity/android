@@ -75,6 +75,9 @@ class ChartRepositoryLocal(
     override suspend fun updateChart(id: String, isInstalled: Boolean?): Flow<Result<Boolean>> = flow {
         try {
             chartDao.update(isInstalled, id)
+
+            Log.d(TAG, "updated chart with installed: ${chartDao.getChart(id)}")
+
             emit(Result.success(true))
         } catch (e: Exception) {
             emit(Result.failure(e))

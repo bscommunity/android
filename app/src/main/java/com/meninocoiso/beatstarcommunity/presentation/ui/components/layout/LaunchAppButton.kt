@@ -1,7 +1,6 @@
 package com.meninocoiso.beatstarcommunity.presentation.ui.components.layout
 
 import android.content.Context
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExtendedFloatingActionButton

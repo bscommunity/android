@@ -1,5 +1,6 @@
 package com.meninocoiso.beatstarcommunity.presentation.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.beatstarcommunity.data.repository.ChartRepository
@@ -36,34 +37,26 @@ class UpdatesViewModel @Inject constructor(
     private val _localChartsState = MutableStateFlow<LocalChartsState>(LocalChartsState.Loading)
     val localChartsState: StateFlow<LocalChartsState> = _localChartsState.asStateFlow()
 
-    init {
+    /*init {
         loadLocalCharts()
-    }
+    }*/
 
-    private fun loadLocalCharts() {
+    fun loadLocalCharts() {
         _localChartsState.value = LocalChartsState.Loading
         viewModelScope.launch {
             localChartRepository.getCharts().collect { result ->
                 _localChartsState.value = result.fold(
                     onSuccess = { charts ->
                         val installedCharts = charts.filter { it.isInstalled == true }
+
+                        Log.d("UpdatesViewModel", "Installed charts: $installedCharts")
+
                         LocalChartsState.Success(installedCharts)
                     },
                     onFailure = { error -> LocalChartsState.Error(error.message) }
                 )
             }
         }
-        /*
-        * _downloadsState.value = UpdatesState.Loading
-        viewModelScope.launch {
-            chartRepository.getCharts().collect { result ->
-                _downloadsState.value = result.fold(
-                    onSuccess = { charts -> UpdatesState.Success(charts) },
-                    onFailure = { error -> UpdatesState.Error(error.message) }
-                )
-            }
-        }
-        * */
     }
 
     fun fetchUpdates(installedCharts: List<Chart>) {
@@ -81,7 +74,7 @@ class UpdatesViewModel @Inject constructor(
                     val remoteLatestVersion = latestVersions.find { it.chartId == chart.id }
 
                     return@filter remoteLatestVersion != null &&
-                            remoteLatestVersion.id != chart.latestVersion?.id
+                            remoteLatestVersion.id != chart.latestVersion.id
                 }
 
                 _updatesState.value = UpdatesState.Success(chartsToUpdate)

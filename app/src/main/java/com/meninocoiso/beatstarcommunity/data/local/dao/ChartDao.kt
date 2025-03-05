@@ -14,6 +14,9 @@ interface ChartDao {
     @Query("SELECT * FROM charts")
     fun getAll(): List<Chart>
 
+    @Query("SELECT * FROM charts WHERE id = :id")
+    fun getChart(id: String): Chart
+
     @Query("SELECT * FROM charts WHERE id IN (:chartIds)")
     fun loadAllByIds(chartIds: List<String>): List<Chart>
 

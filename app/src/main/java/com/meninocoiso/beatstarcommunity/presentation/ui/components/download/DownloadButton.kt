@@ -64,9 +64,13 @@ fun DownloadButton(
             if (state is DownloadState.Completed) {
                 // Mark as installed on local database
                 scope.launch {
-                    downloadViewModel.markChartAsInstalled(chart.id)
-                    downloadViewModel.downloadUtils.markAsInstalled()
-                    snackbarHostState.showSnackbar("Download complete")
+                    downloadViewModel.markChartAsInstalled(chart.id).collect {
+                        if (it.isSuccess) {
+                            downloadViewModel.downloadUtils.markAsInstalled()
+
+                            snackbarHostState.showSnackbar("Download complete")
+                        }
+                    }
                 }
             } else if (state is DownloadState.Error) {
                 // Show error message

@@ -41,44 +41,54 @@ class ChartViewModel @Inject constructor(
     }
 
     // Public function to refresh data so external components can trigger a re-fetch.
-    fun refresh() = fetchCharts()
+    fun refresh() = fetchCharts(true)
 
-    private fun fetchCharts() {
+    private fun fetchCharts(refresh: Boolean? = false) {
         viewModelScope.launch {
             _charts.value = ChartsState.Loading
             try {
                 // Fetch local data first
                 val localResult = localChartRepository.getCharts().first()
-                Log.d(TAG, "Local data found on cache")
 
-                if (localResult.isSuccess && localResult.getOrNull()?.isNotEmpty() == true) {
-                    _charts.value = ChartsState.Success(localResult.getOrThrow())
-                } else {
-                    // If no local data, attempt to fetch from remote repository
-                    val remoteResult = remoteChartRepository.getCharts().first()
+                if (refresh == false) {
+                    if (localResult.isSuccess && localResult.getOrNull()?.isNotEmpty() == true) {
+                        Log.d(TAG, "Local data used")
 
-                    Log.d(TAG, "No local data found on cache")
-                    Log.d(TAG, "Remote data fetched")
-
-                    if (remoteResult.isSuccess) {
-                        val chartsList = remoteResult.getOrThrow()
-                        _charts.value = ChartsState.Success(chartsList)
-
-                        // Save the remote data to local storage
-                        localChartRepository.insertCharts(chartsList)
-                            .onEach {
-                                Log.d(TAG, "Local data updated: $it")
-                            }
-                            .catch {
-                                Log.e(TAG, "Error updating local data", it)
-                            }
-                            .collect()
-                    } else {
-                        val error = remoteResult.exceptionOrNull()
-                        Log.e(TAG, "Error fetching remote data", error)
-
-                        _charts.value = ChartsState.Error(error?.message)
+                        _charts.value = ChartsState.Success(localResult.getOrThrow())
+                        return@launch
                     }
+                }
+
+                // If no local data, attempt to fetch from remote repository
+                val remoteResult = remoteChartRepository.getCharts().first()
+                Log.d(TAG, "Remote data fetched")
+
+                if (remoteResult.isSuccess) {
+                    val chartsList = remoteResult.getOrThrow()
+
+                    // Keep the isInstalled flag from local data
+                    localResult.getOrNull()?.forEach { localChart ->
+                        chartsList.find {
+                            it.id == localChart.id
+                        }?.isInstalled = localChart.isInstalled
+                    }
+
+                    _charts.value = ChartsState.Success(chartsList)
+
+                    // Save the remote data to local storage
+                    localChartRepository.insertCharts(chartsList)
+                        .onEach {
+                            Log.d(TAG, "Local data updated: $it")
+                        }
+                        .catch {
+                            Log.e(TAG, "Error updating local data", it)
+                        }
+                        .collect()
+                } else {
+                    val error = remoteResult.exceptionOrNull()
+                    Log.e(TAG, "Error fetching remote data", error)
+
+                    _charts.value = ChartsState.Error(error?.message)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error fetching data", e)
