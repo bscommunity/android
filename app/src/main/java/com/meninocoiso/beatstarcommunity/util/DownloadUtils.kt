@@ -36,6 +36,7 @@ sealed class DownloadState {
     data class Downloading(val progress: Float) : DownloadState()
     data class Extracting(val progress: Float) : DownloadState()
     data object Completed : DownloadState()
+    data object Installed : DownloadState()
     data class Error(val message: String) : DownloadState()
 }
 
@@ -46,7 +47,7 @@ sealed class DownloadState {
 class DownloadUtils @Inject constructor(
     @ApplicationContext private val context: Context,
     private val okHttpClient: OkHttpClient,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
 ) {
     // Internal state management
     private val _downloadState = MutableStateFlow<DownloadState>(DownloadState.Idle)
@@ -317,9 +318,9 @@ class DownloadUtils @Inject constructor(
     }
 
     /**
-     * Reset download state to idle
+     * Mark the chart as installed
      */
-    fun resetState() {
-        _downloadState.value = DownloadState.Idle
+    fun markAsInstalled() {
+        _downloadState.value = DownloadState.Installed
     }
 }

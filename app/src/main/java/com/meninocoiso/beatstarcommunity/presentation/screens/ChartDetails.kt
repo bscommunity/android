@@ -1,6 +1,5 @@
 package com.meninocoiso.beatstarcommunity.presentation.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +21,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -45,6 +45,7 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartC
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.download.DownloadButton
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
 import com.meninocoiso.beatstarcommunity.util.DateUtils
+import com.meninocoiso.beatstarcommunity.util.DownloadState
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -62,20 +63,25 @@ fun ChartDetailsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var moreOptionsExpanded by remember { mutableStateOf(false) }
 
+    var downloadState by remember { mutableStateOf<DownloadState>(DownloadState.Idle) }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                modifier = Modifier.padding(horizontal = 16.dp),
+                modifier = Modifier.padding(horizontal = 8.dp),
                 navigationIcon = {
-                    Icon(
+                    IconButton(
                         modifier = Modifier
-                            .padding(end = 12.dp)
-                            .clickable { onReturn() },
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        contentDescription = "Return"
-                    )
+                            .padding(end = 12.dp),
+                        onClick = { onReturn() }
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            contentDescription = "Return"
+                        )
+                    }
                 },
                 actions = {
                     IconButton(onClick = { moreOptionsExpanded = !moreOptionsExpanded }) {
@@ -133,6 +139,10 @@ fun ChartDetailsScreen(
                 floatingActionButton = {
                     DownloadButton(
                         chart = chart,
+                        downloadState,
+                        onDownloadStateChange = { newState ->
+                            downloadState = newState
+                        },
                         snackbarHostState
                     )
                 }
@@ -203,6 +213,29 @@ fun ChartDetailsScreen(
                         }
                     }
                 }
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .padding(
+                    bottom = innerPadding.calculateBottomPadding()
+                )
+                .fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+        if (downloadState is DownloadState.Downloading ||
+            downloadState is DownloadState.Extracting) {
+                LinearProgressIndicator(
+                    progress = {
+                        when (val state = downloadState) {
+                            is DownloadState.Downloading -> state.progress
+                            is DownloadState.Extracting -> state.progress
+                            else -> 100f
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }
