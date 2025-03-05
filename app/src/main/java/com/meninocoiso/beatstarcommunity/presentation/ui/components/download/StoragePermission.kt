@@ -6,22 +6,14 @@ import android.os.Build
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import com.meninocoiso.beatstarcommunity.util.DownloadUtils
 import kotlinx.coroutines.launch
 
@@ -55,49 +47,50 @@ fun StoragePermissionDialog(
         }
     }
 
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Storage Permission Required",
-                    style = MaterialTheme.typography.headlineSmall
-                )
-
-                Text(
-                    text = "To download charts, the app needs permission to access your storage. " +
-                            "Please select the root folder or create a 'beatstar' folder."
-                )
-
-                Button(
-                    onClick = {
-                        val initialUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            // Try to find external storage - typically /storage/emulated/0
-                            Uri.parse("content://com.android.externalstorage.documents/document/primary:")
-                        } else {
-                            null
-                        }
-                        folderPickerLauncher.launch(initialUri)
+    AlertDialog(
+        /*icon = {
+            Icon(
+                painter = painterResource(
+                    R.drawable.rounded_folder_limited_24
+                ),
+                modifier = Modifier.size(24.dp),
+                contentDescription = "Storage permission icon"
+            )
+        },*/
+        title = {
+            Text(
+                text = "Storage Permission Required",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Text(
+                text = "To download charts, the app needs permission to access your storage. " +
+                        "Please select the root folder or create a 'beatstar' folder."
+            )
+        },
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val initialUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        // Try to find external storage - typically /storage/emulated/0
+                        Uri.parse("content://com.android.externalstorage.documents/document/primary:")
+                    } else {
+                        null
                     }
-                ) {
-                    Text("Select Folder")
+                    folderPickerLauncher.launch(initialUri)
                 }
-
-                Button(
-                    onClick = onDismiss
-                ) {
-                    Text("Cancel")
-                }
+            ) {
+                Text("Select folder")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
             }
         }
-    }
+    )
 }
 
 @Composable

@@ -71,6 +71,12 @@ fun UpdatesScreen(
 		updatesTabsItems.size
 	}
 
+	// Update local charts every time the screen is opened
+	LaunchedEffect(Unit) {
+		viewModel.loadLocalCharts()
+		//viewModel.fetchUpdates(installedCharts = localChartsState.charts)
+	}
+
 	// Scroll (horizontally) to the correct section
 	LaunchedEffect(section) {
 		val pageIndex = when (section) {
@@ -228,6 +234,9 @@ fun WorkspaceSection(
 									onNavigateToDetails = { /*TODO*/ }
 								)
 							}
+							/*item {
+								DownloadsSectionsTitle("Tour Passes")
+							}*/
 						}
 					}
 				}
