@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
+import com.meninocoiso.beatstarcommunity.domain.model.Version
 
 @Dao
 interface ChartDao {
@@ -15,6 +16,10 @@ interface ChartDao {
 
     @Query("SELECT * FROM charts WHERE id IN (:chartIds)")
     fun loadAllByIds(chartIds: List<String>): List<Chart>
+
+    //@Query("SELECT latest_version FROM charts WHERE id IN (:ids)")
+    @Query("SELECT v.* FROM charts c JOIN versions v ON c.latest_version = v.id WHERE c.id IN (:ids)")
+    fun getLatestVersionsByChartIds(ids: List<String>): List<Version>
 
     @Query("SELECT * FROM charts WHERE track LIKE :first AND " +
             "artist LIKE :last LIMIT 1")

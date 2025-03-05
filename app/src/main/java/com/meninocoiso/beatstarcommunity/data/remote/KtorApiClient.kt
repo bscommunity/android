@@ -1,14 +1,14 @@
 package com.meninocoiso.beatstarcommunity.data.remote
 
-import com.meninocoiso.beatstarcommunity.data.remote.dto.ContributorUserDto
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.model.User
+import com.meninocoiso.beatstarcommunity.domain.model.Version
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.get
 import io.ktor.http.ContentType
 import io.ktor.http.URLProtocol
@@ -54,6 +54,22 @@ class KtorApiClient @Inject constructor() : ApiClient {
         return client.get("charts"){
             url {
                 parameters.append("fetchContributors", "true")
+            }
+        }.body()
+    }
+
+    override suspend fun getChartsById(ids: List<String>): List<Chart> {
+        return client.get("charts"){
+            url {
+                parameters.append("ids", ids.joinToString(","))
+            }
+        }.body()
+    }
+
+    override suspend fun getLatestVersionsByChartIds(ids: List<String>): List<Version> {
+        return client.get("charts/latest-versions"){
+            url {
+                parameters.append("chartIds", ids.joinToString(","))
             }
         }.body()
     }

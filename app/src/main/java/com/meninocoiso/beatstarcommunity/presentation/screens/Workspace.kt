@@ -1,14 +1,11 @@
 package com.meninocoiso.beatstarcommunity.presentation.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -17,28 +14,19 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartPreview
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace.WorkspaceChips
@@ -162,27 +150,10 @@ fun ChartsSection(
 			}
 		}
 		is ChartsState.Error -> {
-			val errorMessage = (chartsState as ChartsState.Error).message ?: "Unknown error"
-
-			// We handle no internet connection separately
-			val (title, message, icon) = if (errorMessage == "No internet connection") {
-				Triple(
-					"No Internet Connection",
-					"Please check your connection and try again.",
-					R.drawable.rounded_wifi_off_24
-				)
-			} else {
-				Triple(
-					"Looks like something went wrong...",
-					"\"$errorMessage\"\nPlease try again or check Discord to see if it’s a known issue",
-					R.drawable.rounded_hourglass_disabled_24
-				)
-			}
-
 			StatusMessageUI(
-				title = title,
-				message = message,
-				icon = icon,
+				title = "Looks like something went wrong...",
+				message = "Please check your connection and try again",
+				icon = R.drawable.rounded_emergency_home_24,
 				onClick = { viewModel.refresh() }
 			)
 		}
@@ -191,32 +162,28 @@ fun ChartsSection(
 
 @Composable
 private fun TourPassesSection(nestedScrollConnection: NestedScrollConnection) {
-	SectionWrapper(nestedScrollConnection = nestedScrollConnection) {
-		val list = (0..25).map { it.toString() }
-		items(count = list.size) {
-			Text(
-				text = "${list[it]} - Outra tela",
-				style = MaterialTheme.typography.bodyLarge,
-				modifier = Modifier
-					.fillMaxWidth()
-					.padding(horizontal = 16.dp)
-			)
-		}
+	Box(
+		modifier = Modifier.fillMaxSize(),
+		contentAlignment = Alignment.Center,
+	) {
+		StatusMessageUI(
+			title = "Work in progress!",
+			message = "This feature still needs some work\nPlease, check back later",
+			icon = R.drawable.rounded_hourglass_24,
+		)
 	}
 }
 
 @Composable
 private fun ThemesSection(nestedScrollConnection: NestedScrollConnection) {
-	SectionWrapper(nestedScrollConnection = nestedScrollConnection) {
-		val list = (0..5).map { it.toString() }
-		items(count = list.size) {
-			Text(
-				text = "Este é o item ${list[it]}",
-				style = MaterialTheme.typography.bodyLarge,
-				modifier = Modifier
-					.fillMaxWidth()
-					.padding(horizontal = 16.dp)
-			)
-		}
+	Box(
+		modifier = Modifier.fillMaxSize(),
+		contentAlignment = Alignment.Center,
+	) {
+		StatusMessageUI(
+			title = "Work in progress!",
+			message = "This feature still needs some work\nPlease, check back later",
+			icon = R.drawable.rounded_hourglass_24,
+		)
 	}
 }

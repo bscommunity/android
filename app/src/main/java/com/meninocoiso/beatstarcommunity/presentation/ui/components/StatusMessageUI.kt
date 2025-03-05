@@ -58,7 +58,7 @@ fun StatusMessageUI(
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 24.dp)
         )
         Text(
             text = message,
@@ -66,7 +66,7 @@ fun StatusMessageUI(
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 32.dp)
         )
         if (onClick != null) {
             OutlinedButton(

@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -22,7 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -106,8 +104,6 @@ fun ChartPreview(
 	isAcquired: Boolean? = null,
 	onNavigateToDetails: () -> Unit
 ) {
-	val lastVersion = chart.versions.last()
-
 	Box(
 		modifier = (modifier ?: Modifier)
 			.fillMaxWidth()
@@ -133,7 +129,7 @@ fun ChartPreview(
 						)
 						Text(
 							style = MaterialTheme.typography.labelMedium,
-							text = DateUtils.toRelativeString(lastVersion.publishedAt)
+							text = DateUtils.toRelativeString(chart.latestVersion.publishedAt)
 						)
 					}
 					Text(style = MaterialTheme.typography.labelMedium, text = chart.artist)
@@ -158,10 +154,8 @@ fun LocalChartPreview(
 			.clip(RoundedCornerShape(16.dp))
 			.clickable() {
 				onNavigateToDetails(
+					chart.copy()
 					/* TODO */
-					chart.copy(
-						versions = chart.versions/*.filter { it.id == version }*/
-					)
 				)
 			}
 	) {

@@ -3,6 +3,7 @@ package com.meninocoiso.beatstarcommunity.data.repository
 import android.util.Log
 import com.meninocoiso.beatstarcommunity.data.local.dao.ChartDao
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
+import com.meninocoiso.beatstarcommunity.domain.model.Version
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -18,6 +19,22 @@ class ChartRepositoryLocal(
     override suspend fun getCharts(): Flow<Result<List<Chart>>> = flow {
         try {
             emit(Result.success(chartDao.getAll()))
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }.flowOn(dispatcher)
+
+    override suspend fun getChartsById(ids: List<String>): Flow<Result<List<Chart>>> = flow {
+        try {
+            emit(Result.success(chartDao.loadAllByIds(ids)))
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }.flowOn(dispatcher)
+
+    override suspend fun getLatestVersionsByChartIds(ids: List<String>): Flow<Result<List<Version>>> = flow {
+        try {
+            emit(Result.success(chartDao.getLatestVersionsByChartIds(ids)))
         } catch (e: Exception) {
             emit(Result.failure(e))
         }

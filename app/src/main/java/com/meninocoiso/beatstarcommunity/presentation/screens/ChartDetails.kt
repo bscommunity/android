@@ -57,8 +57,6 @@ fun ChartDetailsScreen(
     chart: Chart,
     onReturn: () -> Unit,
 ) {
-    val lastVersion = chart.versions.last()
-
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     var moreOptionsExpanded by remember { mutableStateOf(false) }
@@ -167,19 +165,19 @@ fun ChartDetailsScreen(
             Section(title = "Stats") {
                 Column(modifier = Modifier.padding(bottom = 8.dp)) {
                     StatListItem(
-                        title = "~${DateUtils.toDurationString(lastVersion.duration)}",
+                        title = "~${DateUtils.toDurationString(chart.latestVersion.duration)}",
                         icon = R.drawable.outline_access_time_24
                     )
                     StatListItem(
-                        title = "${lastVersion.notesAmount} notes",
+                        title = "${chart.latestVersion.notesAmount} notes",
                         icon = R.drawable.rounded_music_note_24
                     )
                     StatListItem(
-                        title = "+${lastVersion.notesAmount} downloads",
+                        title = "+${chart.latestVersion.notesAmount} downloads",
                         icon = R.drawable.rounded_download_24
                     )
                     StatListItem(
-                        title = "Updated ${DateUtils.toRelativeString(lastVersion.publishedAt)}",
+                        title = "Updated ${DateUtils.toRelativeString(chart.latestVersion.publishedAt)}",
                         icon = R.drawable.rounded_calendar_today_24
                     )
                 }
@@ -195,7 +193,7 @@ fun ChartDetailsScreen(
                         horizontalAlignment = Alignment.Start,
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        if (lastVersion.knownIssues.isEmpty()) {
+                        if (chart.latestVersion.knownIssues.isEmpty()) {
                             Text(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -204,7 +202,7 @@ fun ChartDetailsScreen(
                                 style = MaterialTheme.typography.bodyLarge
                             )
                         } else {
-                            lastVersion.knownIssues.forEach {
+                            chart.latestVersion.knownIssues.forEach {
                                 Text(
                                     text = "•   $it",
                                     style = MaterialTheme.typography.bodyLarge
