@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
@@ -45,6 +45,8 @@ private const val PLACEHOLDER_DOWNLOAD_URL = "https://cdn.discordapp.com/attachm
 @Composable
 fun DownloadButton(
     chart: Chart,
+    downloadState: DownloadState,
+    onDownloadStateChange: (DownloadState) -> Unit,
     snackbarHostState: SnackbarHostState,
     downloadViewModel: DownloadViewModel= hiltViewModel()
 ) {
@@ -54,19 +56,20 @@ fun DownloadButton(
     var showStoragePermissionDialog by remember { mutableStateOf(false) }
     var hasStoragePermission by remember { mutableStateOf(false) }
 
-    var downloadState by remember { mutableStateOf<DownloadState>(DownloadState.Idle) }
-
     // Observing download state from DownloadUtils
     LaunchedEffect(Unit) {
         downloadViewModel.downloadUtils.downloadState.collectLatest { state ->
-            downloadState = state
+            onDownloadStateChange(state)
 
-            // Show snackbar for download state
             if (state is DownloadState.Completed) {
+                // Mark as installed on local database
                 scope.launch {
+                    downloadViewModel.markChartAsInstalled(chart.id)
+                    downloadViewModel.downloadUtils.markAsInstalled()
                     snackbarHostState.showSnackbar("Download complete")
                 }
             } else if (state is DownloadState.Error) {
+                // Show error message
                 scope.launch {
                     snackbarHostState.showSnackbar(
                         message = "Download failed: ${(downloadState as DownloadState.Error).message}",
@@ -98,14 +101,7 @@ fun DownloadButton(
             .sizeIn(minWidth = 56.dp, minHeight = 56.dp),
         enabled = downloadState is DownloadState.Idle,
         onClick = {
-            if (downloadState is DownloadState.Completed) {
-                return@Button
-            }
-
             if (hasStoragePermission) {
-                // Reset download state before starting
-                downloadState = DownloadState.Idle
-
                 // Start download service
                 DownloadService.startDownload(
                     context = context,
@@ -131,20 +127,16 @@ fun DownloadButton(
                     painter = painterResource(id = R.drawable.rounded_download_24),
                     contentDescription = "Download chart"
                 )
-                is DownloadState.Downloading -> CircularProgressIndicator(
+                is DownloadState.Downloading, is DownloadState.Extracting -> CircularProgressIndicator(
                     modifier = Modifier.size(16.dp),
                     strokeWidth = 2.dp
                 )
-                is DownloadState.Extracting -> CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp
-                )
-                is DownloadState.Completed -> Icon(
+                is DownloadState.Completed, is DownloadState.Installed -> Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = "Download complete"
                 )
                 is DownloadState.Error -> Icon(
-                    imageVector = Icons.Default.Close,
+                    imageVector = Icons.Default.Warning,
                     contentDescription = "Download failed"
                 )
             }
@@ -153,7 +145,7 @@ fun DownloadButton(
                     is DownloadState.Idle -> "Download"
                     is DownloadState.Downloading -> "Downloading..."
                     is DownloadState.Extracting -> "Extracting..."
-                    is DownloadState.Completed -> "Installed"
+                    is DownloadState.Completed, is DownloadState.Installed -> "Installed"
                     is DownloadState.Error -> "Failed"
                 }
             )
