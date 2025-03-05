@@ -67,7 +67,7 @@ class ChartViewModel @Inject constructor(
                         // Save the remote data to local storage
                         localChartRepository.insertCharts(chartsList)
                             .onEach {
-                                Log.d(TAG, "Local data updated")
+                                Log.d(TAG, "Local data updated: $it")
                             }
                             .catch {
                                 Log.e(TAG, "Error updating local data", it)
