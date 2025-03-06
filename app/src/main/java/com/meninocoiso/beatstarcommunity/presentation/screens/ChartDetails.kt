@@ -114,6 +114,7 @@ fun ChartDetailsScreen(
         }
     )
 
+    // Dismiss snackbar on swipe
     val dismissSnackbarState = rememberSwipeToDismissBoxState(confirmValueChange = { value ->
         if (value != SwipeToDismissBoxValue.Settled) {
             snackbarHostState.currentSnackbarData?.dismiss()
@@ -123,6 +124,7 @@ fun ChartDetailsScreen(
         }
     })
 
+    // Reset dismiss state when snackbar is dismissed
     LaunchedEffect(dismissSnackbarState.currentValue) {
         if (dismissSnackbarState.currentValue != SwipeToDismissBoxValue.Settled) {
             dismissSnackbarState.reset()
