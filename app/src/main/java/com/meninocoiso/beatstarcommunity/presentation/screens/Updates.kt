@@ -1,19 +1,31 @@
 package com.meninocoiso.beatstarcommunity.presentation.screens
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -28,10 +40,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.meninocoiso.beatstarcommunity.R
@@ -40,6 +56,7 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessag
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabItem
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabsUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.LocalChartPreview
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.LocalChartsState
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.UpdatesState
@@ -129,14 +146,11 @@ private fun SectionWrapper(
 		modifier = Modifier
 			.fillMaxSize()
 			.nestedScroll(nestedScrollConnection),
+		contentPadding = PaddingValues(horizontal = 16.dp),
+		verticalArrangement = Arrangement.spacedBy(8.dp),
+		horizontalAlignment = Alignment.CenterHorizontally
 	) {
-		item {
-			Spacer(modifier = Modifier.height(16.dp))
-		}
 		content()
-		item {
-			Spacer(modifier = Modifier.height(16.dp))
-		}
 	}
 }
 
@@ -145,7 +159,7 @@ private fun DownloadsSectionsTitle(title: String) {
 	Box(
 		modifier = Modifier
 			.fillMaxWidth()
-			.padding(16.dp, 0.dp, 0.dp, 0.dp)
+			.padding(16.dp, 0.dp, 0.dp, 8.dp)
 	) {
 		Text(
 			text = title,
@@ -165,13 +179,113 @@ fun WorkspaceSection(
 
 	Column {
 		// Updates section remains unchanged
-		/*Section(
-			title = "Updates available (${updatesState.size})",
+		Section(
+			title = when (updatesState) {
+				is UpdatesState.Success -> "Updates available (${updatesState.charts.size})"
+				else -> null
+			},
 			thickness = 0.dp,
 			titleModifier = Modifier.padding(top = 8.dp),
 		) {
-			//
-		}*/
+			when (updatesState) {
+				is UpdatesState.Success -> {
+					val chartsList = updatesState.charts
+					if (chartsList.isEmpty()) {
+						Box(
+							modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+							contentAlignment = Alignment.Center
+						) {
+							Text(
+								text = "No updates found",
+								modifier = Modifier.padding(horizontal = 16.dp)
+							)
+						}
+					} else {
+						SectionWrapper(nestedScrollConnection) {
+							items(chartsList) { chart ->
+								ListItem(
+									modifier = Modifier
+										.clip(RoundedCornerShape(16.dp)),
+									colors = ListItemDefaults.colors(
+										containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+									),
+									leadingContent = {
+										CoverArt(
+											difficulty = null,
+											borderRadius = 2.dp,
+											url = chart.coverUrl,
+											size = 40.dp
+										)
+									},
+									headlineContent = {
+										Text(
+											text = chart.track,
+											style = MaterialTheme.typography.titleMedium,
+											maxLines = 1,
+											overflow = TextOverflow.Ellipsis,
+											lineHeight = TextUnit(1f, TextUnitType.Em)
+										)
+									},
+									supportingContent = {
+										Text(
+											text = "Update from v1 → v2",
+											style = MaterialTheme.typography.bodyMedium,
+											lineHeight = TextUnit(1f, TextUnitType.Em)
+										)
+									},
+									trailingContent = {
+										IconButton(
+											onClick = { /*TODO*/ },
+											colors = IconButtonDefaults.iconButtonColors(
+												containerColor = MaterialTheme.colorScheme.primary,
+												contentColor = MaterialTheme.colorScheme.onPrimary
+											)
+										) {
+											Icon(
+												painter = painterResource(id = R.drawable.rounded_download_24),
+												contentDescription = "Update icon"
+											)
+										}
+									}
+								)
+							}
+						}
+					}
+				}
+				is UpdatesState.Error -> {
+					StatusMessageUI(
+						title = "We couldn't fetch updates...",
+						message = "Please check your connection or try again later",
+						icon = R.drawable.rounded_hourglass_disabled_24
+					)
+				}
+				is UpdatesState.Loading -> {
+
+				}
+			}
+			FilledTonalButton(
+				onClick = { /*TODO*/ },
+				colors = ButtonDefaults.filledTonalButtonColors(
+					containerColor = MaterialTheme.colorScheme.primaryContainer,
+					contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+				),
+				modifier = Modifier
+					.fillMaxWidth()
+					.padding(start = 16.dp, end = 16.dp, top = 8.dp)
+			) {
+				Row(
+					horizontalArrangement = Arrangement.spacedBy(ButtonDefaults.IconSpacing),
+					verticalAlignment = Alignment.CenterVertically
+				) {
+					Icon(
+						modifier = Modifier.size(ButtonDefaults.IconSize),
+						painter = painterResource(id = R.drawable.rounded_autorenew_24),
+						contentDescription = "Check for updates icon"
+					)
+					Text(text = "Check for updates")
+				}
+			}
+		}
 
 		// Downloaded section
 		Section(
@@ -212,7 +326,7 @@ fun WorkspaceSection(
 				is LocalChartsState.Error -> {
 					StatusMessageUI(
 						title = "Looks like something went wrong...",
-						message = "\"${localChartsState.message}\"\nPlease try again or check Discord with error above to see if it’s already a known issue",
+						message = "Please check your connection or try again later",
 						icon = R.drawable.rounded_hourglass_disabled_24
 					)
 				}
