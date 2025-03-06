@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -24,11 +25,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,7 +57,6 @@ import com.meninocoiso.beatstarcommunity.presentation.viewmodel.DownloadViewMode
 import com.meninocoiso.beatstarcommunity.util.DateUtils
 import com.meninocoiso.beatstarcommunity.util.DownloadState
 import com.meninocoiso.beatstarcommunity.util.LinkingUtils.Companion.shareChartLink
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -80,48 +82,21 @@ fun ChartDetailsScreen(
 ) {
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
-    var moreOptionsExpanded by remember { mutableStateOf(false) }
+
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    var downloadState by remember { mutableStateOf(
-        if (chart.isInstalled == true) DownloadState.Installed
-        else DownloadState.Idle
-    ) }
-
-    LaunchedEffect(Unit) {
-        // Mark chart as installed if it is already installed
-        if (chart.isInstalled == true) {
-            downloadViewModel.downloadUtils.markAsInstalled()
-        }
-
-        // Observing download state from DownloadUtils
-        downloadViewModel.downloadUtils.downloadState.collectLatest { state ->
-            downloadState = state
-
-            scope.launch {
-                if (state is DownloadState.Completed) {
-                    snackbarHostState.showSnackbar("Download complete")
-                } else if (state is DownloadState.Error) {
-                    // Show error message
-                    val result = snackbarHostState.showSnackbar(
-                        message = (downloadState as DownloadState.Error).message,
-                        duration = SnackbarDuration.Long,
-                        actionLabel = "Try again",
-                    )
-                    /*when (result) {
-                        SnackbarResult.ActionPerformed -> {
-                            downloadViewModel.downloadUtils.downloadChart()
-                        }
-                        SnackbarResult.Dismissed -> {}
-                    }*/
-                }
-            }
-        }
+    val downloadState = remember {
+        mutableStateOf(
+            if (chart.isInstalled == true) DownloadState.Installed
+            else DownloadState.Idle
+        )
     }
 
+    var isMoreOptionsExpanded by remember { mutableStateOf(false) }
     val isConfirmationDialogOpen = remember { mutableStateOf(false) }
+
     ConfirmationDialog(
         title = "Delete chart",
         message = "Are you sure you want to delete this chart?\nYou'll be able to download it again later.",
@@ -139,8 +114,34 @@ fun ChartDetailsScreen(
         }
     )
 
+    val dismissSnackbarState = rememberSwipeToDismissBoxState(confirmValueChange = { value ->
+        if (value != SwipeToDismissBoxValue.Settled) {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            true
+        } else {
+            false
+        }
+    })
+
+    LaunchedEffect(dismissSnackbarState.currentValue) {
+        if (dismissSnackbarState.currentValue != SwipeToDismissBoxValue.Settled) {
+            dismissSnackbarState.reset()
+        }
+    }
+
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = {
+            SwipeToDismissBox(
+                state = dismissSnackbarState,
+                backgroundContent = {},
+                content = {
+                    SnackbarHost(
+                        hostState = snackbarHostState,
+                        modifier = Modifier.imePadding()
+                    )
+                },
+            )
+       },
         topBar = {
             TopAppBar(
                 modifier = Modifier.padding(horizontal = 8.dp),
@@ -158,22 +159,22 @@ fun ChartDetailsScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { moreOptionsExpanded = !moreOptionsExpanded }) {
+                    IconButton(onClick = { isMoreOptionsExpanded = !isMoreOptionsExpanded }) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
                             contentDescription = "More options menu"
                         )
                     }
                     DropdownMenu(
-                        expanded = moreOptionsExpanded,
-                        onDismissRequest = { moreOptionsExpanded = false },
+                        expanded = isMoreOptionsExpanded,
+                        onDismissRequest = { isMoreOptionsExpanded = false },
                     ) {
                         DropdownMenuItem(
                             contentPadding = DropdownItemPadding,
                             text = { Text("Share") },
                             leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
                             onClick = {
-                                moreOptionsExpanded = false
+                                isMoreOptionsExpanded = false
                                 shareChartLink(context, chart.id)
                             }
                         )
@@ -187,17 +188,17 @@ fun ChartDetailsScreen(
                                 )
                             },
                             onClick = {
-                                moreOptionsExpanded = false
+                                isMoreOptionsExpanded = false
                                 // Implement report functionality
                             }
                         )
-                        if (downloadState == DownloadState.Installed) {
+                        if (downloadState.value == DownloadState.Installed) {
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,
                                 text = { Text("Delete chart") },
                                 leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
                                 onClick = {
-                                    moreOptionsExpanded = false
+                                    isMoreOptionsExpanded = false
                                     isConfirmationDialogOpen.value = true
                                 }
                             )
@@ -231,7 +232,8 @@ fun ChartDetailsScreen(
                 floatingActionButton = {
                     DownloadButton(
                         chart = chart,
-                        downloadState,
+                        snackbarHostState = snackbarHostState,
+                        downloadState = downloadState,
                         downloadUtils = downloadViewModel.downloadUtils
                     )
                 }
@@ -317,11 +319,11 @@ fun ChartDetailsScreen(
                 .fillMaxSize(),
             contentAlignment = Alignment.BottomCenter
         ) {
-        if (downloadState is DownloadState.Downloading ||
-            downloadState is DownloadState.Extracting) {
+        if (downloadState.value is DownloadState.Downloading ||
+            downloadState.value is DownloadState.Extracting) {
                 LinearProgressIndicator(
                     progress = {
-                        when (val state = downloadState) {
+                        when (val state = downloadState.value) {
                             is DownloadState.Downloading -> state.progress
                             is DownloadState.Extracting -> state.progress
                             else -> 100f
