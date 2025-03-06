@@ -7,10 +7,6 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.navigation.NavHostController
@@ -70,9 +66,7 @@ fun BottomNavigationComponent(
 	setItemIndex: (Int) -> Unit,
 	navController: NavHostController,
 ) {
-	NavigationBar(
-		/*containerColor = Color.Red*/
-	) {
+	NavigationBar {
 		bottomNavigationItems.forEachIndexed { index, item ->
 			NavigationBarItem(
 				selected = selectedItemIndex == index,

@@ -1,9 +1,8 @@
-package com.meninocoiso.beatstarcommunity.presentation.ui.components.download
+package com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog
 
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.AlertDialog
@@ -11,7 +10,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import com.meninocoiso.beatstarcommunity.util.DownloadUtils
@@ -91,34 +89,4 @@ fun StoragePermissionDialog(
             }
         }
     )
-}
-
-@Composable
-fun StoragePermissionHandler(
-    onPermissionGranted: () -> Unit,
-    downloadUtils: DownloadUtils
-) {
-    val context = LocalContext.current
-
-    // Check if we already have a valid folder URI
-    LaunchedEffect(Unit) {
-        val folderUri = downloadUtils.getFolderUri()
-        if (!folderUri.isNullOrEmpty()) {
-            try {
-                val uri = Uri.parse(folderUri)
-
-                // Check if the URI is still valid
-                val flags = context.contentResolver.persistedUriPermissions
-                    .find { it.uri == uri }?.let { it.isReadPermission && it.isWritePermission }
-                    ?: false
-
-                if (flags) {
-                    onPermissionGranted()
-                    return@LaunchedEffect
-                }
-            } catch (e: Exception) {
-                Log.e("StoragePermission", "Error checking URI permissions", e)
-            }
-        }
-    }
 }

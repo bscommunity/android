@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -22,7 +21,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -39,6 +37,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -46,17 +45,22 @@ import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.CarouselUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartContributors
-import com.meninocoiso.beatstarcommunity.presentation.ui.components.download.DownloadButton
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.DownloadButton
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.StatListItem
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.DownloadViewModel
 import com.meninocoiso.beatstarcommunity.util.DateUtils
 import com.meninocoiso.beatstarcommunity.util.DownloadState
+import com.meninocoiso.beatstarcommunity.util.LinkingUtils.Companion.shareChartLink
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class ChartDetails(val chart: Chart)
+
+@Serializable
+data class DeepLinkChartDetails(val chartId: String)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,7 +73,9 @@ fun ChartDetailsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var moreOptionsExpanded by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
     var downloadState by remember { mutableStateOf<DownloadState>(
         if (chart.isInstalled == true) DownloadState.Installed
         else DownloadState.Idle
@@ -126,11 +132,25 @@ fun ChartDetailsScreen(
                     }
                     DropdownMenu(
                         expanded = moreOptionsExpanded,
-                        onDismissRequest = { moreOptionsExpanded = false }
+                        onDismissRequest = { moreOptionsExpanded = false },
+                        modifier = Modifier.padding(end = 8.dp)
                     ) {
                         DropdownMenuItem(
                             text = { Text("Share") },
                             leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
+                            onClick = {
+                                moreOptionsExpanded = false
+                                shareChartLink(context, chart.id)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Report") },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(R.drawable.rounded_flag_24),
+                                    contentDescription = null
+                                )
+                            },
                             onClick = {
                                 moreOptionsExpanded = false
                                 // Implement share functionality
@@ -205,6 +225,10 @@ fun ChartDetailsScreen(
                         title = "${chart.latestVersion.notesAmount} notes",
                         icon = R.drawable.rounded_music_note_24
                     )
+                    /*StatListItem(
+                        title = "${chart.latestVersion.effectsAmount} effects",
+                        icon = R.drawable.rounded_blur_medium_24
+                    )*/
                     StatListItem(
                         title = "+${chart.latestVersion.notesAmount} downloads",
                         icon = R.drawable.rounded_download_24
@@ -270,34 +294,6 @@ fun ChartDetailsScreen(
             }
         }
     }
-}
-
-@Composable
-private fun StatListItem(
-    title: String,
-    icon: Int
-) {
-    ListItem(
-        headlineContent = {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-            )
-        },
-        leadingContent = {
-            Box(
-                modifier = Modifier
-                    .size(48.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(id = icon),
-                    contentDescription = "Stat icon",
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-    )
 }
 
 typealias OnNavigateToDetails = (chart: Chart) -> Unit

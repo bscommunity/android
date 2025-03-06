@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.presentation.ui.components.download
+package com.meninocoiso.beatstarcommunity.presentation.ui.components.details
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -29,11 +29,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.StoragePermissionDialog
 import com.meninocoiso.beatstarcommunity.service.DownloadService
 import com.meninocoiso.beatstarcommunity.util.DownloadState
 import com.meninocoiso.beatstarcommunity.util.DownloadUtils
-
-private const val PLACEHOLDER_DOWNLOAD_URL = "https://cdn.discordapp.com/attachments/954166390619783268/1343421514770415727/HOT_TO_GO.zip?ex=67c86b08&is=67c71988&hm=74388cc07990dcb67e9efabecfee62b0149a70efe3f3619031712a20b6e4b45e&"
+import com.meninocoiso.beatstarcommunity.util.PermissionUtils.Companion.StoragePermissionHandler
 
 @Composable
 fun DownloadButton(
