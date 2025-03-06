@@ -260,7 +260,15 @@ fun WorkspaceSection(
 					)
 				}
 				is UpdatesState.Loading -> {
-
+					Box(
+						modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+						contentAlignment = Alignment.Center
+					) {
+						Text(
+							text = "Searching for updates...",
+							modifier = Modifier.padding(horizontal = 16.dp)
+						)
+					}
 				}
 			}
 			FilledTonalButton(
