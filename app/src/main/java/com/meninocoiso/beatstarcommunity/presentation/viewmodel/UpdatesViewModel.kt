@@ -37,19 +37,22 @@ class UpdatesViewModel @Inject constructor(
     private val _localChartsState = MutableStateFlow<LocalChartsState>(LocalChartsState.Loading)
     val localChartsState: StateFlow<LocalChartsState> = _localChartsState.asStateFlow()
 
-    /*init {
-        loadLocalCharts()
-    }*/
+    init {
+        loadLocalCharts(true)
+    }
 
-    fun loadLocalCharts() {
+    fun loadLocalCharts(shouldCheckForUpdates: Boolean = false) {
         _localChartsState.value = LocalChartsState.Loading
         viewModelScope.launch {
             localChartRepository.getCharts().collect { result ->
                 _localChartsState.value = result.fold(
                     onSuccess = { charts ->
                         val installedCharts = charts.filter { it.isInstalled == true }
-
                         Log.d("UpdatesViewModel", "Installed charts: $installedCharts")
+
+                        if (shouldCheckForUpdates) {
+                            fetchUpdates(installedCharts)
+                        }
 
                         LocalChartsState.Success(installedCharts)
                     },
@@ -60,6 +63,11 @@ class UpdatesViewModel @Inject constructor(
     }
 
     fun fetchUpdates(installedCharts: List<Chart>) {
+        if (installedCharts.isEmpty()) {
+            _updatesState.value = UpdatesState.Success(emptyList())
+            return
+        }
+
         _updatesState.value = UpdatesState.Loading
         viewModelScope.launch {
             try {

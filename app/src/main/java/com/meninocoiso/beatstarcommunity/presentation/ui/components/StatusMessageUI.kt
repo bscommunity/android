@@ -2,7 +2,6 @@ package com.meninocoiso.beatstarcommunity.presentation.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -14,10 +13,31 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
+
+enum class Size(
+    val icon: Int,
+    val gap: Int,
+    val title: @Composable () -> TextStyle,
+    val message: @Composable () -> TextStyle
+) {
+    Medium(
+        icon = 56,
+        gap = 16,
+        title = { MaterialTheme.typography.titleLarge },
+        message = { MaterialTheme.typography.bodyMedium }
+    ),
+    Small(
+        icon = 24,
+        gap = 4,
+        title = { MaterialTheme.typography.titleSmall },
+        message = { MaterialTheme.typography.bodySmall }
+    )
+}
 
 @Preview
 @Composable
@@ -36,26 +56,30 @@ fun StatusMessageUI(
     title: String,
     message: String,
     icon: Int,
+    modifier: Modifier? = Modifier,
+    size: Size = Size.Medium,
     onClick: (() -> Unit)? = null,
     buttonLabel: String = "Try again"
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+        modifier = Modifier.padding(horizontal = 16.dp).let {
+            if (modifier != null) it.then(modifier) else it
+        },
         verticalArrangement = Arrangement.spacedBy(
-            space = 16.dp,
+            space = size.gap.dp,
             alignment = Alignment.CenterVertically
         ),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(
             painter = painterResource(id = icon),
-            modifier = Modifier.size(56.dp),
+            modifier = Modifier.size(size.icon.dp),
             contentDescription = ""
         )
         Text(
             text = title,
             textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.titleLarge,
+            style = size.title(),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
@@ -63,7 +87,7 @@ fun StatusMessageUI(
         Text(
             text = message,
             textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyMedium,
+            style = size.message(),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 32.dp)

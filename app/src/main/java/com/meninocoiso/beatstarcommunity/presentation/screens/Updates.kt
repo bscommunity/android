@@ -1,5 +1,7 @@
 package com.meninocoiso.beatstarcommunity.presentation.screens
 
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,12 +51,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.presentation.navigation.UpdatesSection
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.Size
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabItem
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabsUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.LocalChartPreview
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
+import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.infiniteRotation
+import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.shimmerLoading
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.LocalChartsState
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.UpdatesState
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.UpdatesViewModel
@@ -86,9 +91,11 @@ fun UpdatesScreen(
 	}
 
 	// Update local charts every time the screen is opened
+	// Only update if the local charts are already loaded
 	LaunchedEffect(Unit) {
-		viewModel.loadLocalCharts()
-		//viewModel.fetchUpdates(installedCharts = localChartsState.charts)
+		if (localChartsState is LocalChartsState.Success) {
+			viewModel.loadLocalCharts()
+		}
 	}
 
 	// Scroll (horizontally) to the correct section
@@ -114,6 +121,9 @@ fun UpdatesScreen(
 				0 -> WorkspaceSection(
 					updatesState = updatesState,
 					localChartsState = localChartsState,
+					onFetchUpdates = {
+						viewModel.fetchUpdates((localChartsState as LocalChartsState.Success).charts)
+				 	},
 					nestedScrollConnection = connection
 				)
 				1 -> InstallationsSection(connection)
@@ -168,6 +178,7 @@ private fun DownloadsSectionsTitle(title: String) {
 @Composable
 fun WorkspaceSection(
 	updatesState: UpdatesState,
+	onFetchUpdates: () -> Unit,
 	localChartsState: LocalChartsState,
 	nestedScrollConnection: NestedScrollConnection,
 ) {
@@ -185,17 +196,39 @@ fun WorkspaceSection(
 			titleModifier = Modifier.padding(top = 8.dp),
 		) {
 			when (updatesState) {
+				is UpdatesState.Error -> {
+					UpdatesPanel {
+						StatusMessageUI(
+							title = "We couldn't fetch updates...",
+							message = "Please check your connection and try again later",
+							icon = R.drawable.rounded_hourglass_disabled_24,
+							size = Size.Small,
+							modifier = Modifier.padding(16.dp)
+						)
+					}
+				}
+				is UpdatesState.Loading -> {
+					UpdatesPanel {
+						Box(
+							modifier = Modifier
+								.fillMaxWidth()
+								.height(20.dp)
+								.clip(RoundedCornerShape(8.dp))
+								.shimmerLoading(
+									colors = listOf(
+										MaterialTheme.colorScheme.surfaceContainerLow,
+										MaterialTheme.colorScheme.surfaceContainerHigh,
+										MaterialTheme.colorScheme.surfaceContainerLow
+									)
+								)
+						)
+					}
+				}
 				is UpdatesState.Success -> {
 					val chartsList = updatesState.charts
 					if (chartsList.isEmpty()) {
-						Box(
-							modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-							contentAlignment = Alignment.Center
-						) {
-							Text(
-								text = "No updates found",
-								modifier = Modifier.padding(horizontal = 16.dp)
-							)
+						UpdatesPanel {
+							Text(text = "No updates available")
 						}
 					} else {
 						SectionWrapper(nestedScrollConnection) {
@@ -249,31 +282,15 @@ fun WorkspaceSection(
 						}
 					}
 				}
-				is UpdatesState.Error -> {
-					StatusMessageUI(
-						title = "We couldn't fetch updates...",
-						message = "Please check your connection or try again later",
-						icon = R.drawable.rounded_hourglass_disabled_24
-					)
-				}
-				is UpdatesState.Loading -> {
-					Box(
-						modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-						contentAlignment = Alignment.Center
-					) {
-						Text(
-							text = "Searching for updates...",
-							modifier = Modifier.padding(horizontal = 16.dp)
-						)
-					}
-				}
 			}
 			FilledTonalButton(
-				onClick = { /*TODO*/ },
+				onClick = onFetchUpdates,
 				colors = ButtonDefaults.filledTonalButtonColors(
 					containerColor = MaterialTheme.colorScheme.primaryContainer,
 					contentColor = MaterialTheme.colorScheme.onPrimaryContainer
 				),
+				enabled = updatesState !is UpdatesState.Loading
+						&& (updatesState as UpdatesState.Success).charts.isNotEmpty(),
 				modifier = Modifier
 					.fillMaxWidth()
 					.padding(start = 16.dp, end = 16.dp, top = 8.dp)
@@ -283,11 +300,21 @@ fun WorkspaceSection(
 					verticalAlignment = Alignment.CenterVertically
 				) {
 					Icon(
-						modifier = Modifier.size(ButtonDefaults.IconSize),
+						modifier = Modifier
+							.run {
+								if (updatesState == UpdatesState.Loading) {
+									this.infiniteRotation(easing = CubicBezierEasing(
+										0.4f, 0.0f, 0.2f, 1.0f
+									))
+								} else {
+									this
+								}
+							}
+							.size(ButtonDefaults.IconSize),
 						painter = painterResource(id = R.drawable.rounded_autorenew_24),
 						contentDescription = "Check for updates icon"
 					)
-					Text(text = "Check for updates")
+					Text(text = if (updatesState == UpdatesState.Loading) "Checking for updates..." else "Check for updates")
 				}
 			}
 		}
@@ -338,7 +365,18 @@ fun WorkspaceSection(
 				is LocalChartsState.Success -> {
 					val chartsList = localChartsState.charts
 					if (chartsList.isEmpty()) {
-						Text(text = "No downloaded charts available", modifier = Modifier.padding(16.dp))
+						Box(
+							modifier = Modifier.fillMaxSize(),
+							contentAlignment = Alignment.Center
+						) {
+							StatusMessageUI(
+								title = "No downloads yet",
+								message = "Download some charts to get started",
+								icon = R.drawable.rounded_box_24,
+								modifier = Modifier
+									.padding(bottom = 36.dp)
+							)
+						}
 					} else {
 						SectionWrapper(
 							nestedScrollConnection = nestedScrollConnection
@@ -367,6 +405,22 @@ fun WorkspaceSection(
 	}
 }
 
+@Composable
+private fun UpdatesPanel(content: @Composable () -> Unit) {
+	Box(
+		modifier = Modifier
+			.fillMaxWidth()
+			.padding(start = 16.dp, end = 16.dp)
+			.background(
+				MaterialTheme.colorScheme.surfaceContainerLow,
+				RoundedCornerShape(16.dp)
+			)
+			.padding(16.dp),
+		contentAlignment = Alignment.Center
+	) {
+		content()
+	}
+}
 
 @Composable
 private fun InstallationsSection(
