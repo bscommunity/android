@@ -85,7 +85,7 @@ class DownloadService : Service() {
                 // Perform the download
                 downloadUtils.downloadChart(
                     chartUrl,
-                    downloadUtils.getChartFolderName(chartId, chartName)
+                    downloadUtils.getChartFolderName(chartId)
                 )
 
                 try {
