@@ -25,27 +25,34 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.CarouselUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartContributors
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.download.DownloadButton
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.DownloadViewModel
 import com.meninocoiso.beatstarcommunity.util.DateUtils
 import com.meninocoiso.beatstarcommunity.util.DownloadState
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -56,12 +63,41 @@ data class ChartDetails(val chart: Chart)
 fun ChartDetailsScreen(
     chart: Chart,
     onReturn: () -> Unit,
+    downloadViewModel: DownloadViewModel = hiltViewModel()
 ) {
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     var moreOptionsExpanded by remember { mutableStateOf(false) }
 
-    var downloadState by remember { mutableStateOf<DownloadState>(DownloadState.Idle) }
+    val scope = rememberCoroutineScope()
+    var downloadState by remember { mutableStateOf<DownloadState>(
+        if (chart.isInstalled == true) DownloadState.Installed
+        else DownloadState.Idle
+    ) }
+
+    LaunchedEffect(Unit) {
+        // Mark chart as installed if it is already installed
+        if (chart.isInstalled == true) {
+            downloadViewModel.downloadUtils.markAsInstalled()
+        }
+
+        // Observing download state from DownloadUtils
+        downloadViewModel.downloadUtils.downloadState.collectLatest { state ->
+            downloadState = state
+
+            scope.launch {
+                if (state is DownloadState.Completed) {
+                    snackbarHostState.showSnackbar("Download complete")
+                } else if (state is DownloadState.Error) {
+                    // Show error message
+                    snackbarHostState.showSnackbar(
+                        message = "Download failed: ${(downloadState as DownloadState.Error).message}",
+                        duration = SnackbarDuration.Long
+                    )
+                }
+            }
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -138,10 +174,7 @@ fun ChartDetailsScreen(
                     DownloadButton(
                         chart = chart,
                         downloadState,
-                        onDownloadStateChange = { newState ->
-                            downloadState = newState
-                        },
-                        snackbarHostState
+                        downloadUtils = downloadViewModel.downloadUtils
                     )
                 }
             )

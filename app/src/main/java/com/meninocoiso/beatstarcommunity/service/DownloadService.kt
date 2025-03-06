@@ -7,8 +7,10 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.meninocoiso.beatstarcommunity.R
+import com.meninocoiso.beatstarcommunity.data.repository.ChartRepository
 import com.meninocoiso.beatstarcommunity.util.DownloadState
 import com.meninocoiso.beatstarcommunity.util.DownloadUtils
 import dagger.hilt.android.AndroidEntryPoint
@@ -19,6 +21,9 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import javax.inject.Named
+
+private const val TAG = "DownloadService"
 
 @AndroidEntryPoint
 class DownloadService : Service() {
@@ -26,17 +31,23 @@ class DownloadService : Service() {
     @Inject
     lateinit var downloadUtils: DownloadUtils
 
+    @Inject
+    @Named("Local")
+    lateinit var localChartRepository: ChartRepository
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val notificationManager by lazy { getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager }
     private val notificationId = 1001
     private val channelId = "download_channel"
 
     companion object {
+        private const val EXTRA_CHART_ID = "extra_chart_id"
         private const val EXTRA_CHART_URL = "extra_chart_url"
         private const val EXTRA_CHART_NAME = "extra_chart_name"
 
-        fun startDownload(context: Context, chartUrl: String, chartName: String) {
+        fun startDownload(context: Context, chartId: String, chartUrl: String, chartName: String) {
             val intent = Intent(context, DownloadService::class.java).apply {
+                putExtra(EXTRA_CHART_ID, chartId)
                 putExtra(EXTRA_CHART_URL, chartUrl)
                 putExtra(EXTRA_CHART_NAME, chartName)
             }
@@ -55,11 +66,9 @@ class DownloadService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val chartId = intent?.getStringExtra(EXTRA_CHART_ID)
         val chartUrl = intent?.getStringExtra(EXTRA_CHART_URL)
         val chartName = intent?.getStringExtra(EXTRA_CHART_NAME)
-
-        println("chartUrl: $chartUrl")
-        println("chartName: $chartName")
 
         if (chartUrl != null && chartName != null) {
             // Start as foreground service with initial notification
@@ -69,6 +78,7 @@ class DownloadService : Service() {
                 progress = 0
             )
             startForeground(notificationId, notification)
+            Log.d(TAG, "Downloading $chartName")
 
             // Start the download
             serviceScope.launch {
@@ -81,21 +91,21 @@ class DownloadService : Service() {
                         when (state) {
                             is DownloadState.Downloading -> {
                                 val progress = (state.progress * 100).toInt()
+                                Log.d(TAG, "Downloading $chartName: $progress%")
                                 updateNotification(
                                     title = "Downloading $chartName",
                                     message = "Downloading... $progress%",
                                     progress = progress
                                 )
-                                println("Downloading... $progress%")
                             }
                             is DownloadState.Extracting -> {
                                 val progress = (state.progress * 100).toInt()
+                                Log.d(TAG, "Extracting $chartName: $progress%")
                                 updateNotification(
                                     title = "Extracting $chartName",
                                     message = "Extracting files... $progress%",
                                     progress = progress
                                 )
-                                println("Extracting files... $progress%")
                             }
                             is DownloadState.Completed -> {
                                 updateNotification(
@@ -104,7 +114,19 @@ class DownloadService : Service() {
                                     progress = 100,
                                     isOngoing = false
                                 )
-                                println("$chartName has been downloaded successfully")
+
+                                if (chartId != null) {
+                                    localChartRepository.updateChart(chartId, true)
+                                        .collect {
+                                            if (it.isSuccess) {
+                                                downloadUtils.markAsInstalled()
+                                                Log.d(TAG, "Download complete: $chartName")
+                                            }
+                                        }
+                                } else {
+                                    Log.e(TAG, "Chart ID is missing")
+                                }
+
                                 stopSelf()
                             }
                             is DownloadState.Error -> {
@@ -114,7 +136,7 @@ class DownloadService : Service() {
                                     progress = 0,
                                     isOngoing = false
                                 )
-                                println("Error: ${state.message}")
+                                Log.e(TAG, "Download failed: ${state.message}")
                                 stopSelf()
                             }
                             else -> {}
@@ -127,7 +149,7 @@ class DownloadService : Service() {
                         progress = 0,
                         isOngoing = false
                     )
-                    println("Error: ${e.message}")
+                    Log.e(TAG, "Download failed", e)
                     stopSelf()
                 }
 

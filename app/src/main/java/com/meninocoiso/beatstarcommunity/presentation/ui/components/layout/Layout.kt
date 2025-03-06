@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun Section(
-	title: String,
+	title: String?,
 	modifier: Modifier? = Modifier,
 	titleModifier: Modifier? = Modifier,
 	thickness: Dp = DividerDefaults.Thickness,
@@ -33,12 +33,14 @@ fun Section(
 		if (thickness != 0.dp) {
 			HorizontalDivider(thickness = thickness)
 		}
-		Text(
-			text = title,
-			style = MaterialTheme.typography.labelLarge,
-			modifier = (titleModifier ?: Modifier)
-				.padding(start = 16.dp, top = 16.dp, bottom = 12.dp)
-		)
+		if (title != null) {
+			Text(
+				text = title,
+				style = MaterialTheme.typography.labelLarge,
+				modifier = (titleModifier ?: Modifier)
+					.padding(start = 16.dp, top = 16.dp, bottom = 12.dp)
+			)
+		}
 		content()
 	}
 }
