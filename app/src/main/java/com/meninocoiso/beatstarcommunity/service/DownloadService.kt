@@ -70,7 +70,7 @@ class DownloadService : Service() {
         val chartUrl = intent?.getStringExtra(EXTRA_CHART_URL)
         val chartName = intent?.getStringExtra(EXTRA_CHART_NAME)
 
-        if (chartUrl != null && chartName != null) {
+        if (chartId != null && chartUrl != null && chartName != null) {
             // Start as foreground service with initial notification
             val notification = createNotification(
                 title = "Downloading $chartName",
@@ -83,7 +83,10 @@ class DownloadService : Service() {
             // Start the download
             serviceScope.launch {
                 // Perform the download
-                downloadUtils.downloadChart(chartUrl, chartName)
+                downloadUtils.downloadChart(
+                    chartUrl,
+                    downloadUtils.getChartFolderName(chartId, chartName)
+                )
 
                 try {
                     // Monitor download state

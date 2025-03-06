@@ -72,11 +72,36 @@ class DownloadUtils @Inject constructor(
     }
 
     /**
+     * Generates a folder name for a chart based on its ID and name.
+     *
+     * This function sanitizes the chart name by:
+     * - Trimming whitespace
+     * - Converting to lowercase
+     * - Replacing spaces and dashes with underscores
+     * - Removing any characters that are not lowercase letters, digits, or underscores
+     *
+     * The resulting folder name is a combination of the sanitized chart name and the first part of the chart ID.
+     *
+     * @param chartId The unique identifier of the chart.
+     * @param chartName The name of the chart.
+     * @return The generated folder name in the format "sanitizedChartName_chartId".
+     */
+    fun getChartFolderName(chartId: String, chartName: String): String {
+        val sanitizedChartName = chartName
+            .trim()
+            .lowercase(Locale.getDefault())
+            .replace("\\s+".toRegex(), "_")  // Replace spaces with underscores
+            .replace("[^a-z0-9_]".toRegex(), "") // Remove any character that is not lowercase, digit, or underscore
+
+        return "${sanitizedChartName}_${chartId.split("-").first()}"
+    }
+
+    /**
      * Downloads and extracts a chart to the beatstar folder
      * @param url URL of the chart zip file
      * @param chartName Name to use for the chart folder
      */
-    suspend fun downloadChart(url: String, chartName: String) {
+    suspend fun downloadChart(url: String, folderName: String) {
         // Reset state
         _downloadState.value = DownloadState.Idle
 
@@ -88,10 +113,10 @@ class DownloadUtils @Inject constructor(
                 ?: throw IllegalStateException("Could not access or create beatstar folder")
 
             // Download the zip file to cache
-            val downloadedFile = downloadFileToCache(url, chartName)
+            val downloadedFile = downloadFileToCache(url, folderName)
 
             // Extract the zip file to the beatstar folder
-            extractZipToFolder(downloadedFile, beatstarFolderUri, chartName)
+            extractZipToFolder(downloadedFile, beatstarFolderUri, folderName)
 
             // Clean up temporary files
             downloadedFile.delete()
@@ -100,6 +125,21 @@ class DownloadUtils @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "Chart download failed", e)
             _downloadState.value = DownloadState.Error(e.message ?: "Unknown error")
+        }
+    }
+
+    suspend fun deleteChart(folderName: String) {
+        withContext(Dispatchers.IO) {
+            val beatstarFolderUri = getBeatstarFolderUri()
+                ?: throw IllegalStateException("Could not access or create beatstar folder")
+
+            val destinationFolder = DocumentFile.fromTreeUri(context, beatstarFolderUri)
+                ?: throw IllegalStateException("Could not access beatstar folder")
+
+            val chartFolder = destinationFolder.findFile(folderName)
+                ?: throw IllegalStateException("Could not find chart folder")
+
+            chartFolder.delete()
         }
     }
 
@@ -322,5 +362,12 @@ class DownloadUtils @Inject constructor(
      */
     fun markAsInstalled() {
         _downloadState.value = DownloadState.Installed
+    }
+
+    /**
+     * Mark the chart as not installed
+     */
+    fun markAsNotInstalled() {
+        _downloadState.value = DownloadState.Idle
     }
 }
