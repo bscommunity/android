@@ -174,7 +174,7 @@ fun WorkspaceSection(
 	localChartsState: LocalChartsState,
 	nestedScrollConnection: NestedScrollConnection,
 ) {
-	var selectedIndex by remember { mutableIntStateOf(-1) }
+	var selectedIndex by remember { mutableIntStateOf(0) }
 	val options = listOf("Charts", "Tour Passes", "Themes")
 
 	Column {

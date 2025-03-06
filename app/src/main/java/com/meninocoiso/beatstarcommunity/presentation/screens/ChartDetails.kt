@@ -3,6 +3,7 @@ package com.meninocoiso.beatstarcommunity.presentation.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -47,6 +48,7 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.CarouselUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartContributors
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.DownloadButton
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.StatListItem
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.ConfirmationDialog
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.DownloadViewModel
 import com.meninocoiso.beatstarcommunity.util.DateUtils
@@ -62,6 +64,13 @@ data class ChartDetails(val chart: Chart)
 @Serializable
 data class DeepLinkChartDetails(val chartId: String)
 
+private val DropdownItemPadding = PaddingValues(
+    start = 16.dp,
+    end = 24.dp,
+    top = 8.dp,
+    bottom = 8.dp
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChartDetailsScreen(
@@ -76,7 +85,7 @@ fun ChartDetailsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    var downloadState by remember { mutableStateOf<DownloadState>(
+    var downloadState by remember { mutableStateOf(
         if (chart.isInstalled == true) DownloadState.Installed
         else DownloadState.Idle
     ) }
@@ -96,14 +105,39 @@ fun ChartDetailsScreen(
                     snackbarHostState.showSnackbar("Download complete")
                 } else if (state is DownloadState.Error) {
                     // Show error message
-                    snackbarHostState.showSnackbar(
-                        message = "Download failed: ${(downloadState as DownloadState.Error).message}",
-                        duration = SnackbarDuration.Long
+                    val result = snackbarHostState.showSnackbar(
+                        message = (downloadState as DownloadState.Error).message,
+                        duration = SnackbarDuration.Long,
+                        actionLabel = "Try again",
                     )
+                    /*when (result) {
+                        SnackbarResult.ActionPerformed -> {
+                            downloadViewModel.downloadUtils.downloadChart()
+                        }
+                        SnackbarResult.Dismissed -> {}
+                    }*/
                 }
             }
         }
     }
+
+    val isConfirmationDialogOpen = remember { mutableStateOf(false) }
+    ConfirmationDialog(
+        title = "Delete chart",
+        message = "Are you sure you want to delete this chart?\nYou'll be able to download it again later.",
+        isOpened = isConfirmationDialogOpen,
+        onConfirm = {
+            downloadViewModel.deleteChart(
+                chart,
+                onSuccess = { onReturn() },
+                onError = {
+                    scope.launch {
+                        snackbarHostState.showSnackbar("Failed to delete chart")
+                    }
+                }
+            )
+        }
+    )
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -133,9 +167,9 @@ fun ChartDetailsScreen(
                     DropdownMenu(
                         expanded = moreOptionsExpanded,
                         onDismissRequest = { moreOptionsExpanded = false },
-                        modifier = Modifier.padding(end = 8.dp)
                     ) {
                         DropdownMenuItem(
+                            contentPadding = DropdownItemPadding,
                             text = { Text("Share") },
                             leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
                             onClick = {
@@ -144,6 +178,7 @@ fun ChartDetailsScreen(
                             }
                         )
                         DropdownMenuItem(
+                            contentPadding = DropdownItemPadding,
                             text = { Text("Report") },
                             leadingIcon = {
                                 Icon(
@@ -153,17 +188,20 @@ fun ChartDetailsScreen(
                             },
                             onClick = {
                                 moreOptionsExpanded = false
-                                // Implement share functionality
+                                // Implement report functionality
                             }
                         )
-                        DropdownMenuItem(
-                            text = { Text("Delete chart") },
-                            leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
-                            onClick = {
-                                moreOptionsExpanded = false
-                                // Implement delete functionality
-                            }
-                        )
+                        if (downloadState == DownloadState.Installed) {
+                            DropdownMenuItem(
+                                contentPadding = DropdownItemPadding,
+                                text = { Text("Delete chart") },
+                                leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
+                                onClick = {
+                                    moreOptionsExpanded = false
+                                    isConfirmationDialogOpen.value = true
+                                }
+                            )
+                        }
                     }
                 },
                 title = {

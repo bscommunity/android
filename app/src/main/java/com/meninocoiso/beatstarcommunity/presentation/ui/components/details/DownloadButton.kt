@@ -57,7 +57,7 @@ fun DownloadButton(
         colors = ButtonColors(
             containerColor = BottomAppBarDefaults.bottomAppBarFabColor,
             disabledContainerColor = when (downloadState) {
-                is DownloadState.Error -> MaterialTheme.colorScheme.error
+                is DownloadState.Error -> MaterialTheme.colorScheme.errorContainer
                 else -> ButtonDefaults.buttonColors().disabledContainerColor
             },
             contentColor = contentColorFor(BottomAppBarDefaults.bottomAppBarFabColor),
@@ -72,8 +72,8 @@ fun DownloadButton(
                 DownloadService.startDownload(
                     context = context,
                     chartId = chart.id,
-                    chartUrl = chart.latestVersion.chartUrl,
-                    chartName = "${chart.artist} - ${chart.track}"
+                    chartUrl = "https://cdn.discordapp.com/attachments/954166390619783268/1346568684612616253/kiss_you_dlx.zip?ex=67caa390&is=67c95210&hm=abfdfc55abf77bb72172f683af16944662e1a865068cf1ddccfda1fd8cbae528&",
+                    chartName = "${chart.track} - ${chart.artist}"
                 )
             } else {
                 // Show storage permission dialog
