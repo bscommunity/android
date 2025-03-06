@@ -27,9 +27,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -174,7 +171,7 @@ fun WorkspaceSection(
 	localChartsState: LocalChartsState,
 	nestedScrollConnection: NestedScrollConnection,
 ) {
-	var selectedIndex by remember { mutableIntStateOf(0) }
+	var selectedIndex by remember { mutableIntStateOf(-1) }
 	val options = listOf("Charts", "Tour Passes", "Themes")
 
 	Column {
@@ -303,7 +300,8 @@ fun WorkspaceSection(
 			},
 			modifier = Modifier.padding(top = 16.dp),
 		) {
-			SingleChoiceSegmentedButtonRow(
+			// TODO: Implement other content types
+			/*SingleChoiceSegmentedButtonRow(
 				modifier = Modifier
 					.fillMaxWidth()
 					.padding(16.dp, 0.dp, 16.dp, 16.dp)
@@ -314,13 +312,12 @@ fun WorkspaceSection(
 						onClick = {
 							selectedIndex = if (selectedIndex != index) index else -1
 						},
-						enabled = false,
 						selected = index == selectedIndex
 					) {
 						Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
 					}
 				}
-			}
+			}*/
 
 			when (localChartsState) {
 				is LocalChartsState.Loading -> {
@@ -358,6 +355,9 @@ fun WorkspaceSection(
 							}
 							/*item {
 								DownloadsSectionsTitle("Tour Passes")
+							}*/
+							/*item {
+								DownloadsSectionsTitle("Themes")
 							}*/
 						}
 					}
