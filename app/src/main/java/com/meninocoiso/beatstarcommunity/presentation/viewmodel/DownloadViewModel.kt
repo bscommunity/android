@@ -28,7 +28,7 @@ class DownloadViewModel @Inject constructor(
                 updateResult.getOrThrow() // Throw if the result is a failure
 
                 // Proceed with getting the folder name and deleting the chart
-                val folderName = downloadUtils.getChartFolderName(chart.id, chart.track)
+                val folderName = downloadUtils.getChartFolderName(chart.id)
 
                 Log.d("DownloadViewModel", "Deleting chart with folder name: $folderName")
 

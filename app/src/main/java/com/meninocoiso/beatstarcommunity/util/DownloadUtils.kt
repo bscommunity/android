@@ -71,29 +71,8 @@ class DownloadUtils @Inject constructor(
         return settingsRepository.getFolderUri()
     }
 
-    /**
-     * Generates a folder name for a chart based on its ID and name.
-     *
-     * This function sanitizes the chart name by:
-     * - Trimming whitespace
-     * - Converting to lowercase
-     * - Replacing spaces and dashes with underscores
-     * - Removing any characters that are not lowercase letters, digits, or underscores
-     *
-     * The resulting folder name is a combination of the sanitized chart name and the first part of the chart ID.
-     *
-     * @param chartId The unique identifier of the chart.
-     * @param chartName The name of the chart.
-     * @return The generated folder name in the format "sanitizedChartName_chartId".
-     */
-    fun getChartFolderName(chartId: String, chartName: String): String {
-        val sanitizedChartName = chartName
-            .trim()
-            .lowercase(Locale.getDefault())
-            .replace("\\s+".toRegex(), "_")  // Replace spaces with underscores
-            .replace("[^a-z0-9_]".toRegex(), "") // Remove any character that is not lowercase, digit, or underscore
-
-        return "${sanitizedChartName}_${chartId.split("-").first()}"
+    fun getChartFolderName(chartId: String): String {
+        return chartId.split("-").first()
     }
 
     /**
