@@ -31,7 +31,7 @@ class UpdatesViewModel @Inject constructor(
     @Named("Remote") private val remoteChartRepository: ChartRepository,
     @Named("Local") private val localChartRepository: ChartRepository
 ) : ViewModel() {
-    private val _updatesState = MutableStateFlow<UpdatesState>(UpdatesState.Loading)
+    private val _updatesState = MutableStateFlow<UpdatesState>(UpdatesState.Success(emptyList()))
     val updatesState: StateFlow<UpdatesState> = _updatesState.asStateFlow()
 
     private val _localChartsState = MutableStateFlow<LocalChartsState>(LocalChartsState.Loading)
@@ -50,7 +50,8 @@ class UpdatesViewModel @Inject constructor(
                         val installedCharts = charts.filter { it.isInstalled == true }
                         Log.d("UpdatesViewModel", "Installed charts: $installedCharts")
 
-                        if (shouldCheckForUpdates) {
+                        if (shouldCheckForUpdates && installedCharts.isNotEmpty()) {
+                            Log.d("UpdatesViewModel", "Fetching updates for installed charts")
                             fetchUpdates(installedCharts)
                         }
 
