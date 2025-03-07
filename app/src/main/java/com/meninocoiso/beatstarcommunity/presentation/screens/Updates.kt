@@ -197,7 +197,9 @@ fun WorkspaceSection(
 	var selectedIndex by remember { mutableIntStateOf(-1) }
 	val options = listOf("Charts", "Tour Passes", "Themes")
 
-	Column {
+	Column(
+		modifier = Modifier.padding(top = 24.dp)
+	) {
 		// Updates section remains unchanged
 		Section(
 			title = when (updatesState) {
@@ -205,7 +207,6 @@ fun WorkspaceSection(
 				else -> null
 			},
 			thickness = 0.dp,
-			titleModifier = Modifier.padding(top = 8.dp),
 		) {
 			when (updatesState) {
 				is UpdatesState.Error -> {
