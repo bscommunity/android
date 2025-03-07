@@ -58,6 +58,7 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabsUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.LocalChartPreview
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
+import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.fabScrollObserver
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.infiniteRotation
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.shimmerLoading
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.LocalChartsState
@@ -81,6 +82,7 @@ private val TabsHeight = 55.dp
 @Composable
 fun UpdatesScreen(
 	section: UpdatesSection? = UpdatesSection.Workshop,
+	onFabStateChange: (Boolean) -> Unit,
 	viewModel: UpdatesViewModel = hiltViewModel(),
 ) {
 	val updatesState by viewModel.updatesState.collectAsState()
@@ -124,6 +126,7 @@ fun UpdatesScreen(
 					onFetchUpdates = {
 						viewModel.fetchUpdates((localChartsState as LocalChartsState.Success).charts)
 				 	},
+					onFabStateChange = onFabStateChange,
 					nestedScrollConnection = connection
 				)
 				1 -> InstallationsSection(connection)
@@ -147,12 +150,20 @@ fun UpdatesScreen(
 @Composable
 private fun SectionWrapper(
 	nestedScrollConnection: NestedScrollConnection,
+	onFabStateChange: ((Boolean) -> Unit)? = null,
 	content: LazyListScope.() -> Unit
 ) {
 	LazyColumn(
 		modifier = Modifier
 			.fillMaxSize()
-			.nestedScroll(nestedScrollConnection),
+			.nestedScroll(nestedScrollConnection)
+			.run {
+				if (onFabStateChange != null) {
+					this.fabScrollObserver(onFabStateChange)
+				} else {
+					this
+				}
+			},
 		contentPadding = PaddingValues(horizontal = 16.dp),
 		verticalArrangement = Arrangement.spacedBy(8.dp),
 		horizontalAlignment = Alignment.CenterHorizontally
@@ -180,6 +191,7 @@ fun WorkspaceSection(
 	updatesState: UpdatesState,
 	onFetchUpdates: () -> Unit,
 	localChartsState: LocalChartsState,
+	onFabStateChange: (Boolean) -> Unit,
 	nestedScrollConnection: NestedScrollConnection,
 ) {
 	var selectedIndex by remember { mutableIntStateOf(-1) }
@@ -290,7 +302,8 @@ fun WorkspaceSection(
 					contentColor = MaterialTheme.colorScheme.onPrimaryContainer
 				),
 				enabled = updatesState !is UpdatesState.Loading
-						&& (updatesState as UpdatesState.Success).charts.isNotEmpty(),
+						&& !(updatesState is UpdatesState.Success && updatesState.charts.isEmpty())
+				,
 				modifier = Modifier
 					.fillMaxWidth()
 					.padding(start = 16.dp, end = 16.dp, top = 8.dp)
@@ -379,7 +392,8 @@ fun WorkspaceSection(
 						}
 					} else {
 						SectionWrapper(
-							nestedScrollConnection = nestedScrollConnection
+							nestedScrollConnection = nestedScrollConnection,
+							onFabStateChange = onFabStateChange
 						){
 							item {
 								DownloadsSectionsTitle("Charts")

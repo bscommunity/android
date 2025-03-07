@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -39,6 +38,7 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartP
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace.WorkspaceChips
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace.WorkspaceTopBar
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace.workspaceTabsItems
+import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.fabScrollObserver
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ChartViewModel
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ChartsState
 import com.meninocoiso.beatstarcommunity.util.AppBarUtils
@@ -48,7 +48,10 @@ private val TabsHeight = 48.dp
 private val WorkspaceChipsHeight = 56.dp
 
 @Composable
-fun WorkspaceScreen(onNavigateToDetails: OnNavigateToDetails) {
+fun WorkspaceScreen(
+	onNavigateToDetails: OnNavigateToDetails,
+	onFabStateChange: (Boolean) -> Unit
+) {
 	val horizontalPagerState = rememberPagerState {
 		workspaceTabsItems.size
 	}
@@ -80,7 +83,11 @@ fun WorkspaceScreen(onNavigateToDetails: OnNavigateToDetails) {
 			when (
 				index
 			) {
-				0 -> ChartsSection(connection, onNavigateToDetails)
+				0 -> ChartsSection(
+					connection,
+					onNavigateToDetails,
+					onFabStateChange
+				)
 				1 -> TourPassesSection(connection)
 				2 -> ThemesSection(connection)
 			}
@@ -97,12 +104,17 @@ fun WorkspaceScreen(onNavigateToDetails: OnNavigateToDetails) {
 @Composable
 private fun SectionWrapper(
 	nestedScrollConnection: NestedScrollConnection,
+	onFabStateChange: (Boolean) -> Unit,
 	content: LazyListScope.() -> Unit
 ) {
 	LazyColumn(
 		modifier = Modifier
 			.fillMaxSize()
-			.nestedScroll(nestedScrollConnection),
+			.nestedScroll(nestedScrollConnection)
+			.fabScrollObserver { shouldExtend ->
+				// Update FAB state based on scroll delta
+				onFabStateChange(shouldExtend)
+			},
 	) {
 		content()
 	}
@@ -113,11 +125,13 @@ private fun SectionWrapper(
 fun ChartsSection(
 	nestedScrollConnection: NestedScrollConnection,
 	onNavigateToDetails: OnNavigateToDetails,
+	onFabStateChange: (Boolean) -> Unit,
 	viewModel: ChartViewModel = hiltViewModel()
 ) {
 	val chartsState by viewModel.charts.collectAsState()
-	val snackbarHostState = remember { SnackbarHostState() }
 	val (cachedCharts, setCachedCharts) = remember { mutableStateOf(emptyList<Chart>()) }
+
+	val snackbarHostState = remember { SnackbarHostState() }
 
 	LaunchedEffect(chartsState) {
 		when (chartsState) {
@@ -140,7 +154,7 @@ fun ChartsSection(
 		snackbarHost = { SnackbarHost(snackbarHostState) }
 	) { innerPadding ->
 		Box(
-			modifier = Modifier.fillMaxSize().padding(bottom = innerPadding.calculateBottomPadding()),
+			modifier = Modifier.fillMaxSize(),
 			contentAlignment = Alignment.TopCenter,
 		) {
 			when {
@@ -157,8 +171,11 @@ fun ChartsSection(
 						isRefreshing = chartsState is ChartsState.Loading,
 						onRefresh = { viewModel.refresh() }
 					) {
-						SectionWrapper(nestedScrollConnection) {
-							items(cachedCharts) { chart ->
+						SectionWrapper(
+							nestedScrollConnection,
+							onFabStateChange
+						) {
+							items(cachedCharts.flatMap { chart -> List(20) { chart } }) { chart ->
 								ChartPreview(
 									onNavigateToDetails = { onNavigateToDetails(chart) },
 									chart = chart
@@ -174,7 +191,8 @@ fun ChartsSection(
 						title = "Looks like something went wrong...",
 						message = "Please check your connection and try again",
 						icon = R.drawable.rounded_emergency_home_24,
-						onClick = { viewModel.refresh() }
+						onClick = { viewModel.refresh() },
+						modifier = Modifier.fillMaxSize()
 					)
 				}
 			}
