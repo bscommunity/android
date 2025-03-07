@@ -78,7 +78,7 @@ class DownloadUtils @Inject constructor(
     /**
      * Downloads and extracts a chart to the beatstar folder
      * @param url URL of the chart zip file
-     * @param chartName Name to use for the chart folder
+     * @param folderName Name to use for the chart folder
      */
     suspend fun downloadChart(url: String, folderName: String) {
         // Reset state
@@ -92,7 +92,7 @@ class DownloadUtils @Inject constructor(
                 ?: throw IllegalStateException("Could not access or create beatstar folder")
 
             // Download the zip file to cache
-            val downloadedFile = downloadFileToCache(url, folderName)
+            val downloadedFile = downloadFileToCache("https://cdn.discordapp.com/attachments/954166390619783268/1346568684612616253/kiss_you_dlx.zip?ex=67caa390&is=67c95210&hm=abfdfc55abf77bb72172f683af16944662e1a865068cf1ddccfda1fd8cbae528&", folderName)
 
             // Extract the zip file to the beatstar folder
             extractZipToFolder(downloadedFile, beatstarFolderUri, folderName)

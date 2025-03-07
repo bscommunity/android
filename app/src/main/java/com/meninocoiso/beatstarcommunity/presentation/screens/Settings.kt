@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -42,6 +43,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.SwitchUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.ThemeDialog
+import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.fabScrollObserver
+import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.rememberFabNestedScrollConnection
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.SettingsViewModel
 
 @Composable
@@ -109,6 +112,7 @@ private fun SupportingText(title: String) {
 
 @Composable
 fun SettingsScreen(
+	onFabStateChange: (Boolean) -> Unit,
 	viewModel: SettingsViewModel = hiltViewModel()
 ) {
 	val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -117,7 +121,9 @@ fun SettingsScreen(
 		modifier = Modifier
 			.fillMaxSize()
 			.statusBarsPadding()
+			.nestedScroll(rememberFabNestedScrollConnection(onFabStateChange))
 			.verticalScroll(rememberScrollState())
+			.fabScrollObserver { onFabStateChange(it) }
 			.padding(start = 16.dp, end = 16.dp, bottom = 96.dp),
 		verticalArrangement = Arrangement.spacedBy(16.dp),
 		horizontalAlignment = Alignment.CenterHorizontally
