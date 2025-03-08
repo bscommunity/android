@@ -22,6 +22,7 @@ ktor = "3.0.3"
 desugar_jdk_libs = "2.1.4"
 kotlinParcelize = "2.1.20-RC"
 room = "2.6.1"
+androidyoutubeplayer = "12.1.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -59,6 +60,7 @@ desugar_jdk_libs = { group = "com.android.tools", name = "desugar_jdk_libs", ver
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidyoutubeplayer-core = { group = "com.pierfrancescosoffritti.androidyoutubeplayer", name = "core", version.ref = "androidyoutubeplayer" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
