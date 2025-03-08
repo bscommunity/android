@@ -22,13 +22,13 @@ import androidx.compose.ui.unit.dp
 fun RadioGroupUI(
 	radioOptions: List<String>,
 	initialSelected: String = radioOptions[0],
-	onOptionSelected: (String) -> Unit
+	onOptionSelected: (Int, String) -> Unit
 ) {
 	val (selectedOption, onSelected) = remember { mutableStateOf(initialSelected) }
 
 	// Modifier.selectableGroup() is essential to ensure correct accessibility behavior
 	Column(Modifier.selectableGroup()) {
-		radioOptions.forEach { text ->
+		radioOptions.forEachIndexed { index, text ->
 			Row(
 				Modifier
 					.fillMaxWidth()
@@ -37,7 +37,7 @@ fun RadioGroupUI(
 						selected = (text == selectedOption),
 						onClick = {
 							onSelected(text)
-							onOptionSelected(text)
+							onOptionSelected(index, text)
 						},
 						role = Role.RadioButton
 					)

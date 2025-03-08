@@ -52,6 +52,7 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartC
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.DownloadButton
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.StatListItem
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.ConfirmationDialog
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.ReportDialog
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.DownloadViewModel
 import com.meninocoiso.beatstarcommunity.util.DateUtils
@@ -95,6 +96,7 @@ fun ChartDetailsScreen(
     }
 
     var isMoreOptionsExpanded by remember { mutableStateOf(false) }
+
     val isConfirmationDialogOpen = remember { mutableStateOf(false) }
 
     ConfirmationDialog(
@@ -111,6 +113,15 @@ fun ChartDetailsScreen(
                     }
                 }
             )
+        }
+    )
+
+    val isReportDialogOpen = remember { mutableStateOf(false) }
+
+    ReportDialog(
+        isOpened = isReportDialogOpen,
+        onSubmit = {
+            // Implement report functionality
         }
     )
 
@@ -191,7 +202,7 @@ fun ChartDetailsScreen(
                             },
                             onClick = {
                                 isMoreOptionsExpanded = false
-                                // Implement report functionality
+                                isReportDialogOpen.value = true
                             }
                         )
                         if (downloadState.value == DownloadState.Installed) {
