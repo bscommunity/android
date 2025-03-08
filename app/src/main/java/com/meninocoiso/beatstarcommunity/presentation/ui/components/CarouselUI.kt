@@ -1,6 +1,5 @@
 package com.meninocoiso.beatstarcommunity.presentation.ui.components
 
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,6 +15,9 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.GameplayPreview
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil.CoilImage
+import com.skydoves.landscapist.components.rememberImageComponent
+import com.skydoves.landscapist.placeholder.shimmer.Shimmer
+import com.skydoves.landscapist.placeholder.shimmer.ShimmerPlugin
 
 sealed class CarouselItem {
 	data class ImageItem(
@@ -51,9 +53,16 @@ fun TestCarousel() {
 				// Render a square image (1:1 ratio)
 				CoilImage(
 					imageModel = { item.imageUrl },
+					component = rememberImageComponent {
+						+ShimmerPlugin (
+							Shimmer.Resonate(
+								baseColor = MaterialTheme.colorScheme.surfaceContainerLow,
+								highlightColor = MaterialTheme.colorScheme.surfaceContainerHighest
+							)
+						)
+					},
 					modifier = Modifier
 						//.background(Color.Yellow)
-						.fillMaxSize()
 						.maskClip(MaterialTheme.shapes.extraLarge),
 					imageOptions = ImageOptions(
 						contentScale = ContentScale.Fit,

@@ -10,7 +10,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -18,11 +18,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
+import com.skydoves.landscapist.placeholder.shimmer.Shimmer
+import com.skydoves.landscapist.placeholder.shimmer.ShimmerContainer
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -33,51 +34,7 @@ fun GameplayPreview(
     val context = LocalContext.current
     var isLoading by remember { mutableStateOf(true) }
 
-    Box(modifier = modifier) {
-        // WebView to load and play YouTube video
-        AndroidView(
-            factory = { ctx ->
-                WebView(ctx).apply {
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-
-                    // Configure WebView settings for optimal performance
-                    settings.apply {
-                        javaScriptEnabled = true
-                        mediaPlaybackRequiresUserGesture = false
-                        domStorageEnabled = true
-
-                        // Optimize for video playback
-                        cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
-                        setRenderPriority(WebSettings.RenderPriority.HIGH)
-
-                        // Hardware acceleration
-                        setLayerType(WebView.LAYER_TYPE_HARDWARE, null)
-                    }
-
-                    // Custom WebViewClient to track loading state
-                    webViewClient = object : WebViewClient() {
-                        override fun shouldOverrideUrlLoading(
-                            view: WebView,
-                            request: WebResourceRequest
-                        ): Boolean {
-                            // Prevent navigation outside the player
-                            return true
-                        }
-
-                        override fun onPageFinished(view: WebView, url: String) {
-                            super.onPageFinished(view, url)
-                            isLoading = false
-                        }
-                    }
-
-                    // Set WebChromeClient to capture events
-                    webChromeClient = WebChromeClient()
-
-                    // Load the custom HTML with embedded YouTube player
-                    val customHtml = """
+    val customHtml = """
                         <!DOCTYPE html>
                         <html>
                         <head>
@@ -136,6 +93,50 @@ fun GameplayPreview(
                         </html>
                     """.trimIndent()
 
+    Box(modifier = modifier) {
+        // WebView to load and play YouTube video
+        AndroidView(
+            factory = { ctx ->
+                WebView(ctx).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+
+                    // Configure WebView settings for optimal performance
+                    settings.apply {
+                        javaScriptEnabled = true
+                        mediaPlaybackRequiresUserGesture = false
+                        domStorageEnabled = true
+
+                        // Optimize for video playback
+                        cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+                        layoutAlgorithm = WebSettings.LayoutAlgorithm.NORMAL
+
+                        // Hardware acceleration
+                        setLayerType(WebView.LAYER_TYPE_HARDWARE, null)
+                    }
+
+                    // Custom WebViewClient to track loading state
+                    webViewClient = object : WebViewClient() {
+                        override fun shouldOverrideUrlLoading(
+                            view: WebView,
+                            request: WebResourceRequest
+                        ): Boolean {
+                            // Prevent navigation outside the player
+                            return true
+                        }
+
+                        override fun onPageFinished(view: WebView, url: String) {
+                            super.onPageFinished(view, url)
+                            isLoading = false
+                        }
+                    }
+
+                    // Set WebChromeClient to capture events
+                    webChromeClient = WebChromeClient()
+
+                    // Load the custom HTML with embedded YouTube player
                     loadDataWithBaseURL(
                         "https://www.youtube.com",
                         customHtml,
@@ -149,14 +150,13 @@ fun GameplayPreview(
 
         // Loading indicator
         if (isLoading) {
-            Box(
-                modifier = Modifier.matchParentSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary
+            ShimmerContainer(
+                modifier = Modifier.fillMaxSize(),
+                shimmer = Shimmer.Resonate(
+                    baseColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    highlightColor = MaterialTheme.colorScheme.surfaceContainerHighest
                 )
-            }
+            )
         }
 
         // Clickable overlay to open YouTube app
