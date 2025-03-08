@@ -10,11 +10,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.domain.enums.ThemePreference
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.RadioGroupUI
-import java.util.Locale
 
 val ThemeStrings = mapOf<ThemePreference, String>(
 	ThemePreference.SYSTEM to "System",
@@ -67,8 +65,8 @@ fun ThemeDialog(
 						radioOptions = ThemePreference.entries.map {
 							ThemeStrings[it]!!
 						},
-						onOptionSelected = {
-							onThemeSelected(ThemePreference.valueOf(it.uppercase(Locale.ROOT)))
+						onOptionSelected = { index, _ ->
+							onThemeSelected(ThemePreference.entries[index])
 						})
 				},
 				dismissButton = {

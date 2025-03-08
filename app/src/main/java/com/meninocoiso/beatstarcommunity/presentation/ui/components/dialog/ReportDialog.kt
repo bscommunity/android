@@ -8,6 +8,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -16,52 +17,63 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.RadioGroupUI
-import java.util.Locale
 
 enum class ReportType {
     EXPLICIT_CONTENT,
     VIOLENT_CONTENT,
     SPAM,
-    INTELLECTUAL_PROPERTY_VIOLATION,
+    INTELLECTUAL_PROPERTY
 }
 
-val ReportTypeStrings = mapOf<ReportType, String>(
+val ReportTypeStrings = mapOf(
     ReportType.EXPLICIT_CONTENT to "Explicit content",
     ReportType.VIOLENT_CONTENT to "Violent content",
     ReportType.SPAM to "Spam",
-    ReportType.INTELLECTUAL_PROPERTY_VIOLATION to "Intellectual property"
+    ReportType.INTELLECTUAL_PROPERTY to "Intellectual property"
 )
 
 @Preview
 @Composable
 fun ReportDialogPreview(
 ) {
+    val isOpened = remember { mutableStateOf(true) }
+
+    Button(
+        onClick = {
+            isOpened.value = true
+        }
+    ) {
+        Text(
+            text = "Open Report Dialog"
+        )
+    }
+
     ReportDialog(
+        isOpened = isOpened,
         onSubmit = {}
     )
 }
 
 @Composable
 fun ReportDialog(
+    isOpened: MutableState<Boolean>,
     onSubmit: (
         reportType: ReportType,
     ) -> Unit
 ) {
-    val (isOpened, setIsOpened) = remember { mutableStateOf(false) }
-
     var type by remember { mutableStateOf<ReportType?>(null) }
 
     Button(onClick = {
-        setIsOpened(true)
+        isOpened.value = true
     }) {
             Text(
                 text = "Report Test"
             )
     }
     when {
-        isOpened -> {
+        isOpened.value -> {
             AlertDialog(
-                onDismissRequest = { setIsOpened(false) },
+                onDismissRequest = { isOpened.value = false },
                 title = {
                     Text(text = "Report")
                 },
@@ -72,16 +84,19 @@ fun ReportDialog(
                     ) {
                         Text(text = "Help the community by flagging inappropriate content\nYour report is anonymous")
                         RadioGroupUI(
+                            initialSelected = "",
                             radioOptions = ReportType.entries.map {
                                 ReportTypeStrings[it]!!
                             },
-                            onOptionSelected = {
-                                type = ReportType.valueOf(it.uppercase(Locale.ROOT))})
+                            onOptionSelected = { index, _ ->
+                                type = ReportType.entries.elementAt(index)
+                            }
+                        )
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = {
-                        setIsOpened(false)
+                        isOpened.value = false
                     }) {
                         Text(text = "Cancel")
                     }
@@ -91,7 +106,7 @@ fun ReportDialog(
                         enabled = type != null,
                         onClick = {
                             onSubmit(type!!)
-                            setIsOpened(false)
+                            isOpened.value = false
                         }
                     ) {
                         Text(text = "Confirm")
