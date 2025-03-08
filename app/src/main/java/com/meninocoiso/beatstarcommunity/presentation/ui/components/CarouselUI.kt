@@ -1,70 +1,79 @@
 package com.meninocoiso.beatstarcommunity.presentation.ui.components
 
-import android.view.LayoutInflater
-import android.view.ViewGroup
-import android.widget.ImageView
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
+import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.recyclerview.widget.RecyclerView
-import coil.load
-import com.google.android.material.carousel.CarouselLayoutManager
-import com.google.android.material.carousel.CarouselSnapHelper
-import com.google.android.material.carousel.HeroCarouselStrategy
-import com.google.android.material.carousel.MaskableFrameLayout
-import com.google.android.material.shape.ShapeAppearanceModel
-import com.meninocoiso.beatstarcommunity.R
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.YoutubeVideoPlayer
+import com.skydoves.landscapist.ImageOptions
+import com.skydoves.landscapist.coil.CoilImage
 
-@Composable
-fun CarouselUI(imageUrls: List<String>) {
-	val context = LocalContext.current
+sealed class CarouselItem {
+	data class ImageItem(
+		val imageUrl: String,
+		/*@DrawableRes val imageResId: Int,
+		@StringRes val contentDescriptionResId: Int,
+		val clickUrl: String // URL to open when tapped*/
+	) : CarouselItem()
 
-	AndroidView(
-		factory = {
-			val recyclerView = RecyclerView(context).apply {
-				clipChildren = false
-				clipToPadding = false
-				layoutManager = CarouselLayoutManager(HeroCarouselStrategy())
-				adapter = CarouselAdapter(imageUrls)
-				CarouselSnapHelper().attachToRecyclerView(this)
-			}
-			recyclerView
-		},
-		modifier = Modifier
-			.fillMaxWidth()
-			.padding(12.dp)
-			.height(256.dp)
-	)
+	data class VideoItem(
+		val videoId: String,
+	) : CarouselItem()
 }
 
-class CarouselAdapter(private val imageUrls: List<String>) :
-	RecyclerView.Adapter<CarouselAdapter.ViewHolder>() {
+val carouselItems =
+	listOf(
+		CarouselItem.ImageItem("https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/92/9f/69/929f69f1-9977-3a44-d674-11f70c852d1b/24UMGIM36186.rgb.jpg/60x60bb.jpg"),
+		CarouselItem.VideoItem("yX8QhVeBXkg"),
+	)
 
-	inner class ViewHolder(private val maskableFrameLayout: MaskableFrameLayout) :
-		RecyclerView.ViewHolder(maskableFrameLayout) {
-		val imageView: ImageView = maskableFrameLayout.findViewById(R.id.carousel_image_view)
-	}
-
-	override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-		val maskableFrameLayout = LayoutInflater.from(parent.context)
-			.inflate(R.layout.carousel_item, parent, false) as MaskableFrameLayout
-
-		val newShape = ShapeAppearanceModel().toBuilder().setAllCornerSizes(48f).build()
-		maskableFrameLayout.shapeAppearanceModel = newShape
-
-		return ViewHolder(maskableFrameLayout)
-	}
-
-	override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-		holder.imageView.load(imageUrls[position]) {
-			crossfade(true)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TestCarousel() {
+	HorizontalMultiBrowseCarousel(
+		state = rememberCarouselState { carouselItems.count() },
+		modifier = Modifier
+			.padding(horizontal = 16.dp)
+			//.background(Color.Red)
+			.height(256.dp)
+			.fillMaxWidth(),
+		preferredItemWidth = 256.dp,
+		itemSpacing = 8.dp,
+	) { i ->
+		when (val item = carouselItems[i]) {
+			is CarouselItem.ImageItem -> {
+				// Render a square image (1:1 ratio)
+				CoilImage(
+					imageModel = { item.imageUrl },
+					modifier = Modifier
+						//.background(Color.Yellow)
+						.height(256.dp)
+						.maskClip(MaterialTheme.shapes.extraLarge),
+					imageOptions = ImageOptions(
+						contentScale = ContentScale.Fit,
+						alignment = Alignment.Center,
+					),
+				)
+			}
+			is CarouselItem.VideoItem -> {
+				// Render the Youtube video preview in 9:16 aspect ratio
+				YoutubeVideoPlayer(
+					videoId = item.videoId,
+					modifier = Modifier
+						//.background(Color.Green)
+						.height(256.dp)
+						.maskClip(MaterialTheme.shapes.extraLarge)
+					,
+				)
+			}
 		}
 	}
-
-	override fun getItemCount(): Int = imageUrls.size
 }

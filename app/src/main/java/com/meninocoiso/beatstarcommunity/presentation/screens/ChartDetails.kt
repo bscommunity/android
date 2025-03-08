@@ -47,7 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
-import com.meninocoiso.beatstarcommunity.presentation.ui.components.CarouselUI
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.TestCarousel
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartContributors
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.DownloadButton
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.StatListItem
@@ -261,8 +261,9 @@ fun ChartDetailsScreen(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Cover image
-            CarouselUI(listOf(chart.coverUrl))
+            // Media carousel
+            // CarouselUI(carouselItems)
+            TestCarousel()
 
             // Credits
             ChartContributors(chart.contributors)
