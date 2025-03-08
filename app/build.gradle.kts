@@ -81,7 +81,6 @@ dependencies {
     implementation(libs.androidx.room.runtime)
 	implementation(libs.androidx.room.ktx)
 	implementation(libs.androidx.room.compiler)
-    implementation(libs.androidyoutubeplayer.core)
     testImplementation(libs.junit)
 	androidTestImplementation(libs.androidx.junit)
 	androidTestImplementation(libs.androidx.espresso.core)

@@ -52,7 +52,7 @@ class ChartViewModel @Inject constructor(
 
                 if (refresh == false) {
                     if (localResult.isSuccess && localResult.getOrNull()?.isNotEmpty() == true) {
-                        Log.d(TAG, "Local data used")
+                        Log.d(TAG, "Local data used: ${localResult.getOrThrow()}")
 
                         _charts.value = ChartsState.Success(localResult.getOrThrow())
                         return@launch

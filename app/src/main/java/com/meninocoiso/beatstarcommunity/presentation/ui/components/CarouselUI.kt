@@ -1,5 +1,6 @@
 package com.meninocoiso.beatstarcommunity.presentation.ui.components
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -12,16 +13,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.YoutubeVideoPlayer
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.GameplayPreview
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil.CoilImage
 
 sealed class CarouselItem {
 	data class ImageItem(
 		val imageUrl: String,
-		/*@DrawableRes val imageResId: Int,
-		@StringRes val contentDescriptionResId: Int,
-		val clickUrl: String // URL to open when tapped*/
 	) : CarouselItem()
 
 	data class VideoItem(
@@ -43,9 +41,9 @@ fun TestCarousel() {
 		modifier = Modifier
 			.padding(horizontal = 16.dp)
 			//.background(Color.Red)
-			.height(256.dp)
+			.height(220.dp)
 			.fillMaxWidth(),
-		preferredItemWidth = 256.dp,
+		preferredItemWidth = 220.dp,
 		itemSpacing = 8.dp,
 	) { i ->
 		when (val item = carouselItems[i]) {
@@ -55,7 +53,7 @@ fun TestCarousel() {
 					imageModel = { item.imageUrl },
 					modifier = Modifier
 						//.background(Color.Yellow)
-						.height(256.dp)
+						.fillMaxSize()
 						.maskClip(MaterialTheme.shapes.extraLarge),
 					imageOptions = ImageOptions(
 						contentScale = ContentScale.Fit,
@@ -65,13 +63,11 @@ fun TestCarousel() {
 			}
 			is CarouselItem.VideoItem -> {
 				// Render the Youtube video preview in 9:16 aspect ratio
-				YoutubeVideoPlayer(
+				GameplayPreview(
 					videoId = item.videoId,
 					modifier = Modifier
 						//.background(Color.Green)
-						.height(256.dp)
-						.maskClip(MaterialTheme.shapes.extraLarge)
-					,
+						.maskClip(MaterialTheme.shapes.extraLarge),
 				)
 			}
 		}
