@@ -1,5 +1,6 @@
 package com.meninocoiso.beatstarcommunity.presentation.navigation
 
+import android.util.Log
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -67,7 +68,10 @@ fun BottomNav(
 						))
 					},
 					onFabStateChange = { shouldExtend ->
-						fabExtended = shouldExtend
+						if (shouldExtend != fabExtended) {
+							Log.d("BottomNav", "Fab state changed: $shouldExtend")
+							fabExtended = shouldExtend
+						}
 					}
 				)
 			}
@@ -76,14 +80,18 @@ fun BottomNav(
 				UpdatesScreen(
 					updates.section,
 					onFabStateChange = { shouldExtend ->
-						fabExtended = shouldExtend
+						if (shouldExtend != fabExtended) {
+							fabExtended = shouldExtend
+						}
 					}
 				)
 			}
 			composableWithFade<Settings> {
 				SettingsScreen(
 					onFabStateChange = { shouldExtend ->
-						fabExtended = shouldExtend
+						if (shouldExtend != fabExtended) {
+							fabExtended = shouldExtend
+						}
 					}
 				)
 			}

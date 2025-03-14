@@ -17,6 +17,8 @@ data class Chart(
     val track: String,
     val album: String?,
     @ColumnInfo(name = "cover_url") val coverUrl: String,
+    @ColumnInfo(name = "track_urls") val trackUrls: List<StreamingLink>,
+    @ColumnInfo(name = "track_preview_url") val trackPreviewUrl: String,
     val difficulty: DifficultyEnum,
     @ColumnInfo(name = "is_deluxe") val isDeluxe: Boolean,
     @ColumnInfo(name = "is_explicit") val isExplicit: Boolean,

@@ -35,6 +35,7 @@ import com.meninocoiso.beatstarcommunity.domain.enums.ContributorRoleEnum
 import com.meninocoiso.beatstarcommunity.domain.enums.DifficultyEnum
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.model.Contributor
+import com.meninocoiso.beatstarcommunity.domain.model.StreamingLink
 import com.meninocoiso.beatstarcommunity.domain.model.Version
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartPreview
@@ -150,8 +151,28 @@ fun ChartsSection(
             isExplicit = false,
             isFeatured = false,
             isInstalled = false,
+            trackUrls = listOf(
+                StreamingLink(
+                    platform = "Youtube Music",
+                    url = "https://music.youtube.com/watch?v=1n19mhKWoLk&si=5aoJ04_2MgDD2vHl"
+                ), StreamingLink(
+                    platform = "Spotify",
+                    url = "https://open.spotify.com/intl-pt/track/17JZksbLTp4IINaVdu0whZ?si=4a8ee878174348f2"
+                ), StreamingLink(
+                    platform = "Apple Music",
+                    url = "https://music.apple.com/us/album/chihiro/1739659134?i=1739659141&uo=4"
+                ), StreamingLink(
+                    platform = "Deezer",
+                    url = "https://www.deezer.com/br/track/2801558042"
+                ), StreamingLink(
+                    platform = "Tidal",
+                    url = "https://tidal.com/browse/video/367440468"
+                )
+            ),
+            trackPreviewUrl = "a",
             latestVersion = Version(
-                id = 19,
+                id = "8d3d2eb4-5218-48af-ae33-a7341388a353",
+                index = 1,
                 chartId = "8d3d2eb4-5218-48af-ae33-a73413889353",
                 duration = 21.25f,
                 notesAmount = 16,

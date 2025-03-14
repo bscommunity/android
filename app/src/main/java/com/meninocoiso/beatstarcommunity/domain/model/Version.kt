@@ -13,13 +13,15 @@ import java.time.LocalDate
 @Serializable
 @Parcelize
 data class Version(
-    @PrimaryKey val id: Int,
+    @PrimaryKey val id: String,
+    val index : Int,
     @ColumnInfo(name = "chart_id") val chartId: String,
     val duration: Float,
     @ColumnInfo(name = "notes_amount") val notesAmount: Int,
     @ColumnInfo(name = "effects_amount") val effectsAmount: Int,
     val bpm: Int,
     @ColumnInfo(name = "chart_url") val chartUrl: String,
+    @ColumnInfo(name = "chart_preview_urls") val chartPreviewUrls: List<String> = emptyList(),
     @ColumnInfo(name = "downloads_amount") val downloadsAmount: Int = 0,
     @ColumnInfo(name = "known_issues") val knownIssues: List<KnownIssue> = emptyList(),
     @Serializable(with = LocalDateSerializer::class)
