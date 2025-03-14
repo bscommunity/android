@@ -52,6 +52,7 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartC
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.DownloadButton
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.StatListItem
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.ConfirmationDialog
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.ListenTrackDialog
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.ReportDialog
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.DownloadViewModel
@@ -117,12 +118,18 @@ fun ChartDetailsScreen(
     )
 
     val isReportDialogOpen = remember { mutableStateOf(false) }
+    val isListenTrackDialogOpen = remember { mutableStateOf(false) }
 
     ReportDialog(
         isOpened = isReportDialogOpen,
         onSubmit = {
             // Implement report functionality
         }
+    )
+
+    ListenTrackDialog(
+        isOpened = isListenTrackDialogOpen,
+        streamingLinks = chart.trackUrls
     )
 
     // Dismiss snackbar on swipe
@@ -229,13 +236,19 @@ fun ChartDetailsScreen(
         bottomBar = {
             BottomAppBar(
                 actions = {
-                    IconButton(onClick = { /* TODO: Open track link */ }) {
+                    IconButton(onClick = {
+                        isListenTrackDialogOpen.value = true
+                    }) {
                         Icon(
                             painter = painterResource(id = R.drawable.baseline_artist_24),
                             contentDescription = "Track link"
                         )
                     }
-                    IconButton(onClick = { /* TODO: Favorite functionality */ }) {
+                    IconButton(onClick = {
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Like feature not yet implemented")
+                        }
+                    }) {
                         Icon(
                             Icons.Default.FavoriteBorder,
                             contentDescription = "Like chart",

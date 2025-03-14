@@ -1,5 +1,6 @@
 package com.meninocoiso.beatstarcommunity.presentation.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,6 +22,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun RadioGroupUI(
 	radioOptions: List<String>,
+	trailingElements: List<@Composable () -> Unit> = emptyList(),
 	initialSelected: String = radioOptions[0],
 	onOptionSelected: (Int, String) -> Unit
 ) {
@@ -42,17 +44,21 @@ fun RadioGroupUI(
 						role = Role.RadioButton
 					)
 					.padding(horizontal = 16.dp),
-				verticalAlignment = Alignment.CenterVertically
+				verticalAlignment = Alignment.CenterVertically,
+				horizontalArrangement = Arrangement.SpaceBetween
 			) {
-				RadioButton(
-					selected = (text == selectedOption),
-					onClick = null // null recommended for accessibility with screen-readers
-				)
-				Text(
-					text = text,
-					style = MaterialTheme.typography.bodyLarge,
-					modifier = Modifier.padding(start = 16.dp)
-				)
+				Row {
+					RadioButton(
+						selected = (text == selectedOption),
+						onClick = null // null recommended for accessibility with screen-readers
+					)
+					Text(
+						text = text,
+						style = MaterialTheme.typography.bodyLarge,
+						modifier = Modifier.padding(start = 16.dp)
+					)
+				}
+				trailingElements[index].invoke()
 			}
 		}
 	}

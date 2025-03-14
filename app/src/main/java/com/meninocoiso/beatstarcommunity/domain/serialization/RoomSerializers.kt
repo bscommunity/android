@@ -4,6 +4,7 @@ import androidx.room.TypeConverter
 import com.meninocoiso.beatstarcommunity.domain.enums.DifficultyEnum
 import com.meninocoiso.beatstarcommunity.domain.model.Contributor
 import com.meninocoiso.beatstarcommunity.domain.model.KnownIssue
+import com.meninocoiso.beatstarcommunity.domain.model.StreamingLink
 import com.meninocoiso.beatstarcommunity.domain.model.Version
 import kotlinx.serialization.json.Json
 import java.time.LocalDate
@@ -22,18 +23,18 @@ class Converters {
     // Chart
     private val json = Json { ignoreUnknownKeys = true }
 
-    // Version List converters
+    // StreamingLink List converters
     @TypeConverter
-    fun fromVersionsList(versions: List<Version>): String {
-        return json.encodeToString(versions)
+    fun fromStreamingLinkList(streamingLinks: List<StreamingLink>): String {
+        return json.encodeToString(streamingLinks)
     }
 
     @TypeConverter
-    fun toVersionsList(versionsString: String): List<Version> {
-        return if (versionsString.isBlank()) {
+    fun toStreamingLinkList(streamingLinksString: String): List<StreamingLink> {
+        return if (streamingLinksString.isBlank()) {
             emptyList()
         } else {
-            json.decodeFromString(versionsString)
+            json.decodeFromString(streamingLinksString)
         }
     }
 
@@ -92,6 +93,20 @@ class Converters {
         return versionString?.let {
             if (it.isBlank()) null
             else json.decodeFromString(versionString)
+        }
+    }
+
+    @TypeConverter
+    fun fromStringList(stringList: List<String>): String {
+        return json.encodeToString(stringList)
+    }
+
+    @TypeConverter
+    fun toStringList(stringListString: String): List<String> {
+        return if (stringListString.isBlank()) {
+            emptyList()
+        } else {
+            json.decodeFromString(stringListString)
         }
     }
 }
