@@ -18,10 +18,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.zIndex
 import androidx.core.net.toUri
+import com.skydoves.landscapist.ImageOptions
+import com.skydoves.landscapist.coil.CoilImage
 import com.skydoves.landscapist.placeholder.shimmer.Shimmer
 import com.skydoves.landscapist.placeholder.shimmer.ShimmerContainer
 
@@ -150,13 +156,34 @@ fun GameplayPreview(
 
         // Loading indicator
         if (isLoading) {
-            ShimmerContainer(
+            Box(
                 modifier = Modifier.fillMaxSize(),
-                shimmer = Shimmer.Resonate(
-                    baseColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    highlightColor = MaterialTheme.colorScheme.surfaceContainerHighest
+            ) {
+                /*ShimmerContainer(
+                    modifier = Modifier.fillMaxSize(),
+                    shimmer = Shimmer.Resonate(
+                        baseColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                        highlightColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                    )
+                )*/
+                ShimmerContainer(
+                    modifier = Modifier.fillMaxSize().zIndex(2f),
+                    shimmer = Shimmer.Resonate(
+                        baseColor = Color.Transparent,
+                        highlightColor = MaterialTheme.colorScheme.onSurface
+                    )
                 )
-            )
+                CoilImage(
+                    imageModel = { "https://img.youtube.com/vi/$videoId/0.jpg" },
+                    modifier = Modifier
+                        .zIndex(1f)
+                        .matchParentSize(),
+                    imageOptions = ImageOptions(
+                        contentScale = ContentScale.Crop,
+                        alignment = Alignment.Center,
+                    ),
+                )
+            }
         }
 
         // Clickable overlay to open YouTube app

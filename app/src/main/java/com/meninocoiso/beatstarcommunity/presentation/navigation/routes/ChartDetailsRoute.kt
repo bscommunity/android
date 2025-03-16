@@ -8,12 +8,12 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.presentation.screens.ChartDetailsScreen
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessageUI
@@ -26,7 +26,7 @@ fun ChartDetailsRoute(
     onReturn : () -> Unit,
     viewModel: ChartDetailsViewModel = hiltViewModel()
 ) {
-    val chartState by viewModel.chart.collectAsState()
+    val chartState by viewModel.chart.collectAsStateWithLifecycle()
 
     // If we don't have a chart from typed navigation, fetch it using chartId
     LaunchedEffect(chartId) {
