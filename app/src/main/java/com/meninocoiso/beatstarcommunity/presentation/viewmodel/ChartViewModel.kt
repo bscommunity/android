@@ -31,7 +31,6 @@ class ChartViewModel @Inject constructor(
     @Named("Remote") private val remoteChartRepository: ChartRepository,
     @Named("Local") private val localChartRepository: ChartRepository
 ) : ViewModel() {
-
     private val _charts = MutableStateFlow<ChartsState>(ChartsState.Loading)
     val charts: StateFlow<ChartsState> = _charts.asStateFlow()
 
@@ -44,8 +43,9 @@ class ChartViewModel @Inject constructor(
     fun refresh() = fetchCharts(true)
 
     private fun fetchCharts(refresh: Boolean? = false) {
+        _charts.value = ChartsState.Loading
+
         viewModelScope.launch {
-            _charts.value = ChartsState.Loading
             try {
                 // Fetch local data first
                 val localResult = localChartRepository.getCharts().first()

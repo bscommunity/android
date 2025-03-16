@@ -15,7 +15,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
@@ -25,7 +24,6 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,16 +38,14 @@ import com.meninocoiso.beatstarcommunity.util.DownloadState
 import com.meninocoiso.beatstarcommunity.util.DownloadUtils
 import com.meninocoiso.beatstarcommunity.util.PermissionUtils.Companion.StoragePermissionHandler
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
 @Composable
 fun DownloadButton(
     chart: Chart,
-    snackbarHostState: SnackbarHostState,
     downloadState: MutableState<DownloadState>,
     downloadUtils: DownloadUtils,
+    onSnackbar: suspend (message: String, actionLabel: String?) -> SnackbarResult
 ) {
-    val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
     var showStoragePermissionDialog by remember { mutableStateOf(false) }
@@ -84,22 +80,20 @@ fun DownloadButton(
         // Observing download state from DownloadUtils
         downloadUtils.downloadState.collectLatest { state ->
             downloadState.value = state
-
-            scope.launch {
-                if (state is DownloadState.Completed) {
-                    snackbarHostState.showSnackbar("Download complete")
-                } else if (state is DownloadState.Error) {
-                    // Show error message
-                    val result = snackbarHostState.showSnackbar(
-                        message = (downloadState.value as DownloadState.Error).message,
-                        actionLabel = "Try again",
-                    )
-                    when (result) {
-                        SnackbarResult.ActionPerformed -> {
-                            startDownload(true)
-                        }
-                        SnackbarResult.Dismissed -> {}
+            if (state is DownloadState.Completed) {
+                onSnackbar("Download complete", null)
+            } else if (state is DownloadState.Error) {
+                // Show error message
+                val result = onSnackbar(
+                    (downloadState.value as DownloadState.Error).message,
+                    "Try again",
+                )
+                when (result) {
+                    SnackbarResult.ActionPerformed -> {
+                        startDownload(true)
                     }
+
+                    SnackbarResult.Dismissed -> {}
                 }
             }
         }

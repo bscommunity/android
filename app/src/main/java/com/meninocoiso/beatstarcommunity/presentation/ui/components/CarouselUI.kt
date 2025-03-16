@@ -1,5 +1,6 @@
 package com.meninocoiso.beatstarcommunity.presentation.ui.components
 
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -38,46 +39,53 @@ val carouselItems =
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TestCarousel() {
-	HorizontalMultiBrowseCarousel(
-		state = rememberCarouselState { carouselItems.count() },
+	BoxWithConstraints(
 		modifier = Modifier
+			.fillMaxWidth()
 			.padding(horizontal = 16.dp)
-			//.background(Color.Red)
-			.height(220.dp)
-			.fillMaxWidth(),
-		preferredItemWidth = 220.dp,
-		itemSpacing = 8.dp,
-	) { i ->
-		when (val item = carouselItems[i]) {
-			is CarouselItem.ImageItem -> {
-				// Render a square image (1:1 ratio)
-				CoilImage(
-					imageModel = { item.imageUrl },
-					component = rememberImageComponent {
-						+ShimmerPlugin (
-							Shimmer.Resonate(
-								baseColor = MaterialTheme.colorScheme.surfaceContainerLow,
-								highlightColor = MaterialTheme.colorScheme.surfaceContainerHighest
+	) {
+		val gap = 12.dp
+		// Compute carousel height:
+		// h + gap + (h * 9/16) = maxWidth  ==> h = (maxWidth - gap) * (16/25)
+		val carouselHeight = maxWidth * (16f / 25f) + gap
+
+		HorizontalMultiBrowseCarousel(
+			state = rememberCarouselState { carouselItems.size },
+			modifier = Modifier
+				.fillMaxWidth()
+				.height(carouselHeight),
+			preferredItemWidth = carouselHeight,
+			itemSpacing = gap,
+		) { i ->
+			when (val item = carouselItems[i]) {
+				is CarouselItem.ImageItem -> {
+					// Square image: size equals carouselHeight
+					CoilImage(
+						imageModel = { item.imageUrl },
+						component = rememberImageComponent {
+							+ShimmerPlugin(
+								Shimmer.Resonate(
+									baseColor = MaterialTheme.colorScheme.surfaceContainerLow,
+									highlightColor = MaterialTheme.colorScheme.surfaceContainerHighest
+								)
 							)
-						)
-					},
-					modifier = Modifier
-						//.background(Color.Yellow)
-						.maskClip(MaterialTheme.shapes.extraLarge),
-					imageOptions = ImageOptions(
-						contentScale = ContentScale.Fit,
-						alignment = Alignment.Center,
-					),
-				)
-			}
-			is CarouselItem.VideoItem -> {
-				// Render the Youtube video preview in 9:16 aspect ratio
-				GameplayPreview(
-					videoId = item.videoId,
-					modifier = Modifier
-						//.background(Color.Green)
-						.maskClip(MaterialTheme.shapes.extraLarge),
-				)
+						},
+						modifier = Modifier
+							.maskClip(MaterialTheme.shapes.extraLarge),
+						imageOptions = ImageOptions(
+							contentScale = ContentScale.Fit,
+							alignment = Alignment.Center,
+						),
+					)
+				}
+				is CarouselItem.VideoItem -> {
+					// Video: height equals carouselHeight and width is scaled by 9:16 ratio
+					GameplayPreview(
+						videoId = item.videoId,
+						modifier = Modifier
+							.maskClip(MaterialTheme.shapes.extraLarge)
+					)
+				}
 			}
 		}
 	}

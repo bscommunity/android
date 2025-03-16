@@ -85,7 +85,6 @@ fun ChartDetailsScreen(
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -258,7 +257,12 @@ fun ChartDetailsScreen(
                 floatingActionButton = {
                     DownloadButton(
                         chart = chart,
-                        snackbarHostState = snackbarHostState,
+                        onSnackbar = { message, actionLabel ->
+                            snackbarHostState.showSnackbar(
+                                message = message,
+                                actionLabel = actionLabel
+                            )
+                        },
                         downloadState = downloadState,
                         downloadUtils = downloadViewModel.downloadUtils
                     )
