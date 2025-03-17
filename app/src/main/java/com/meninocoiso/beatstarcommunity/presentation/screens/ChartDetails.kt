@@ -45,9 +45,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
-import com.meninocoiso.beatstarcommunity.presentation.ui.components.TestCarousel
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartContributors
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.DownloadButton
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.StatListItem
@@ -55,9 +55,9 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.Confi
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.ListenTrackDialog
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.ReportDialog
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
-import com.meninocoiso.beatstarcommunity.presentation.viewmodel.DownloadViewModel
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentDownloadState
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.beatstarcommunity.util.DateUtils
-import com.meninocoiso.beatstarcommunity.util.DownloadState
 import com.meninocoiso.beatstarcommunity.util.LinkingUtils.Companion.shareChartLink
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -80,7 +80,7 @@ private val DropdownItemPadding = PaddingValues(
 fun ChartDetailsScreen(
     chart: Chart,
     onReturn: () -> Unit,
-    downloadViewModel: DownloadViewModel = hiltViewModel()
+    contentViewModel: ContentViewModel = hiltViewModel()
 ) {
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -88,15 +88,16 @@ fun ChartDetailsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    val downloadState = remember {
-        mutableStateOf(
-            if (chart.isInstalled == true) DownloadState.Installed
-            else DownloadState.Idle
-        )
+    val downloadState = contentViewModel.downloadState.collectAsStateWithLifecycle(initialValue = ContentDownloadState.Idle)
+
+    LaunchedEffect(chart.id) {
+        contentViewModel.checkInstallationStatus(chart)
     }
 
     var isMoreOptionsExpanded by remember { mutableStateOf(false) }
 
+    val isReportDialogOpen = remember { mutableStateOf(false) }
+    val isListenTrackDialogOpen = remember { mutableStateOf(false) }
     val isConfirmationDialogOpen = remember { mutableStateOf(false) }
 
     ConfirmationDialog(
@@ -104,7 +105,7 @@ fun ChartDetailsScreen(
         message = "Are you sure you want to delete this chart?\nYou'll be able to download it again later.",
         isOpened = isConfirmationDialogOpen,
         onConfirm = {
-            downloadViewModel.deleteChart(
+            contentViewModel.deleteChart(
                 chart,
                 onSuccess = { onReturn() },
                 onError = {
@@ -115,9 +116,6 @@ fun ChartDetailsScreen(
             )
         }
     )
-
-    val isReportDialogOpen = remember { mutableStateOf(false) }
-    val isListenTrackDialogOpen = remember { mutableStateOf(false) }
 
     ReportDialog(
         isOpened = isReportDialogOpen,
@@ -211,7 +209,7 @@ fun ChartDetailsScreen(
                                 isReportDialogOpen.value = true
                             }
                         )
-                        if (downloadState.value == DownloadState.Installed) {
+                        if (downloadState.value == ContentDownloadState.Installed) {
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,
                                 text = { Text("Delete chart") },
@@ -264,7 +262,7 @@ fun ChartDetailsScreen(
                             )
                         },
                         downloadState = downloadState,
-                        downloadUtils = downloadViewModel.downloadUtils
+                        contentViewModel = contentViewModel,
                     )
                 }
             )
@@ -279,8 +277,7 @@ fun ChartDetailsScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Media carousel
-            // CarouselUI(carouselItems)
-            TestCarousel()
+            // TestCarousel()
 
             // Credits
             ChartContributors(chart.contributors)
@@ -350,13 +347,13 @@ fun ChartDetailsScreen(
                 .fillMaxSize(),
             contentAlignment = Alignment.BottomCenter
         ) {
-        if (downloadState.value is DownloadState.Downloading ||
-            downloadState.value is DownloadState.Extracting) {
+        if (downloadState.value is ContentDownloadState.Downloading ||
+            downloadState.value is ContentDownloadState.Extracting) {
                 LinearProgressIndicator(
                     progress = {
                         when (val state = downloadState.value) {
-                            is DownloadState.Downloading -> state.progress
-                            is DownloadState.Extracting -> state.progress
+                            is ContentDownloadState.Downloading -> state.progress
+                            is ContentDownloadState.Extracting -> state.progress
                             else -> 100f
                         }
                     },

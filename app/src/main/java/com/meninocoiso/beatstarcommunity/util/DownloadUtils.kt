@@ -2,17 +2,10 @@ package com.meninocoiso.beatstarcommunity.util
 
 import android.content.Context
 import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.provider.DocumentsContract
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
-import com.meninocoiso.beatstarcommunity.data.repository.SettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -26,19 +19,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "DownloadUtils"
-private const val BEATSTAR_FOLDER_NAME = "beatstar"
-
-/**
- * Download state for tracking download progress
- */
-sealed class DownloadState {
-    data object Idle : DownloadState()
-    data class Downloading(val progress: Float) : DownloadState()
-    data class Extracting(val progress: Float) : DownloadState()
-    data object Completed : DownloadState()
-    data object Installed : DownloadState()
-    data class Error(val message: String) : DownloadState()
-}
 
 /**
  * Utility class for handling chart downloads, extraction and storage
@@ -47,145 +27,18 @@ sealed class DownloadState {
 class DownloadUtils @Inject constructor(
     @ApplicationContext private val context: Context,
     private val okHttpClient: OkHttpClient,
-    private val settingsRepository: SettingsRepository,
 ) {
-    // Internal state management
-    private val _downloadState = MutableStateFlow<DownloadState>(DownloadState.Idle)
-    val downloadState: Flow<DownloadState> = _downloadState.asStateFlow()
-
-    /**
-     * Sets the folder URI in the settings repository.
-     *
-     * @param uri The URI of the folder to be set.
-     */
-    suspend fun setFolderUri(uri: String) {
-        settingsRepository.setFolderUri(uri)
-    }
-
-    /**
-     * Retrieves the folder URI from the settings repository.
-     *
-     * @return The URI of the folder, or null if not set.
-     */
-    suspend fun getFolderUri(): String? {
-        return settingsRepository.getFolderUri()
-    }
-
-    fun getChartFolderName(chartId: String): String {
-        return chartId.split("-").first()
-    }
-
-    /**
-     * Downloads and extracts a chart to the beatstar folder
-     * @param url URL of the chart zip file
-     * @param folderName Name to use for the chart folder
-     */
-    suspend fun downloadChart(url: String, folderName: String) {
-        // Reset state
-        _downloadState.value = DownloadState.Idle
-
-        try {
-            _downloadState.value = DownloadState.Downloading(0f)
-
-            // Get or create the beatstar folder path
-            val beatstarFolderUri = getBeatstarFolderUri()
-                ?: throw IllegalStateException("Could not access or create beatstar folder")
-
-            // Download the zip file to cache
-            val downloadedFile = downloadFileToCache("https://cdn.discordapp.com/attachments/954166390619783268/1346568684612616253/kiss_you_dlx.zip?ex=67caa390&is=67c95210&hm=abfdfc55abf77bb72172f683af16944662e1a865068cf1ddccfda1fd8cbae528&", folderName)
-
-            // Extract the zip file to the beatstar folder
-            extractZipToFolder(downloadedFile, beatstarFolderUri, folderName)
-
-            // Clean up temporary files
-            downloadedFile.delete()
-
-            _downloadState.value = DownloadState.Completed
-        } catch (e: Exception) {
-            Log.e(TAG, "Chart download failed", e)
-            _downloadState.value = DownloadState.Error(e.message ?: "Unknown error")
-        }
-    }
-
-    suspend fun deleteChart(folderName: String) {
-        withContext(Dispatchers.IO) {
-            val beatstarFolderUri = getBeatstarFolderUri()
-                ?: throw IllegalStateException("Could not access or create beatstar folder")
-
-            val destinationFolder = DocumentFile.fromTreeUri(context, beatstarFolderUri)
-                ?: throw IllegalStateException("Could not access beatstar folder")
-
-            val chartFolder = destinationFolder.findFile(folderName)
-                ?: throw IllegalStateException("Could not find chart folder")
-
-            chartFolder.delete()
-        }
-    }
-
-    /**
-     * Gets or creates the beatstar folder URI
-     */
-    private suspend fun getBeatstarFolderUri(): Uri? = withContext(Dispatchers.IO) {
-        try {
-            val savedFolderUri = settingsRepository.getFolderUri()
-
-            if (!savedFolderUri.isNullOrEmpty()) {
-                val savedUri = Uri.parse(savedFolderUri)
-
-                val destinationFolder = DocumentFile.fromTreeUri(context, savedUri)
-                destinationFolder?.listFiles()
-
-                return@withContext savedUri
-            }
-
-            // If no saved URI or it fails, create a new folder
-            return@withContext createBeatstarFolder()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to get or use saved folder, creating new", e)
-            return@withContext createBeatstarFolder()
-        }
-    }
-
-    /**
-     * Creates the beatstar folder and returns its URI
-     * This handles both direct file access (API < 30) and Storage Access Framework (API >= 30)
-     */
-    private suspend fun createBeatstarFolder(): Uri? = withContext(Dispatchers.IO) {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                // For Android 11+ we should use SAF
-                // Need to request user permission through UI first
-                return@withContext null // This should be handled by UI flow
-            } else {
-                // For older Android versions, we can create the folder directly
-                val beatstarFolder = File(
-                    Environment.getExternalStorageDirectory(),
-                    BEATSTAR_FOLDER_NAME
-                )
-
-                if (!beatstarFolder.exists()) {
-                    if (!beatstarFolder.mkdirs()) {
-                        Log.e(TAG, "Failed to create beatstar directory")
-                        return@withContext null
-                    }
-                }
-
-                val uri = Uri.fromFile(beatstarFolder)
-                settingsRepository.setFolderUri(uri.toString())
-                return@withContext uri
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to create beatstar folder", e)
-            return@withContext null
-        }
-    }
-
     /**
      * Downloads a file from a URL to the app's cache directory
      */
-    private suspend fun downloadFileToCache(url: String, fileName: String): File =
+    suspend fun downloadFileToCache(
+        url: String,
+        fileName: String,
+        extension: String? = "zip",
+        onProgress: (Float) -> Unit
+    ): File =
         withContext(Dispatchers.IO) {
-            val cacheFile = File(context.cacheDir, "$fileName.zip")
+            val cacheFile = File(context.cacheDir, "$fileName.$extension")
 
             try {
                 // Clear any existing file
@@ -221,7 +74,7 @@ class DownloadUtils @Inject constructor(
 
                                 if (contentLength > 0) {
                                     val progress = totalBytesRead.toFloat() / contentLength.toFloat()
-                                    _downloadState.value = DownloadState.Downloading(progress)
+                                    onProgress(progress)
                                 }
                             }
                         }
@@ -241,14 +94,14 @@ class DownloadUtils @Inject constructor(
     /**
      * Extracts a zip file to the specified folder
      */
-    private suspend fun extractZipToFolder(
+    suspend fun extractZipToFolder(
         zipFile: File,
         destinationFolderUri: Uri,
-        chartFolderName: String
+        chartFolderName: String,
+        onProgress: (Float) -> Unit
     ) = withContext(Dispatchers.IO) {
-        _downloadState.value = DownloadState.Extracting(0f)
+        onProgress(0f)
 
-        println(DocumentsContract.isDocumentUri(context, destinationFolderUri))
         println(destinationFolderUri.path)
 
         try {
@@ -295,9 +148,13 @@ class DownloadUtils @Inject constructor(
                     zipInputStream.closeEntry()
                     entry = zipInputStream.nextEntry
 
+                    Log.d(TAG, "Extracted: $entryName")
+                    Log.d(TAG, "total: $totalEntries")
+                    Log.d(TAG, "current: $processedEntries")
+
                     // Update progress
                     processedEntries++
-                    _downloadState.value = DownloadState.Extracting(processedEntries.toFloat() / totalEntries)
+                    onProgress(processedEntries.toFloat() / totalEntries)
                 }
             }
         } catch (e: Exception) {
@@ -336,17 +193,19 @@ class DownloadUtils @Inject constructor(
         }
     }
 
-    /**
-     * Mark the chart as installed
-     */
-    fun markAsInstalled() {
-        _downloadState.value = DownloadState.Installed
+    fun getFolderFromUri(uri: Uri): DocumentFile? {
+        return DocumentFile.fromTreeUri(context, uri)
     }
 
-    /**
-     * Mark the chart as not installed
-     */
-    fun markAsNotInstalled() {
-        _downloadState.value = DownloadState.Idle
+    suspend fun deleteFolderFromUri(destinationFolderUri: Uri, folderName: String) {
+        withContext(Dispatchers.IO) {
+            val destinationFolder = getFolderFromUri(destinationFolderUri)
+                ?: throw IllegalStateException("Could not find chart folder")
+
+            val chartFolder = destinationFolder.findFile(folderName)
+                ?: throw IllegalStateException("Could not find chart folder")
+
+            chartFolder.delete()
+        }
     }
 }

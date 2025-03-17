@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.navigation.NavHostController
-import com.meninocoiso.beatstarcommunity.R
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -36,35 +35,12 @@ data class BottomNavigationItem(
 	val badgeCount: Int? = null
 )
 
-val bottomNavigationItems = listOf(
-	BottomNavigationItem(
-		route = Workspace,
-		title = "Workspace",
-		selectedIcon = R.drawable.baseline_library_music_24,
-		unselectedIcon = R.drawable.outline_library_music_24,
-		hasNews = false
-	),
-	BottomNavigationItem(
-		route = Updates(section = UpdatesSection.Workshop),
-		title = "Updates",
-		selectedIcon = R.drawable.baseline_deployed_code_24,
-		unselectedIcon = R.drawable.outline_deployed_code_24,
-		hasNews = false
-	),
-	BottomNavigationItem(
-		route = Settings,
-		title = "Settings",
-		selectedIcon = R.drawable.baseline_settings_24,
-		unselectedIcon = R.drawable.outline_settings_24,
-		hasNews = false
-	)
-)
-
 @Composable
-fun BottomNavigationComponent(
+fun BottomNavBar(
 	selectedItemIndex: Int,
 	setItemIndex: (Int) -> Unit,
 	navController: NavHostController,
+	bottomNavigationItems: List<BottomNavigationItem>
 ) {
 	NavigationBar {
 		bottomNavigationItems.forEachIndexed { index, item ->

@@ -11,20 +11,18 @@ class PermissionUtils {
         @Composable
         fun StoragePermissionHandler(
             onPermissionGranted: () -> Unit,
-            downloadUtils: DownloadUtils
+            getFolderUri: suspend () -> Uri?
         ) {
             val context = LocalContext.current
 
             // Check if we already have a valid folder URI
             LaunchedEffect(Unit) {
-                val folderUri = downloadUtils.getFolderUri()
-                if (!folderUri.isNullOrEmpty()) {
+                val folderUri = getFolderUri()
+                if (folderUri != null) {
                     try {
-                        val uri = Uri.parse(folderUri)
-
                         // Check if the URI is still valid
                         val flags = context.contentResolver.persistedUriPermissions
-                            .find { it.uri == uri }?.let { it.isReadPermission && it.isWritePermission }
+                            .find { it.uri == folderUri }?.let { it.isReadPermission && it.isWritePermission }
                             ?: false
 
                         if (flags) {

@@ -9,7 +9,7 @@ import com.meninocoiso.beatstarcommunity.domain.model.Version
 import com.meninocoiso.beatstarcommunity.domain.serialization.Converters
 
 @Database(
-    version = 3,
+    version = 4,
     entities = [
         Chart::class,
         Version::class
@@ -19,18 +19,4 @@ import com.meninocoiso.beatstarcommunity.domain.serialization.Converters
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun chartDao(): ChartDao
-
-    /*companion object {
-        @Volatile
-        private var Instance: AppDatabase? = null
-
-        fun getDatabase(context: Context): AppDatabase {
-            // if the Instance is not null, return it, otherwise create a new database instance.
-            return Instance ?: synchronized(this) {
-                Room.databaseBuilder(context, AppDatabase::class.java, "app_database")
-                    .build()
-                    .also { Instance = it }
-            }
-        }
-    }*/
 }

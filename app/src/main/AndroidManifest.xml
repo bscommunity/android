@@ -14,6 +14,7 @@
         tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Allow opening the modded game -->
     <queries>
         <package android:name="com.spaceapegames.beatclon" />
     </queries>
@@ -30,11 +31,25 @@
         android:theme="@style/Theme.BeatstarCommunity"
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
+
+        <!-- Service to background content download -->
         <service
             android:name=".service.DownloadService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- We need to add a FileProvider config to safely share APK files with the installer -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

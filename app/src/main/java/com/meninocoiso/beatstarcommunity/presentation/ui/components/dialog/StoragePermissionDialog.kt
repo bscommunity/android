@@ -12,14 +12,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
-import com.meninocoiso.beatstarcommunity.util.DownloadUtils
 import kotlinx.coroutines.launch
 
 @Composable
 fun StoragePermissionDialog(
     onPermissionGranted: () -> Unit,
     onDismiss: () -> Unit,
-    downloadUtils: DownloadUtils
+    setFolderUri: suspend (Uri) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -37,7 +36,7 @@ fun StoragePermissionDialog(
 
             // Save the URI
             scope.launch {
-                downloadUtils.setFolderUri(uri.toString())
+                setFolderUri(uri)
                 onPermissionGranted()
             }
         } else {
