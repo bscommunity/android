@@ -6,5 +6,7 @@ data class Settings(
 	val allowExplicitContent: Boolean = false,
 	val useDynamicColors: Boolean = true,
 	val theme: ThemePreference = ThemePreference.SYSTEM,
-	val folderUri: String = ""
+	val folderUri: String? = null,
+	val latestUpdateVersion: String? = null,
+	val latestCleanedVersion: Int? = null
 )

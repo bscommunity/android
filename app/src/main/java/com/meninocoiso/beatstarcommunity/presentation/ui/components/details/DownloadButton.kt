@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
@@ -14,16 +14,15 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,19 +32,20 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.StoragePermissionDialog
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentDownloadState
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.beatstarcommunity.service.DownloadService
-import com.meninocoiso.beatstarcommunity.util.DownloadState
-import com.meninocoiso.beatstarcommunity.util.DownloadUtils
 import com.meninocoiso.beatstarcommunity.util.PermissionUtils.Companion.StoragePermissionHandler
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @Composable
 fun DownloadButton(
     chart: Chart,
-    downloadState: MutableState<DownloadState>,
-    downloadUtils: DownloadUtils,
+    downloadState: State<ContentDownloadState>,
+    contentViewModel: ContentViewModel,
     onSnackbar: suspend (message: String, actionLabel: String?) -> SnackbarResult
 ) {
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
     var showStoragePermissionDialog by remember { mutableStateOf(false) }
@@ -63,56 +63,41 @@ fun DownloadButton(
             chartUrl = chart.latestVersion.chartUrl,
             chartName = "${chart.track} - ${chart.artist}"
         )
+
+        contentViewModel.downloadChart(
+            chart = chart,
+            onSuccess = {
+                contentViewModel.markAsInstalled()
+                scope.launch {
+                    onSnackbar("Download complete", null)
+                }
+            },
+            onError = {
+                scope.launch {
+                    onSnackbar("Download failed: $it", null)
+                }
+            }
+        )
     }
 
     // Check for storage permission
     StoragePermissionHandler(
         onPermissionGranted = { hasStoragePermission = true },
-        downloadUtils = downloadUtils
+        getFolderUri = (contentViewModel::getFolderUri)
     )
-
-    LaunchedEffect(Unit) {
-        // Mark chart as installed if it is already installed
-        if (chart.isInstalled == true) {
-            downloadUtils.markAsInstalled()
-        }
-
-        // Observing download state from DownloadUtils
-        downloadUtils.downloadState.collectLatest { state ->
-            downloadState.value = state
-            if (state is DownloadState.Completed) {
-                onSnackbar("Download complete", null)
-            } else if (state is DownloadState.Error) {
-                // Show error message
-                val result = onSnackbar(
-                    (downloadState.value as DownloadState.Error).message,
-                    "Try again",
-                )
-                when (result) {
-                    SnackbarResult.ActionPerformed -> {
-                        startDownload(true)
-                    }
-
-                    SnackbarResult.Dismissed -> {}
-                }
-            }
-        }
-    }
 
     Button(
         shape = FloatingActionButtonDefaults.extendedFabShape,
         colors = ButtonColors(
             containerColor = BottomAppBarDefaults.bottomAppBarFabColor,
-            disabledContainerColor = when (downloadState.value) {
-                is DownloadState.Error -> MaterialTheme.colorScheme.errorContainer
-                else -> ButtonDefaults.buttonColors().disabledContainerColor
-            },
             contentColor = contentColorFor(BottomAppBarDefaults.bottomAppBarFabColor),
+            disabledContainerColor = ButtonDefaults.buttonColors().disabledContainerColor,
             disabledContentColor = ButtonDefaults.buttonColors().disabledContentColor,
         ),
         modifier = Modifier
             .sizeIn(minWidth = 56.dp, minHeight = 56.dp),
-        enabled = downloadState.value is DownloadState.Idle,
+        enabled = downloadState.value is ContentDownloadState.Idle ||
+                downloadState.value is ContentDownloadState.Error,
         onClick = {startDownload(true)}
     ) {
         Row(
@@ -120,30 +105,30 @@ fun DownloadButton(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             when (downloadState.value) {
-                is DownloadState.Idle -> Icon(
+                is ContentDownloadState.Idle -> Icon(
                     painter = painterResource(id = R.drawable.rounded_download_24),
                     contentDescription = "Download chart"
                 )
-                is DownloadState.Downloading, is DownloadState.Extracting -> CircularProgressIndicator(
+                is ContentDownloadState.Downloading, is ContentDownloadState.Extracting -> CircularProgressIndicator(
                     modifier = Modifier.size(16.dp),
                     strokeWidth = 2.dp
                 )
-                is DownloadState.Completed, is DownloadState.Installed -> Icon(
+                is ContentDownloadState.Installed -> Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = "Download complete"
                 )
-                is DownloadState.Error -> Icon(
-                    imageVector = Icons.Default.Warning,
+                is ContentDownloadState.Error -> Icon(
+                    imageVector = Icons.Default.Refresh,
                     contentDescription = "Download failed"
                 )
             }
             Text(
                 text = when (downloadState.value) {
-                    is DownloadState.Idle -> "Download"
-                    is DownloadState.Downloading -> "Downloading..."
-                    is DownloadState.Extracting -> "Extracting..."
-                    is DownloadState.Completed, is DownloadState.Installed -> "Installed"
-                    is DownloadState.Error -> "Failed"
+                    is ContentDownloadState.Idle -> "Download"
+                    is ContentDownloadState.Downloading -> "Downloading..."
+                    is ContentDownloadState.Extracting -> "Extracting..."
+                    is ContentDownloadState.Installed -> "Installed"
+                    is ContentDownloadState.Error -> "Try again"
                 }
             )
         }
@@ -152,7 +137,7 @@ fun DownloadButton(
     // Show storage permission dialog if needed
     if (showStoragePermissionDialog) {
         StoragePermissionDialog(
-            downloadUtils = downloadUtils,
+            setFolderUri = (contentViewModel::setFolderUri),
             onPermissionGranted = {
                 hasStoragePermission = true
                 showStoragePermissionDialog = false

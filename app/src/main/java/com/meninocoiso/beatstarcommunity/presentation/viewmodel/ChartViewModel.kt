@@ -96,4 +96,14 @@ class ChartViewModel @Inject constructor(
             }
         }
     }
+
+    fun updateLocalCharts() {
+        viewModelScope.launch {
+            val localResult = localChartRepository.getCharts().first()
+            if (localResult.isSuccess) {
+                val chartsList = localResult.getOrThrow()
+                _charts.value = ChartsState.Success(chartsList)
+            }
+        }
+    }
 }

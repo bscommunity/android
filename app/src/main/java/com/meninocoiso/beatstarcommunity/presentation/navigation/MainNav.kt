@@ -14,7 +14,7 @@ import com.meninocoiso.beatstarcommunity.presentation.screens.DeepLinkChartDetai
 import kotlin.reflect.typeOf
 
 @Composable
-fun MainNav() {
+fun MainNav(hasUpdate: Boolean) {
     val navController = rememberNavController()
     val bottomNavController = rememberNavController()
 
@@ -50,7 +50,7 @@ fun MainNav() {
         }
 
         composableWithoutTransitions<MainRoute> {
-            BottomNav(bottomNavController, navController)
+            BottomNav(bottomNavController, navController, hasUpdate)
         }
     }
 }

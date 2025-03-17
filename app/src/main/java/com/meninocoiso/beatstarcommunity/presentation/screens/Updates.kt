@@ -32,7 +32,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -49,6 +48,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.presentation.navigation.UpdatesSection
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.Size
@@ -85,8 +85,8 @@ fun UpdatesScreen(
 	onFabStateChange: (Boolean) -> Unit,
 	viewModel: UpdatesViewModel = hiltViewModel(),
 ) {
-	val updatesState by viewModel.updatesState.collectAsState()
-	val localChartsState by viewModel.localChartsState.collectAsState()
+	val updatesState by viewModel.updatesState.collectAsStateWithLifecycle()
+	val localChartsState by viewModel.localChartsState.collectAsStateWithLifecycle()
 
 	val horizontalPagerState = rememberPagerState {
 		updatesTabsItems.size
@@ -371,6 +371,7 @@ fun WorkspaceSection(
 				}
 				is LocalChartsState.Error -> {
 					StatusMessageUI(
+						modifier = Modifier.fillMaxSize(),
 						title = "Looks like something went wrong...",
 						message = "Please check your connection or try again later",
 						icon = R.drawable.rounded_hourglass_disabled_24

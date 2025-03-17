@@ -2,13 +2,11 @@ package com.meninocoiso.beatstarcommunity
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -16,81 +14,91 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.meninocoiso.beatstarcommunity.MainActivityUiState.Loading
-import com.meninocoiso.beatstarcommunity.MainActivityUiState.Success
 import com.meninocoiso.beatstarcommunity.domain.enums.ThemePreference
 import com.meninocoiso.beatstarcommunity.presentation.navigation.MainNav
 import com.meninocoiso.beatstarcommunity.presentation.ui.theme.BeatstarCommunityTheme
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.MainActivityUiState
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.MainActivityUiState.Loading
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.MainActivityUiState.Success
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.MainActivityViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-	private val viewModel: MainActivityViewModel by viewModels()
+    private val viewModel: MainActivityViewModel by viewModels()
 
-	override fun onCreate(savedInstanceState: Bundle?) {
-		val splashScreen = installSplashScreen()
-		super.onCreate(savedInstanceState)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
+        super.onCreate(savedInstanceState)
 
-		var uiState: MainActivityUiState by mutableStateOf(Loading)
+        var uiState: MainActivityUiState by mutableStateOf(Loading)
 
-		// Update the uiState
-		lifecycleScope.launch {
-			lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-				viewModel.uiState
-					.onEach { uiState = it }
-					.collect(
-						collector = ::println
-					)
-			}
-		}
+        // Update the uiState
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState
+                    .onEach { uiState = it }
+                    .collect(
+                        collector = ::println
+                    )
+            }
+        }
 
-		// Keep the splash screen on-screen until the UI state is loaded. This condition is
-		// evaluated each time the app needs to be redrawn so it should be fast to avoid blocking
-		// the UI.
-		splashScreen.setKeepOnScreenCondition {
-			when (uiState) {
-				Loading -> true
-				is Success -> false
-			}
-		}
+        // Cleanup old updates
+        viewModel.cleanupOldUpdates()
 
-		// Turn off the decor fitting system windows, which allows us to handle insets,
-		// including IME animations, and go edge-to-edge
-		// This also sets up the initial system bar style based on the platform theme
-		enableEdgeToEdge()
+        // Keep the splash screen on-screen until the UI state is loaded. This condition is
+        // evaluated each time the app needs to be redrawn so it should be fast to avoid blocking
+        // the UI.
+        splashScreen.setKeepOnScreenCondition {
+            when (uiState) {
+                Loading -> true
+                is Success -> false
+            }
+        }
 
-		setContent {
-			val darkTheme =
-				shouldUseDarkTheme(uiState)
+        // Turn off the decor fitting system windows, which allows us to handle insets,
+        // including IME animations, and go edge-to-edge
+        // This also sets up the initial system bar style based on the platform theme
+        enableEdgeToEdge()
 
-			// Update the edge to edge configuration to match the theme
-			// This is the same parameters as the default enableEdgeToEdge call, but we manually
-			// resolve whether or not to show dark theme using uiState, since it can be different
-			// than the configuration's dark theme value based on the user preference.
-			DisposableEffect(darkTheme) {
-				enableEdgeToEdge(
-					statusBarStyle = SystemBarStyle.auto(
-						android.graphics.Color.TRANSPARENT,
-						android.graphics.Color.TRANSPARENT,
-					) { darkTheme },
-					navigationBarStyle = SystemBarStyle.auto(
-						lightScrim,
-						darkScrim,
-					) { darkTheme },
-				)
-				onDispose {}
-			}
+        setContent {
+            val darkTheme =
+                shouldUseDarkTheme(uiState)
 
-			BeatstarCommunityTheme(
-				darkTheme = darkTheme,
-				dynamicColor = shouldUseDynamicTheming(uiState),
-			) {
-				MainNav()
-			}
-		}
-	}
+            // Update the edge to edge configuration to match the theme
+            // This is the same parameters as the default enableEdgeToEdge call, but we manually
+            // resolve whether or not to show dark theme using uiState, since it can be different
+            // than the configuration's dark theme value based on the user preference.
+            /*DisposableEffect(darkTheme) {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.auto(
+                        android.graphics.Color.TRANSPARENT,
+                        android.graphics.Color.TRANSPARENT,
+                    ) { darkTheme },
+                    navigationBarStyle = SystemBarStyle.auto(
+                        lightScrim,
+                        darkScrim,
+                    ) { darkTheme },
+                )
+                onDispose {}
+            }*/
+
+            BeatstarCommunityTheme(
+                darkTheme = darkTheme,
+                dynamicColor = shouldUseDynamicTheming(uiState),
+            ) {
+                MainNav(
+                    hasUpdate = when (uiState) {
+                        Loading -> false
+                        is Success -> (uiState as Success).settings.latestUpdateVersion != null
+                    }
+                )
+            }
+        }
+    }
 }
 
 /**
@@ -98,10 +106,10 @@ class MainActivity : ComponentActivity() {
  */
 @Composable
 private fun shouldUseDynamicTheming(
-	uiState: MainActivityUiState,
+    uiState: MainActivityUiState,
 ): Boolean = when (uiState) {
-	Loading -> true
-	is Success -> uiState.settings.useDynamicColors
+    Loading -> true
+    is Success -> uiState.settings.useDynamicColors
 }
 
 /**
@@ -110,14 +118,14 @@ private fun shouldUseDynamicTheming(
  */
 @Composable
 private fun shouldUseDarkTheme(
-	uiState: MainActivityUiState,
+    uiState: MainActivityUiState,
 ): Boolean = when (uiState) {
-	Loading -> isSystemInDarkTheme()
-	is Success -> when (uiState.settings.theme) {
-		ThemePreference.SYSTEM -> isSystemInDarkTheme()
-		ThemePreference.LIGHT -> false
-		ThemePreference.DARK -> true
-	}
+    Loading -> isSystemInDarkTheme()
+    is Success -> when (uiState.settings.theme) {
+        ThemePreference.SYSTEM -> isSystemInDarkTheme()
+        ThemePreference.LIGHT -> false
+        ThemePreference.DARK -> true
+    }
 }
 
 /**

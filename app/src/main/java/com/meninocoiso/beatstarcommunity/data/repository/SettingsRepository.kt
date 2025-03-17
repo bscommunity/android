@@ -19,13 +19,15 @@ import javax.inject.Singleton
 
 @Singleton
 class SettingsRepository @Inject constructor(
-	private val dataStore: DataStore<Preferences>
+	private val dataStore: DataStore<Preferences>,
 ) {
 	companion object SettingsKeys {
 		val ALLOW_EXPLICIT_CONTENT = booleanPreferencesKey("allow_explicit_content")
 		val USE_MATERIAL_YOU = booleanPreferencesKey("use_material_you")
 		val THEME = stringPreferencesKey("theme")
 		val FOLDER_URI = stringPreferencesKey("folder_uri")
+		val LATEST_UPDATE_VERSION = stringPreferencesKey("app_update_version")
+		val LATEST_CLEANED_VERSION = stringPreferencesKey("latest_cleaned_version")
 	}
 
 	val settingsFlow: Flow<Settings> = dataStore.data
@@ -58,6 +60,22 @@ class SettingsRepository @Inject constructor(
 		return dataStore.data.first()[FOLDER_URI]
 	}
 
+	suspend fun getLatestVersion(): String? {
+		return dataStore.data.first()[LATEST_UPDATE_VERSION]
+	}
+
+	suspend fun setLatestVersion(version: String) {
+		dataStore.edit { it[LATEST_UPDATE_VERSION] = version }
+	}
+
+	suspend fun getLatestCleanedVersion(): Int {
+		return dataStore.data.first()[LATEST_CLEANED_VERSION]?.toIntOrNull() ?: 0
+	}
+
+	suspend fun setLatestCleanedVersion(version: Int) {
+		dataStore.edit { it[LATEST_CLEANED_VERSION] = version.toString() }
+	}
+
 	private fun mapSettings(preferences: Preferences): Settings = Settings(
 		allowExplicitContent = preferences[ALLOW_EXPLICIT_CONTENT]
 			?: Settings().allowExplicitContent,
@@ -66,6 +84,8 @@ class SettingsRepository @Inject constructor(
 		theme = preferences[THEME]?.let { ThemePreference.valueOf(it) }
 			?: Settings().theme,
 		folderUri = preferences[FOLDER_URI]
-			?: Settings().folderUri
+			?: Settings().folderUri,
+		latestUpdateVersion = preferences[LATEST_UPDATE_VERSION]
+			?: Settings().latestUpdateVersion
 	)
 }
