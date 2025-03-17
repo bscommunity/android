@@ -1,7 +1,6 @@
 package com.meninocoiso.beatstarcommunity.data.repository
 
 import androidx.core.net.toUri
-import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentDownloadState
 import com.meninocoiso.beatstarcommunity.util.DownloadUtils
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,11 +18,14 @@ class ContentDownloadRepository @Inject constructor(
      * Downloads and extracts a chart to the beatstar folder
      * @param url URL of the chart zip file
      * @param folderName Name to use for the chart folder
+     * @param onDownloadProgress Callback for download progress
+     * @param onExtractProgress Callback for extraction progress
      */
     suspend fun downloadChart(
         url: String,
         folderName: String,
-        onProgress: (state: ContentDownloadState) -> Unit
+        onDownloadProgress: (Float) -> Unit = {},
+        onExtractProgress: (Float) -> Unit = {}
     ) {
         val folderUri = settingsRepository.getFolderUri()?.toUri()
             ?: throw IllegalStateException("Could not access or create beatstar folder")
@@ -32,24 +34,20 @@ class ContentDownloadRepository @Inject constructor(
         val downloadedFile = downloadUtils.downloadFileToCache(
             PLACEHOLDER_FILE_URL,
             folderName,
-            ".zip"
-        ) {
-            onProgress(ContentDownloadState.Downloading(it))
-        }
+            ".zip",
+            onDownloadProgress
+        )
 
         // Extract the zip file to the beatstar folder
         downloadUtils.extractZipToFolder(
             downloadedFile,
             folderUri,
             folderName,
-        ) {
-            onProgress(ContentDownloadState.Extracting(it))
-        }
+            onExtractProgress
+        )
 
         // Clean up temporary files
         downloadedFile.delete()
-
-        onProgress(ContentDownloadState.Installed)
     }
 
     suspend fun deleteChart(chartId: String) {

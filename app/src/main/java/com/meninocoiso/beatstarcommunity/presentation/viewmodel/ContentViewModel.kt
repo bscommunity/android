@@ -9,73 +9,103 @@ import com.meninocoiso.beatstarcommunity.data.repository.ChartRepository
 import com.meninocoiso.beatstarcommunity.data.repository.ContentDownloadRepository
 import com.meninocoiso.beatstarcommunity.data.repository.SettingsRepository
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
+import com.meninocoiso.beatstarcommunity.service.DownloadEvent
+import com.meninocoiso.beatstarcommunity.service.DownloadServiceConnection
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Named
 
 sealed class ContentDownloadState {
     data object Idle : ContentDownloadState()
-    data class Downloading(val progress: Float) : ContentDownloadState()
-    data class Extracting(val progress: Float) : ContentDownloadState()
-    data class Error(val message: String) : ContentDownloadState()
-    data object Installed : ContentDownloadState()
+    data class Downloading(val chartId: String, val progress: Float) : ContentDownloadState()
+    data class Extracting(val chartId: String, val progress: Float) : ContentDownloadState()
+    data class Error(val chartId: String, val message: String) : ContentDownloadState()
+    data class Installed(val chartId: String) : ContentDownloadState()
 }
 
 private const val TAG = "ContentViewModel"
 
 @HiltViewModel
 class ContentViewModel @Inject constructor(
+    private val downloadServiceConnection: DownloadServiceConnection,
     private val contentDownloadRepository: ContentDownloadRepository,
     private val settingsRepository: SettingsRepository,
-    @Named("Local") private val localChartRepository: ChartRepository
+    @Named("Local") private val localChartRepository: ChartRepository,
 ) : ViewModel() {
-    val downloadState: Flow<ContentDownloadState> = _downloadState.asStateFlow()
 
-    suspend fun getFolderUri(): Uri? {
-        return settingsRepository.getFolderUri()?.toUri()
-    }
+    /// Map chartId to its download state
+    private val _downloadStates = MutableStateFlow<Map<String, ContentDownloadState>>(emptyMap())
+    // val downloadStates: StateFlow<Map<String, ContentDownloadState>> = _downloadStates.asStateFlow()
 
-    suspend fun setFolderUri(uri: Uri) {
-        settingsRepository.setFolderUri(uri.toString())
-    }
+    private val _eventFlow = MutableSharedFlow<DownloadEvent>()
+    val eventFlow: SharedFlow<DownloadEvent> = _eventFlow.asSharedFlow()
 
-    fun checkInstallationStatus(chart: Chart) {
+    init {
         viewModelScope.launch {
-            val isInstalled = chart.isInstalled == true
+            downloadServiceConnection.observeDownload().collect { event ->
+                val chartId = event.chartId
+                val currentStates = _downloadStates.value.toMutableMap()
 
-            _downloadState.value = if (isInstalled) ContentDownloadState.Installed else ContentDownloadState.Idle
+                when (event) {
+                    is DownloadEvent.Progress -> {
+                        currentStates[chartId] = ContentDownloadState.Downloading(chartId, event.progress)
+                    }
+                    is DownloadEvent.Extracting -> {
+                        currentStates[chartId] = ContentDownloadState.Extracting(chartId, event.progress)
+                    }
+                    is DownloadEvent.Complete -> {
+                        currentStates[chartId] = ContentDownloadState.Installed(chartId)
+                        _eventFlow.emit(event) // Emit single event
+                    }
+                    is DownloadEvent.Error -> {
+                        currentStates[chartId] = ContentDownloadState.Error(chartId, event.message)
+                        _eventFlow.emit(event) // Emit single event
+                    }
+                }
+
+                _downloadStates.value = currentStates
+            }
         }
     }
 
-    fun downloadChart(
-        chart: Chart,
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit
-    ) {
-        viewModelScope.launch {
-            runCatching {
-                // Download the chart to the user's device
-                contentDownloadRepository.downloadChart(
-                    chart.latestVersion.chartUrl,
-                    chart.id
-                ) {
-                    _downloadState.value = it
-                }
+    // Check if a chart is installed
+    fun checkInstallationStatus(chart: Chart) {
+        val chartId = chart.id
+        val currentStates = _downloadStates.value.toMutableMap()
 
-                // Update the chart in the local database
-                val updateResult = localChartRepository.updateChart(chart.id, true).first()
-                updateResult.getOrThrow() // Throw if the result is a failure
-            }.onSuccess {
-                onSuccess()
-            }.onFailure { error ->
-                Log.e("DownloadViewModel", "Failed to download chart", error)
-                onError("Failed to download chart: ${error.message}")
-            }
+        if (chart.isInstalled == true) {
+            currentStates[chartId] = ContentDownloadState.Installed(chartId)
+        } else {
+            currentStates[chartId] = ContentDownloadState.Idle
+        }
+
+        _downloadStates.value = currentStates
+    }
+
+    // Download a chart
+    fun downloadChart(chart: Chart) {
+        val chartId = chart.id
+
+        // Update state immediately for UI feedback
+        updateState(chartId, ContentDownloadState.Downloading(chartId, 0f))
+
+        // Start the download
+        viewModelScope.launch {
+            downloadServiceConnection.startDownload(
+                chartId = chartId,
+                chartUrl = chart.latestVersion.chartUrl,
+                chartName = "${chart.track} - ${chart.artist}"
+            )
         }
     }
 
@@ -90,7 +120,7 @@ class ContentViewModel @Inject constructor(
                 val updateResult = localChartRepository.updateChart(chart.id, false).first()
 
                 // Update the download state
-                _downloadState.value = ContentDownloadState.Idle
+                updateState(chart.id, ContentDownloadState.Idle)
 
                 updateResult.getOrThrow() // Throw if the result is a failure
 
@@ -110,7 +140,26 @@ class ContentViewModel @Inject constructor(
         }
     }
 
-    fun markAsInstalled() {
-        _downloadState.value = ContentDownloadState.Installed
+    private fun updateState(chartId: String, state: ContentDownloadState) {
+        val currentStates = _downloadStates.value.toMutableMap()
+        currentStates[chartId] = state
+        _downloadStates.value = currentStates
+    }
+
+    // Then consumers can observe the state rather than use callbacks
+    fun getDownloadState(chartId: String): StateFlow<ContentDownloadState?> {
+        return _downloadStates.map { it[chartId] }.stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            _downloadStates.value[chartId]
+        )
+    }
+
+    suspend fun getFolderUri(): Uri? {
+        return settingsRepository.getFolderUri()?.toUri()
+    }
+
+    suspend fun setFolderUri(uri: Uri) {
+        settingsRepository.setFolderUri(uri.toString())
     }
 }

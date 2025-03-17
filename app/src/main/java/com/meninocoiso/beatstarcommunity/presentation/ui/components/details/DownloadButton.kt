@@ -26,7 +26,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
@@ -34,19 +33,16 @@ import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.StoragePermissionDialog
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentDownloadState
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentViewModel
-import com.meninocoiso.beatstarcommunity.service.DownloadService
 import com.meninocoiso.beatstarcommunity.util.PermissionUtils.Companion.StoragePermissionHandler
-import kotlinx.coroutines.launch
 
 @Composable
 fun DownloadButton(
     chart: Chart,
-    downloadState: State<ContentDownloadState>,
+    downloadState: State<ContentDownloadState?>,
     contentViewModel: ContentViewModel,
     onSnackbar: suspend (message: String, actionLabel: String?) -> SnackbarResult
 ) {
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     var showStoragePermissionDialog by remember { mutableStateOf(false) }
     var hasStoragePermission by remember { mutableStateOf(false) }
@@ -57,17 +53,9 @@ fun DownloadButton(
             return
         }
 
-        DownloadService.startDownload(
-            context = context,
-            chartId = chart.id,
-            chartUrl = chart.latestVersion.chartUrl,
-            chartName = "${chart.track} - ${chart.artist}"
-        )
-
         contentViewModel.downloadChart(
             chart = chart,
-            onSuccess = {
-                contentViewModel.markAsInstalled()
+            /*onSuccess = {
                 scope.launch {
                     onSnackbar("Download complete", null)
                 }
@@ -76,7 +64,7 @@ fun DownloadButton(
                 scope.launch {
                     onSnackbar("Download failed: $it", null)
                 }
-            }
+            }*/
         )
     }
 
@@ -121,6 +109,7 @@ fun DownloadButton(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = "Download failed"
                 )
+                null -> { /* Do nothing */}
             }
             Text(
                 text = when (downloadState.value) {
@@ -129,6 +118,7 @@ fun DownloadButton(
                     is ContentDownloadState.Extracting -> "Extracting..."
                     is ContentDownloadState.Installed -> "Installed"
                     is ContentDownloadState.Error -> "Try again"
+                    null -> "Download"
                 }
             )
         }
