@@ -25,6 +25,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SwipeToDismissBox
@@ -57,6 +58,7 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.Repor
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentDownloadState
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentViewModel
+import com.meninocoiso.beatstarcommunity.service.DownloadEvent
 import com.meninocoiso.beatstarcommunity.util.DateUtils
 import com.meninocoiso.beatstarcommunity.util.LinkingUtils.Companion.shareChartLink
 import kotlinx.coroutines.launch
@@ -88,10 +90,35 @@ fun ChartDetailsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    val downloadState = contentViewModel.downloadState.collectAsStateWithLifecycle(initialValue = ContentDownloadState.Idle)
+    val downloadState = contentViewModel.getDownloadState(chart.id).collectAsStateWithLifecycle()
 
     LaunchedEffect(chart.id) {
+        println("Checking installation status")
         contentViewModel.checkInstallationStatus(chart)
+    }
+
+    LaunchedEffect(downloadState.value) {
+        contentViewModel.eventFlow.collect { event ->
+            when (event) {
+                is DownloadEvent.Complete -> {
+                    scope.launch {
+                        snackbarHostState.showSnackbar(
+                            message = "Download complete",
+                            duration = SnackbarDuration.Short
+                        )
+                    }
+                }
+                is DownloadEvent.Error -> {
+                    scope.launch {
+                        snackbarHostState.showSnackbar(
+                            message = "Error installing chart ${event.chartId}: ${event.message}",
+                            duration = SnackbarDuration.Long
+                        )
+                    }
+                }
+                else -> {}
+            }
+        }
     }
 
     var isMoreOptionsExpanded by remember { mutableStateOf(false) }
@@ -107,7 +134,11 @@ fun ChartDetailsScreen(
         onConfirm = {
             contentViewModel.deleteChart(
                 chart,
-                onSuccess = { onReturn() },
+                onSuccess = {
+                    scope.launch {
+                        snackbarHostState.showSnackbar("Chart deleted")
+                    }
+                },
                 onError = {
                     scope.launch {
                         snackbarHostState.showSnackbar("Failed to delete chart")
@@ -209,7 +240,7 @@ fun ChartDetailsScreen(
                                 isReportDialogOpen.value = true
                             }
                         )
-                        if (downloadState.value == ContentDownloadState.Installed) {
+                        if (downloadState.value == ContentDownloadState.Installed(chart.id)) {
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,
                                 text = { Text("Delete chart") },
