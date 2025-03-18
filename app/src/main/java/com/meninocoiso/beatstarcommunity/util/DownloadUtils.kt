@@ -129,6 +129,12 @@ class DownloadUtils @Inject constructor(
             val chartFolder = existingChartFolder ?: destinationFolder.createDirectory(folderName)
                 ?: throw Exception("Failed to create chart folder")
 
+            // After creating the chart folder
+            if (!chartFolder.exists() || !chartFolder.canWrite()) {
+                Log.e(TAG, "Created folder not accessible: ${chartFolder.uri}")
+                throw Exception("Created folder not accessible or writable")
+            }
+
             Log.d(TAG, "Chart folder created: ${chartFolder.uri}")
 
             // Count entries for progress tracking
@@ -224,7 +230,7 @@ class DownloadUtils @Inject constructor(
 
             subFolders.forEach { subFolderName ->
                 destinationFolder = destinationFolder.findFile(subFolderName)
-                    ?: throw IllegalStateException("Could not access subfolder: $subFolderName")
+                    ?: throw NotFoundException("Could not access subfolder: $subFolderName")
             }
 
             val chartFolder = destinationFolder.findFile(folderName)

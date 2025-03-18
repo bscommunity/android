@@ -16,6 +16,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -126,70 +127,71 @@ fun ChartsSection(
     viewModel: ChartViewModel = hiltViewModel()
 ) {
     val chartsState by viewModel.charts.collectAsStateWithLifecycle()
-    /*val (cachedCharts, setCachedCharts) = remember { mutableStateOf(emptyList<Chart>()) }*/
 
-    /*LaunchedEffect(chartsState) {
-        println("ChartsState: $chartsState")
-        when (chartsState) {
-            is ChartsState.Success -> {
-                setCachedCharts((chartsState as ChartsState.Success).charts)
+    // Determine if we're in a loading state
+    val isLoading = chartsState is ChartsState.Loading
+
+    // Extract charts from the current state
+    val charts = when (chartsState) {
+        is ChartsState.Success -> (chartsState as ChartsState.Success).charts
+        is ChartsState.Loading -> (chartsState as ChartsState.Loading).previousCharts
+        is ChartsState.Error -> (chartsState as ChartsState.Error).previousCharts
+    } ?: emptyList()
+
+    // Show error message if in error state
+    LaunchedEffect(chartsState) {
+        if (chartsState is ChartsState.Error) {
+            if (charts.isNotEmpty()) {
+                onSnackbar("Failed to fetch new data")
             }
-            is ChartsState.Error -> {
-                // val errorMsg = (chartsState as ChartsState.Error).message ?: "Unknown error"
-				if (cachedCharts.isNotEmpty()) {
-                    onSnackbar(
-						"Failed to fetch new data. Please check your connection and try again",
-					)
-				}
-			}
-			else -> {}
-		}
-
-        // Update local charts
-        viewModel.updateLocalCharts()
-	}*/
+        }
+    }
 
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.TopCenter,
     ) {
-        when(chartsState) {
-            is ChartsState.Loading -> {
-                // Show spinner if no cached data
-                Box(Modifier.fillMaxSize(), Alignment.Center) {
-                    CircularProgressIndicator(Modifier.width(36.dp))
-                }
-            }
-
-            is ChartsState.Success -> {
-                // Show cached data and pull-to-refresh
-                PullToRefreshBox(
-                    isRefreshing = false,
-                    onRefresh = { viewModel.refresh() }
-                ) {
-                    SectionWrapper(
-                        nestedScrollConnection,
-                        onFabStateChange
-                    ) {
-                        items((chartsState as ChartsState.Success).charts.flatMap { chart -> List(20) { chart } }) { chart ->
-                            ChartPreview(
-                                onNavigateToDetails = { onNavigateToDetails(chart) },
-                                chart = chart
-                            )
-                        }
+        // Show different UI based on whether we have charts to display
+        if (charts.isEmpty()) {
+            // Empty state - show loading or error
+            when (chartsState) {
+                is ChartsState.Loading -> {
+                    Box(Modifier.fillMaxSize(), Alignment.Center) {
+                        CircularProgressIndicator(Modifier.width(36.dp))
                     }
                 }
-            }
 
-            is ChartsState.Error -> {
-                // Display error with a retry option
-                StatusMessageUI(
-                    title = "Looks like something went wrong...",
-                    message = "Please check your connection and try again",
-                    icon = R.drawable.rounded_emergency_home_24,
-                    onClick = { viewModel.refresh() },
-                    modifier = Modifier.fillMaxSize()
-                )
+                is ChartsState.Error -> {
+                    StatusMessageUI(
+                        title = "Looks like something went wrong...",
+                        message = "Please check your connection and try again",
+                        icon = R.drawable.rounded_emergency_home_24,
+                        onClick = { viewModel.refresh() },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                else -> {}
+            }
+        } else {
+            // We have charts to display - show them with pull-to-refresh
+            PullToRefreshBox(
+                isRefreshing = isLoading,
+                onRefresh = { viewModel.refresh() }
+            ) {
+                SectionWrapper(
+                    nestedScrollConnection,
+                    onFabStateChange
+                ) {
+                    items(charts) { chart ->
+                        ChartPreview(
+                            chart = chart,
+                            onNavigateToDetails = {
+                                onNavigateToDetails(chart)
+                            },
+                        )
+                    }
+                }
             }
         }
     }
