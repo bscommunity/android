@@ -90,8 +90,9 @@ fun ChartDetailsScreen(
     onReturn: () -> Unit,
     contentViewModel: ContentViewModel = hiltViewModel()
 ) {
-    val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -105,7 +106,7 @@ fun ChartDetailsScreen(
 
     // Check installation status only once
     LaunchedEffect(chart.id) {
-        contentViewModel.checkInstallationStatus(chart)
+        contentViewModel.checkInstallationStatus(chart.id)
     }
 
     // Manage download events
@@ -141,15 +142,6 @@ fun ChartDetailsScreen(
                     }
                 )
             }
-        )
-    }
-
-    if (dialogs.showReportDialog) {
-        ReportDialog(
-            onSubmit = {
-                // Implement report functionality
-            },
-            onDismiss = { dialogs.showReportDialog = false }
         )
     }
 

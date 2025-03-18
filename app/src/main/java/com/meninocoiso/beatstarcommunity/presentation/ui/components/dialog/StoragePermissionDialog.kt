@@ -2,7 +2,6 @@ package com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog
 
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.AlertDialog
@@ -12,6 +11,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.net.toUri
 import kotlinx.coroutines.launch
 
 @Composable
@@ -62,20 +62,17 @@ fun StoragePermissionDialog(
         },
         text = {
             Text(
-                text = "To download charts, the app needs permission to access your storage. " +
-                        "Please select the root folder or create a 'beatstar' folder."
+                text = "To download charts, the app needs permission to access your storage.\n" +
+                        "Please select or create a 'beatstar' folder on the root folder."
             )
         },
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(
                 onClick = {
-                    val initialUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val initialUri =
                         // Try to find external storage - typically /storage/emulated/0
-                        Uri.parse("content://com.android.externalstorage.documents/document/primary:")
-                    } else {
-                        null
-                    }
+                        "content://com.android.externalstorage.documents/document/primary:".toUri()
                     folderPickerLauncher.launch(initialUri)
                 }
             ) {

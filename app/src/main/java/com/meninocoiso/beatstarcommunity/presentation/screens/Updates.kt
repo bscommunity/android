@@ -173,20 +173,6 @@ private fun SectionWrapper(
 }
 
 @Composable
-private fun DownloadsSectionsTitle(title: String) {
-	Box(
-		modifier = Modifier
-			.fillMaxWidth()
-			.padding(16.dp, 0.dp, 0.dp, 8.dp)
-	) {
-		Text(
-			text = title,
-			style = MaterialTheme.typography.labelLarge
-		)
-	}
-}
-
-@Composable
 fun WorkspaceSection(
 	updatesState: UpdatesState,
 	onFetchUpdates: () -> Unit,
@@ -206,6 +192,7 @@ fun WorkspaceSection(
 				is UpdatesState.Success -> "Updates available (${updatesState.charts.size})"
 				else -> null
 			},
+			titleModifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
 			thickness = 0.dp,
 		) {
 			when (updatesState) {
@@ -450,6 +437,20 @@ private fun InstallationsSection(
 			title = "Work in progress!",
 			message = "This feature still needs some work\nPlease, check back later",
 			icon = R.drawable.rounded_hourglass_24,
+		)
+	}
+}
+
+@Composable
+private fun DownloadsSectionsTitle(title: String) {
+	Box(
+		modifier = Modifier
+			.fillMaxWidth()
+			.padding(16.dp, 0.dp, 0.dp, 8.dp)
+	) {
+		Text(
+			text = title,
+			style = MaterialTheme.typography.labelLarge
 		)
 	}
 }

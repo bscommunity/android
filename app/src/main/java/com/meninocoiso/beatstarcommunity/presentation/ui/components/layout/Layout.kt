@@ -17,8 +17,8 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun Section(
 	title: String?,
-	modifier: Modifier? = Modifier,
-	titleModifier: Modifier? = Modifier,
+	modifier: Modifier = Modifier,
+	titleModifier: Modifier? = null,
 	thickness: Dp = DividerDefaults.Thickness,
 	verticalArrangement: Arrangement.Vertical = Arrangement.Top,
 	horizontalAlignment: Alignment.Horizontal = Alignment.Start,
@@ -27,8 +27,7 @@ fun Section(
 	Column(
 		verticalArrangement = verticalArrangement,
 		horizontalAlignment = horizontalAlignment,
-		modifier = (modifier ?: Modifier)
-			.fillMaxWidth()
+		modifier = modifier.fillMaxWidth()
 	) {
 		if (thickness != 0.dp) {
 			HorizontalDivider(thickness = thickness)
@@ -37,8 +36,7 @@ fun Section(
 			Text(
 				text = title,
 				style = MaterialTheme.typography.labelLarge,
-				modifier = (titleModifier ?: Modifier)
-					.padding(start = 16.dp, top = 16.dp, bottom = 12.dp)
+				modifier = titleModifier ?: Modifier.padding(top = 24.dp, bottom = 16.dp, start = 16.dp, end = 16.dp)
 			)
 		}
 		content()

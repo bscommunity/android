@@ -99,9 +99,6 @@ fun ChartAuthorsPreview() {
 fun ChartPreview(
 	chart: Chart,
 	modifier: Modifier? = Modifier,
-	isFeatured: Boolean? = null,
-	isRanked: Boolean? = null,
-	isAcquired: Boolean? = null,
 	onNavigateToDetails: () -> Unit
 ) {
 	Box(

@@ -16,6 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.meninocoiso.beatstarcommunity.domain.enums.ThemePreference
 import com.meninocoiso.beatstarcommunity.presentation.navigation.MainNav
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.NotificationsPermissionDialog
 import com.meninocoiso.beatstarcommunity.presentation.ui.theme.BeatstarCommunityTheme
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.MainActivityUiState
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.MainActivityUiState.Loading
@@ -96,6 +97,8 @@ class MainActivity : ComponentActivity() {
                         is Success -> (uiState as Success).settings.latestUpdateVersion != null
                     }
                 )
+
+                NotificationsPermissionDialog()
             }
         }
     }

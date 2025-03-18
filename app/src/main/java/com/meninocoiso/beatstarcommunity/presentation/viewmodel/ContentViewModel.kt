@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -44,9 +45,8 @@ class ContentViewModel @Inject constructor(
     @Named("Local") private val localChartRepository: ChartRepository,
 ) : ViewModel() {
 
-    // Main state container for download states - using Flow.update for better performance
     private val _contentStates = MutableStateFlow<Map<String, ContentState>>(emptyMap())
-    val contentStates: StateFlow<Map<String, ContentState>> = _contentStates
+    private val contentStates: StateFlow<Map<String, ContentState>> = _contentStates.asStateFlow()
 
     // Event flow for one-time notifications
     private val _events = MutableSharedFlow<DownloadEvent>(extraBufferCapacity = 10)
@@ -104,15 +104,19 @@ class ContentViewModel @Inject constructor(
         }
     }
 
-    // Check if a chart is installed - simplified
-    fun checkInstallationStatus(chart: Chart) {
-        val state = if (chart.isInstalled == true) {
+    fun checkInstallationStatus(chartId: String) {
+        /*val state = if (chart.isInstalled == true) {
             ContentState.Installed(chart.id)
         } else {
             ContentState.Idle
-        }
+        }*/
+        viewModelScope.launch {
+            val state = localChartRepository.getChart(chartId).first().getOrNull()?.let { chart ->
+                if (chart.isInstalled == true) ContentState.Installed(chartId) else ContentState.Idle
+            } ?: ContentState.Idle
 
-        updateState(chart.id, state)
+            updateState(chartId, state)
+        }
     }
 
     // Download a chart - with proper error handling
