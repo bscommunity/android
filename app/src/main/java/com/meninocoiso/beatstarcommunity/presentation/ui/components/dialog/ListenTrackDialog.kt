@@ -11,7 +11,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,7 +53,7 @@ val StreamingPlatformIcons = mapOf<StreamingPlatform, Int>(
 
 @Composable
 fun ListenTrackDialog(
-    isOpened: MutableState<Boolean>,
+    onDismiss: () -> Unit,
     streamingLinks: List<StreamingLink>
 ) {
     var platform by remember { mutableStateOf<StreamingPlatform?>(null) }
@@ -69,89 +68,85 @@ fun ListenTrackDialog(
             StreamingPlatformIcons[it]
         }
 
-    when {
-        isOpened.value -> {
-            AlertDialog(
-                onDismissRequest = { isOpened.value = false },
-                title = {
-                    Text(text = "Support the artist")
-                },
-                text = {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(text = "Check out the full song from this chart on your favorite streaming service and support the artist work")
-                        RadioGroupUI(
-                            initialSelected = "",
-                            radioOptions = StreamingPlatform.entries
-                                .filter { it ->
-                                    StreamingPlatformStrings[it] in streamingLinks.map { it.platform }
-                                }
-                                .map {
-                                    StreamingPlatformStrings[it]!!
-                                },
-                            trailingElements = platformsIcons.map {
-                                {
-                                    it?.let { icon ->
-                                        Image(
-                                            painter = painterResource(id = icon),
-                                            contentDescription = null,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                    }
-                                }
-                            },
-                            onOptionSelected = { index, name ->
-                                platform = StreamingPlatformStrings.entries.find { it.value == name }?.key
-                                println("Selected platform: ${StreamingPlatformStrings[platform]}")
-                            }
-                        )
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = {
-                        isOpened.value = false
-                        platform = null
-                    }) {
-                        Text(text = "Cancel")
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            isOpened.value = false
-
-                            if (platform == null) {
-
-                                platform = null
-                                return@Button
-                            }
-
-                            val url = streamingLinks.find { it.platform == StreamingPlatformStrings[platform] }?.url
-
-                            println("String: ${StreamingPlatformStrings[platform]}")
-                            println("platform: $platform")
-
-                            if (url == null) {
-
-                                platform = null
-                                return@Button
-                            }
-
-                            // Open the link
-                            println("Opening link: $url")
-                            val intent = Intent(Intent.ACTION_VIEW, url.toUri())
-                            context.startActivity(intent)
-
-                            platform = null
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = "Support the artist")
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(text = "Check out the full song from this chart on your favorite streaming service and support the artist work")
+                RadioGroupUI(
+                    initialSelected = "",
+                    radioOptions = StreamingPlatform.entries
+                        .filter { it ->
+                            StreamingPlatformStrings[it] in streamingLinks.map { it.platform }
+                        }
+                        .map {
+                            StreamingPlatformStrings[it]!!
                         },
-                        enabled = platform != null
-                    ) {
-                        Text(text = "Listen")
+                    trailingElements = platformsIcons.map {
+                        {
+                            it?.let { icon ->
+                                Image(
+                                    painter = painterResource(id = icon),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                    },
+                    onOptionSelected = { _, name ->
+                        platform = StreamingPlatformStrings.entries.find { it.value == name }?.key
+                        println("Selected platform: ${StreamingPlatformStrings[platform]}")
                     }
-                }
-            )
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                onDismiss()
+                platform = null
+            }) {
+                Text(text = "Cancel")
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onDismiss()
+
+                    if (platform == null) {
+
+                        platform = null
+                        return@Button
+                    }
+
+                    val url = streamingLinks.find { it.platform == StreamingPlatformStrings[platform] }?.url
+
+                    println("String: ${StreamingPlatformStrings[platform]}")
+                    println("platform: $platform")
+
+                    if (url == null) {
+
+                        platform = null
+                        return@Button
+                    }
+
+                    // Open the link
+                    println("Opening link: $url")
+                    val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+                    context.startActivity(intent)
+
+                    platform = null
+                },
+                enabled = platform != null
+            ) {
+                Text(text = "Listen")
+            }
         }
-    }
+    )
 }

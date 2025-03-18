@@ -8,7 +8,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,70 +48,59 @@ fun ReportDialogPreview(
     }
 
     ReportDialog(
-        isOpened = isOpened,
+        onDismiss = {
+            isOpened.value = false
+        },
         onSubmit = {}
     )
 }
 
 @Composable
 fun ReportDialog(
-    isOpened: MutableState<Boolean>,
+    onDismiss: () -> Unit = {},
     onSubmit: (
         reportType: ReportType,
     ) -> Unit
 ) {
     var type by remember { mutableStateOf<ReportType?>(null) }
 
-    Button(onClick = {
-        isOpened.value = true
-    }) {
-            Text(
-                text = "Report Test"
-            )
-    }
-    when {
-        isOpened.value -> {
-            AlertDialog(
-                onDismissRequest = { isOpened.value = false },
-                title = {
-                    Text(text = "Report")
-                },
-                text = {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(text = "Help the community by flagging inappropriate content\nYour report is anonymous")
-                        RadioGroupUI(
-                            initialSelected = "",
-                            radioOptions = ReportType.entries.map {
-                                ReportTypeStrings[it]!!
-                            },
-                            onOptionSelected = { index, _ ->
-                                type = ReportType.entries.elementAt(index)
-                            }
-                        )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = "Report")
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(text = "Help the community by flagging inappropriate content\nYour report is anonymous")
+                RadioGroupUI(
+                    initialSelected = "",
+                    radioOptions = ReportType.entries.map {
+                        ReportTypeStrings[it]!!
+                    },
+                    onOptionSelected = { index, _ ->
+                        type = ReportType.entries.elementAt(index)
                     }
-                },
-                dismissButton = {
-                    TextButton(onClick = {
-                        isOpened.value = false
-                    }) {
-                        Text(text = "Cancel")
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        enabled = type != null,
-                        onClick = {
-                            onSubmit(type!!)
-                            isOpened.value = false
-                        }
-                    ) {
-                        Text(text = "Confirm")
-                    }
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = "Cancel")
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = type != null,
+                onClick = {
+                    onSubmit(type!!)
+                    onDismiss()
                 }
-            )
+            ) {
+                Text(text = "Confirm")
+            }
         }
-    }
+    )
 }

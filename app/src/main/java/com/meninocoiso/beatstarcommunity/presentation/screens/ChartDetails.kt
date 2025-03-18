@@ -25,7 +25,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SwipeToDismissBox
@@ -56,7 +55,7 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.Confi
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.ListenTrackDialog
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.ReportDialog
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
-import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentDownloadState
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentState
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.beatstarcommunity.service.DownloadEvent
 import com.meninocoiso.beatstarcommunity.util.DateUtils
@@ -77,6 +76,13 @@ private val DropdownItemPadding = PaddingValues(
     bottom = 8.dp
 )
 
+// Extracted helper class for dialog state management
+private class DialogState {
+    var showReportDialog by mutableStateOf(false)
+    var showDeleteConfirmation by mutableStateOf(false)
+    var showListenTrackDialog by mutableStateOf(false)
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChartDetailsScreen(
@@ -84,81 +90,84 @@ fun ChartDetailsScreen(
     onReturn: () -> Unit,
     contentViewModel: ContentViewModel = hiltViewModel()
 ) {
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+    // Combine states to reduce recompositions
+    val chartState by contentViewModel.getContentState(chart.id)
+        .collectAsStateWithLifecycle()
 
-    val downloadState = contentViewModel.getDownloadState(chart.id).collectAsStateWithLifecycle()
+    // UI State
+    var isMoreOptionsExpanded by remember { mutableStateOf(false) }
+    val dialogs = remember { DialogState() }
 
+    // Check installation status only once
     LaunchedEffect(chart.id) {
-        println("Checking installation status")
         contentViewModel.checkInstallationStatus(chart)
     }
 
-    LaunchedEffect(downloadState.value) {
-        contentViewModel.eventFlow.collect { event ->
+    // Manage download events
+    LaunchedEffect(Unit) {
+        contentViewModel.events.collect { event ->
             when (event) {
-                is DownloadEvent.Complete -> {
-                    scope.launch {
-                        snackbarHostState.showSnackbar(
-                            message = "Download complete",
-                            duration = SnackbarDuration.Short
-                        )
-                    }
-                }
-                is DownloadEvent.Error -> {
-                    scope.launch {
-                        snackbarHostState.showSnackbar(
-                            message = "Error installing chart ${event.chartId}: ${event.message}",
-                            duration = SnackbarDuration.Long
-                        )
-                    }
-                }
-                else -> {}
+                is DownloadEvent.Complete ->
+                    snackbarHostState.showSnackbar("Download complete")
+                is DownloadEvent.Error ->
+                    snackbarHostState.showSnackbar("Error: ${event.message}")
+                else -> { /* Other events don't need UI feedback */ }
             }
         }
     }
 
-    var isMoreOptionsExpanded by remember { mutableStateOf(false) }
-
-    val isReportDialogOpen = remember { mutableStateOf(false) }
-    val isListenTrackDialogOpen = remember { mutableStateOf(false) }
-    val isConfirmationDialogOpen = remember { mutableStateOf(false) }
-
-    ConfirmationDialog(
-        title = "Delete chart",
-        message = "Are you sure you want to delete this chart?\nYou'll be able to download it again later.",
-        isOpened = isConfirmationDialogOpen,
-        onConfirm = {
-            contentViewModel.deleteChart(
-                chart,
-                onSuccess = {
-                    scope.launch {
-                        snackbarHostState.showSnackbar("Chart deleted")
+    if (dialogs.showDeleteConfirmation) {
+        ConfirmationDialog(
+            title = "Delete chart",
+            message = "Are you sure you want to delete this chart?\nYou'll be able to download it again later.",
+            onDismiss = { dialogs.showDeleteConfirmation = false },
+            onConfirm = {
+                contentViewModel.deleteChart(
+                    chart,
+                    onSuccess = {
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Chart deleted")
+                        }
+                    },
+                    onError = {
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Failed to delete chart")
+                        }
                     }
-                },
-                onError = {
-                    scope.launch {
-                        snackbarHostState.showSnackbar("Failed to delete chart")
-                    }
-                }
-            )
-        }
-    )
+                )
+            }
+        )
+    }
 
-    ReportDialog(
-        isOpened = isReportDialogOpen,
-        onSubmit = {
-            // Implement report functionality
-        }
-    )
+    if (dialogs.showReportDialog) {
+        ReportDialog(
+            onSubmit = {
+                // Implement report functionality
+            },
+            onDismiss = { dialogs.showReportDialog = false }
+        )
+    }
 
-    ListenTrackDialog(
-        isOpened = isListenTrackDialogOpen,
-        streamingLinks = chart.trackUrls
-    )
+    if (dialogs.showReportDialog) {
+        ReportDialog(
+            onSubmit = {
+                // Implement report functionality
+            },
+            onDismiss = { dialogs.showReportDialog = false },
+        )
+    }
+
+    if (dialogs.showListenTrackDialog) {
+        ListenTrackDialog(
+            streamingLinks = chart.trackUrls,
+            onDismiss = { dialogs.showListenTrackDialog = false }
+        )
+    }
 
     // Dismiss snackbar on swipe
     val dismissSnackbarState = rememberSwipeToDismissBoxState(confirmValueChange = { value ->
@@ -237,17 +246,17 @@ fun ChartDetailsScreen(
                             },
                             onClick = {
                                 isMoreOptionsExpanded = false
-                                isReportDialogOpen.value = true
+                                dialogs.showReportDialog = true
                             }
                         )
-                        if (downloadState.value == ContentDownloadState.Installed(chart.id)) {
+                        if (chartState == ContentState.Installed(chart.id)) {
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,
                                 text = { Text("Delete chart") },
                                 leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
                                 onClick = {
                                     isMoreOptionsExpanded = false
-                                    isConfirmationDialogOpen.value = true
+                                    dialogs.showDeleteConfirmation = true
                                 }
                             )
                         }
@@ -264,9 +273,7 @@ fun ChartDetailsScreen(
         bottomBar = {
             BottomAppBar(
                 actions = {
-                    IconButton(onClick = {
-                        isListenTrackDialogOpen.value = true
-                    }) {
+                    IconButton(onClick = { dialogs.showListenTrackDialog = true }) {
                         Icon(
                             painter = painterResource(id = R.drawable.baseline_artist_24),
                             contentDescription = "Track link"
@@ -286,13 +293,7 @@ fun ChartDetailsScreen(
                 floatingActionButton = {
                     DownloadButton(
                         chart = chart,
-                        onSnackbar = { message, actionLabel ->
-                            snackbarHostState.showSnackbar(
-                                message = message,
-                                actionLabel = actionLabel
-                            )
-                        },
-                        downloadState = downloadState,
+                        contentState = chartState,
                         contentViewModel = contentViewModel,
                     )
                 }
@@ -378,13 +379,13 @@ fun ChartDetailsScreen(
                 .fillMaxSize(),
             contentAlignment = Alignment.BottomCenter
         ) {
-        if (downloadState.value is ContentDownloadState.Downloading ||
-            downloadState.value is ContentDownloadState.Extracting) {
+        if (chartState is ContentState.Downloading ||
+            chartState is ContentState.Extracting) {
                 LinearProgressIndicator(
                     progress = {
-                        when (val state = downloadState.value) {
-                            is ContentDownloadState.Downloading -> state.progress
-                            is ContentDownloadState.Extracting -> state.progress
+                        when (val state = chartState) {
+                            is ContentState.Downloading -> state.progress
+                            is ContentState.Extracting -> state.progress
                             else -> 100f
                         }
                     },
