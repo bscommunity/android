@@ -74,6 +74,7 @@ class ChartViewModel @Inject constructor(
                     }
 
                     _charts.value = ChartsState.Success(chartsList)
+                    Log.d(TAG, "Remote data used: $chartsList")
 
                     // Save the remote data to local storage
                     localChartRepository.insertCharts(chartsList)

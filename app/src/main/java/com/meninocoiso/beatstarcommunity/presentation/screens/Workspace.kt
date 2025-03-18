@@ -16,10 +16,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -29,7 +26,6 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartPreview
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace.WorkspaceChips
@@ -130,9 +126,10 @@ fun ChartsSection(
     viewModel: ChartViewModel = hiltViewModel()
 ) {
     val chartsState by viewModel.charts.collectAsStateWithLifecycle()
-    val (cachedCharts, setCachedCharts) = remember { mutableStateOf(emptyList<Chart>()) }
+    /*val (cachedCharts, setCachedCharts) = remember { mutableStateOf(emptyList<Chart>()) }*/
 
-    LaunchedEffect(chartsState) {
+    /*LaunchedEffect(chartsState) {
+        println("ChartsState: $chartsState")
         when (chartsState) {
             is ChartsState.Success -> {
                 setCachedCharts((chartsState as ChartsState.Success).charts)
@@ -150,31 +147,31 @@ fun ChartsSection(
 
         // Update local charts
         viewModel.updateLocalCharts()
-	}
+	}*/
 
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.TopCenter,
     ) {
-        when {
-            (cachedCharts.isEmpty() && chartsState is ChartsState.Loading) -> {
+        when(chartsState) {
+            is ChartsState.Loading -> {
                 // Show spinner if no cached data
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
                     CircularProgressIndicator(Modifier.width(36.dp))
                 }
             }
 
-            cachedCharts.isNotEmpty() -> {
+            is ChartsState.Success -> {
                 // Show cached data and pull-to-refresh
                 PullToRefreshBox(
-                    isRefreshing = chartsState is ChartsState.Loading,
+                    isRefreshing = false,
                     onRefresh = { viewModel.refresh() }
                 ) {
                     SectionWrapper(
                         nestedScrollConnection,
                         onFabStateChange
                     ) {
-                        items(cachedCharts.flatMap { chart -> List(20) { chart } }) { chart ->
+                        items((chartsState as ChartsState.Success).charts.flatMap { chart -> List(20) { chart } }) { chart ->
                             ChartPreview(
                                 onNavigateToDetails = { onNavigateToDetails(chart) },
                                 chart = chart
@@ -184,7 +181,7 @@ fun ChartsSection(
                 }
             }
 
-            chartsState is ChartsState.Error -> {
+            is ChartsState.Error -> {
                 // Display error with a retry option
                 StatusMessageUI(
                     title = "Looks like something went wrong...",

@@ -5,7 +5,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
@@ -23,46 +22,42 @@ fun ConfirmationDialogPreview(
         Text(text = "Open dialog")
     }
     ConfirmationDialog(
-        isOpened,
+        onDismiss = {
+            isOpened.value = false
+        },
         onConfirm = {}
     )
 }
 
 @Composable
 fun ConfirmationDialog(
-    isOpened: MutableState<Boolean>,
+    onDismiss: () -> Unit = {},
     onConfirm: () -> Unit,
     title: String = "Are you sure?",
     message: String = "This action cannot be undone",
 ) {
-    when {
-        isOpened.value -> {
-            AlertDialog(
-                onDismissRequest = { isOpened.value = false },
-                title = {
-                    Text(text = title)
-                },
-                text = {
-                    Text(text = message)
-                },
-                dismissButton = {
-                    TextButton(onClick = {
-                        isOpened.value = false
-                    }) {
-                        Text(text = "Cancel")
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            onConfirm()
-                            isOpened.value = false
-                        }
-                    ) {
-                        Text(text = "Confirm")
-                    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = title)
+        },
+        text = {
+            Text(text = message)
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = "Cancel")
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onConfirm()
+                    onDismiss()
                 }
-            )
+            ) {
+                Text(text = "Confirm")
+            }
         }
-    }
+    )
 }

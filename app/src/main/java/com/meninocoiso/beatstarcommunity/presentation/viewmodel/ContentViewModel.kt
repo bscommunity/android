@@ -21,16 +21,17 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Named
 
-sealed class ContentDownloadState {
-    data object Idle : ContentDownloadState()
-    data class Downloading(val chartId: String, val progress: Float) : ContentDownloadState()
-    data class Extracting(val chartId: String, val progress: Float) : ContentDownloadState()
-    data class Error(val chartId: String, val message: String) : ContentDownloadState()
-    data class Installed(val chartId: String) : ContentDownloadState()
+sealed class ContentState {
+    data object Idle : ContentState()
+    data class Downloading(val chartId: String, val progress: Float) : ContentState()
+    data class Extracting(val chartId: String, val progress: Float) : ContentState()
+    data class Error(val chartId: String, val message: String) : ContentState()
+    data class Installed(val chartId: String) : ContentState()
 }
 
 private const val TAG = "ContentViewModel"
@@ -43,72 +44,101 @@ class ContentViewModel @Inject constructor(
     @Named("Local") private val localChartRepository: ChartRepository,
 ) : ViewModel() {
 
-    /// Map chartId to its download state
-    private val _downloadStates = MutableStateFlow<Map<String, ContentDownloadState>>(emptyMap())
-    // val downloadStates: StateFlow<Map<String, ContentDownloadState>> = _downloadStates.asStateFlow()
+    // Main state container for download states - using Flow.update for better performance
+    private val _contentStates = MutableStateFlow<Map<String, ContentState>>(emptyMap())
+    val contentStates: StateFlow<Map<String, ContentState>> = _contentStates
 
-    private val _eventFlow = MutableSharedFlow<DownloadEvent>()
-    val eventFlow: SharedFlow<DownloadEvent> = _eventFlow.asSharedFlow()
+    // Event flow for one-time notifications
+    private val _events = MutableSharedFlow<DownloadEvent>(extraBufferCapacity = 10)
+    val events: SharedFlow<DownloadEvent> = _events.asSharedFlow()
+
+    // Cache for folder URI to reduce repository calls
+    private var cachedFolderUri: Uri? = null
 
     init {
+        observeDownloadEvents()
+    }
+
+    private fun observeDownloadEvents() {
         viewModelScope.launch {
             downloadServiceConnection.observeDownload().collect { event ->
-                val chartId = event.chartId
-                val currentStates = _downloadStates.value.toMutableMap()
-
-                when (event) {
-                    is DownloadEvent.Progress -> {
-                        currentStates[chartId] = ContentDownloadState.Downloading(chartId, event.progress)
-                    }
-                    is DownloadEvent.Extracting -> {
-                        currentStates[chartId] = ContentDownloadState.Extracting(chartId, event.progress)
-                    }
-                    is DownloadEvent.Complete -> {
-                        currentStates[chartId] = ContentDownloadState.Installed(chartId)
-                        _eventFlow.emit(event) // Emit single event
-                    }
-                    is DownloadEvent.Error -> {
-                        currentStates[chartId] = ContentDownloadState.Error(chartId, event.message)
-                        _eventFlow.emit(event) // Emit single event
-                    }
-                }
-
-                _downloadStates.value = currentStates
+                handleDownloadEvent(event)
             }
         }
     }
 
-    // Check if a chart is installed
-    fun checkInstallationStatus(chart: Chart) {
-        val chartId = chart.id
-        val currentStates = _downloadStates.value.toMutableMap()
+    private fun handleDownloadEvent(event: DownloadEvent) {
+        val chartId = event.chartId
 
-        if (chart.isInstalled == true) {
-            currentStates[chartId] = ContentDownloadState.Installed(chartId)
-        } else {
-            currentStates[chartId] = ContentDownloadState.Idle
+        // Update the state based on the event
+        when (event) {
+            is DownloadEvent.Progress ->
+                updateState(chartId, ContentState.Downloading(chartId, event.progress))
+
+            is DownloadEvent.Extracting ->
+                updateState(chartId, ContentState.Extracting(chartId, event.progress))
+
+            is DownloadEvent.Complete -> {
+                updateState(chartId, ContentState.Installed(chartId))
+                emitEvent(event)
+            }
+
+            is DownloadEvent.Error -> {
+                updateState(chartId, ContentState.Error(chartId, event.message))
+                emitEvent(event)
+            }
         }
-
-        _downloadStates.value = currentStates
     }
 
-    // Download a chart
+    // Emit an event to subscribers without suspending
+    private fun emitEvent(event: DownloadEvent) {
+        _events.tryEmit(event)
+    }
+
+    // Update state efficiently with .update
+    private fun updateState(chartId: String, state: ContentState) {
+        _contentStates.update { currentStates ->
+            currentStates.toMutableMap().apply {
+                this[chartId] = state
+            }
+        }
+    }
+
+    // Check if a chart is installed - simplified
+    fun checkInstallationStatus(chart: Chart) {
+        val state = if (chart.isInstalled == true) {
+            ContentState.Installed(chart.id)
+        } else {
+            ContentState.Idle
+        }
+
+        updateState(chart.id, state)
+    }
+
+    // Download a chart - with proper error handling
     fun downloadChart(chart: Chart) {
         val chartId = chart.id
 
         // Update state immediately for UI feedback
-        updateState(chartId, ContentDownloadState.Downloading(chartId, 0f))
+        updateState(chartId, ContentState.Downloading(chartId, 0f))
 
-        // Start the download
+        // Start the download with error handling
         viewModelScope.launch {
-            downloadServiceConnection.startDownload(
-                chartId = chartId,
-                chartUrl = chart.latestVersion.chartUrl,
-                chartName = "${chart.track} - ${chart.artist}"
-            )
+            try {
+                downloadServiceConnection.startDownload(
+                    chartId = chartId,
+                    chartUrl = chart.latestVersion.chartUrl,
+                    chartName = "${chart.track} - ${chart.artist}"
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to start download", e)
+                updateState(chartId, ContentState.Error(chartId, "Failed to start download"))
+                emitEvent(DownloadEvent.Error(chartId, "Failed to start download"))
+            }
         }
     }
 
+    // Delete a chart - using Result pattern more consistently
     fun deleteChart(
         chart: Chart,
         onSuccess: () -> Unit,
@@ -116,50 +146,52 @@ class ContentViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             runCatching {
-                // Update the chart in the local database
+                // Update the chart in local database first
                 val updateResult = localChartRepository.updateChart(chart.id, false).first()
+                updateResult.getOrThrow() // Will throw if update failed
 
-                // Update the download state
-                updateState(chart.id, ContentDownloadState.Idle)
+                // Delete the actual chart files
+                contentDownloadRepository.deleteChart(chart.id)
 
-                updateResult.getOrThrow() // Throw if the result is a failure
-
-                // Delete the chart from the user's device
-                try {
-                    contentDownloadRepository.deleteChart(chart.id)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to delete chart", e)
-                    throw e
-                }
-            }.onSuccess {
-                onSuccess()
-            }.onFailure { error ->
-                Log.e("DownloadViewModel", "Failed to delete chart", error)
-                onError("Failed to delete chart")
+                // Reset the state
+                updateState(chart.id, ContentState.Idle)
             }
+                .onFailure {
+                    Log.e(TAG, "Failed to delete chart", it)
+                    onError("Failed to delete chart")
+                }
+                .onSuccess {
+                    Log.d(TAG, "Chart deleted successfully")
+                    onSuccess()
+                }
         }
     }
 
-    private fun updateState(chartId: String, state: ContentDownloadState) {
-        val currentStates = _downloadStates.value.toMutableMap()
-        currentStates[chartId] = state
-        _downloadStates.value = currentStates
+    // Get chart state efficiently - reusing the existing StateFlow
+    fun getContentState(chartId: String): StateFlow<ContentState> {
+        return contentStates
+            .map { it[chartId] ?: ContentState.Idle }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.Lazily,
+                initialValue = _contentStates.value[chartId] ?: ContentState.Idle
+            )
     }
 
-    // Then consumers can observe the state rather than use callbacks
-    fun getDownloadState(chartId: String): StateFlow<ContentDownloadState?> {
-        return _downloadStates.map { it[chartId] }.stateIn(
-            viewModelScope,
-            SharingStarted.Eagerly,
-            _downloadStates.value[chartId]
-        )
-    }
-
+    // Folder URI handling with caching for better performance
     suspend fun getFolderUri(): Uri? {
-        return settingsRepository.getFolderUri()?.toUri()
+        return cachedFolderUri ?: settingsRepository.getFolderUri()?.toUri()?.also {
+            cachedFolderUri = it
+        }
     }
 
     suspend fun setFolderUri(uri: Uri) {
+        cachedFolderUri = uri
         settingsRepository.setFolderUri(uri.toString())
+    }
+
+    // Helper method to get the current state of a chart synchronously
+    fun getCurrentState(chartId: String): ContentState {
+        return _contentStates.value[chartId] ?: ContentState.Idle
     }
 }

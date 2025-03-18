@@ -1,6 +1,7 @@
 package com.meninocoiso.beatstarcommunity.util
 
 import android.content.Context
+import android.content.res.Resources.NotFoundException
 import android.net.Uri
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
@@ -96,26 +97,39 @@ class DownloadUtils @Inject constructor(
      */
     suspend fun extractZipToFolder(
         zipFile: File,
-        destinationFolderUri: Uri,
-        chartFolderName: String,
+        folderName: String,
+        folderUri: Uri,
+        subFolders: List<String>? = null,
         onProgress: (Float) -> Unit
     ) = withContext(Dispatchers.IO) {
         onProgress(0f)
 
-        println(destinationFolderUri.path)
-
         try {
-            val destinationFolder = DocumentFile.fromTreeUri(context, destinationFolderUri)
+            val rootFolder = getFolderFromUri(folderUri)
+                ?: throw IllegalStateException("Could not access or create root folder")
 
-            // Make sure we have the destination folder
-            if (destinationFolder == null || !destinationFolder.exists()) {
-                throw Exception("Destination folder does not exist or is not accessible")
+            var destinationFolder = rootFolder
+
+            subFolders?.forEach { subFolderName ->
+                destinationFolder = getOrCreateSubfolder(destinationFolder.uri, subFolderName)
             }
 
-            // Create or get chart subfolder
-            val chartFolder = destinationFolder.findFile(chartFolderName)
-                ?: destinationFolder.createDirectory(chartFolderName)
+            Log.d(TAG, "Destination folder: ${destinationFolder.uri}")
+
+            // Find existing chart folder and delete it if it exists
+            val existingChartFolder = destinationFolder.findFile(folderName)
+            if (existingChartFolder != null && existingChartFolder.exists()) {
+                if (!existingChartFolder.delete()) {
+                    throw Exception("Failed to delete existing chart folder")
+                }
+                Log.d(TAG, "Previous chart version folder deleted")
+            }
+
+            // If the folder does not exist, create it
+            val chartFolder = existingChartFolder ?: destinationFolder.createDirectory(folderName)
                 ?: throw Exception("Failed to create chart folder")
+
+            Log.d(TAG, "Chart folder created: ${chartFolder.uri}")
 
             // Count entries for progress tracking
             val totalEntries = countZipEntries(zipFile)
@@ -147,10 +161,6 @@ class DownloadUtils @Inject constructor(
 
                     zipInputStream.closeEntry()
                     entry = zipInputStream.nextEntry
-
-                    Log.d(TAG, "Extracted: $entryName")
-                    Log.d(TAG, "total: $totalEntries")
-                    Log.d(TAG, "current: $processedEntries")
 
                     // Update progress
                     processedEntries++
@@ -193,19 +203,36 @@ class DownloadUtils @Inject constructor(
         }
     }
 
-    fun getFolderFromUri(uri: Uri): DocumentFile? {
+    private fun getFolderFromUri(uri: Uri): DocumentFile? {
         return DocumentFile.fromTreeUri(context, uri)
     }
 
-    suspend fun deleteFolderFromUri(destinationFolderUri: Uri, folderName: String) {
+    private fun getOrCreateSubfolder(uri: Uri, folderName: String): DocumentFile {
+        val rootFolder = DocumentFile.fromTreeUri(context, uri)
+            ?: throw IllegalStateException("Could not access or create root folder")
+
+        return rootFolder.findFile(folderName) ?: rootFolder.createDirectory(folderName)
+            ?: throw IllegalStateException("Could not access or create subfolder")
+    }
+
+    suspend fun deleteFolderFromUri(folderName: String, destinationFolderUri: Uri, subFolders: List<String>) {
         withContext(Dispatchers.IO) {
-            val destinationFolder = getFolderFromUri(destinationFolderUri)
-                ?: throw IllegalStateException("Could not find chart folder")
+            val rootFolder = getFolderFromUri(destinationFolderUri)
+                ?: throw IllegalStateException("Could not access or create root folder")
+
+            var destinationFolder = rootFolder
+
+            subFolders.forEach { subFolderName ->
+                destinationFolder = destinationFolder.findFile(subFolderName)
+                    ?: throw IllegalStateException("Could not access subfolder: $subFolderName")
+            }
 
             val chartFolder = destinationFolder.findFile(folderName)
-                ?: throw IllegalStateException("Could not find chart folder")
+                ?: throw NotFoundException("Chart folder not found")
 
-            chartFolder.delete()
+            if (!chartFolder.delete()) {
+                throw Exception("Failed to delete chart folder")
+            }
         }
     }
 }
