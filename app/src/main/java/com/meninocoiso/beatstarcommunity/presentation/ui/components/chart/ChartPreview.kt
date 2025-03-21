@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.data.remote.dto.ContributorUserDto
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.model.Contributor
-import com.meninocoiso.beatstarcommunity.presentation.screens.OnNavigateToDetails
+import com.meninocoiso.beatstarcommunity.presentation.screens.details.OnNavigateToDetails
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Avatar
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.beatstarcommunity.util.DateUtils

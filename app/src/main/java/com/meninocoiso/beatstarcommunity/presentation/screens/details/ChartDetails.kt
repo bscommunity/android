@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.presentation.screens
+package com.meninocoiso.beatstarcommunity.presentation.screens.details
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box

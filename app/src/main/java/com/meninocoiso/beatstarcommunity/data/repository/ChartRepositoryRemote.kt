@@ -50,6 +50,10 @@ class ChartRepositoryRemote @Inject constructor(
         }
     }.flowOn(dispatcher)
 
+    override suspend fun getInstallStatus(id: String): Boolean {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun insertCharts(charts: List<Chart>): Flow<Result<Boolean>> {
         TODO("Not yet implemented")
     }
@@ -62,7 +66,7 @@ class ChartRepositoryRemote @Inject constructor(
         TODO("Not yet implemented")
     }
 
-    override suspend fun updateChart(id: String, isInstalled: Boolean?): Flow<Result<Boolean>> {
+    override suspend fun updateChart(id: String, isInstalled: Boolean?, availableVersion: Int?): Flow<Result<Boolean>> {
         TODO("Not yet implemented")
     }
 }

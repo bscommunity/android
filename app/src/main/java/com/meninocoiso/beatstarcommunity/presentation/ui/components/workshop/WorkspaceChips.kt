@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace
+package com.meninocoiso.beatstarcommunity.presentation.ui.components.Workshop
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -22,32 +22,32 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-data class WorkspaceChip(
+data class WorkshopChip(
 	val id: Int,
 	val title: String,
 )
 
 val chipItems = listOf(
-	WorkspaceChip(
+	WorkshopChip(
 		id = 1,
 		title = "Weekly Rank"
 	),
-	WorkspaceChip(
+	WorkshopChip(
 		id = 2,
 		title = "Last updated",
 	),
-	WorkspaceChip(
+	WorkshopChip(
 		id = 3,
 		title = "Most downloaded",
 	),
-	WorkspaceChip(
+	WorkshopChip(
 		id = 3,
 		title = "Most liked",
 	),
 )
 
 @Composable
-fun WorkspaceChips(
+fun WorkshopChips(
 	modifier: Modifier = Modifier,
 ) {
 	var selectedChipIndex by remember { mutableIntStateOf(0) }

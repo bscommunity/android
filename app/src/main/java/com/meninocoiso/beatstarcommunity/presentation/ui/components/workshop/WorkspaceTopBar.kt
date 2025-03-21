@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace
+package com.meninocoiso.beatstarcommunity.presentation.ui.components.Workshop
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -22,7 +22,7 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabItem
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabsUI
 import com.meninocoiso.beatstarcommunity.util.AppBarUtils
 
-val workspaceTabsItems = listOf(
+val WorkshopTabsItems = listOf(
 	TabItem(
 		title = "Charts",
 		hasNews = false
@@ -39,7 +39,7 @@ val workspaceTabsItems = listOf(
 )
 
 @Composable
-fun WorkspaceTopBar(
+fun WorkshopTopBar(
 	connection: AppBarUtils.CollapsingAppBarNestedScrollConnection,
 	appBarHeights: Triple<Dp, Dp, Dp>,
 	pagerState: PagerState
@@ -83,13 +83,13 @@ fun WorkspaceTopBar(
 				.fillMaxWidth(),
 			contentAlignment = Alignment.Center
 		) {
-			WorkspaceSearchBar(
+			WorkshopSearchBar(
 				topOffset = statusBarHeight,
 				modifier = Modifier
 					//.background(Color.Green)
 					.alpha(connection.appBarOpacity)
 			)
 		}
-		TabsUI(pagerState = pagerState, tabs = workspaceTabsItems, modifier = Modifier.zIndex(-1f))
+		TabsUI(pagerState = pagerState, tabs = WorkshopTabsItems, modifier = Modifier.zIndex(-1f))
 	}
 }
