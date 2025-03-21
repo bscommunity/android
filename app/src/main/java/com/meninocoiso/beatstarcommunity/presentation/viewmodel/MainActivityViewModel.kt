@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.beatstarcommunity.BuildConfig
+import com.meninocoiso.beatstarcommunity.data.repository.AppUpdateRepository
 import com.meninocoiso.beatstarcommunity.data.repository.SettingsRepository
 import com.meninocoiso.beatstarcommunity.domain.model.Settings
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,6 +25,7 @@ sealed interface MainActivityUiState {
 @HiltViewModel
 class MainActivityViewModel @Inject constructor(
 	@ApplicationContext private val context: Context,
+	private val appUpdateRepository: AppUpdateRepository,
 	private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 	val uiState: StateFlow<MainActivityUiState> = settingsRepository.settingsFlow.map {
@@ -33,6 +35,10 @@ class MainActivityViewModel @Inject constructor(
 		initialValue = MainActivityUiState.Loading,
 		started = SharingStarted.WhileSubscribed(5_000),
 	)
+
+	init {
+		appUpdateRepository.fetchLatestVersion()
+	}
 
 	 fun cleanupOldUpdates() {
 		val currentVersionCode = BuildConfig.VERSION_CODE

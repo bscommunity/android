@@ -142,7 +142,6 @@ fun ChartPreview(
 fun LocalChartPreview(
 	chart: Chart,
 	modifier: Modifier? = Modifier,
-	version: Int,
 	onNavigateToDetails: OnNavigateToDetails
 ) {
 	Box(
@@ -183,7 +182,7 @@ fun LocalChartPreview(
 						)
 						Text(
 							style = MaterialTheme.typography.labelLarge,
-							text = "v$version"
+							text = "v${chart.latestVersion.index + 1}"
 						)
 					}
 					Text(style = MaterialTheme.typography.labelMedium, text = chart.artist)

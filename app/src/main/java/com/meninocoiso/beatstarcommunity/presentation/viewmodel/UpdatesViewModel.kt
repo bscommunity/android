@@ -38,7 +38,7 @@ class UpdatesViewModel @Inject constructor(
     val localChartsState: StateFlow<LocalChartsState> = _localChartsState.asStateFlow()
 
     init {
-        loadLocalCharts(true)
+        loadLocalCharts(false)
     }
 
     fun loadLocalCharts(shouldCheckForUpdates: Boolean = false) {
