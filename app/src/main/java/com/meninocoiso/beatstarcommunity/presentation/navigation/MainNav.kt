@@ -7,10 +7,10 @@ import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.serialization.ChartParameterType
-import com.meninocoiso.beatstarcommunity.presentation.navigation.routes.ChartDetailsRoute
-import com.meninocoiso.beatstarcommunity.presentation.screens.ChartDetails
-import com.meninocoiso.beatstarcommunity.presentation.screens.ChartDetailsScreen
-import com.meninocoiso.beatstarcommunity.presentation.screens.DeepLinkChartDetails
+import com.meninocoiso.beatstarcommunity.presentation.screens.details.ChartDetailsRoute
+import com.meninocoiso.beatstarcommunity.presentation.screens.details.ChartDetails
+import com.meninocoiso.beatstarcommunity.presentation.screens.details.ChartDetailsScreen
+import com.meninocoiso.beatstarcommunity.presentation.screens.details.DeepLinkChartDetails
 import kotlin.reflect.typeOf
 
 @Composable

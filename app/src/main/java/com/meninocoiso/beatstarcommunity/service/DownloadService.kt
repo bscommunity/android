@@ -104,7 +104,7 @@ class DownloadService : Service() {
                     )
 
                     // Update the chart in the local database
-                    localChartRepository.updateChart(chartId, true).collect { result ->
+                    localChartRepository.updateChart(chartId, true,).collect { result ->
                         if (result.isSuccess) {
                             // Send complete event
                             downloadServiceConnection.sendEvent(DownloadEvent.Complete(chartId))

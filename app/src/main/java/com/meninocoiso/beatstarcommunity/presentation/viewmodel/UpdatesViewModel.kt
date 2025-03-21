@@ -26,6 +26,8 @@ sealed class LocalChartsState {
     data class Error(val message: String?) : LocalChartsState()
 }
 
+private const val TAG = "UpdatesViewModel"
+
 @HiltViewModel
 class UpdatesViewModel @Inject constructor(
     @Named("Remote") private val remoteChartRepository: ChartRepository,
@@ -38,7 +40,7 @@ class UpdatesViewModel @Inject constructor(
     val localChartsState: StateFlow<LocalChartsState> = _localChartsState.asStateFlow()
 
     init {
-        loadLocalCharts(false)
+        loadLocalCharts(true)
     }
 
     fun loadLocalCharts(shouldCheckForUpdates: Boolean = false) {
@@ -48,10 +50,10 @@ class UpdatesViewModel @Inject constructor(
                 _localChartsState.value = result.fold(
                     onSuccess = { charts ->
                         val installedCharts = charts.filter { it.isInstalled == true }
-                        Log.d("UpdatesViewModel", "Installed charts: $installedCharts")
+                        Log.d(TAG, "Installed charts: $installedCharts")
 
                         if (shouldCheckForUpdates && installedCharts.isNotEmpty()) {
-                            Log.d("UpdatesViewModel", "Fetching updates for installed charts")
+                            Log.d(TAG, "Fetching updates for installed charts")
                             fetchUpdates(installedCharts)
                         }
 
@@ -63,7 +65,7 @@ class UpdatesViewModel @Inject constructor(
         }
     }
 
-    fun fetchUpdates(installedCharts: List<Chart>) {
+    fun fetchUpdates(installedCharts: List<Chart> = (localChartsState.value as? LocalChartsState.Success)?.charts ?: emptyList()) {
         if (installedCharts.isEmpty()) {
             _updatesState.value = UpdatesState.Success(emptyList())
             return
@@ -72,21 +74,36 @@ class UpdatesViewModel @Inject constructor(
         _updatesState.value = UpdatesState.Loading
         viewModelScope.launch {
             try {
-                val latestVersions = remoteChartRepository.getLatestVersionsByChartIds(installedCharts.map { it.id }).first().getOrNull()
+                val latestVersionsResult = remoteChartRepository.getLatestVersionsByChartIds(installedCharts.map { it.id }).first()
 
-                if (latestVersions == null) {
-                    _updatesState.value = UpdatesState.Error("Failed to fetch latest versions")
-                    return@launch
-                }
+                latestVersionsResult.fold(
+                    onSuccess = { latestVersions ->
+                        val updateInfoList = installedCharts.mapNotNull { localChart ->
+                            val remoteVersion = latestVersions.find { it.chartId == localChart.id }
+                                ?: return@mapNotNull null
 
-                val chartsToUpdate = installedCharts.filter { chart ->
-                    val remoteLatestVersion = latestVersions.find { it.chartId == chart.id }
+                            val currentVersion = localChart.latestVersion.index
+                            val availableVersion = remoteVersion.index
 
-                    return@filter remoteLatestVersion != null &&
-                            remoteLatestVersion.id != chart.latestVersion.id
-                }
+                            if (availableVersion > currentVersion) {
+                                localChartRepository.updateChart(
+                                    localChart.id,
+                                    null,
+                                    remoteVersion.index
+                                )
 
-                _updatesState.value = UpdatesState.Success(chartsToUpdate)
+                                localChart.copy(
+                                    availableVersion = remoteVersion.index
+                                )
+                            } else null
+                        }
+
+                        _updatesState.value = UpdatesState.Success(updateInfoList)
+                    },
+                    onFailure = { error ->
+                        _updatesState.value = UpdatesState.Error(error.message)
+                    }
+                )
             } catch (e: Exception) {
                 _updatesState.value = UpdatesState.Error(e.message)
             }

@@ -21,7 +21,7 @@ import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.CoverArt
 
 @Composable
-fun UpdateListItem(chart: Chart) {
+internal fun UpdateListItem(chart: Chart) {
     ListItem(modifier = Modifier
         .clip(RoundedCornerShape(16.dp)),
         colors = ListItemDefaults.colors(
@@ -46,7 +46,7 @@ fun UpdateListItem(chart: Chart) {
         },
         supportingContent = {
             Text(
-                text = "Update from v1 → v2",
+                text = "Update from v${chart.latestVersion.index + 1} → v${chart.availableVersion?.plus(1)}",
                 style = MaterialTheme.typography.bodyMedium,
                 lineHeight = TextUnit(1f, TextUnitType.Em)
             )

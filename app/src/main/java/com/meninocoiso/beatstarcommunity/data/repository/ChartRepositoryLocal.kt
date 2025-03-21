@@ -42,20 +42,21 @@ class ChartRepositoryLocal(
 
     override suspend fun getChart(id: String): Flow<Result<Chart>> = flow {
         try {
-            chartDao.loadAllByIds(listOf(id)).first().let {
-                emit(Result.success(it))
-            }
+            emit(Result.success(chartDao.getChart(id)))
         } catch (e: Exception) {
             emit(Result.failure(e))
         }
     }.flowOn(dispatcher)
 
+    override suspend fun getInstallStatus(id: String): Boolean {
+        return chartDao.getChart(id).isInstalled == true
+    }
+
     override suspend fun insertCharts(charts: List<Chart>): Flow<Result<Boolean>> = flow {
         try {
             chartDao.insert(charts)
 
-            Log.d(TAG, "inserted charts: $charts")
-            Log.d(TAG, "getAll: ${chartDao.getAll()}")
+            Log.d(TAG, "Charts after insertion: ${chartDao.getAll()}")
 
             emit(Result.success(true))
         } catch (e: Exception) {
@@ -72,11 +73,11 @@ class ChartRepositoryLocal(
         }
     }.flowOn(dispatcher)
 
-    override suspend fun updateChart(id: String, isInstalled: Boolean?): Flow<Result<Boolean>> = flow {
+    override suspend fun updateChart(id: String, isInstalled: Boolean?, availableVersion: Int?): Flow<Result<Boolean>> = flow {
         try {
-            chartDao.update(isInstalled, id)
+            chartDao.update(id, isInstalled, availableVersion)
 
-            Log.d(TAG, "updated chart with installed: ${chartDao.getChart(id)}")
+            Log.d(TAG, "Updated chart with: ${chartDao.getChart(id)}")
 
             emit(Result.success(true))
         } catch (e: Exception) {

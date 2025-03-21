@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.presentation.navigation.routes
+package com.meninocoiso.beatstarcommunity.presentation.screens.details
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -15,7 +15,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.presentation.screens.ChartDetailsScreen
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ChartDetailsViewModel
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.DetailsState

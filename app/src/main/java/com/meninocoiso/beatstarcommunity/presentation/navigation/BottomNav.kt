@@ -18,10 +18,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.toRoute
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
-import com.meninocoiso.beatstarcommunity.presentation.screens.ChartDetails
 import com.meninocoiso.beatstarcommunity.presentation.screens.SettingsScreen
-import com.meninocoiso.beatstarcommunity.presentation.screens.UpdatesScreen
-import com.meninocoiso.beatstarcommunity.presentation.screens.WorkspaceScreen
+import com.meninocoiso.beatstarcommunity.presentation.screens.details.ChartDetails
+import com.meninocoiso.beatstarcommunity.presentation.screens.updates.UpdatesScreen
+import com.meninocoiso.beatstarcommunity.presentation.screens.workshop.WorkshopScreen
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.LaunchAppButton
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -31,8 +31,8 @@ object MainRoute
 
 val bottomNavigationItems = listOf(
 	BottomNavigationItem(
-		route = Workspace,
-		title = "Workspace",
+		route = Workshop,
+		title = "Workshop",
 		selectedIcon = R.drawable.baseline_library_music_24,
 		unselectedIcon = R.drawable.outline_library_music_24,
 		hasNews = false
@@ -129,23 +129,22 @@ fun BottomNav(
 		NavHost(
 			modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
 			navController = bottomNavController,
-			startDestination = Workspace,
+			startDestination = Workshop,
 		) {
-			composableWithFade<Workspace> {
-				WorkspaceScreen(
-					onNavigateToDetails = { chart ->
-						println("Navigating to chart details: $chart")
-						navController.navigate(route = ChartDetails(
-							chart = chart
-						))
-					},
+			composableWithFade<Workshop> {
+				WorkshopScreen(
+					onNavigateToDetails,
 					onFabStateChange,
 					onSnackbar
 				)
 			}
 			composableWithFade<Updates> { backStackEntry ->
 				val updates: Updates = backStackEntry.toRoute()
-				UpdatesScreen(updates.section, onNavigateToDetails, onFabStateChange)
+				UpdatesScreen(
+					updates.section,
+					onNavigateToDetails,
+					onFabStateChange
+				)
 			}
 			composableWithFade<Settings> {
 				SettingsScreen(onFabStateChange, onSnackbar)

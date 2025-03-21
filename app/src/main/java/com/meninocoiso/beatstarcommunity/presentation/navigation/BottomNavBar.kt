@@ -13,7 +13,7 @@ import androidx.navigation.NavHostController
 import kotlinx.serialization.Serializable
 
 @Serializable
-object Workspace
+object Workshop
 
 enum class UpdatesSection {
 	Workshop,
@@ -65,7 +65,7 @@ fun BottomNavBar(
 						launchSingleTop = true
 
 						// Restore state when reselecting a previously selected item
-						// restoreState = true
+						restoreState = true
 					}
 				},
 				label = {

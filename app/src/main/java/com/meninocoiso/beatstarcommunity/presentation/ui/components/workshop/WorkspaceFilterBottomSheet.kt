@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace
+package com.meninocoiso.beatstarcommunity.presentation.ui.components.Workshop
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -65,7 +65,7 @@ fun ExtendedFilterChip(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WorkspaceFilterBottomSheet(
+fun WorkshopFilterBottomSheet(
 	filtersList: SnapshotStateList<String>,
 	sheetState: SheetState,
 	onDismissRequest: () -> Unit,

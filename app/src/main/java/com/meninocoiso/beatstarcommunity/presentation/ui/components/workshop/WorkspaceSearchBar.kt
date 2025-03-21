@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.presentation.ui.components.workspace
+package com.meninocoiso.beatstarcommunity.presentation.ui.components.Workshop
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WorkspaceSearchBar(
+fun WorkshopSearchBar(
 	topOffset: Dp,
 	modifier: Modifier? = Modifier
 ) {
@@ -144,7 +144,7 @@ fun WorkspaceSearchBar(
 	}
 
 	if (isFilterSheetOpen) {
-		WorkspaceFilterBottomSheet(
+		WorkshopFilterBottomSheet(
 			filtersList = filtersList,
 			sheetState = filterSheetState,
 			onDismissRequest = {
