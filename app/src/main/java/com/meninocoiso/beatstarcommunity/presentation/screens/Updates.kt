@@ -24,28 +24,19 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -56,8 +47,8 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessag
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabItem
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabsUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.LocalChartPreview
-import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.updates.UpdateListItem
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.fabScrollObserver
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.infiniteRotation
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.shimmerLoading
@@ -82,22 +73,15 @@ private val TabsHeight = 55.dp
 @Composable
 fun UpdatesScreen(
 	section: UpdatesSection? = UpdatesSection.Workshop,
+	onNavigateToDetails: OnNavigateToDetails,
 	onFabStateChange: (Boolean) -> Unit,
 	viewModel: UpdatesViewModel = hiltViewModel(),
 ) {
-	val updatesState by viewModel.updatesState.collectAsStateWithLifecycle()
+	val updatesState by viewModel.updatesState.collectAsState()
 	val localChartsState by viewModel.localChartsState.collectAsStateWithLifecycle()
 
 	val horizontalPagerState = rememberPagerState {
 		updatesTabsItems.size
-	}
-
-	// Update local charts every time the screen is opened
-	// Only update if the local charts are already loaded
-	LaunchedEffect(Unit) {
-		if (localChartsState is LocalChartsState.Success) {
-			viewModel.loadLocalCharts()
-		}
 	}
 
 	// Scroll (horizontally) to the correct section
@@ -123,6 +107,7 @@ fun UpdatesScreen(
 				0 -> WorkspaceSection(
 					updatesState = updatesState,
 					localChartsState = localChartsState,
+					onNavigateToDetails = onNavigateToDetails,
 					onFetchUpdates = {
 						viewModel.fetchUpdates((localChartsState as LocalChartsState.Success).charts)
 				 	},
@@ -150,12 +135,12 @@ fun UpdatesScreen(
 @Composable
 private fun SectionWrapper(
 	nestedScrollConnection: NestedScrollConnection,
+	modifier: Modifier = Modifier,
 	onFabStateChange: ((Boolean) -> Unit)? = null,
 	content: LazyListScope.() -> Unit
 ) {
 	LazyColumn(
-		modifier = Modifier
-			.fillMaxSize()
+		modifier = modifier
 			.nestedScroll(nestedScrollConnection)
 			.run {
 				if (onFabStateChange != null) {
@@ -176,15 +161,16 @@ private fun SectionWrapper(
 fun WorkspaceSection(
 	updatesState: UpdatesState,
 	onFetchUpdates: () -> Unit,
+	onNavigateToDetails: OnNavigateToDetails,
 	localChartsState: LocalChartsState,
 	onFabStateChange: (Boolean) -> Unit,
 	nestedScrollConnection: NestedScrollConnection,
 ) {
-	var selectedIndex by remember { mutableIntStateOf(-1) }
-	val options = listOf("Charts", "Tour Passes", "Themes")
+	// var selectedIndex by remember { mutableIntStateOf(-1) }
+	// val options = listOf("Charts", "Tour Passes", "Themes")
 
 	Column(
-		modifier = Modifier.padding(top = 24.dp)
+		modifier = Modifier.padding(top = 24.dp).fillMaxSize()
 	) {
 		// Updates section remains unchanged
 		Section(
@@ -233,51 +219,7 @@ fun WorkspaceSection(
 					} else {
 						SectionWrapper(nestedScrollConnection) {
 							items(chartsList) { chart ->
-								ListItem(
-									modifier = Modifier
-										.clip(RoundedCornerShape(16.dp)),
-									colors = ListItemDefaults.colors(
-										containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-									),
-									leadingContent = {
-										CoverArt(
-											difficulty = null,
-											borderRadius = 2.dp,
-											url = chart.coverUrl,
-											size = 40.dp
-										)
-									},
-									headlineContent = {
-										Text(
-											text = chart.track,
-											style = MaterialTheme.typography.titleMedium,
-											maxLines = 1,
-											overflow = TextOverflow.Ellipsis,
-											lineHeight = TextUnit(1f, TextUnitType.Em)
-										)
-									},
-									supportingContent = {
-										Text(
-											text = "Update from v1 → v2",
-											style = MaterialTheme.typography.bodyMedium,
-											lineHeight = TextUnit(1f, TextUnitType.Em)
-										)
-									},
-									trailingContent = {
-										IconButton(
-											onClick = { /*TODO*/ },
-											colors = IconButtonDefaults.iconButtonColors(
-												containerColor = MaterialTheme.colorScheme.primary,
-												contentColor = MaterialTheme.colorScheme.onPrimary
-											)
-										) {
-											Icon(
-												painter = painterResource(id = R.drawable.rounded_download_24),
-												contentDescription = "Update icon"
-											)
-										}
-									}
-								)
+								UpdateListItem(chart)
 							}
 						}
 					}
@@ -289,9 +231,7 @@ fun WorkspaceSection(
 					containerColor = MaterialTheme.colorScheme.primaryContainer,
 					contentColor = MaterialTheme.colorScheme.onPrimaryContainer
 				),
-				enabled = updatesState !is UpdatesState.Loading
-						&& !(updatesState is UpdatesState.Success && updatesState.charts.isEmpty())
-				,
+				enabled = updatesState !is UpdatesState.Loading,
 				modifier = Modifier
 					.fillMaxWidth()
 					.padding(start = 16.dp, end = 16.dp, top = 8.dp)
@@ -390,7 +330,6 @@ fun WorkspaceSection(
 							items(chartsList) { chart ->
 								LocalChartPreview(
 									chart = chart,
-									version = 1,
 									onNavigateToDetails = { /*TODO*/ }
 								)
 							}

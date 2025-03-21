@@ -107,11 +107,7 @@ class SettingsViewModel @Inject constructor(
 			// If no cached version, fetch from remote
 			appUpdateRepository.fetchLatestVersion()
 				.catch { exception ->
-					if (silentMode) {
-						_updateState.value = AppUpdateState.Idle
-					} else {
-						_updateState.value = AppUpdateState.Error(exception.message ?: "Failed to check for updates")
-					}
+					_updateState.value = AppUpdateState.Error(exception.message ?: "Failed to check for updates")
 				}
 				.collect { fetchedVersion ->
 					// Store the version in DataStore

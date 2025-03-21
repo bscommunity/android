@@ -17,6 +17,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.toRoute
 import com.meninocoiso.beatstarcommunity.R
+import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.screens.ChartDetails
 import com.meninocoiso.beatstarcommunity.presentation.screens.SettingsScreen
 import com.meninocoiso.beatstarcommunity.presentation.screens.UpdatesScreen
@@ -90,6 +91,10 @@ fun BottomNav(
 		}
 	}
 
+	val onNavigateToDetails = { chart: Chart ->
+		navController.navigate(route = ChartDetails(chart = chart))
+	}
+
 	val onFabStateChange: (Boolean) -> Unit = { shouldExtend ->
 		if (shouldExtend != fabExtended) {
 			fabExtended = shouldExtend
@@ -140,7 +145,7 @@ fun BottomNav(
 			}
 			composableWithFade<Updates> { backStackEntry ->
 				val updates: Updates = backStackEntry.toRoute()
-				UpdatesScreen(updates.section, onFabStateChange)
+				UpdatesScreen(updates.section, onNavigateToDetails, onFabStateChange)
 			}
 			composableWithFade<Settings> {
 				SettingsScreen(onFabStateChange, onSnackbar)
