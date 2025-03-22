@@ -1,5 +1,6 @@
 package com.meninocoiso.beatstarcommunity.data.repository
 
+import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.model.Version
 import kotlinx.coroutines.flow.Flow
@@ -14,8 +15,8 @@ interface ChartRepository {
     suspend fun updateChart(chart: Chart): Flow<Result<Boolean>>
     suspend fun updateChart(
         id: String,
-        isInstalled: Boolean?,
-        availableVersion: Int? = null,
+        operation: OperationType? = OperationType.INSTALL,
+        availableVersion: Version? = null,
     ): Flow<Result<Boolean>>
     suspend fun deleteChart(chart: Chart): Flow<Result<Boolean>>
 }

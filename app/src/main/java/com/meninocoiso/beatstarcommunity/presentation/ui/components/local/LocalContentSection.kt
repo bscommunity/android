@@ -23,16 +23,16 @@ import com.meninocoiso.beatstarcommunity.presentation.viewmodel.LocalChartsState
 @Composable
 fun LocalContentSection(
     localChartsState: LocalChartsState,
-    nestedScrollConnection: NestedScrollConnection,
     onNavigateToDetails: (Chart) -> Unit,
-    onFabStateChange: (Boolean) -> Unit
+    onFabStateChange: (Boolean) -> Unit,
+    nestedScrollConnection: NestedScrollConnection,
 ) {
     // var selectedIndex by remember { mutableIntStateOf(-1) }
     // val options = listOf("Charts", "Tour Passes", "Themes")
 
     Section(
         title = when (localChartsState) {
-            is LocalChartsState.Success -> "Downloaded (${localChartsState.charts.size})"
+            is LocalChartsState.Success -> "Downloaded (${(localChartsState as LocalChartsState.Success).charts.size})"
             else -> "Downloaded"
         },
         modifier = Modifier.padding(top = 16.dp),

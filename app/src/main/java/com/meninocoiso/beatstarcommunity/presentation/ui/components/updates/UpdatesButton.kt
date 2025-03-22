@@ -23,10 +23,10 @@ import com.meninocoiso.beatstarcommunity.presentation.viewmodel.UpdatesState
 @Composable
 internal fun UpdatesButton(
     updatesState: UpdatesState,
-    onFetchUpdates: () -> Unit
+    onFetchUpdates: (chartToRemove: String?) -> Unit
 ) {
     FilledTonalButton(
-        onClick = onFetchUpdates,
+        onClick = { onFetchUpdates(null) },
         colors = ButtonDefaults.filledTonalButtonColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer

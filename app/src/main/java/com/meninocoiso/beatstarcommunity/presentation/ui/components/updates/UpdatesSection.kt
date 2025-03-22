@@ -11,12 +11,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.Size
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessageUI
@@ -24,7 +28,9 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Secti
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.SectionWrapper
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.fabScrollObserver
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.shimmerLoading
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.UpdatesState
+import com.meninocoiso.beatstarcommunity.service.DownloadEvent
 
 private object SectionWrapperDefaults {
     val contentPadding = PaddingValues(horizontal = 16.dp)
@@ -35,10 +41,27 @@ private object SectionWrapperDefaults {
 @Composable
 fun UpdatesSection(
     updatesState: UpdatesState,
-    onFetchUpdates: () -> Unit,
+    onFetchUpdates: (chartToRemove: String?) -> Unit,
+    onLocalContentUpdate: () -> Unit,
+    onSnackbar: (String) -> Unit,
     onFabStateChange: (Boolean) -> Unit,
     nestedScrollConnection: NestedScrollConnection,
+    contentViewModel: ContentViewModel = hiltViewModel(),
 ) {
+    LaunchedEffect(Unit) {
+        contentViewModel.events.collect { event ->
+            when (event) {
+                is DownloadEvent.Complete -> {
+                    onSnackbar("Update complete")
+                    onLocalContentUpdate()
+                    onFetchUpdates(event.chartId)
+                }
+                is DownloadEvent.Error -> onSnackbar("Error: ${event.message}")
+                else -> {}
+            }
+        }
+    }
+
     Section(
         title = when (updatesState) {
             is UpdatesState.Success -> "Updates available (${updatesState.charts.size})"
@@ -92,7 +115,16 @@ fun UpdatesSection(
                         horizontalAlignment = SectionWrapperDefaults.horizontalAlignment
                     ) {
                         items(chartsList) { chart ->
-                            UpdateListItem(chart)
+                            val contentState by contentViewModel.getContentState(chart.id)
+                                .collectAsStateWithLifecycle()
+
+                            UpdateListItem(
+                                chart = chart,
+                                onUpdateClick = {
+                                    contentViewModel.updateChart(chart)
+                                },
+                                contentState = contentState
+                            )
                         }
                     }
                 }

@@ -142,7 +142,25 @@ class ContentViewModel @Inject constructor(
         }
     }
 
-    // Delete a chart - using Result pattern more consistently
+    fun updateChart(chart: Chart) {
+        val chartId = chart.id
+
+        if (chart.isInstalled == false) return;
+
+        // First, we need to delete the existing chart
+        deleteChart(
+            chart = chart,
+            onSuccess = {
+                // Then, we can download the updated chart
+                downloadChart(chart)
+            },
+            onError = {
+                updateState(chartId, ContentState.Error(chartId, it))
+            }
+        )
+    }
+
+    // Delete a chart
     fun deleteChart(
         chart: Chart,
         onSuccess: () -> Unit,
@@ -151,7 +169,7 @@ class ContentViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching {
                 // Update the chart in local database first
-                val updateResult = localChartRepository.updateChart(chart.id, false).first()
+                val updateResult = localChartRepository.updateChart(chart.id).first()
                 updateResult.getOrThrow() // Will throw if update failed
 
                 // Delete the actual chart files

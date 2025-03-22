@@ -129,6 +129,8 @@ class DownloadUtils @Inject constructor(
             val chartFolder = existingChartFolder ?: destinationFolder.createDirectory(folderName)
                 ?: throw Exception("Failed to create chart folder")
 
+            Log.d(TAG, "Chart folder created: ${chartFolder.uri}")
+
             // After creating the chart folder
             if (!chartFolder.exists() || !chartFolder.canWrite()) {
                 Log.e(TAG, "Created folder not accessible: ${chartFolder.uri}")

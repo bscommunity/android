@@ -2,6 +2,7 @@ package com.meninocoiso.beatstarcommunity.data.repository
 
 import android.util.Log
 import com.meninocoiso.beatstarcommunity.data.local.dao.ChartDao
+import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.model.Version
 import kotlinx.coroutines.CoroutineDispatcher
@@ -73,9 +74,17 @@ class ChartRepositoryLocal(
         }
     }.flowOn(dispatcher)
 
-    override suspend fun updateChart(id: String, isInstalled: Boolean?, availableVersion: Int?): Flow<Result<Boolean>> = flow {
+    override suspend fun updateChart(
+        id: String,
+        operation: OperationType?,
+        availableVersion: Version?
+    ): Flow<Result<Boolean>> = flow {
         try {
-            chartDao.update(id, isInstalled, availableVersion)
+            if (operation == OperationType.UPDATE) {
+                chartDao.updateVersion(id)
+            } else {
+                chartDao.update(id, true, availableVersion)
+            }
 
             Log.d(TAG, "Updated chart with: ${chartDao.getChart(id)}")
 
