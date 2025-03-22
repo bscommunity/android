@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
@@ -59,6 +60,15 @@ internal fun UpdateListItem(
             )
         },
         trailingContent = {
+            IconButton(
+                onClick = onUpdateClick,
+                enabled = contentState !is ContentState.Downloading && contentState !is ContentState.Extracting,
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = Color.Transparent,
+                )
+            ) {
                 when(contentState) {
                     is ContentState.Downloading, is ContentState.Extracting -> {
                         CircularProgressIndicator(
@@ -70,30 +80,22 @@ internal fun UpdateListItem(
                                 }
                             },
                             modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    is ContentState.Error -> {
+                        Icon(
+                            painter = painterResource(id = R.drawable.rounded_error_24),
+                            contentDescription = "Error icon"
                         )
                     }
                     else -> {
-                        IconButton(
-                            onClick = onUpdateClick,
-                            enabled = contentState is ContentState.Idle,
-                            colors = IconButtonDefaults.iconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                            )
-                        ) {
-                            when(contentState) {
-                                is ContentState.Error -> Icon(
-                                    painter = painterResource(id = R.drawable.rounded_error_24),
-                                    contentDescription = "Error icon"
-                                )
-                                else -> Icon(
-                                    painter = painterResource(id = R.drawable.rounded_download_24),
-                                    contentDescription = "Update icon"
-                                )
-                            }
-                        }
+                        Icon(
+                            painter = painterResource(id = R.drawable.rounded_download_24),
+                            contentDescription = "Update icon"
+                        )
                     }
                 }
+            }
         })
 }

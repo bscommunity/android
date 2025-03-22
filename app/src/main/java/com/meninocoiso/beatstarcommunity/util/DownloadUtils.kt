@@ -126,10 +126,12 @@ class DownloadUtils @Inject constructor(
             }
 
             // If the folder does not exist, create it
-            val chartFolder = existingChartFolder ?: destinationFolder.createDirectory(folderName)
-                ?: throw Exception("Failed to create chart folder")
+            val chartFolder = getOrCreateSubfolder(destinationFolder.uri, folderName)
 
-            Log.d(TAG, "Chart folder created: ${chartFolder.uri}")
+            Log.d(TAG, "Chart folder URI: ${chartFolder.uri}")
+            Log.d(TAG, "Chart folder exists: ${chartFolder.exists()}")
+            Log.d(TAG, "Chart folder can write: ${chartFolder.canWrite()}")
+            Log.d(TAG, "Chart folder name: ${chartFolder.name}")
 
             // After creating the chart folder
             if (!chartFolder.exists() || !chartFolder.canWrite()) {

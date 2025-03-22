@@ -38,14 +38,18 @@ internal fun WorkshopSection(
     Column(
         modifier = Modifier.padding(top = 24.dp).fillMaxSize()
     ) {
-        UpdatesSection(
-            updatesState = updatesState,
-            onFetchUpdates = { viewModel.fetchUpdates(null, it) },
-            onLocalContentUpdate = { viewModel.loadLocalCharts() },
-            onSnackbar = onSnackbar,
-            onFabStateChange = onFabStateChange,
-            nestedScrollConnection = nestedScrollConnection,
-        )
+        if (localChartsState is LocalChartsState.Success && (localChartsState as LocalChartsState.Success).charts.isNotEmpty()) {
+            UpdatesSection(
+                updatesState = updatesState,
+                onFetchUpdates = {
+                    viewModel.fetchUpdates(null, it)
+                },
+                onLocalContentUpdate = { viewModel.loadLocalCharts() },
+                onSnackbar = onSnackbar,
+                onFabStateChange = onFabStateChange,
+                nestedScrollConnection = nestedScrollConnection,
+            )
+        }
         LocalContentSection(
             localChartsState = localChartsState,
             onNavigateToDetails = onNavigateToDetails,

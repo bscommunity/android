@@ -16,11 +16,12 @@ class DownloadServiceConnection @Inject constructor(
     // Use a flow instead of channel for simpler API
     private val _downloadEvents = MutableSharedFlow<DownloadEvent>(extraBufferCapacity = 64)
 
-    fun startDownload(chartId: String, chartUrl: String, chartName: String) {
+    fun startDownload(chartId: String, chartUrl: String, chartName: String, isUpdate: Boolean? = false) {
         val intent = Intent(context, DownloadService::class.java).apply {
             putExtra(DownloadService.EXTRA_CHART_ID, chartId)
             putExtra(DownloadService.EXTRA_CHART_URL, chartUrl)
             putExtra(DownloadService.EXTRA_CHART_NAME, chartName)
+            putExtra(DownloadService.EXTRA_IS_UPDATE, isUpdate)
         }
         context.startForegroundService(intent)
     }
