@@ -38,8 +38,15 @@ interface ChartDao {
      * Updating only is_installed field
      * By chart id
      */
-    @Query("UPDATE charts SET is_installed = :isInstalled AND available_version = :availableVersion WHERE id = :id")
-    fun update(id: String, isInstalled: Boolean?, availableVersion: Int?)
+    @Query("UPDATE charts SET is_installed = :isInstalled, available_version = :availableVersion WHERE id = :id")
+    fun update(
+        id: String,
+        isInstalled: Boolean?,
+        availableVersion: Version?
+    )
+
+    @Query("UPDATE charts SET latest_version = available_version, available_version = NULL WHERE id = :id")
+    fun updateVersion(id: String)
 
     @Delete
     fun delete(chart: Chart)

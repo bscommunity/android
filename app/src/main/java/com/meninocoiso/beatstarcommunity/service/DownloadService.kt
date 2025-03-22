@@ -11,6 +11,10 @@ import androidx.core.app.NotificationCompat
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.data.repository.ChartRepository
 import com.meninocoiso.beatstarcommunity.data.repository.ContentDownloadRepository
+import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
+import com.meninocoiso.beatstarcommunity.util.ContentMessageUtils.Companion.getFinalMessage
+import com.meninocoiso.beatstarcommunity.util.ContentMessageUtils.Companion.getInitialMessage
+import com.meninocoiso.beatstarcommunity.util.ContentMessageUtils.Companion.getProgressMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -44,7 +48,7 @@ class DownloadService : Service() {
         const val EXTRA_CHART_ID = "extra_chart_id"
         const val EXTRA_CHART_URL = "extra_chart_url"
         const val EXTRA_CHART_NAME = "extra_chart_name"
-        const val EXTRA_CHANNEL_NAME = "extra_channel_name"
+        const val EXTRA_IS_UPDATE = "extra_is_update"
     }
 
     override fun onCreate() {
@@ -56,17 +60,22 @@ class DownloadService : Service() {
         val chartId = intent?.getStringExtra(EXTRA_CHART_ID)
         val chartUrl = intent?.getStringExtra(EXTRA_CHART_URL)
         val chartName = intent?.getStringExtra(EXTRA_CHART_NAME)
+        val operation = if (intent?.getBooleanExtra(EXTRA_IS_UPDATE, false) == true)
+            OperationType.UPDATE else OperationType.INSTALL
 
         if (chartId != null && chartUrl != null && chartName != null) {
+            val initialString = getInitialMessage(chartName, operation)
+            val finalString = getFinalMessage(chartName, operation)
+
             // Start as foreground service with initial notification
             val notification = createNotification(
-                title = "Downloading $chartName",
-                message = "Starting download...",
+                title = initialString.title,
+                message = initialString.message,
                 progress = 0
             )
 
             startForeground(notificationId, notification)
-            Log.d(TAG, "Downloading $chartName")
+            Log.d(TAG, initialString.title)
 
             // Start the download
             serviceScope.launch {
@@ -82,9 +91,10 @@ class DownloadService : Service() {
                             }
 
                             val progressInt = (progress * 100).toInt()
+                            val progressString = getProgressMessage(chartName, progressInt, operation)
                             updateNotification(
-                                title = "Downloading $chartName",
-                                message = "Downloading... $progressInt%",
+                                title = progressString.title,
+                                message = progressString.message,
                                 progress = progressInt
                             )
                         },
@@ -104,19 +114,22 @@ class DownloadService : Service() {
                     )
 
                     // Update the chart in the local database
-                    localChartRepository.updateChart(chartId, true,).collect { result ->
+                    localChartRepository.updateChart(
+                        chartId,
+                        operation
+                    ).collect { result ->
                         if (result.isSuccess) {
                             // Send complete event
                             downloadServiceConnection.sendEvent(DownloadEvent.Complete(chartId))
 
                             updateNotification(
-                                title = "Download Complete",
-                                message = "$chartName has been downloaded successfully",
+                                title = finalString.title,
+                                message = finalString.message,
                                 progress = 100,
                                 isOngoing = false
                             )
 
-                            Log.d(TAG, "Download complete: $chartName")
+                            Log.d(TAG, finalString.title)
                             stopSelf()
                         }
                     }

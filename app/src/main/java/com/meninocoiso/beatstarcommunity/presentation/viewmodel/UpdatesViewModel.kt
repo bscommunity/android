@@ -50,9 +50,8 @@ class UpdatesViewModel @Inject constructor(
                 _localChartsState.value = result.fold(
                     onSuccess = { charts ->
                         val installedCharts = charts.filter { it.isInstalled == true }
-                        Log.d(TAG, "Installed charts: $installedCharts")
 
-                        if (shouldCheckForUpdates && installedCharts.isNotEmpty()) {
+                        if (shouldCheckForUpdates && installedCharts.size > 1) {
                             Log.d(TAG, "Fetching updates for installed charts")
                             fetchUpdates(installedCharts)
                         }
@@ -65,35 +64,50 @@ class UpdatesViewModel @Inject constructor(
         }
     }
 
-    fun fetchUpdates(installedCharts: List<Chart> = (localChartsState.value as? LocalChartsState.Success)?.charts ?: emptyList()) {
-        if (installedCharts.isEmpty()) {
+    fun fetchUpdates(
+        installedCharts: List<Chart>? = null,
+        chartToRemove: String? = null
+    ) {
+        if (chartToRemove != null) {
+            if (_updatesState.value is UpdatesState.Success) {
+                val updatedCharts = (_updatesState.value as UpdatesState.Success).charts.filter { it.id != chartToRemove }
+                _updatesState.value = UpdatesState.Success(updatedCharts)
+            }
+            Log.d(TAG, "Removing chart $chartToRemove from updates list")
+            return
+        }
+
+        val charts = installedCharts ?: (_localChartsState.value as? LocalChartsState.Success)?.charts
+        if (charts == null) {
             _updatesState.value = UpdatesState.Success(emptyList())
+            Log.d(TAG, "No installed charts to check for updates")
             return
         }
 
         _updatesState.value = UpdatesState.Loading
         viewModelScope.launch {
             try {
-                val latestVersionsResult = remoteChartRepository.getLatestVersionsByChartIds(installedCharts.map { it.id }).first()
+                val latestVersionsResult = remoteChartRepository.getLatestVersionsByChartIds(charts.map { it.id }).first()
 
                 latestVersionsResult.fold(
                     onSuccess = { latestVersions ->
-                        val updateInfoList = installedCharts.mapNotNull { localChart ->
+                        val updateInfoList = charts.mapNotNull { localChart ->
                             val remoteVersion = latestVersions.find { it.chartId == localChart.id }
                                 ?: return@mapNotNull null
 
                             val currentVersion = localChart.latestVersion.index
                             val availableVersion = remoteVersion.index
 
+                            // Log.d(TAG, "Checking for updates for ${localChart.id}: current=$currentVersion, available=$availableVersion")
+
                             if (availableVersion > currentVersion) {
                                 localChartRepository.updateChart(
                                     localChart.id,
-                                    null,
-                                    remoteVersion.index
+                                    availableVersion = remoteVersion
                                 )
 
                                 localChart.copy(
-                                    availableVersion = remoteVersion.index
+                                    availableVersion = remoteVersion
                                 )
                             } else null
                         }

@@ -1,6 +1,7 @@
 package com.meninocoiso.beatstarcommunity.data.repository
 
 import com.meninocoiso.beatstarcommunity.data.remote.ApiClient
+import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.model.Version
 import jakarta.inject.Inject
@@ -66,7 +67,11 @@ class ChartRepositoryRemote @Inject constructor(
         TODO("Not yet implemented")
     }
 
-    override suspend fun updateChart(id: String, isInstalled: Boolean?, availableVersion: Int?): Flow<Result<Boolean>> {
+    override suspend fun updateChart(
+        id: String,
+        operation: OperationType?,
+        availableVersion: Version?
+    ): Flow<Result<Boolean>> {
         TODO("Not yet implemented")
     }
 }

@@ -9,21 +9,17 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.beatstarcommunity.presentation.navigation.UpdatesSection
 import com.meninocoiso.beatstarcommunity.presentation.screens.details.OnNavigateToDetails
 import com.meninocoiso.beatstarcommunity.presentation.screens.updates.sections.InstallationsSection
 import com.meninocoiso.beatstarcommunity.presentation.screens.updates.sections.WorkshopSection
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabItem
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.TabsUI
-import com.meninocoiso.beatstarcommunity.presentation.viewmodel.LocalChartsState
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.UpdatesViewModel
 import com.meninocoiso.beatstarcommunity.util.AppBarUtils
 
@@ -44,21 +40,13 @@ private val TabsHeight = 55.dp
 fun UpdatesScreen(
 	section: UpdatesSection? = UpdatesSection.Workshop,
 	onNavigateToDetails: OnNavigateToDetails,
+	onSnackbar: (String) -> Unit,
 	onFabStateChange: (Boolean) -> Unit,
 	viewModel: UpdatesViewModel = hiltViewModel(),
 ) {
-	val updatesState by viewModel.updatesState.collectAsState()
-	val localChartsState by viewModel.localChartsState.collectAsStateWithLifecycle()
 
 	val horizontalPagerState = rememberPagerState {
 		updatesTabsItems.size
-	}
-
-	LaunchedEffect(Unit) {
-		// Update local charts if needed
-		if (localChartsState is LocalChartsState.Success) {
-			viewModel.loadLocalCharts()
-		}
 	}
 
 	// Scroll (horizontally) to the correct section
@@ -82,12 +70,9 @@ fun UpdatesScreen(
 		HorizontalPager(state = horizontalPagerState) { index ->
 			when (index) {
 				0 -> WorkshopSection(
-					updatesState = updatesState,
-					localChartsState = localChartsState,
-					onFetchUpdates = {
-						viewModel.fetchUpdates((localChartsState as LocalChartsState.Success).charts)
-				 	},
+					viewModel = viewModel,
 					onNavigateToDetails = onNavigateToDetails,
+					onSnackbar = onSnackbar,
 					onFabStateChange = onFabStateChange,
 					nestedScrollConnection = connection
 				)

@@ -143,6 +143,7 @@ fun BottomNav(
 				UpdatesScreen(
 					updates.section,
 					onNavigateToDetails,
+					onSnackbar,
 					onFabStateChange
 				)
 			}

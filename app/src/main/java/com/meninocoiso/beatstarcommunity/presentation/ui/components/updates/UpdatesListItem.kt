@@ -1,6 +1,8 @@
 package com.meninocoiso.beatstarcommunity.presentation.ui.components.updates
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -19,11 +21,16 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.CoverArt
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentState
 
 @Composable
-internal fun UpdateListItem(chart: Chart) {
-    ListItem(modifier = Modifier
-        .clip(RoundedCornerShape(16.dp)),
+internal fun UpdateListItem(
+    chart: Chart,
+    contentState: ContentState,
+    onUpdateClick: () -> Unit
+) {
+    ListItem(
+        modifier = Modifier.clip(RoundedCornerShape(16.dp)),
         colors = ListItemDefaults.colors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
@@ -46,23 +53,47 @@ internal fun UpdateListItem(chart: Chart) {
         },
         supportingContent = {
             Text(
-                text = "Update from v${chart.latestVersion.index + 1} → v${chart.availableVersion?.plus(1)}",
+                text = "Update from v${chart.latestVersion.index + 1} → v${chart.availableVersion?.index?.plus(1)}",
                 style = MaterialTheme.typography.bodyMedium,
                 lineHeight = TextUnit(1f, TextUnitType.Em)
             )
         },
         trailingContent = {
-            IconButton(
-                onClick = { /*TODO*/ },
-                colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.rounded_download_24),
-                    contentDescription = "Update icon"
-                )
-            }
+                when(contentState) {
+                    is ContentState.Downloading, is ContentState.Extracting -> {
+                        CircularProgressIndicator(
+                            progress = {
+                                when(contentState) {
+                                    is ContentState.Downloading -> contentState.progress
+                                    is ContentState.Extracting -> contentState.progress
+                                    else -> 0f
+                                }
+                            },
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                    else -> {
+                        IconButton(
+                            onClick = onUpdateClick,
+                            enabled = contentState is ContentState.Idle,
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        ) {
+                            when(contentState) {
+                                is ContentState.Error -> Icon(
+                                    painter = painterResource(id = R.drawable.rounded_error_24),
+                                    contentDescription = "Error icon"
+                                )
+                                else -> Icon(
+                                    painter = painterResource(id = R.drawable.rounded_download_24),
+                                    contentDescription = "Update icon"
+                                )
+                            }
+                        }
+                    }
+                }
         })
 }
