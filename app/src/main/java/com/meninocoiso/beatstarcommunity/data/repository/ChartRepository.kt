@@ -13,10 +13,10 @@ interface ChartRepository {
     suspend fun getInstallStatus(id: String): Boolean
     suspend fun insertCharts(charts: List<Chart>): Flow<Result<Boolean>>
     suspend fun updateChart(chart: Chart): Flow<Result<Boolean>>
+    suspend fun updateCharts(charts: List<Chart>): Flow<Result<Boolean>>
     suspend fun updateChart(
         id: String,
-        operation: OperationType? = OperationType.INSTALL,
-        availableVersion: Version? = null,
+        operation: OperationType = OperationType.INSTALL,
     ): Flow<Result<Boolean>>
     suspend fun deleteChart(chart: Chart): Flow<Result<Boolean>>
 }

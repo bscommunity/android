@@ -64,11 +64,18 @@ fun UpdatesSection(
 
     Section(
         title = when (updatesState) {
-            is UpdatesState.Success -> "Updates available (${updatesState.charts.size})"
+            is UpdatesState.Success -> {
+                if (updatesState.charts.isNotEmpty()) {
+                    "Updates available (${updatesState.charts.size})"
+                } else {
+                    "Updates"
+                }
+            }
             else -> null
         },
-        titleModifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
         thickness = 0.dp,
+        titleModifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
+        modifier = Modifier.padding(bottom = 16.dp)
     ) {
         when (updatesState) {
             is UpdatesState.Error -> {
@@ -121,7 +128,7 @@ fun UpdatesSection(
                             UpdateListItem(
                                 chart = chart,
                                 onUpdateClick = {
-                                    contentViewModel.updateChart(chart)
+                                    contentViewModel.downloadChart(chart)
                                 },
                                 contentState = contentState
                             )

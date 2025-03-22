@@ -78,7 +78,8 @@ class UpdatesViewModel @Inject constructor(
         }
 
         val charts = installedCharts ?: (_localChartsState.value as? LocalChartsState.Success)?.charts
-        if (charts == null) {
+
+        if (charts.isNullOrEmpty()) {
             _updatesState.value = UpdatesState.Success(emptyList())
             Log.d(TAG, "No installed charts to check for updates")
             return
@@ -91,7 +92,7 @@ class UpdatesViewModel @Inject constructor(
 
                 latestVersionsResult.fold(
                     onSuccess = { latestVersions ->
-                        val updateInfoList = charts.mapNotNull { localChart ->
+                        val updatesList = charts.mapNotNull { localChart ->
                             val remoteVersion = latestVersions.find { it.chartId == localChart.id }
                                 ?: return@mapNotNull null
 
@@ -101,18 +102,16 @@ class UpdatesViewModel @Inject constructor(
                             // Log.d(TAG, "Checking for updates for ${localChart.id}: current=$currentVersion, available=$availableVersion")
 
                             if (availableVersion > currentVersion) {
-                                localChartRepository.updateChart(
-                                    localChart.id,
-                                    availableVersion = remoteVersion
-                                )
-
                                 localChart.copy(
                                     availableVersion = remoteVersion
                                 )
                             } else null
                         }
 
-                        _updatesState.value = UpdatesState.Success(updateInfoList)
+                        localChartRepository.updateCharts(updatesList).collect {
+                            _updatesState.value = UpdatesState.Success(updatesList)
+                            Log.d(TAG, "Updates fetched successfully")
+                        }
                     },
                     onFailure = { error ->
                         _updatesState.value = UpdatesState.Error(error.message)

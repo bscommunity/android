@@ -10,17 +10,16 @@ class ContentMessageUtils {
             type: OperationType
         ): ContentMessage {
             return when (type) {
-                OperationType.INSTALL -> {
-                    ContentMessage(
-                        title = "Downloading $chartName",
-                        message = "Starting download..."
-                    )
-                }
-
                 OperationType.UPDATE -> {
                     ContentMessage(
                         title = "Updating $chartName",
                         message = "Checking for updates for $chartName..."
+                    )
+                }
+                else -> {
+                    ContentMessage(
+                        title = "Downloading $chartName",
+                        message = "Starting download..."
                     )
                 }
             }
@@ -32,17 +31,16 @@ class ContentMessageUtils {
             type: OperationType
         ): ContentMessage {
             return when (type) {
-                OperationType.INSTALL -> {
-                    ContentMessage(
-                        title = "Downloading $chartName",
-                        message = "Downloading... $progress%..."
-                    )
-                }
-
                 OperationType.UPDATE -> {
                     ContentMessage(
                         title = "Updating $chartName",
                         message = "Updating $progress%..."
+                    )
+                }
+                else -> {
+                    ContentMessage(
+                        title = "Downloading $chartName",
+                        message = "Downloading... $progress%..."
                     )
                 }
             }
@@ -53,17 +51,16 @@ class ContentMessageUtils {
             type: OperationType
         ): ContentMessage {
             return when (type) {
-                OperationType.INSTALL -> {
-                    ContentMessage(
-                        title = "Download complete",
-                        message = "$chartName has been downloaded successfully"
-                    )
-                }
-
                 OperationType.UPDATE -> {
                     ContentMessage(
                         title = "Updated $chartName",
                         message = "Update completed!"
+                    )
+                }
+                else -> {
+                    ContentMessage(
+                        title = "Download complete",
+                        message = "$chartName has been downloaded successfully"
                     )
                 }
             }

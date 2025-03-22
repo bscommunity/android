@@ -67,6 +67,8 @@ class DownloadService : Service() {
             val initialString = getInitialMessage(chartName, operation)
             val finalString = getFinalMessage(chartName, operation)
 
+            Log.d("Operation", operation.toString())
+
             // Start as foreground service with initial notification
             val notification = createNotification(
                 title = initialString.title,
@@ -113,25 +115,29 @@ class DownloadService : Service() {
                         }
                     )
 
+                    Log.d(TAG, "Download complete")
+
                     // Update the chart in the local database
                     localChartRepository.updateChart(
                         chartId,
                         operation
-                    ).collect { result ->
-                        if (result.isSuccess) {
-                            // Send complete event
-                            downloadServiceConnection.sendEvent(DownloadEvent.Complete(chartId))
-
-                            updateNotification(
-                                title = finalString.title,
-                                message = finalString.message,
-                                progress = 100,
-                                isOngoing = false
-                            )
-
-                            Log.d(TAG, finalString.title)
-                            stopSelf()
+                    ).collect { value ->
+                        if (value.isFailure) {
+                            throw value.exceptionOrNull() ?: IllegalStateException("Unknown error")
                         }
+
+                        // Send complete event
+                        downloadServiceConnection.sendEvent(DownloadEvent.Complete(chartId))
+
+                        updateNotification(
+                            title = finalString.title,
+                            message = finalString.message,
+                            progress = 100,
+                            isOngoing = false
+                        )
+
+                        Log.d(TAG, finalString.title)
+                        stopSelf()
                     }
                 } catch (e: Exception) {
                     // Send error event

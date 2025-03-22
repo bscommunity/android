@@ -32,10 +32,21 @@ fun LocalContentSection(
 
     Section(
         title = when (localChartsState) {
-            is LocalChartsState.Success -> "Downloaded (${(localChartsState as LocalChartsState.Success).charts.size})"
-            else -> "Downloaded"
+            is LocalChartsState.Success -> {
+                if (localChartsState.charts.isNotEmpty()) {
+                    "Downloaded (${localChartsState.charts.size})"
+                } else {
+                    null
+                }
+            }
+            else -> null
         },
-        modifier = Modifier.padding(top = 16.dp),
+        thickness = when(localChartsState) {
+            is LocalChartsState.Success -> {
+                if (localChartsState.charts.isNotEmpty()) 1.dp else 0.dp
+            }
+            else -> 0.dp
+        },
     ) {
         // TODO: Implement other content types
         // SegmentedButtonUI()

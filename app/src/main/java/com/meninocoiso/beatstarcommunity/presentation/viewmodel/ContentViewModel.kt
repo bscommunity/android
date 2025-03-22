@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.meninocoiso.beatstarcommunity.data.repository.ChartRepository
 import com.meninocoiso.beatstarcommunity.data.repository.ContentDownloadRepository
 import com.meninocoiso.beatstarcommunity.data.repository.SettingsRepository
+import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.service.DownloadEvent
 import com.meninocoiso.beatstarcommunity.service.DownloadServiceConnection
@@ -131,8 +132,9 @@ class ContentViewModel @Inject constructor(
             try {
                 downloadServiceConnection.startDownload(
                     chartId = chartId,
-                    chartUrl = chart.latestVersion.chartUrl,
-                    chartName = "${chart.track} - ${chart.artist}"
+                    chartUrl = (chart.availableVersion ?: chart.latestVersion).chartUrl,
+                    chartName = "${chart.track} - ${chart.artist}",
+                    isUpdate = chart.availableVersion != null
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to start download", e)
@@ -140,24 +142,6 @@ class ContentViewModel @Inject constructor(
                 emitEvent(DownloadEvent.Error(chartId, "Failed to start download"))
             }
         }
-    }
-
-    fun updateChart(chart: Chart) {
-        val chartId = chart.id
-
-        if (chart.isInstalled == false) return;
-
-        // First, we need to delete the existing chart
-        deleteChart(
-            chart = chart,
-            onSuccess = {
-                // Then, we can download the updated chart
-                downloadChart(chart)
-            },
-            onError = {
-                updateState(chartId, ContentState.Error(chartId, it))
-            }
-        )
     }
 
     // Delete a chart
@@ -169,7 +153,9 @@ class ContentViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching {
                 // Update the chart in local database first
-                val updateResult = localChartRepository.updateChart(chart.id).first()
+                val updateResult = localChartRepository
+                    .updateChart(chart.id, OperationType.DELETE)
+                    .first()
                 updateResult.getOrThrow() // Will throw if update failed
 
                 // Delete the actual chart files

@@ -76,17 +76,39 @@ class ChartRepositoryLocal(
 
     override suspend fun updateChart(
         id: String,
-        operation: OperationType?,
-        availableVersion: Version?
+        operation: OperationType,
     ): Flow<Result<Boolean>> = flow {
+        Log.d("Current chart", chartDao.getChart(id).toString())
+
         try {
-            if (operation == OperationType.UPDATE) {
-                chartDao.updateVersion(id)
-            } else {
-                chartDao.update(id, true, availableVersion)
+            when (operation) {
+                OperationType.INSTALL -> {
+                    Log.d(TAG, "Updating data from chart with id: $id")
+                    chartDao.update(id, true)
+                }
+                OperationType.UPDATE -> {
+                    Log.d(TAG, "Updating chart with id: $id")
+                    chartDao.updateVersion(id)
+                }
+                OperationType.DELETE -> {
+                    Log.d(TAG, "Deleting chart with id: $id")
+                    chartDao.update(id, false)
+                }
             }
 
             Log.d(TAG, "Updated chart with: ${chartDao.getChart(id)}")
+
+            emit(Result.success(true))
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }.flowOn(dispatcher)
+
+    override suspend fun updateCharts(charts: List<Chart>): Flow<Result<Boolean>> = flow {
+        try {
+            chartDao.update(charts)
+
+            // Log.d(TAG, "Updated charts: ${chartDao.getAll()}")
 
             emit(Result.success(true))
         } catch (e: Exception) {
