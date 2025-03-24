@@ -52,6 +52,7 @@ fun ChartContributors(authors: List<Contributor>) {
 			isExpanded,
 			label = "credits_transition"
 		) { targetState ->
+
 			if (!targetState) {
 				CollapsedContributors(
 					authors,
@@ -144,20 +145,22 @@ private fun CollapsedContributors(
 				with(sharedTransitionScope) {
 					Row(horizontalArrangement = Arrangement.spacedBy((-16).dp)) {
 						for (author in users) {
+							println("id from collapsed: ${author.username} ${author.id}")
 							Avatar(
 								modifier = Modifier.sharedElement(
-									rememberSharedContentState(key = "avatar-${author.username}"),
+									rememberSharedContentState(key = author.id),
 									animatedVisibilityScope = animatedVisibilityScope
 								),
-								url = author.imageUrl ?: author.username.first().toString(),
-								key = "avatar-${author.username}",
+								// key = "avatar-${author.username}",
+								url = author.imageUrl,
+								alt = author.username.first().toString(),
 								size = 48.dp
 							)
 						}
 					}
 					Column {
 						Text(
-							modifier = Modifier.sharedElement(
+							modifier = Modifier.sharedBounds(
 								rememberSharedContentState(key = "credits-title"),
 								animatedVisibilityScope = animatedVisibilityScope
 							),
@@ -180,7 +183,6 @@ private fun CollapsedContributors(
 				}
 			}
 		}) {
-
 	}
 }
 
@@ -200,7 +202,7 @@ private fun ExpandedContributors(
 			with(sharedTransitionScope) {
 				Column {
 					Text(
-						modifier = Modifier.sharedElement(
+						modifier = Modifier.sharedBounds(
 							rememberSharedContentState(key = "credits-title"),
 							animatedVisibilityScope = animatedVisibilityScope
 						),
@@ -229,13 +231,15 @@ private fun ExpandedContributors(
 					horizontalArrangement = Arrangement.spacedBy(16.dp),
 					verticalAlignment = Alignment.CenterVertically
 				) {
+					println("id from expanded: ${author.user.username} ${author.user.id}")
 					with(sharedTransitionScope) {
 						Avatar(
-							url = author.user.imageUrl ?: author.user.username.first().toString(),
-							key = "avatar-${author.user.username}",
+							url = author.user.imageUrl,
+							alt = author.user.username.first().toString(),
+							// key = "avatar-${author.user.username}",
 							size = 32.dp,
 							modifier = Modifier.sharedElement(
-								rememberSharedContentState(key = "avatar-${author.user.username}"),
+								rememberSharedContentState(key = author.user.id),
 								animatedVisibilityScope = animatedVisibilityScope
 							)
 						)

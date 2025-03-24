@@ -49,4 +49,7 @@ interface ChartDao {
 
     @Delete
     fun delete(chart: Chart)
+
+    @Delete
+    fun delete(charts: List<Chart>)
 }

@@ -15,9 +15,9 @@ class ChartRepositoryRemote @Inject constructor(
     private val apiClient: ApiClient,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ChartRepository {
-    override suspend fun getCharts(): Flow<Result<List<Chart>>> = flow {
+    override suspend fun getCharts(query: String?): Flow<Result<List<Chart>>> = flow {
         try {
-            val charts = apiClient.getCharts()
+            val charts = apiClient.getCharts(query)
             emit(Result.success(charts))
         } catch (e: Exception) {
             emit(Result.failure(e))
@@ -60,6 +60,10 @@ class ChartRepositoryRemote @Inject constructor(
     }
 
     override suspend fun deleteChart(chart: Chart): Flow<Result<Boolean>> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun deleteCharts(charts: List<Chart>): Flow<Result<Boolean>> {
         TODO("Not yet implemented")
     }
 

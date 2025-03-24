@@ -28,8 +28,8 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Secti
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.SectionWrapper
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.fabScrollObserver
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.shimmerLoading
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ChartsState
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentViewModel
-import com.meninocoiso.beatstarcommunity.presentation.viewmodel.UpdatesState
 import com.meninocoiso.beatstarcommunity.service.DownloadEvent
 
 private object SectionWrapperDefaults {
@@ -40,7 +40,7 @@ private object SectionWrapperDefaults {
 
 @Composable
 fun UpdatesSection(
-    updatesState: UpdatesState,
+    updatesState: ChartsState,
     onFetchUpdates: (chartToRemove: String?) -> Unit,
     onLocalContentUpdate: () -> Unit,
     onSnackbar: (String) -> Unit,
@@ -64,7 +64,7 @@ fun UpdatesSection(
 
     Section(
         title = when (updatesState) {
-            is UpdatesState.Success -> {
+            is ChartsState.Success -> {
                 if (updatesState.charts.isNotEmpty()) {
                     "Updates available (${updatesState.charts.size})"
                 } else {
@@ -78,7 +78,7 @@ fun UpdatesSection(
         modifier = Modifier.padding(bottom = 16.dp)
     ) {
         when (updatesState) {
-            is UpdatesState.Error -> {
+            is ChartsState.Error -> {
                 UpdatesPanel {
                     StatusMessageUI(
                         title = "We couldn't fetch updates...",
@@ -89,7 +89,7 @@ fun UpdatesSection(
                     )
                 }
             }
-            is UpdatesState.Loading -> {
+            is ChartsState.Loading -> {
                 UpdatesPanel {
                     Box(
                         modifier = Modifier
@@ -106,7 +106,7 @@ fun UpdatesSection(
                     )
                 }
             }
-            is UpdatesState.Success -> {
+            is ChartsState.Success -> {
                 val chartsList = updatesState.charts
                 if (chartsList.isEmpty()) {
                     UpdatesPanel {
@@ -137,6 +137,6 @@ fun UpdatesSection(
                 }
             }
         }
-        UpdatesButton(updatesState = updatesState, onFetchUpdates = onFetchUpdates)
+        UpdatesButton(state = updatesState, onFetchUpdates = onFetchUpdates)
     }
 }

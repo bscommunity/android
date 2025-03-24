@@ -15,4 +15,5 @@ val difficultiesList = listOf(
 	Difficulty(DifficultyEnum.Normal, "Normal"),
 	Difficulty(DifficultyEnum.Hard, "Hard", R.drawable.hard),
 	Difficulty(DifficultyEnum.Extreme, "Extreme", R.drawable.extreme),
+	Difficulty(DifficultyEnum.Expert, "Expert"),
 )

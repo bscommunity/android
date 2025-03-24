@@ -4,8 +4,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -14,7 +12,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.beatstarcommunity.presentation.screens.details.OnNavigateToDetails
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.local.LocalContentSection
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.updates.UpdatesSection
-import com.meninocoiso.beatstarcommunity.presentation.viewmodel.LocalChartsState
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ChartsState
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.UpdatesViewModel
 
 @Composable
@@ -25,31 +23,34 @@ internal fun WorkshopSection(
     onFabStateChange: (Boolean) -> Unit,
     nestedScrollConnection: NestedScrollConnection,
 ) {
-    val updatesState by viewModel.updatesState.collectAsState()
-    val localChartsState by viewModel.localChartsState.collectAsStateWithLifecycle()
-
-    LaunchedEffect(Unit) {
-        // Update local charts if needed
-        if (localChartsState is LocalChartsState.Success) {
-            viewModel.loadLocalCharts()
-        }
-    }
+    // Collect the direct flows as states
+    val updatesCharts by viewModel.updatesAvailable.collectAsStateWithLifecycle(initialValue = emptyList())
+    val localCharts by viewModel.localCharts.collectAsStateWithLifecycle(initialValue = emptyList())
 
     Column(
-        modifier = Modifier.padding(top = 24.dp).fillMaxSize()
+        modifier = Modifier
+            .padding(top = 24.dp)
+            .fillMaxSize()
     ) {
-        if (localChartsState is LocalChartsState.Success && (localChartsState as LocalChartsState.Success).charts.isNotEmpty()) {
+        if (localCharts.isNotEmpty()) {
+            // Convert the list to a ChartsState for compatibility with existing components
+            val updatesState = ChartsState.Success(updatesCharts)
+
             UpdatesSection(
                 updatesState = updatesState,
-                onFetchUpdates = {
-                    viewModel.fetchUpdates(null, it)
+                onFetchUpdates = { chartToRemove ->
+                    viewModel.checkForUpdates()
                 },
-                onLocalContentUpdate = { viewModel.loadLocalCharts() },
+                onLocalContentUpdate = { /*viewModel.refresh()*/ },
                 onSnackbar = onSnackbar,
                 onFabStateChange = onFabStateChange,
                 nestedScrollConnection = nestedScrollConnection,
             )
         }
+
+        // Convert the list to a ChartsState for compatibility with existing components
+        val localChartsState = ChartsState.Success(localCharts)
+
         LocalContentSection(
             localChartsState = localChartsState,
             onNavigateToDetails = onNavigateToDetails,

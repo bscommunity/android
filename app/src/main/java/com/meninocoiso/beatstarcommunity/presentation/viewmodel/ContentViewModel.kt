@@ -33,7 +33,7 @@ sealed class ContentState {
     data class Downloading(val chartId: String, val progress: Float) : ContentState()
     data class Extracting(val chartId: String, val progress: Float) : ContentState()
     data class Error(val chartId: String, val message: String) : ContentState()
-    data class Installed(val chartId: String) : ContentState()
+    data class Installed(val chartId: String, val updateAvailable: Boolean? = false) : ContentState()
 }
 
 private const val TAG = "ContentViewModel"
@@ -66,6 +66,19 @@ class ContentViewModel @Inject constructor(
                 handleDownloadEvent(event)
             }
         }
+    }
+
+    fun checkStatus(chart: Chart) {
+        val isInstalled = chart.isInstalled == true
+        val hasUpdateAvailable = chart.availableVersion != null
+
+        val state = if (isInstalled) {
+            ContentState.Installed(chart.id, hasUpdateAvailable)
+        } else {
+            ContentState.Idle
+        }
+
+        updateState(chart.id, state)
     }
 
     private fun handleDownloadEvent(event: DownloadEvent) {
@@ -105,22 +118,6 @@ class ContentViewModel @Inject constructor(
         }
     }
 
-    fun checkInstallationStatus(chartId: String) {
-        /*val state = if (chart.isInstalled == true) {
-            ContentState.Installed(chart.id)
-        } else {
-            ContentState.Idle
-        }*/
-        viewModelScope.launch {
-            val state = localChartRepository.getChart(chartId).first().getOrNull()?.let { chart ->
-                if (chart.isInstalled == true) ContentState.Installed(chartId) else ContentState.Idle
-            } ?: ContentState.Idle
-
-            updateState(chartId, state)
-        }
-    }
-
-    // Download a chart - with proper error handling
     fun downloadChart(chart: Chart) {
         val chartId = chart.id
 
@@ -144,7 +141,6 @@ class ContentViewModel @Inject constructor(
         }
     }
 
-    // Delete a chart
     fun deleteChart(
         chart: Chart,
         onSuccess: () -> Unit,

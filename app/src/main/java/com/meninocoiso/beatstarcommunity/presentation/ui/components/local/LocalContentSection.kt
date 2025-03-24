@@ -18,11 +18,11 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.LocalC
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.SectionWrapper
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.fabScrollObserver
-import com.meninocoiso.beatstarcommunity.presentation.viewmodel.LocalChartsState
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ChartsState
 
 @Composable
 fun LocalContentSection(
-    localChartsState: LocalChartsState,
+    localChartsState: ChartsState,
     onNavigateToDetails: (Chart) -> Unit,
     onFabStateChange: (Boolean) -> Unit,
     nestedScrollConnection: NestedScrollConnection,
@@ -32,7 +32,7 @@ fun LocalContentSection(
 
     Section(
         title = when (localChartsState) {
-            is LocalChartsState.Success -> {
+            is ChartsState.Success -> {
                 if (localChartsState.charts.isNotEmpty()) {
                     "Downloaded (${localChartsState.charts.size})"
                 } else {
@@ -42,7 +42,7 @@ fun LocalContentSection(
             else -> null
         },
         thickness = when(localChartsState) {
-            is LocalChartsState.Success -> {
+            is ChartsState.Success -> {
                 if (localChartsState.charts.isNotEmpty()) 1.dp else 0.dp
             }
             else -> 0.dp
@@ -52,7 +52,7 @@ fun LocalContentSection(
         // SegmentedButtonUI()
 
         when (localChartsState) {
-            is LocalChartsState.Loading -> {
+            is ChartsState.Loading -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -60,7 +60,7 @@ fun LocalContentSection(
                     CircularProgressIndicator(modifier = Modifier.padding(16.dp))
                 }
             }
-            is LocalChartsState.Error -> {
+            is ChartsState.Error -> {
                 StatusMessageUI(
                     modifier = Modifier.fillMaxSize(),
                     title = "Looks like something went wrong...",
@@ -68,7 +68,7 @@ fun LocalContentSection(
                     icon = R.drawable.rounded_hourglass_disabled_24
                 )
             }
-            is LocalChartsState.Success -> {
+            is ChartsState.Success -> {
                 val chartsList = localChartsState.charts
                 if (chartsList.isEmpty()) {
                     StatusMessageUI(

@@ -8,7 +8,7 @@ interface ApiClient {
     suspend fun getUsers(): List<User>
     suspend fun getUser(id: String): User
     suspend fun getChart(id: String): Chart
-    suspend fun getCharts(): List<Chart>
+    suspend fun getCharts(query: String? = null): List<Chart>
     suspend fun getChartsById(ids: List<String>): List<Chart>
     suspend fun getLatestVersionsByChartIds(ids: List<String>): List<Version>
 }

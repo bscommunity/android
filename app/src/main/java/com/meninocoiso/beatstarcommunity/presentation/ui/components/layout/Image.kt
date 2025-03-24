@@ -3,6 +3,7 @@ package com.meninocoiso.beatstarcommunity.presentation.ui.components.layout
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -23,12 +24,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import coil.ImageLoader
-import coil.request.ImageRequest
+import coil3.compose.AsyncImage
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.domain.enums.DifficultyEnum
 import com.meninocoiso.beatstarcommunity.domain.lists.difficultiesList
 import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil.CoilImage
+import com.skydoves.landscapist.coil3.CoilImage
 import com.skydoves.landscapist.components.rememberImageComponent
 import com.skydoves.landscapist.placeholder.shimmer.Shimmer
 import com.skydoves.landscapist.placeholder.shimmer.ShimmerPlugin
@@ -51,6 +52,7 @@ fun imageLoaderSingleton(): ImageLoader {
 @Composable
 fun CoverArt(
     difficulty: DifficultyEnum? = null,
+    isInstalled: Boolean? = null,
     borderRadius: Dp = 0.dp,
     size: Dp = 76.dp,
     url: String
@@ -108,6 +110,21 @@ fun CoverArt(
                     .size(40.dp),
                 contentAlignment = Alignment.BottomEnd
             ) {
+                if (isInstalled != null && isInstalled == true) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.rounded_download_24),
+                            contentDescription = "Already downloaded chart indicator",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .size(40.dp),
+                        )
+                    }
+                }
                 Icon(
                     painter = painterResource(id = R.drawable.corner),
                     contentDescription = "Corner for chart song cover art",
@@ -129,65 +146,41 @@ fun CoverArt(
 
 @Composable
 fun Avatar(
-    modifier: Modifier? = Modifier,
+    modifier: Modifier = Modifier,
     size: Dp = 18.dp,
-    url: String,
-    key: String? = null
+    url: String? = null,
+    alt: String
 ) {
-    val context = LocalContext.current
-    val pixelSize = with(LocalDensity.current) { size.toPx() }.toInt()
-
-    val customModifier = (modifier ?: Modifier)
-		.size(size)
-		.clip(CircleShape)
-
-    val imageOptions = ImageOptions(
-        contentScale = ContentScale.Fit,
-        alignment = Alignment.Center,
-        requestSize = IntSize(
-            pixelSize,
-            pixelSize
+    if (url != null) {
+        AsyncImage(
+            model = url,
+            contentDescription = null,
+            modifier = modifier
+                .size(size)
+                .clip(CircleShape),
+            contentScale = ContentScale.Fit,
+            alignment = Alignment.Center,
         )
-    )
-
-    if (!url.contains("https")) {
-        Box(
-            modifier = Modifier
-				.size(size)
-				.clip(CircleShape)
-				.background(MaterialTheme.colorScheme.surfaceContainerHigh),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = url.first().toString().uppercase(Locale.getDefault()),
-                style = (size > 24.dp).let {
-                    if (it) MaterialTheme.typography.titleMedium
-                    else MaterialTheme.typography.labelSmall
-                },
-            )
-        }
     } else {
-        if (key != null) {
-            CoilImage(
-                imageRequest = {
-                    ImageRequest.Builder(context)
-                        .data(url)
-                        .allowHardware(false) // Disable hardware bitmaps for shared transitions
-                        .crossfade(true)
-                        .placeholderMemoryCacheKey(key) // Use the same key for caching
-                        .memoryCacheKey(key)
-                        .build()
-                },
-                imageLoader = { imageLoaderSingleton() },
-                modifier = customModifier,
-                imageOptions = imageOptions,
-            )
-        } else {
-            CoilImage(
-                imageModel = { url },
-                modifier = customModifier,
-                imageOptions = imageOptions,
-            )
-        }
+        AvatarPlaceholder(size = size, alt = alt)
+    }
+}
+
+@Composable
+fun AvatarPlaceholder(size: Dp = 18.dp, alt: String) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = alt.uppercase(Locale.getDefault()),
+            style = (size > 24.dp).let {
+                if (it) MaterialTheme.typography.titleMedium
+                else MaterialTheme.typography.labelSmall
+            },
+        )
     }
 }

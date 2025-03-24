@@ -23,8 +23,7 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessag
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartPreview
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.SectionWrapper
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.fabScrollObserver
-import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ChartViewModel
-import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ChartsState
+import com.meninocoiso.beatstarcommunity.presentation.viewmodel.WorkshopViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,75 +32,68 @@ internal fun ChartsSection(
     onNavigateToDetails: OnNavigateToDetails,
     onFabStateChange: (Boolean) -> Unit,
     onSnackbar: (String) -> Unit,
-    viewModel: ChartViewModel = hiltViewModel()
+    viewModel: WorkshopViewModel = hiltViewModel()
 ) {
-    val chartsState by viewModel.charts.collectAsStateWithLifecycle()
+    val charts by viewModel.charts.collectAsStateWithLifecycle(initialValue = emptyList())
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
 
-    // Extract charts from the current state
-    val charts = when (chartsState) {
-        is ChartsState.Success -> (chartsState as ChartsState.Success).charts
-        is ChartsState.Loading -> (chartsState as ChartsState.Loading).previousCharts
-        is ChartsState.Error -> (chartsState as ChartsState.Error).previousCharts
-    } ?: emptyList()
-
-    // Show error message if in error state
-    LaunchedEffect(chartsState) {
-        if (chartsState is ChartsState.Error) {
+    // Collect events for snackbar
+    LaunchedEffect(error) {
+        error?.let { errorMessage ->
             if (charts.isNotEmpty()) {
-                onSnackbar("Failed to fetch new data")
+                onSnackbar(errorMessage)
             }
         }
     }
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.TopCenter,
-    ) {
-        // Show different UI based on whether we have charts to display
-        if (charts.isEmpty()) {
-            // Empty state - show loading or error
-            when (chartsState) {
-                is ChartsState.Loading -> {
-                    Box(Modifier.fillMaxSize(), Alignment.Center) {
-                        CircularProgressIndicator(Modifier.width(36.dp))
-                    }
+    // If no charts and loading, show loading indicator
+    if (charts.isEmpty()) {
+        when {
+            isLoading -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(Modifier.width(36.dp))
                 }
-
-                is ChartsState.Error -> {
-                    StatusMessageUI(
-                        title = "Looks like something went wrong...",
-                        message = "Please check your connection and try again",
-                        icon = R.drawable.rounded_emergency_home_24,
-                        onClick = { viewModel.refresh() },
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-
-                else -> {}
             }
-        } else {
-            // We have charts to display - show them with pull-to-refresh
-            PullToRefreshBox(
-                isRefreshing = chartsState is ChartsState.Loading,
-                onRefresh = { viewModel.refresh() }
-            ) {
-                SectionWrapper(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .nestedScroll(nestedScrollConnection)
-                        .fabScrollObserver { shouldExtend ->
-                            // Update FAB state based on scroll delta
-                            onFabStateChange(shouldExtend)
-                        },
-                ) {
-                    items(charts) { chart ->
-                        ChartPreview(
-                            chart = chart,
-                            onNavigateToDetails = {
-                                onNavigateToDetails(chart)
-                            },
-                        )
+            error != null -> {
+                StatusMessageUI(
+                    title = "Looks like something went wrong...",
+                    message = error ?: "Unknown error",
+                    icon = R.drawable.rounded_emergency_home_24,
+                    onClick = { viewModel.refresh() },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            else -> {
+                StatusMessageUI(
+                    title = "No charts available",
+                    message = "Pull to refresh or check your connection",
+                    icon = R.drawable.rounded_emergency_home_24,
+                    onClick = { viewModel.refresh() },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+    } else {
+        PullToRefreshBox(
+            isRefreshing = isLoading,
+            onRefresh = { viewModel.refresh() }
+        ) {
+            SectionWrapper(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(nestedScrollConnection)
+                    .fabScrollObserver { shouldExtend ->
+                        onFabStateChange(shouldExtend)
                     }
+            ) {
+                items(charts) { chart ->
+                    ChartPreview(
+                        chart = chart,
+                        onNavigateToDetails = {
+                            onNavigateToDetails(chart)
+                        }
+                    )
                 }
             }
         }
