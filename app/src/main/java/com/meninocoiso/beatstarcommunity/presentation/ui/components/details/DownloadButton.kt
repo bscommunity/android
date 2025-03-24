@@ -83,10 +83,19 @@ fun DownloadButton(
                     modifier = Modifier.size(16.dp),
                     strokeWidth = 2.dp
                 )
-                is ContentState.Installed -> Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = "Download complete"
-                )
+                is ContentState.Installed -> {
+                    if (chart.availableVersion != null) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.rounded_download_24),
+                            contentDescription = "Update chart"
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Download complete"
+                        )
+                    }
+                }
                 is ContentState.Error -> Icon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = "Download failed"
@@ -97,7 +106,13 @@ fun DownloadButton(
                     is ContentState.Idle -> "Download"
                     is ContentState.Downloading -> "Downloading..."
                     is ContentState.Extracting -> "Extracting..."
-                    is ContentState.Installed -> "Installed"
+                    is ContentState.Installed -> {
+                        if (chart.availableVersion != null) {
+                            "Update available"
+                        } else {
+                            "Installed"
+                        }
+                    }
                     is ContentState.Error -> "Try again"
                 }
             )

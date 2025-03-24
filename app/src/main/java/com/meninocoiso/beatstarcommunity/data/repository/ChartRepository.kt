@@ -6,7 +6,7 @@ import com.meninocoiso.beatstarcommunity.domain.model.Version
 import kotlinx.coroutines.flow.Flow
 
 interface ChartRepository {
-    suspend fun getCharts(): Flow<Result<List<Chart>>>
+    suspend fun getCharts(query: String? = null): Flow<Result<List<Chart>>>
     suspend fun getChartsById(ids: List<String>): Flow<Result<List<Chart>>>
     suspend fun getLatestVersionsByChartIds(ids: List<String>): Flow<Result<List<Version>>>
     suspend fun getChart(id: String): Flow<Result<Chart>>
@@ -19,4 +19,5 @@ interface ChartRepository {
         operation: OperationType = OperationType.INSTALL,
     ): Flow<Result<Boolean>>
     suspend fun deleteChart(chart: Chart): Flow<Result<Boolean>>
+    suspend fun deleteCharts(charts: List<Chart>): Flow<Result<Boolean>>
 }

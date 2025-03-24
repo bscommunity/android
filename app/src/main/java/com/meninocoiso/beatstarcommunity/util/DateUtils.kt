@@ -8,6 +8,14 @@ class DateUtils {
 			val now = LocalDate.now()
 			val diff = now.toEpochDay() - date.toEpochDay() // days
 
+			if (diff < 1) { // today
+				return "today"
+			}
+
+			if (diff < 2) { // yesterday
+				return "yesterday"
+			}
+
 			// days
 			if (diff < 7) { // 7 days
 				return "$diff days ago"

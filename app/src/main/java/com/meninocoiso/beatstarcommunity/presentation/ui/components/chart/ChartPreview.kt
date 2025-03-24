@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -59,7 +60,11 @@ fun ChartAuthors(
 			) {
 				Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
 					for (author in authors) {
-						Avatar(url = author.user.imageUrl ?: author.user.username, size = avatarSize)
+						Avatar(
+							url = author.user.imageUrl,
+							alt = author.user.username.first().toString(),
+							size = avatarSize
+						)
 					}
 				}
 				Text(
@@ -104,6 +109,9 @@ fun ChartPreview(
 	Box(
 		modifier = (modifier ?: Modifier)
 			.fillMaxWidth()
+			.graphicsLayer {
+				alpha = if (chart.isInstalled == true) 0.5f else 1f
+			}
 			.clickable(onClick = onNavigateToDetails)
 	) {
 		Row(
@@ -112,7 +120,7 @@ fun ChartPreview(
 				.fillMaxWidth(),
 			horizontalArrangement = Arrangement.spacedBy(16.dp)
 		) {
-			CoverArt(difficulty = chart.difficulty, url = chart.coverUrl)
+			CoverArt(difficulty = chart.difficulty, url = chart.coverUrl, isInstalled = chart.isInstalled)
 			Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
 				Column {
 					FlowRow(

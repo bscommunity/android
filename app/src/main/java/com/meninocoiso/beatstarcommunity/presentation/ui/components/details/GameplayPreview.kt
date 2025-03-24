@@ -11,7 +11,6 @@ import android.webkit.WebViewClient
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -27,7 +26,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import androidx.core.net.toUri
 import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil.CoilImage
+import com.skydoves.landscapist.coil3.CoilImage
 import com.skydoves.landscapist.placeholder.shimmer.Shimmer
 import com.skydoves.landscapist.placeholder.shimmer.ShimmerContainer
 
@@ -170,7 +169,7 @@ fun GameplayPreview(
                     modifier = Modifier.fillMaxSize().zIndex(2f),
                     shimmer = Shimmer.Resonate(
                         baseColor = Color.Transparent,
-                        highlightColor = MaterialTheme.colorScheme.onSurface
+                        highlightColor = Color(0xFF1A1C15)
                     )
                 )
                 CoilImage(

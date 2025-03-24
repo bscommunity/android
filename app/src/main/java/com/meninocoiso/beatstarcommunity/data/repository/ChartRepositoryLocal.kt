@@ -17,7 +17,7 @@ class ChartRepositoryLocal(
     private val chartDao: ChartDao,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ChartRepository {
-    override suspend fun getCharts(): Flow<Result<List<Chart>>> = flow {
+    override suspend fun getCharts(query: String?): Flow<Result<List<Chart>>> = flow {
         try {
             emit(Result.success(chartDao.getAll()))
         } catch (e: Exception) {
@@ -57,7 +57,7 @@ class ChartRepositoryLocal(
         try {
             chartDao.insert(charts)
 
-            Log.d(TAG, "Charts after insertion: ${chartDao.getAll()}")
+            // Log.d(TAG, "Charts after insertion: ${chartDao.getAll()}")
 
             emit(Result.success(true))
         } catch (e: Exception) {
@@ -119,6 +119,14 @@ class ChartRepositoryLocal(
     override suspend fun deleteChart(chart: Chart): Flow<Result<Boolean>> = flow<Result<Boolean>> {
         try {
             chartDao.delete(chart)
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }.flowOn(dispatcher)
+
+    override suspend fun deleteCharts(charts: List<Chart>): Flow<Result<Boolean>> = flow<Result<Boolean>> {
+        try {
+            chartDao.delete(charts)
         } catch (e: Exception) {
             emit(Result.failure(e))
         }

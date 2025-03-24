@@ -50,10 +50,11 @@ class KtorApiClient @Inject constructor() : ApiClient {
         return client.get("charts/$id").body()
     }
 
-    override suspend fun getCharts(): List<Chart> {
+    override suspend fun getCharts(query: String?): List<Chart> {
         return client.get("charts"){
             url {
                 parameters.append("fetchContributors", "true")
+                query?.let { parameters.append("query", it) }
             }
         }.body()
     }

@@ -48,6 +48,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.TestCarousel
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartContributors
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.DownloadButton
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.StatListItem
@@ -104,13 +105,11 @@ fun ChartDetailsScreen(
     var isMoreOptionsExpanded by remember { mutableStateOf(false) }
     val dialogs = remember { DialogState() }
 
-    // Check installation status only once
-    LaunchedEffect(chart.id) {
-        contentViewModel.checkInstallationStatus(chart.id)
-    }
-
     // Manage download events
     LaunchedEffect(Unit) {
+        // Check status on first load
+        contentViewModel.checkStatus(chart)
+
         contentViewModel.events.collect { event ->
             when (event) {
                 is DownloadEvent.Complete ->
@@ -301,7 +300,7 @@ fun ChartDetailsScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Media carousel
-            // TestCarousel()
+            TestCarousel()
 
             // Credits
             ChartContributors(chart.contributors)
@@ -353,7 +352,7 @@ fun ChartDetailsScreen(
                         } else {
                             chart.latestVersion.knownIssues.forEach {
                                 Text(
-                                    text = "•   $it",
+                                    text = "•   ${it.description}",
                                     style = MaterialTheme.typography.bodyLarge
                                 )
                             }

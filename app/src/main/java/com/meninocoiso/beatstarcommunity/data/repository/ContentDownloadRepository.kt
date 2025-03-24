@@ -8,7 +8,7 @@ import javax.inject.Singleton
 
 private const val TAG = "ContentDownloadRepository"
 
-private const val PLACEHOLDER_FILE_URL = "https://cdn.discordapp.com/attachments/954166390619783268/1349951501443010642/Eple.zip?ex=67dedb0e&is=67dd898e&hm=a674ef3e4a114f1562dbf921c043cf6e9fb9320a0521d7afc2229919c57b9126&"
+private const val PLACEHOLDER_FILE_URL = "https://cdn.discordapp.com/attachments/954166390619783268/1350359219894747136/callmethebreeze.zip?ex=67e25106&is=67e0ff86&hm=963124e1fa08a08493e3404fb060b8631a66b9fa61aa15e45cf53a69f6ec2216&"
 
 @Singleton
 class ContentDownloadRepository @Inject constructor(

@@ -11,11 +11,12 @@ import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.GameplayPreview
 import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil.CoilImage
+import com.skydoves.landscapist.coil3.CoilImage
 import com.skydoves.landscapist.components.rememberImageComponent
 import com.skydoves.landscapist.placeholder.shimmer.Shimmer
 import com.skydoves.landscapist.placeholder.shimmer.ShimmerPlugin
@@ -65,8 +66,8 @@ fun TestCarousel() {
 						component = rememberImageComponent {
 							+ShimmerPlugin(
 								Shimmer.Resonate(
-									baseColor = MaterialTheme.colorScheme.surfaceContainerLow,
-									highlightColor = MaterialTheme.colorScheme.surfaceContainerHighest
+									baseColor = Color(0xFFF4F4E8),
+									highlightColor = Color(0xFFE9E9DD)
 								)
 							)
 						},

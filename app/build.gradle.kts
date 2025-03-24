@@ -79,8 +79,6 @@ dependencies {
 	implementation(libs.androidx.ui.graphics)
 	implementation(libs.androidx.ui.tooling.preview)
 	implementation(libs.androidx.material3)
-	implementation(libs.landscapist.coil)
-	implementation(libs.landscapist.placeholder)
 	implementation(libs.material)
 	implementation(libs.androidx.constraintlayout.compose)
 	implementation(libs.androidx.datastore.preferences)
@@ -104,6 +102,12 @@ dependencies {
 	implementation(libs.ktor.serialization.kotlinx.json)
 	implementation(libs.kotlinx.serialization.json)
 	implementation(libs.navigation.compose)
+
+	// Image
+	implementation(libs.coil.compose)
+	implementation(libs.coil.network.okhttp)
+	implementation(libs.landscapist.coil)
+	implementation(libs.landscapist.placeholder)
 
 	// Room (local database)
 	implementation(libs.androidx.room.runtime)
