@@ -2,7 +2,11 @@ package com.meninocoiso.beatstarcommunity.data.repository
 
 import android.content.res.Resources.NotFoundException
 import androidx.core.net.toUri
+import com.meninocoiso.beatstarcommunity.data.manager.ChartManager
+import com.meninocoiso.beatstarcommunity.data.manager.ChartResult
+import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
 import com.meninocoiso.beatstarcommunity.util.DownloadUtils
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -13,6 +17,7 @@ private const val PLACEHOLDER_FILE_URL = "https://cdn.discordapp.com/attachments
 @Singleton
 class DownloadRepository @Inject constructor(
     private val downloadUtils: DownloadUtils,
+    private val chartManager: ChartManager,
     private val settingsRepository: SettingsRepository,
 ) {
     /**
@@ -24,12 +29,14 @@ class DownloadRepository @Inject constructor(
      */
     suspend fun downloadChart(
         url: String,
-        folderName: String,
+        chartId: String,
         onDownloadProgress: (Float) -> Unit = {},
         onExtractProgress: (Float) -> Unit = {}
     ) {
         val folderUri = settingsRepository.getFolderUri()?.toUri()
             ?: throw IllegalStateException("Could not access or create beatstar folder")
+
+        val folderName = getChartFolderName(chartId)
 
         // Download the zip file to cache
         val downloadedFile = downloadUtils.downloadFileToCache(
@@ -50,6 +57,13 @@ class DownloadRepository @Inject constructor(
 
         // Clean up temporary files
         downloadedFile.delete()
+
+        // Update the chart list
+        chartManager.updateChart(chartId, OperationType.INSTALL).first().let {
+            if (it is ChartResult.Error) {
+                throw Error(it.message)
+            }
+        }
     }
 
     suspend fun deleteChart(chartId: String) {
@@ -66,9 +80,16 @@ class DownloadRepository @Inject constructor(
         } catch (e: NotFoundException) {
             // Folder does not exist, nothing to delete
         }
+
+        // Update the chart list
+        chartManager.updateChart(chartId, OperationType.DELETE).first().let {
+            if (it is ChartResult.Error) {
+                throw Error(it.message)
+            }
+        }
     }
 
-    fun getChartFolderName(chartId: String): String {
+    private fun getChartFolderName(chartId: String): String {
         return chartId.split("-").first()
     }
 }

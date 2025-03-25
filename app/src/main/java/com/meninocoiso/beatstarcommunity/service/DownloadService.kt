@@ -10,7 +10,6 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.data.manager.ChartManager
-import com.meninocoiso.beatstarcommunity.data.manager.ChartResult
 import com.meninocoiso.beatstarcommunity.data.repository.DownloadRepository
 import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
 import com.meninocoiso.beatstarcommunity.util.ContentMessageUtils.Companion.getFinalMessage
@@ -21,7 +20,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -85,7 +83,7 @@ class DownloadService : Service() {
                     // Perform the download
                     downloadRepository.downloadChart(
                         chartUrl,
-                        downloadRepository.getChartFolderName(chartId),
+                        chartId,
                         onDownloadProgress = { progress ->
                             // Send progress event
                             serviceScope.launch {
@@ -126,35 +124,18 @@ class DownloadService : Service() {
                         }
                     )
 
-                    Log.d(TAG, "Download complete")
+                    // Send complete event
+                    downloadServiceConnection.sendEvent(DownloadEvent.Complete(chartId))
 
-                    // Update the chart in memory and local database
-                    chartManager.updateChart(
-                        chartId,
-                        operation
+                    updateNotification(
+                        title = finalString.title,
+                        message = finalString.message,
+                        progress = 100,
+                        isOngoing = false
                     )
-                        .first()
-                        .let { value ->
-                            Log.d(TAG, "Updated chart: $value")
 
-                            if (value is ChartResult.Error) {
-                                Log.d(TAG, "Error: ${value.message}, caused by ${value.cause}")
-                                throw Error(value.message)
-                            }
-
-                            // Send complete event
-                            downloadServiceConnection.sendEvent(DownloadEvent.Complete(chartId))
-
-                            updateNotification(
-                                title = finalString.title,
-                                message = finalString.message,
-                                progress = 100,
-                                isOngoing = false
-                            )
-
-                            Log.d(TAG, finalString.title)
-                            stopSelf()
-                        }
+                    Log.d(TAG, finalString.title)
+                    stopSelf()
                 } catch (e: Exception) {
                     // Send error event
                     serviceScope.launch {

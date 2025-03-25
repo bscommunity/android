@@ -43,6 +43,8 @@ class WorkshopViewModel @Inject constructor(
             // Subscribe to workshop charts flow for any updates
             chartManager.workshopCharts.collect { latestCharts ->
                 // Only update if we're in success state to avoid overriding error/loading states
+
+                // TODO: If we're in error state, it doesn't update
                 if (_charts.value is ChartsState.Success) {
                     _charts.value = ChartsState.Success(latestCharts)
                 }
@@ -82,13 +84,13 @@ class WorkshopViewModel @Inject constructor(
                             is ChartsState.Loading -> currentState.charts
                         }
 
-                        _charts.value = ChartsState.Error(
-                            charts = charts,
-                            message = result.message
-                        )
-
                         if (charts.isNotEmpty()) {
                             _events.emit(FetchEvent.Error(result.message))
+                        } else {
+                            _charts.value = ChartsState.Error(
+                                charts = charts,
+                                message = result.message
+                            )
                         }
                     }
                     ChartResult.Loading -> {
