@@ -12,13 +12,13 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
+import com.meninocoiso.beatstarcommunity.data.manager.ChartsState
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.LocalChartPreview
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.SectionWrapper
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.fabScrollObserver
-import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ChartsState
 
 @Composable
 fun LocalContentSection(

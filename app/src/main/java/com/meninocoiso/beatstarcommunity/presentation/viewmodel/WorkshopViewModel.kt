@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.beatstarcommunity.data.manager.ChartManager
 import com.meninocoiso.beatstarcommunity.data.manager.ChartResult
+import com.meninocoiso.beatstarcommunity.data.manager.ChartsState
 import com.meninocoiso.beatstarcommunity.data.manager.FetchEvent
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,60 +19,98 @@ import javax.inject.Inject
 
 private const val TAG = "WorkshopViewModel"
 
-sealed class ChartsState {
-    data class Success(val charts: List<Chart>) : ChartsState()
-    data class Loading(val charts: List<Chart> = emptyList()) : ChartsState()
-    data class Error(val charts: List<Chart> = emptyList(), val message: String) : ChartsState()
-}
-
 @HiltViewModel
 class WorkshopViewModel @Inject constructor(
     private val chartManager: ChartManager
 ) : ViewModel() {
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
-
-    val charts = chartManager.workshopCharts
+    private val _charts = MutableStateFlow<ChartsState>(ChartsState.Loading())
+    val charts: StateFlow<ChartsState> = _charts.asStateFlow()
 
     private val _events = MutableSharedFlow<FetchEvent>()
     val events: SharedFlow<FetchEvent> = _events.asSharedFlow()
 
     init {
-        refresh()
+        // Initialize by loading cached charts, then fetch fresh data
+        viewModelScope.launch {
+            // Start with cached charts
+            val cachedResult = chartManager.loadCachedCharts()
+            handleCachedChartsResult(cachedResult)
+
+            // Then fetch fresh data
+            refresh(false)
+
+            // Subscribe to workshop charts flow for any updates
+            chartManager.workshopCharts.collect { latestCharts ->
+                // Only update if we're in success state to avoid overriding error/loading states
+                if (_charts.value is ChartsState.Success) {
+                    _charts.value = ChartsState.Success(latestCharts)
+                }
+            }
+        }
     }
 
-    fun refresh() {
+    /**
+     * Refresh charts data from remote source
+     * @param showLoading Whether to show loading state or keep showing existing data
+     */
+    fun refresh(showLoading: Boolean = true) {
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
+            // If we want to show loading state, update the UI
+            if (showLoading) {
+                // Preserve existing charts while loading
+                _charts.value = ChartsState.Loading(
+                    when (val currentState = _charts.value) {
+                        is ChartsState.Success -> currentState.charts
+                        is ChartsState.Error -> currentState.charts
+                        is ChartsState.Loading -> currentState.charts
+                    }
+                )
+            }
 
-            try {
-                chartManager.loadCachedCharts()
+            // Fetch new data
+            chartManager.refreshRemoteCharts(forceRefresh = true).collect { result ->
+                when (result) {
+                    is ChartResult.Success -> {
+                        _charts.value = ChartsState.Success(result.data)
+                    }
+                    is ChartResult.Error -> {
+                        // Keep showing old data but mark as error
+                        val charts = when (val currentState = _charts.value) {
+                            is ChartsState.Success -> currentState.charts
+                            is ChartsState.Error -> currentState.charts
+                            is ChartsState.Loading -> currentState.charts
+                        }
 
-                chartManager.refreshRemoteCharts(forceRefresh = true)
-                    .collect { result ->
-                        when (result) {
-                            is ChartResult.Loading -> _isLoading.value = true
-                            is ChartResult.Success -> {
-                                _isLoading.value = false
-                                _error.value = null
-                            }
-                            is ChartResult.Error -> {
-                                _isLoading.value = false
-                                _error.value = result.message
-                                _events.emit(FetchEvent.Error(result.message, true))
-                            }
+                        _charts.value = ChartsState.Error(
+                            charts = charts,
+                            message = result.message
+                        )
+
+                        if (charts.isNotEmpty()) {
+                            _events.emit(FetchEvent.Error(result.message))
                         }
                     }
-            } catch (e: Exception) {
-                val errorMessage = "Failed to refresh charts: ${e.message}"
-                _isLoading.value = false
-                _error.value = errorMessage
-                _events.emit(FetchEvent.Error(errorMessage, true))
+                    ChartResult.Loading -> {
+                        // Already handled above
+                    }
+                }
+            }
+        }
+    }
+
+    private fun handleCachedChartsResult(result: ChartResult<List<Chart>>) {
+        when (result) {
+            is ChartResult.Success -> {
+                if (result.data.isNotEmpty()) {
+                    _charts.value = ChartsState.Success(result.data)
+                }
+            }
+            is ChartResult.Error -> {
+                _charts.value = ChartsState.Error(message = result.message)
+            }
+            ChartResult.Loading -> {
+                // No-op, we're already in Loading state
             }
         }
     }

@@ -13,7 +13,6 @@ import javax.inject.Singleton
 class DownloadServiceConnection @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
-    // Use a flow instead of channel for simpler API
     private val _downloadEvents = MutableSharedFlow<DownloadEvent>(extraBufferCapacity = 64)
 
     fun startDownload(chartId: String, chartUrl: String, chartName: String, isUpdate: Boolean? = false) {

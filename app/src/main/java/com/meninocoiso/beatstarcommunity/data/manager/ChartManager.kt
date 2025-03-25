@@ -2,6 +2,7 @@ package com.meninocoiso.beatstarcommunity.data.manager
 
 import android.util.Log
 import com.meninocoiso.beatstarcommunity.data.repository.ChartRepository
+import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,9 +27,18 @@ sealed class ChartResult<out T> {
     data object Loading : ChartResult<Nothing>()
 }
 
+/**
+ * State representation for charts in the UI
+ */
+sealed class ChartsState {
+    data class Success(val charts: List<Chart>) : ChartsState()
+    data class Loading(val charts: List<Chart> = emptyList()) : ChartsState()
+    data class Error(val charts: List<Chart> = emptyList(), val message: String) : ChartsState()
+}
+
 // Event for one-time UI actions
 sealed class FetchEvent {
-    data class Error(val message: String, val hasCharts: Boolean) : FetchEvent()
+    data class Error(val message: String) : FetchEvent()
 }
 
 /**
@@ -210,5 +220,62 @@ class ChartManager @Inject constructor(
         }
 
         _allCharts.value = updatedMap
+    }
+
+    /**
+     * Update chart in memory with a specific operation
+     */
+    fun updateChart(chartId: String, operation: OperationType): Flow<ChartResult<List<Chart>>> = flow {
+        // Update in local repository
+        val result = localChartRepository.updateChart(chartId, operation).first()
+
+        result.fold(
+            onSuccess = { updated ->
+                if (!updated) {
+                    emit(ChartResult.Error("Failed to update chart in local storage"))
+                    return@flow
+                }
+            },
+            onFailure = { error ->
+                emit(ChartResult.Error("Error updating chart in local storage", error))
+                return@flow
+            }
+        )
+
+        Log.d(TAG, "Updated chart with id: $chartId in local storage")
+
+        // Find the chart in our in-memory cache
+        val existingChart = _allCharts.value[chartId] ?: run {
+            Log.d(TAG, "Chart with id: $chartId not found")
+            emit(ChartResult.Error("Chart not found"))
+            return@flow
+        }
+
+        // Update in-memory cache
+        when (operation) {
+            OperationType.INSTALL -> {
+                updateChart(existingChart.copy(isInstalled = true))
+            }
+            OperationType.UPDATE -> {
+                if (existingChart.availableVersion == null) {
+                    emit(ChartResult.Error("No available version to update"))
+                    return@flow
+                }
+                updateChart(existingChart.copy(
+                    latestVersion = existingChart.availableVersion!!,
+                    availableVersion = null,
+                ))
+            }
+            OperationType.DELETE -> {
+                updateChart(existingChart.copy(isInstalled = false))
+            }
+        }
+
+        Log.d(TAG, "Updated chart with id: $chartId in memory")
+
+        // Only emit a single success result
+        emit(ChartResult.Success(_allCharts.value.values.toList()))
+    }.catch { e ->
+        emit(ChartResult.Error("Unexpected error updating chart", e))
     }
 }

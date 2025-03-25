@@ -9,8 +9,9 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.data.repository.ChartRepository
-import com.meninocoiso.beatstarcommunity.data.repository.ContentDownloadRepository
+import com.meninocoiso.beatstarcommunity.data.manager.ChartManager
+import com.meninocoiso.beatstarcommunity.data.manager.ChartResult
+import com.meninocoiso.beatstarcommunity.data.repository.DownloadRepository
 import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
 import com.meninocoiso.beatstarcommunity.util.ContentMessageUtils.Companion.getFinalMessage
 import com.meninocoiso.beatstarcommunity.util.ContentMessageUtils.Companion.getInitialMessage
@@ -20,9 +21,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import javax.inject.Named
 
 private const val TAG = "DownloadService"
 
@@ -30,11 +31,10 @@ private const val TAG = "DownloadService"
 class DownloadService : Service() {
 
     @Inject
-    lateinit var contentDownloadRepository: ContentDownloadRepository
+    lateinit var chartManager: ChartManager
 
     @Inject
-    @Named("Local")
-    lateinit var localChartRepository: ChartRepository
+    lateinit var downloadRepository: DownloadRepository
 
     @Inject
     lateinit var downloadServiceConnection: DownloadServiceConnection
@@ -83,17 +83,23 @@ class DownloadService : Service() {
             serviceScope.launch {
                 try {
                     // Perform the download
-                    contentDownloadRepository.downloadChart(
+                    downloadRepository.downloadChart(
                         chartUrl,
-                        contentDownloadRepository.getChartFolderName(chartId),
+                        downloadRepository.getChartFolderName(chartId),
                         onDownloadProgress = { progress ->
                             // Send progress event
                             serviceScope.launch {
-                                downloadServiceConnection.sendEvent(DownloadEvent.Progress(chartId, progress))
+                                downloadServiceConnection.sendEvent(
+                                    DownloadEvent.Progress(
+                                        chartId,
+                                        progress
+                                    )
+                                )
                             }
 
                             val progressInt = (progress * 100).toInt()
-                            val progressString = getProgressMessage(chartName, progressInt, operation)
+                            val progressString =
+                                getProgressMessage(chartName, progressInt, operation)
                             updateNotification(
                                 title = progressString.title,
                                 message = progressString.message,
@@ -103,7 +109,12 @@ class DownloadService : Service() {
                         onExtractProgress = { progress ->
                             // Send extracting event
                             serviceScope.launch {
-                                downloadServiceConnection.sendEvent(DownloadEvent.Extracting(chartId, progress))
+                                downloadServiceConnection.sendEvent(
+                                    DownloadEvent.Extracting(
+                                        chartId,
+                                        progress
+                                    )
+                                )
                             }
 
                             val progressInt = (progress * 100).toInt()
@@ -117,28 +128,33 @@ class DownloadService : Service() {
 
                     Log.d(TAG, "Download complete")
 
-                    // Update the chart in the local database
-                    localChartRepository.updateChart(
+                    // Update the chart in memory and local database
+                    chartManager.updateChart(
                         chartId,
                         operation
-                    ).collect { value ->
-                        if (value.isFailure) {
-                            throw value.exceptionOrNull() ?: IllegalStateException("Unknown error")
+                    )
+                        .first()
+                        .let { value ->
+                            Log.d(TAG, "Updated chart: $value")
+
+                            if (value is ChartResult.Error) {
+                                Log.d(TAG, "Error: ${value.message}, caused by ${value.cause}")
+                                throw Error(value.message)
+                            }
+
+                            // Send complete event
+                            downloadServiceConnection.sendEvent(DownloadEvent.Complete(chartId))
+
+                            updateNotification(
+                                title = finalString.title,
+                                message = finalString.message,
+                                progress = 100,
+                                isOngoing = false
+                            )
+
+                            Log.d(TAG, finalString.title)
+                            stopSelf()
                         }
-
-                        // Send complete event
-                        downloadServiceConnection.sendEvent(DownloadEvent.Complete(chartId))
-
-                        updateNotification(
-                            title = finalString.title,
-                            message = finalString.message,
-                            progress = 100,
-                            isOngoing = false
-                        )
-
-                        Log.d(TAG, finalString.title)
-                        stopSelf()
-                    }
                 } catch (e: Exception) {
                     // Send error event
                     serviceScope.launch {

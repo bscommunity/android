@@ -6,12 +6,12 @@ import com.meninocoiso.beatstarcommunity.util.DownloadUtils
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val TAG = "ContentDownloadRepository"
+private const val TAG = "DownloadRepository"
 
-private const val PLACEHOLDER_FILE_URL = "https://cdn.discordapp.com/attachments/954166390619783268/1350359219894747136/callmethebreeze.zip?ex=67e25106&is=67e0ff86&hm=963124e1fa08a08493e3404fb060b8631a66b9fa61aa15e45cf53a69f6ec2216&"
+private const val PLACEHOLDER_FILE_URL = "https://cdn.discordapp.com/attachments/954166390619783268/1350953906913415240/Pure.zip?ex=67e3295e&is=67e1d7de&hm=0a580b47e5c6dd16f6027a6b585d9a6bb136ffe3607774518c8e4ed0e8a99015&"
 
 @Singleton
-class ContentDownloadRepository @Inject constructor(
+class DownloadRepository @Inject constructor(
     private val downloadUtils: DownloadUtils,
     private val settingsRepository: SettingsRepository,
 ) {

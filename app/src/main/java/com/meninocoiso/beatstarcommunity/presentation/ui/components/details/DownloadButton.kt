@@ -68,7 +68,7 @@ fun DownloadButton(
             .sizeIn(minWidth = 56.dp, minHeight = 56.dp),
         enabled = contentState is ContentState.Idle ||
                 contentState is ContentState.Error,
-        onClick = {startDownload(true)}
+        onClick = { startDownload(true) }
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

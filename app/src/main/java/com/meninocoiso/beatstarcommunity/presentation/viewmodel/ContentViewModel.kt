@@ -6,7 +6,7 @@ import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.beatstarcommunity.data.repository.ChartRepository
-import com.meninocoiso.beatstarcommunity.data.repository.ContentDownloadRepository
+import com.meninocoiso.beatstarcommunity.data.repository.DownloadRepository
 import com.meninocoiso.beatstarcommunity.data.repository.SettingsRepository
 import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
@@ -41,7 +41,7 @@ private const val TAG = "ContentViewModel"
 @HiltViewModel
 class ContentViewModel @Inject constructor(
     private val downloadServiceConnection: DownloadServiceConnection,
-    private val contentDownloadRepository: ContentDownloadRepository,
+    private val downloadRepository: DownloadRepository,
     private val settingsRepository: SettingsRepository,
     @Named("Local") private val localChartRepository: ChartRepository,
 ) : ViewModel() {
@@ -155,7 +155,7 @@ class ContentViewModel @Inject constructor(
                 updateResult.getOrThrow() // Will throw if update failed
 
                 // Delete the actual chart files
-                contentDownloadRepository.deleteChart(chart.id)
+                downloadRepository.deleteChart(chart.id)
 
                 // Reset the state
                 updateState(chart.id, ContentState.Idle)
