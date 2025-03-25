@@ -48,7 +48,7 @@ class UpdatesViewModel @Inject constructor(
                     }
                     is ChartResult.Error -> {
                         // Emit an event for the UI to show an error message
-                        _events.emit(FetchEvent.Error(result.message, true))
+                        _events.emit(FetchEvent.Error(result.message))
                     }
                     ChartResult.Loading -> {
                         // No specific action needed
@@ -70,7 +70,7 @@ class UpdatesViewModel @Inject constructor(
                 // Then check for updates
                 checkForUpdates(true)
             } catch (e: Exception) {
-                _events.emit(FetchEvent.Error("Failed to refresh data: ${e.message}", true))
+                _events.emit(FetchEvent.Error("Failed to refresh data: ${e.message}"))
             }
         }
     }

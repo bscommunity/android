@@ -22,13 +22,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.beatstarcommunity.R
+import com.meninocoiso.beatstarcommunity.data.manager.ChartsState
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.Size
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.SectionWrapper
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.fabScrollObserver
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.shimmerLoading
-import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ChartsState
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.beatstarcommunity.service.DownloadEvent
 

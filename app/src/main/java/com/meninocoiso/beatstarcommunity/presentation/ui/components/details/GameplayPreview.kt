@@ -114,6 +114,10 @@ fun GameplayPreview(
                         mediaPlaybackRequiresUserGesture = false
                         domStorageEnabled = true
 
+                        allowFileAccess = false
+                        allowContentAccess = false
+                        javaScriptCanOpenWindowsAutomatically = false
+
                         // Optimize for video playback
                         cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
                         layoutAlgorithm = WebSettings.LayoutAlgorithm.NORMAL

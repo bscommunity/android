@@ -9,10 +9,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.meninocoiso.beatstarcommunity.data.manager.ChartsState
 import com.meninocoiso.beatstarcommunity.presentation.screens.details.OnNavigateToDetails
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.local.LocalContentSection
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.updates.UpdatesSection
-import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ChartsState
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.UpdatesViewModel
 
 @Composable
