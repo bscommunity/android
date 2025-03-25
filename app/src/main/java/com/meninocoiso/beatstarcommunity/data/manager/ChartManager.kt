@@ -21,19 +21,16 @@ private const val TAG = "ChartManager"
 /**
  * Result wrapper for chart operations
  */
-sealed class ChartResult<out T> {
-    data class Success<T>(val data: T) : ChartResult<T>()
-    data class Error(val message: String, val cause: Throwable? = null) : ChartResult<Nothing>()
-    data object Loading : ChartResult<Nothing>()
+sealed class FetchResult<out T> {
+    data class Success<T>(val data: T) : FetchResult<T>()
+    data class Error(val message: String, val cause: Throwable? = null) : FetchResult<Nothing>()
+    data object Loading : FetchResult<Nothing>()
 }
 
-/**
- * State representation for charts in the UI
- */
-sealed class ChartsState {
-    data class Success(val charts: List<Chart>) : ChartsState()
-    data class Loading(val charts: List<Chart> = emptyList()) : ChartsState()
-    data class Error(val charts: List<Chart> = emptyList(), val message: String) : ChartsState()
+sealed class ChartState {
+    data object Loading : ChartState()
+    data object Success : ChartState()
+    data object Error : ChartState()
 }
 
 // Event for one-time UI actions
@@ -67,15 +64,30 @@ class ChartManager @Inject constructor(
         }.toList()
     }
 
+    private val _workshopState = MutableStateFlow<ChartState>(ChartState.Loading)
+    val workshopState: StateFlow<ChartState> = _workshopState.asStateFlow()
+
+    fun updateState(newState: ChartState) {
+        _workshopState.value = newState
+    }
+
+    /**
+     * Get the number of charts synchronously
+     * This method uses the current value of the StateFlow to provide an immediate count
+     */
+    fun getChartsLength(): Int {
+        return _allCharts.value.size
+    }
+
     /**
      * Refresh charts from remote source
      */
-    fun refreshRemoteCharts(query: String? = null, forceRefresh: Boolean = false): Flow<ChartResult<List<Chart>>> = flow {
-        emit(ChartResult.Loading)
+    fun refreshRemoteCharts(query: String? = null, forceRefresh: Boolean = false): Flow<FetchResult<List<Chart>>> = flow {
+        emit(FetchResult.Loading)
 
         if (!forceRefresh) {
             // Return cached charts if refresh isn't needed
-            emit(ChartResult.Success(_allCharts.value.values.toList()))
+            emit(FetchResult.Success(_allCharts.value.values.toList()))
             return@flow
         }
 
@@ -92,27 +104,27 @@ class ChartManager @Inject constructor(
                     // Update our in-memory cache
                     updateCharts(remoteCharts)
 
-                    emit(ChartResult.Success(remoteCharts))
+                    emit(FetchResult.Success(remoteCharts))
                     Log.d(TAG, "Updated ${remoteCharts.size} charts in memory")
                 },
                 onFailure = { error ->
-                    emit(ChartResult.Error("Failed to fetch remote charts", error))
+                    emit(FetchResult.Error("Failed to fetch remote charts", error))
                     Log.e(TAG, "Failed to fetch remote charts", error)
                 }
             )
         } catch (e: Exception) {
-            emit(ChartResult.Error("Error refreshing charts", e))
+            emit(FetchResult.Error("Error refreshing charts", e))
             Log.e(TAG, "Error refreshing charts", e)
         }
     }.catch { e ->
-        emit(ChartResult.Error("Unexpected error refreshing charts", e))
+        emit(FetchResult.Error("Unexpected error refreshing charts", e))
         Log.e(TAG, "Unexpected error refreshing charts", e)
     }
 
     /**
      * Load charts from local cache
      */
-    suspend fun loadCachedCharts(): ChartResult<List<Chart>> {
+    suspend fun loadCachedCharts(): FetchResult<List<Chart>> {
         return try {
             val localResult = localChartRepository.getCharts().first()
 
@@ -120,29 +132,29 @@ class ChartManager @Inject constructor(
                 onSuccess = { localCharts ->
                     Log.d(TAG, "Loaded ${localCharts.size} charts from local storage")
                     updateCharts(localCharts)
-                    ChartResult.Success(localCharts)
+                    FetchResult.Success(localCharts)
                 },
                 onFailure = { error ->
-                    ChartResult.Error("Failed to load cached charts", error)
+                    FetchResult.Error("Failed to load cached charts", error)
                 }
             )
         } catch (e: Exception) {
-            ChartResult.Error("Error loading cached charts", e)
+            FetchResult.Error("Error loading cached charts", e)
         }
     }
 
     /**
      * Check for updates to installed charts
      */
-    fun checkForUpdates(): Flow<ChartResult<List<Chart>>> = flow {
-        emit(ChartResult.Loading)
+    fun checkForUpdates(): Flow<FetchResult<List<Chart>>> = flow {
+        emit(FetchResult.Loading)
 
         val installedCharts = _allCharts.value.values
             .filter { it.isInstalled == true }
             .toList()
 
         if (installedCharts.isEmpty()) {
-            emit(ChartResult.Success(emptyList<Chart>()))
+            emit(FetchResult.Success(emptyList<Chart>()))
             return@flow
         }
 
@@ -173,18 +185,18 @@ class ChartManager @Inject constructor(
                         localChartRepository.updateCharts(chartsToUpdate).first()
                     }
 
-                    emit(ChartResult.Success(chartsToUpdate))
+                    emit(FetchResult.Success(chartsToUpdate))
                     Log.d(TAG, "Updated ${chartsToUpdate.size} charts with new versions")
                 },
                 onFailure = { error ->
-                    emit(ChartResult.Error("Failed to check for updates", error))
+                    emit(FetchResult.Error("Failed to check for updates", error))
                 }
             )
         } catch (e: Exception) {
-            emit(ChartResult.Error("Error checking for updates", e))
+            emit(FetchResult.Error("Error checking for updates", e))
         }
     }.catch { e ->
-        emit(ChartResult.Error("Unexpected error checking for updates", e))
+        emit(FetchResult.Error("Unexpected error checking for updates", e))
     }
 
     /**
@@ -225,19 +237,19 @@ class ChartManager @Inject constructor(
     /**
      * Update chart in memory with a specific operation
      */
-    fun updateChart(chartId: String, operation: OperationType): Flow<ChartResult<List<Chart>>> = flow {
+    fun updateChart(chartId: String, operation: OperationType): Flow<FetchResult<List<Chart>>> = flow {
         // Update in local repository
         val result = localChartRepository.updateChart(chartId, operation).first()
 
         result.fold(
             onSuccess = { updated ->
                 if (!updated) {
-                    emit(ChartResult.Error("Failed to update chart in local storage"))
+                    emit(FetchResult.Error("Failed to update chart in local storage"))
                     return@flow
                 }
             },
             onFailure = { error ->
-                emit(ChartResult.Error("Error updating chart in local storage", error))
+                emit(FetchResult.Error("Error updating chart in local storage", error))
                 return@flow
             }
         )
@@ -247,7 +259,7 @@ class ChartManager @Inject constructor(
         // Find the chart in our in-memory cache
         val existingChart = _allCharts.value[chartId] ?: run {
             Log.d(TAG, "Chart with id: $chartId not found")
-            emit(ChartResult.Error("Chart not found"))
+            emit(FetchResult.Error("Chart not found"))
             return@flow
         }
 
@@ -258,7 +270,7 @@ class ChartManager @Inject constructor(
             }
             OperationType.UPDATE -> {
                 if (existingChart.availableVersion == null) {
-                    emit(ChartResult.Error("No available version to update"))
+                    emit(FetchResult.Error("No available version to update"))
                     return@flow
                 }
                 updateChart(existingChart.copy(
@@ -274,8 +286,8 @@ class ChartManager @Inject constructor(
         Log.d(TAG, "Updated chart with id: $chartId in memory")
 
         // Only emit a single success result
-        emit(ChartResult.Success(_allCharts.value.values.toList()))
+        emit(FetchResult.Success(_allCharts.value.values.toList()))
     }.catch { e ->
-        emit(ChartResult.Error("Unexpected error updating chart", e))
+        emit(FetchResult.Error("Unexpected error updating chart", e))
     }
 }

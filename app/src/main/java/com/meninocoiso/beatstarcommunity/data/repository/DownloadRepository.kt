@@ -3,7 +3,7 @@ package com.meninocoiso.beatstarcommunity.data.repository
 import android.content.res.Resources.NotFoundException
 import androidx.core.net.toUri
 import com.meninocoiso.beatstarcommunity.data.manager.ChartManager
-import com.meninocoiso.beatstarcommunity.data.manager.ChartResult
+import com.meninocoiso.beatstarcommunity.data.manager.FetchResult
 import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
 import com.meninocoiso.beatstarcommunity.util.DownloadUtils
 import kotlinx.coroutines.flow.first
@@ -60,7 +60,7 @@ class DownloadRepository @Inject constructor(
 
         // Update the chart list
         chartManager.updateChart(chartId, OperationType.INSTALL).first().let {
-            if (it is ChartResult.Error) {
+            if (it is FetchResult.Error) {
                 throw Error(it.message)
             }
         }
@@ -83,7 +83,7 @@ class DownloadRepository @Inject constructor(
 
         // Update the chart list
         chartManager.updateChart(chartId, OperationType.DELETE).first().let {
-            if (it is ChartResult.Error) {
+            if (it is FetchResult.Error) {
                 throw Error(it.message)
             }
         }

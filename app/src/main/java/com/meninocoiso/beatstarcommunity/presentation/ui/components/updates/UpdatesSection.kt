@@ -22,7 +22,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.data.manager.ChartsState
+import com.meninocoiso.beatstarcommunity.data.manager.ChartState
+import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.Size
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Section
@@ -40,9 +41,9 @@ private object SectionWrapperDefaults {
 
 @Composable
 fun UpdatesSection(
-    updatesState: ChartsState,
+    state: ChartState,
+    charts: List<Chart>,
     onFetchUpdates: (chartToRemove: String?) -> Unit,
-    onLocalContentUpdate: () -> Unit,
     onSnackbar: (String) -> Unit,
     onFabStateChange: (Boolean) -> Unit,
     nestedScrollConnection: NestedScrollConnection,
@@ -53,8 +54,6 @@ fun UpdatesSection(
             when (event) {
                 is DownloadEvent.Complete -> {
                     onSnackbar("Update complete")
-                    onLocalContentUpdate()
-                    onFetchUpdates(event.chartId)
                 }
                 is DownloadEvent.Error -> onSnackbar("Error: ${event.message}")
                 else -> {}
@@ -63,10 +62,10 @@ fun UpdatesSection(
     }
 
     Section(
-        title = when (updatesState) {
-            is ChartsState.Success -> {
-                if (updatesState.charts.isNotEmpty()) {
-                    "Updates available (${updatesState.charts.size})"
+        title = when (state) {
+            is ChartState.Success -> {
+                if (charts.isNotEmpty()) {
+                    "Updates available (${charts.size})"
                 } else {
                     "Updates"
                 }
@@ -77,8 +76,8 @@ fun UpdatesSection(
         titleModifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
         modifier = Modifier.padding(bottom = 16.dp)
     ) {
-        when (updatesState) {
-            is ChartsState.Error -> {
+        when (state) {
+            is ChartState.Error -> {
                 UpdatesPanel {
                     StatusMessageUI(
                         title = "We couldn't fetch updates...",
@@ -89,7 +88,7 @@ fun UpdatesSection(
                     )
                 }
             }
-            is ChartsState.Loading -> {
+            is ChartState.Loading -> {
                 UpdatesPanel {
                     Box(
                         modifier = Modifier
@@ -106,9 +105,8 @@ fun UpdatesSection(
                     )
                 }
             }
-            is ChartsState.Success -> {
-                val chartsList = updatesState.charts
-                if (chartsList.isEmpty()) {
+            is ChartState.Success -> {
+                if (charts.isEmpty()) {
                     UpdatesPanel {
                         Text(text = "No updates available")
                     }
@@ -121,7 +119,7 @@ fun UpdatesSection(
                         verticalArrangement = SectionWrapperDefaults.verticalArrangement,
                         horizontalAlignment = SectionWrapperDefaults.horizontalAlignment
                     ) {
-                        items(chartsList) { chart ->
+                        items(charts) { chart ->
                             val contentState by contentViewModel.getContentState(chart.id)
                                 .collectAsStateWithLifecycle()
 
@@ -137,6 +135,6 @@ fun UpdatesSection(
                 }
             }
         }
-        UpdatesButton(state = updatesState, onFetchUpdates = onFetchUpdates)
+        UpdatesButton(state = state, onFetchUpdates = onFetchUpdates)
     }
 }

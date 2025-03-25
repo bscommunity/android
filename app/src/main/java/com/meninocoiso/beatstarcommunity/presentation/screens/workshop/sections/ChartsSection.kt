@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.data.manager.ChartsState
+import com.meninocoiso.beatstarcommunity.data.manager.ChartState
 import com.meninocoiso.beatstarcommunity.data.manager.FetchEvent
 import com.meninocoiso.beatstarcommunity.presentation.screens.details.OnNavigateToDetails
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessageUI
@@ -36,14 +36,8 @@ internal fun ChartsSection(
     onSnackbar: (String) -> Unit,
     viewModel: WorkshopViewModel = hiltViewModel()
 ) {
-    val chartsState by viewModel.charts.collectAsStateWithLifecycle()
-
-    // Extract charts from the current state
-    val charts = when (chartsState) {
-        is ChartsState.Success -> (chartsState as ChartsState.Success).charts
-        is ChartsState.Loading -> (chartsState as ChartsState.Loading).charts
-        is ChartsState.Error -> (chartsState as ChartsState.Error).charts
-    }
+    val charts by viewModel.charts.collectAsStateWithLifecycle(initialValue = emptyList())
+    val state by viewModel.state.collectAsStateWithLifecycle(initialValue = ChartState.Loading)
 
     // Collect events for snackbar
     LaunchedEffect(Unit) {
@@ -63,14 +57,14 @@ internal fun ChartsSection(
         // Show different UI based on whether we have charts to display
         if (charts.isEmpty()) {
             // Empty state - show loading or error
-            when (chartsState) {
-                is ChartsState.Loading -> {
+            when (state) {
+                is ChartState.Loading -> {
                     Box(Modifier.fillMaxSize(), Alignment.Center) {
                         CircularProgressIndicator(Modifier.width(36.dp))
                     }
                 }
 
-                is ChartsState.Error -> {
+                is ChartState.Error -> {
                     StatusMessageUI(
                         title = "Looks like something went wrong...",
                         message = "Please check your connection and try again",
@@ -85,7 +79,7 @@ internal fun ChartsSection(
         } else {
             // We have charts to display - show them with pull-to-refresh
             PullToRefreshBox(
-                isRefreshing = chartsState is ChartsState.Loading,
+                isRefreshing = state is ChartState.Loading,
                 onRefresh = { viewModel.refresh() }
             ) {
                 SectionWrapper(

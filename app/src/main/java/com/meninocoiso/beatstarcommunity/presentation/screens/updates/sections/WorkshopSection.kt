@@ -9,7 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.meninocoiso.beatstarcommunity.data.manager.ChartsState
 import com.meninocoiso.beatstarcommunity.presentation.screens.details.OnNavigateToDetails
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.local.LocalContentSection
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.updates.UpdatesSection
@@ -27,32 +26,30 @@ internal fun WorkshopSection(
     val updatesCharts by viewModel.updatesAvailable.collectAsStateWithLifecycle(initialValue = emptyList())
     val localCharts by viewModel.localCharts.collectAsStateWithLifecycle(initialValue = emptyList())
 
+    val workshopState by viewModel.workshopState.collectAsStateWithLifecycle()
+    val updateState by viewModel.updateState.collectAsStateWithLifecycle()
+
     Column(
         modifier = Modifier
             .padding(top = 24.dp)
             .fillMaxSize()
     ) {
         if (localCharts.isNotEmpty()) {
-            // Convert the list to a ChartsState for compatibility with existing components
-            val updatesState = ChartsState.Success(updatesCharts)
-
             UpdatesSection(
-                updatesState = updatesState,
+                state = updateState,
+                charts = updatesCharts,
                 onFetchUpdates = { chartToRemove ->
                     viewModel.checkForUpdates()
                 },
-                onLocalContentUpdate = { /*viewModel.refresh()*/ },
                 onSnackbar = onSnackbar,
                 onFabStateChange = onFabStateChange,
                 nestedScrollConnection = nestedScrollConnection,
             )
         }
 
-        // Convert the list to a ChartsState for compatibility with existing components
-        val localChartsState = ChartsState.Success(localCharts)
-
         LocalContentSection(
-            localChartsState = localChartsState,
+            state = workshopState,
+            charts = localCharts,
             onNavigateToDetails = onNavigateToDetails,
             onFabStateChange = onFabStateChange,
             nestedScrollConnection = nestedScrollConnection,

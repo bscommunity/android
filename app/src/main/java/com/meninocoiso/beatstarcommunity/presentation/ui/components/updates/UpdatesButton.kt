@@ -17,12 +17,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.data.manager.ChartsState
+import com.meninocoiso.beatstarcommunity.data.manager.ChartState
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.infiniteRotation
 
 @Composable
 internal fun UpdatesButton(
-    state: ChartsState,
+    state: ChartState,
     onFetchUpdates: (chartToRemove: String?) -> Unit
 ) {
     FilledTonalButton(
@@ -31,7 +31,7 @@ internal fun UpdatesButton(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ),
-        enabled = state !is ChartsState.Loading,
+        enabled = state !is ChartState.Loading,
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp, end = 16.dp, top = 8.dp)
@@ -43,7 +43,7 @@ internal fun UpdatesButton(
             Icon(
                 modifier = Modifier
                     .run {
-                        if (state == ChartsState.Loading()) {
+                        if (state == ChartState.Loading) {
                             this.infiniteRotation(easing = CubicBezierEasing(
                                 0.4f, 0.0f, 0.2f, 1.0f
                             )
@@ -56,7 +56,7 @@ internal fun UpdatesButton(
                 painter = painterResource(id = R.drawable.rounded_autorenew_24),
                 contentDescription = "Check for updates icon"
             )
-            Text(text = if (state == ChartsState.Loading()) "Checking for updates..." else "Check for updates")
+            Text(text = if (state == ChartState.Loading) "Checking for updates..." else "Check for updates")
         }
     }
 }
