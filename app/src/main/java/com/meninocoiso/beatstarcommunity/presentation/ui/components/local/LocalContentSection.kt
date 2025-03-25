@@ -12,7 +12,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.data.manager.ChartsState
+import com.meninocoiso.beatstarcommunity.data.manager.ChartState
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.LocalChartPreview
@@ -22,7 +22,8 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.fabScrollObse
 
 @Composable
 fun LocalContentSection(
-    localChartsState: ChartsState,
+    state: ChartState,
+    charts: List<Chart>,
     onNavigateToDetails: (Chart) -> Unit,
     onFabStateChange: (Boolean) -> Unit,
     nestedScrollConnection: NestedScrollConnection,
@@ -31,19 +32,19 @@ fun LocalContentSection(
     // val options = listOf("Charts", "Tour Passes", "Themes")
 
     Section(
-        title = when (localChartsState) {
-            is ChartsState.Success -> {
-                if (localChartsState.charts.isNotEmpty()) {
-                    "Downloaded (${localChartsState.charts.size})"
+        title = when (state) {
+            is ChartState.Success -> {
+                if (charts.isNotEmpty()) {
+                    "Downloaded (${charts.size})"
                 } else {
                     null
                 }
             }
             else -> null
         },
-        thickness = when(localChartsState) {
-            is ChartsState.Success -> {
-                if (localChartsState.charts.isNotEmpty()) 1.dp else 0.dp
+        thickness = when(state) {
+            is ChartState.Success -> {
+                if (charts.isNotEmpty()) 1.dp else 0.dp
             }
             else -> 0.dp
         },
@@ -51,8 +52,8 @@ fun LocalContentSection(
         // TODO: Implement other content types
         // SegmentedButtonUI()
 
-        when (localChartsState) {
-            is ChartsState.Loading -> {
+        when (state) {
+            is ChartState.Loading -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -60,7 +61,7 @@ fun LocalContentSection(
                     CircularProgressIndicator(modifier = Modifier.padding(16.dp))
                 }
             }
-            is ChartsState.Error -> {
+            is ChartState.Error -> {
                 StatusMessageUI(
                     modifier = Modifier.fillMaxSize(),
                     title = "Looks like something went wrong...",
@@ -68,9 +69,8 @@ fun LocalContentSection(
                     icon = R.drawable.rounded_hourglass_disabled_24
                 )
             }
-            is ChartsState.Success -> {
-                val chartsList = localChartsState.charts
-                if (chartsList.isEmpty()) {
+            is ChartState.Success -> {
+                if (charts.isEmpty()) {
                     StatusMessageUI(
                         title = "No downloads yet",
                         message = "Download some charts to get started",
@@ -89,7 +89,7 @@ fun LocalContentSection(
                         item {
                             LocalContentSectionTitle("Charts")
                         }
-                        items(chartsList) { chart ->
+                        items(charts) { chart ->
                             LocalChartPreview(
                                 chart = chart,
                                 onNavigateToDetails = { onNavigateToDetails(chart) }
