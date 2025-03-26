@@ -1,5 +1,6 @@
 package com.meninocoiso.beatstarcommunity.presentation.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.beatstarcommunity.data.manager.ChartManager
@@ -10,12 +11,16 @@ import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private const val TAG = "WorkshopViewModel"
+private const val BATCH_SIZE = 10
 
 @HiltViewModel
 class WorkshopViewModel @Inject constructor(
@@ -27,6 +32,12 @@ class WorkshopViewModel @Inject constructor(
 
     private val _events = MutableSharedFlow<FetchEvent>()
     val events: SharedFlow<FetchEvent> = _events.asSharedFlow()
+
+    private var currentPage = 0
+    private var hasMoreData = true
+
+    private val _isLoadingMore = MutableStateFlow(false)
+    val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
 
     init {
         // Initialize by loading cached charts, then fetch fresh data
@@ -48,24 +59,75 @@ class WorkshopViewModel @Inject constructor(
             /*if (showLoading) {
                 chartManager.updateState(ChartState.Loading)
             }*/
+            // Reset pagination state
+            Log.d(TAG, "Refreshing charts...")
+            
+            currentPage = 0
+            _isLoadingMore.value = false
+            hasMoreData = true
+            
             chartManager.updateState(ChartState.Loading)
 
-            // Fetch new data
-            chartManager.refreshRemoteCharts(forceRefresh = true).collect { result ->
+            // Fetch first batch of data
+            chartManager.refreshRemoteCharts(
+                forceRefresh = true,
+                limit = BATCH_SIZE,
+                offset = 0
+            ).collect { result ->
                 when (result) {
                     is FetchResult.Success -> {
+                        // Check if we received fewer items than requested (end of data)
+                        hasMoreData = result.data.size >= BATCH_SIZE
                         chartManager.updateState(ChartState.Success)
                     }
+
                     is FetchResult.Error -> {
-                        // Emit an event for the UI to show an error message,
-                        // only if we already have charts to display
                         if (showLoading && chartManager.getChartsLength() > 0) {
                             _events.emit(FetchEvent.Error(result.message))
                         }
                         chartManager.updateState(ChartState.Error)
                     }
+
                     FetchResult.Loading -> {
                         // Already handled above
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Load the next batch of charts when user scrolls to the bottom
+     */
+    fun loadMoreCharts() {
+        if (_isLoadingMore.value || !hasMoreData) {
+            Log.d(TAG, "Skipping load more: already loading or no more data")
+            return
+        }
+
+        viewModelScope.launch {
+            Log.d(TAG, "Loading more charts...")
+            _isLoadingMore.value = true
+            currentPage++
+
+            chartManager.loadMoreCharts(
+                limit = BATCH_SIZE,
+                offset = currentPage * BATCH_SIZE
+            ).collect { result ->
+                when (result) {
+                    is FetchResult.Success -> {
+                        // Check if we're at the end of available data
+                        if (result.data.isEmpty() || result.data.size < BATCH_SIZE) {
+                            hasMoreData = false
+                        }
+                        _isLoadingMore.value = false
+                    }
+                    is FetchResult.Error -> {
+                        _events.emit(FetchEvent.Error(result.message))
+                        _isLoadingMore.value = false
+                    }
+                    FetchResult.Loading -> {
+                        // No-op
                     }
                 }
             }

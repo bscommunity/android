@@ -15,9 +15,9 @@ class ChartRepositoryRemote @Inject constructor(
     private val apiClient: ApiClient,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ChartRepository {
-    override suspend fun getCharts(query: String?): Flow<Result<List<Chart>>> = flow {
+    override suspend fun getCharts(query: String?, limit: Int?, offset: Int): Flow<Result<List<Chart>>> = flow {
         try {
-            val charts = apiClient.getCharts(query)
+            val charts = apiClient.getCharts(query, limit, offset)
             emit(Result.success(charts))
         } catch (e: Exception) {
             emit(Result.failure(e))

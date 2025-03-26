@@ -19,6 +19,13 @@ import kotlinx.serialization.json.Json
 
 class KtorApiClient @Inject constructor() : ApiClient {
     private val client = HttpClient(Android) {
+        /*install(Logging) {
+            logger = object : Logger {
+                override fun log(message: String) {
+                    Log.d("HttpLogging:", message)
+                }
+            }
+        }*/
         install(ContentNegotiation) {
             json(Json {
                 ignoreUnknownKeys = true
@@ -50,11 +57,13 @@ class KtorApiClient @Inject constructor() : ApiClient {
         return client.get("charts/$id").body()
     }
 
-    override suspend fun getCharts(query: String?): List<Chart> {
+    override suspend fun getCharts(query: String?, limit: Int?, offset: Int): List<Chart> {
         return client.get("charts"){
             url {
                 parameters.append("fetchContributors", "true")
                 query?.let { parameters.append("query", it) }
+                limit?.let { parameters.append("limit", it.toString()) }
+                parameters.append("offset", offset.toString())
             }
         }.body()
     }
