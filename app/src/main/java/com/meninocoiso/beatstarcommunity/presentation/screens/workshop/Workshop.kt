@@ -14,9 +14,9 @@ import com.meninocoiso.beatstarcommunity.presentation.screens.details.OnNavigate
 import com.meninocoiso.beatstarcommunity.presentation.screens.workshop.sections.ChartsSection
 import com.meninocoiso.beatstarcommunity.presentation.screens.workshop.sections.ThemesSection
 import com.meninocoiso.beatstarcommunity.presentation.screens.workshop.sections.TourPassesSection
-import com.meninocoiso.beatstarcommunity.presentation.ui.components.Workshop.WorkshopChips
-import com.meninocoiso.beatstarcommunity.presentation.ui.components.Workshop.WorkshopTabsItems
-import com.meninocoiso.beatstarcommunity.presentation.ui.components.Workshop.WorkshopTopBar
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.workshop.WorkshopChips
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.workshop.WorkshopTabsItems
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.workshop.WorkshopTopBar
 import com.meninocoiso.beatstarcommunity.util.AppBarUtils
 
 private val SearchBarHeight = 80.dp

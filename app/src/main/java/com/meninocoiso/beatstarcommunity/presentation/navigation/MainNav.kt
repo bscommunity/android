@@ -7,8 +7,8 @@ import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.serialization.ChartParameterType
-import com.meninocoiso.beatstarcommunity.presentation.screens.details.ChartDetailsRoute
 import com.meninocoiso.beatstarcommunity.presentation.screens.details.ChartDetails
+import com.meninocoiso.beatstarcommunity.presentation.screens.details.ChartDetailsRoute
 import com.meninocoiso.beatstarcommunity.presentation.screens.details.ChartDetailsScreen
 import com.meninocoiso.beatstarcommunity.presentation.screens.details.DeepLinkChartDetails
 import kotlin.reflect.typeOf
@@ -48,6 +48,16 @@ fun MainNav(hasUpdate: Boolean) {
                 }
             )
         }
+
+        /*composableWithTransitions<Search> { backStackEntry ->
+            val search: Search = backStackEntry.toRoute()
+            SearchScreen(
+                query = search.query,
+                onNavigateBack = {
+                    navController.navigateUp()
+                }
+            )
+        }*/
 
         composableWithoutTransitions<MainRoute> {
             BottomNav(bottomNavController, navController, hasUpdate)
