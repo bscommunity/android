@@ -11,7 +11,7 @@ import com.meninocoiso.beatstarcommunity.domain.model.Version
 
 @Dao
 interface ChartDao {
-    @Query("SELECT * FROM charts WHERE (:query IS NULL OR track LIKE '%' || :query || '%' OR artist LIKE '%' || :query || '%') LIMIT :limit OFFSET :offset")
+    @Query("SELECT * FROM charts WHERE (:query IS NULL OR track LIKE '%' || :query || '%' OR artist LIKE '%' || :query || '%') ORDER BY track ASC LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END OFFSET :offset")
     fun getAll(query: String?, limit: Int?, offset: Int): List<Chart>
 
     @Query("SELECT * FROM charts WHERE id = :id")

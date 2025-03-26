@@ -122,7 +122,19 @@ internal fun ChartsSection(
                                 CircularProgressIndicator(modifier = Modifier.width(32.dp))
                             }
                         }
-                    }
+                    } /*else {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "End of charts",
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                            }
+                        }
+                    }*/
                 }
             }
         }
