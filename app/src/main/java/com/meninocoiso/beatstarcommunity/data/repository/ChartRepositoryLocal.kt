@@ -18,8 +18,9 @@ class ChartRepositoryLocal(
     private val chartDao: ChartDao,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ChartRepository {
-    override suspend fun getCharts(query: String?): Flow<Result<List<Chart>>> = flow {
-        emit(Result.success(chartDao.getAll()))
+    override suspend fun getCharts(query: String?, limit: Int?, offset: Int): Flow<Result<List<Chart>>> = flow {
+        val charts = chartDao.getAll(query, limit, offset)
+        emit(Result.success(charts))
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)

@@ -11,8 +11,8 @@ import com.meninocoiso.beatstarcommunity.domain.model.Version
 
 @Dao
 interface ChartDao {
-    @Query("SELECT * FROM charts")
-    fun getAll(): List<Chart>
+    @Query("SELECT * FROM charts WHERE (:query IS NULL OR track LIKE '%' || :query || '%' OR artist LIKE '%' || :query || '%') LIMIT :limit OFFSET :offset")
+    fun getAll(query: String?, limit: Int?, offset: Int): List<Chart>
 
     @Query("SELECT * FROM charts WHERE id = :id")
     fun getChart(id: String): Chart
