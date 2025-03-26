@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.presentation.ui.components.Workshop
+package com.meninocoiso.beatstarcommunity.presentation.ui.components.workshop
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -83,12 +83,12 @@ fun WorkshopTopBar(
 				.fillMaxWidth(),
 			contentAlignment = Alignment.Center
 		) {
-			WorkshopSearchBar(
-				topOffset = statusBarHeight,
-				modifier = Modifier
-					//.background(Color.Green)
-					.alpha(connection.appBarOpacity)
-			)
+            WorkshopSearchBar(
+                topOffset = statusBarHeight,
+                modifier = Modifier
+                    //.background(Color.Green)
+                    .alpha(connection.appBarOpacity)
+            )
 		}
 		TabsUI(pagerState = pagerState, tabs = WorkshopTabsItems, modifier = Modifier.zIndex(-1f))
 	}

@@ -1,4 +1,4 @@
-package com.meninocoiso.beatstarcommunity.presentation.ui.components.Workshop
+package com.meninocoiso.beatstarcommunity.presentation.ui.components.workshop
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,9 +27,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.presentation.ui.components.CollapsableSection
 import com.meninocoiso.beatstarcommunity.domain.lists.difficultiesList
 import com.meninocoiso.beatstarcommunity.domain.lists.genresList
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.CollapsableSection
 import java.util.Locale
 
 @Composable
