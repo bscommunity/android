@@ -45,9 +45,10 @@ class WorkshopViewModel @Inject constructor(
     fun refresh(showLoading: Boolean = true) {
         viewModelScope.launch {
             // If we want to show loading state, update the UI
-            if (showLoading) {
+            /*if (showLoading) {
                 chartManager.updateState(ChartState.Loading)
-            }
+            }*/
+            chartManager.updateState(ChartState.Loading)
 
             // Fetch new data
             chartManager.refreshRemoteCharts(forceRefresh = true).collect { result ->
@@ -58,11 +59,10 @@ class WorkshopViewModel @Inject constructor(
                     is FetchResult.Error -> {
                         // Emit an event for the UI to show an error message,
                         // only if we already have charts to display
-                        if (chartManager.getChartsLength() > 0) {
+                        if (showLoading && chartManager.getChartsLength() > 0) {
                             _events.emit(FetchEvent.Error(result.message))
-                        } else {
-                            chartManager.updateState(ChartState.Error)
                         }
+                        chartManager.updateState(ChartState.Error)
                     }
                     FetchResult.Loading -> {
                         // Already handled above

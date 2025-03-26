@@ -108,7 +108,7 @@ class ChartManager @Inject constructor(
                     Log.d(TAG, "Updated ${remoteCharts.size} charts in memory")
                 },
                 onFailure = { error ->
-                    emit(FetchResult.Error("Failed to fetch remote charts", error))
+                    emit(FetchResult.Error("Failed to fetch charts", error))
                     Log.e(TAG, "Failed to fetch remote charts", error)
                 }
             )
