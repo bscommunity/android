@@ -1,5 +1,6 @@
 package com.meninocoiso.beatstarcommunity.presentation.ui.components.local
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -52,25 +53,27 @@ fun LocalContentSection(
         // TODO: Implement other content types
         // SegmentedButtonUI()
 
-        when (state) {
-            is ChartState.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+        if (charts.isEmpty()) {
+            when (state) {
+                is ChartState.Loading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+                    }
                 }
-            }
-            is ChartState.Error -> {
-                StatusMessageUI(
-                    modifier = Modifier.fillMaxSize(),
-                    title = "Looks like something went wrong...",
-                    message = "Please check your connection or try again later",
-                    icon = R.drawable.rounded_hourglass_disabled_24
-                )
-            }
-            is ChartState.Success -> {
-                if (charts.isEmpty()) {
+
+                is ChartState.Error -> {
+                    StatusMessageUI(
+                        modifier = Modifier.fillMaxSize(),
+                        title = "Looks like something went wrong...",
+                        message = "Please check your connection or try again later",
+                        icon = R.drawable.rounded_hourglass_disabled_24
+                    )
+                }
+
+                else -> {
                     StatusMessageUI(
                         title = "No downloads yet",
                         message = "Download some charts to get started",
@@ -79,30 +82,31 @@ fun LocalContentSection(
                             .fillMaxSize()
                             .padding(bottom = 36.dp)
                     )
-                } else {
-                    SectionWrapper(
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
-                            .nestedScroll(nestedScrollConnection)
-                            .fabScrollObserver(onFabStateChange),
-                    ){
-                        item {
-                            LocalContentSectionTitle("Charts")
-                        }
-                        items(charts) { chart ->
-                            LocalChartPreview(
-                                chart = chart,
-                                onNavigateToDetails = { onNavigateToDetails(chart) }
-                            )
-                        }
-                        /*item {
-                            LocalDownloadsSectionTitle("Tour Passes")
-                        }*/
-                        /*item {
-                            LocalDownloadsSectionTitle("Themes")
-                        }*/
-                    }
                 }
+            }
+        } else {
+            SectionWrapper(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .nestedScroll(nestedScrollConnection)
+                    .fabScrollObserver(onFabStateChange),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ){
+                item {
+                    LocalContentSectionTitle("Charts")
+                }
+                items(charts) { chart ->
+                    LocalChartPreview(
+                        chart = chart,
+                        onNavigateToDetails = { onNavigateToDetails(chart) }
+                    )
+                }
+                /*item {
+                    LocalDownloadsSectionTitle("Tour Passes")
+                }*/
+                /*item {
+                    LocalDownloadsSectionTitle("Themes")
+                }*/
             }
         }
     }
