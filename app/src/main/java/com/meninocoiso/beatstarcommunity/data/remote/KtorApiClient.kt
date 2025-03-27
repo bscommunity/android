@@ -3,6 +3,7 @@ package com.meninocoiso.beatstarcommunity.data.remote
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.model.User
 import com.meninocoiso.beatstarcommunity.domain.model.Version
+import com.meninocoiso.beatstarcommunity.util.DevelopmentUtils
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
@@ -38,7 +39,7 @@ class KtorApiClient @Inject constructor() : ApiClient {
         defaultRequest {
             url {
                 protocol = URLProtocol.HTTP
-                host = "10.0.2.2"
+                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.5"
                 port = 8080
             }
             contentType(ContentType.Application.Json)
