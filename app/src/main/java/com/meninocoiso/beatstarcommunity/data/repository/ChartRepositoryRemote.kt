@@ -41,7 +41,16 @@ class ChartRepositoryRemote @Inject constructor(
             emit(Result.failure(e))
         }
     }.flowOn(dispatcher)
-
+    
+    override suspend fun getSuggestions(query: String, limit: Int?): Flow<Result<List<String>>> = flow {
+        try {
+            val suggestions = apiClient.getSuggestions(query, limit)
+            emit(Result.success(suggestions))
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }.flowOn(dispatcher)
+    
     override suspend fun getChart(id: String): Flow<Result<Chart>> = flow {
         try {
             val chart = apiClient.getChart(id)

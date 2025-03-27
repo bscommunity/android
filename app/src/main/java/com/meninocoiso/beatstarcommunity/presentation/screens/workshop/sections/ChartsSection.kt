@@ -44,7 +44,6 @@ internal fun ChartsSection(
 ) {
     val charts by viewModel.charts.collectAsStateWithLifecycle(initialValue = emptyList())
     val state by viewModel.state.collectAsStateWithLifecycle(initialValue = ChartState.Loading)
-    val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle(initialValue = false)
     
     // Collect events for snackbar
     LaunchedEffect(Unit) {
@@ -111,7 +110,7 @@ internal fun ChartsSection(
                         )
                     }
 
-                    if (isLoadingMore) {
+                    if (viewModel.isLoadingMore) {
                         item {
                             Box(
                                 modifier = Modifier

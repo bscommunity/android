@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -18,7 +19,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.beatstarcommunity.presentation.screens.details.OnNavigateToDetails
 import com.meninocoiso.beatstarcommunity.presentation.screens.workshop.sections.ChartsSection
 import com.meninocoiso.beatstarcommunity.presentation.screens.workshop.sections.ThemesSection
@@ -52,8 +52,10 @@ fun WorkshopScreen(
         fixedHeight = TabsHeight,
         bottomCollapsableHeight = bottomCollapsableHeight,
     )
-    
-    val historyItems = viewModel.searchHistory.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) { 
+        viewModel.observeSuggestions()
+    }
 
     Column {
         Column(
@@ -100,17 +102,17 @@ fun WorkshopScreen(
         pagerState = horizontalPagerState,
     ) {
         WorkshopSearchBar(
-            modifier = Modifier
-                //.background(Color.Green)
-                .alpha(connection.appBarOpacity),
-            historyItems = historyItems.value,
+            textFieldState = viewModel.searchFieldState,
+            modifier = Modifier.alpha(connection.appBarOpacity),
+            historyItems = viewModel.searchHistory,
             onHistoryItemDelete = {
                 viewModel.removeSearchHistory(it)
             },
+            suggestions = viewModel.suggestions,
             onSearch = { query ->
                 Log.d("WorkshopScreen", "onSearch")
 
-                // Remove bottom collapsable
+                // Remove WorkspaceChips while searching
                 bottomCollapsableHeight.value = null
 
                 viewModel.addSearchHistory(query)
