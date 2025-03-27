@@ -30,7 +30,7 @@ object DataStoreModule {
 	 */
 	@Singleton
 	@Provides
-	fun provideSettingsDataStore(@ApplicationContext appContext: Context): DataStore<Preferences> {
+	fun provideDataStore(@ApplicationContext appContext: Context): DataStore<Preferences> {
 		return PreferenceDataStoreFactory.create(
 			corruptionHandler = null, // No corruption handler is provided.
 			migrations = listOf(SharedPreferencesMigration(appContext, SETTINGS_NAME)), // Migrate from SharedPreferences.

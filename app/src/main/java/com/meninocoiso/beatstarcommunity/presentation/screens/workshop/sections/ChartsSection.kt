@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -21,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.data.manager.ChartState
@@ -40,7 +40,7 @@ internal fun ChartsSection(
     onNavigateToDetails: OnNavigateToDetails,
     onFabStateChange: (Boolean) -> Unit,
     onSnackbar: (String) -> Unit,
-    viewModel: WorkshopViewModel = hiltViewModel()
+    viewModel: WorkshopViewModel
 ) {
     val charts by viewModel.charts.collectAsStateWithLifecycle(initialValue = emptyList())
     val state by viewModel.state.collectAsStateWithLifecycle(initialValue = ChartState.Loading)
@@ -119,7 +119,7 @@ internal fun ChartsSection(
                                     .padding(vertical = 36.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                CircularProgressIndicator(modifier = Modifier.width(32.dp))
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
                             }
                         }
                     } /*else {
