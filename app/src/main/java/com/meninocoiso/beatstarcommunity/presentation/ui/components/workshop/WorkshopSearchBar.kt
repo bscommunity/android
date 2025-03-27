@@ -109,6 +109,7 @@ fun WorkshopSearchBar(
                         IconButton(
                             onClick = {
                                 textFieldState.setTextAndPlaceCursorAtEnd("")
+                                onSearch("")
                                 scope.launch { searchBarState.animateToCollapsed() }
                             }
                         ) {
@@ -178,6 +179,7 @@ fun WorkshopSearchBar(
                             .combinedClickable(
                                 onClick = {
                                     textFieldState.setTextAndPlaceCursorAtEnd(it)
+                                    onSearch(it)
                                     scope.launch { searchBarState.animateToCollapsed() }
                                 },
                                 onLongClick = {
