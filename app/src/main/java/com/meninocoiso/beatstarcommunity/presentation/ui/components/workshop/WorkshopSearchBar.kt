@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.text.input.setTextAndSelectAll
 import androidx.compose.foundation.verticalScroll
@@ -39,18 +39,40 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.ConfirmationDialog
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+/* TODO: For optional future improvement, Compose devs use the following strategy to
+*   detect touch
+@Composable
+private fun DetectClickFromInteractionSource(
+    interactionSource: InteractionSource,
+    onClick: () -> Unit,
+) {
+    LaunchedEffect(interactionSource) {
+        interactionSource.interactions.collect { interaction ->
+            if (interaction is PressInteraction.Release) onClick()
+        }
+    }
+}
+DetectClickFromInteractionSource(interactionSource) {
+            if (!searchBarState.isExpanded) {
+                coroutineScope.launch { searchBarState.animateToExpanded() }
+            }
+        }
+* */
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, FlowPreview::class)
 @Composable
 fun WorkshopSearchBar(
+    textFieldState: TextFieldState,
     historyItems: List<String>,
+    suggestions: List<String>?,
     onHistoryItemDelete: (String) -> Unit,
     onSearch: (query: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val searchBarState = rememberSearchBarState()
-    val textFieldState = rememberTextFieldState()
     val scope = rememberCoroutineScope()
 
     val haptics = LocalHapticFeedback.current
@@ -85,7 +107,10 @@ fun WorkshopSearchBar(
                 leadingIcon = {
                     if (searchBarState.currentValue == SearchBarValue.Expanded) {
                         IconButton(
-                            onClick = { scope.launch { searchBarState.animateToCollapsed() } }
+                            onClick = {
+                                textFieldState.setTextAndPlaceCursorAtEnd("")
+                                scope.launch { searchBarState.animateToCollapsed() }
+                            }
                         ) {
                             Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
                         }
@@ -112,7 +137,30 @@ fun WorkshopSearchBar(
             Modifier
                 .verticalScroll(rememberScrollState())
         ) {
-            if (historyItems.isNotEmpty()) {
+            if (suggestions != null) {
+                suggestions.forEach {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .combinedClickable(
+                                onClick = {
+                                    textFieldState.setTextAndPlaceCursorAtEnd(it)
+                                    scope.launch { searchBarState.animateToCollapsed() }
+                                }
+                            )
+                            .padding(16.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search icon",
+                            modifier = Modifier.padding(end = 10.dp)
+                        )
+                        Text(
+                            text = it,
+                        )
+                    }
+                }
+            } else if (historyItems.isNotEmpty()) {
                 Text(
                     text = "Recent searches",
                     style = MaterialTheme.typography.titleSmall,

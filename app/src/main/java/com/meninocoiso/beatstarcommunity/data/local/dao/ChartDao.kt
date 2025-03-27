@@ -17,6 +17,23 @@ interface ChartDao {
     @Query("SELECT * FROM charts WHERE id = :id")
     fun getChart(id: String): Chart
 
+    @Query("""
+    SELECT 
+        CASE 
+            WHEN track LIKE '%' || :query || '%' THEN track 
+            WHEN artist LIKE '%' || :query || '%' THEN artist 
+            ELSE album 
+        END 
+    FROM charts 
+    WHERE track LIKE '%' || :query || '%' 
+       OR artist LIKE '%' || :query || '%' 
+       OR album LIKE '%' || :query || '%' 
+    LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END
+""")
+    fun getSuggestions(query: String, limit: Int?): List<String>
+    /*@Query("SELECT track FROM charts WHERE track LIKE '%' || :query || '%' OR artist LIKE '%' || :query || '%' LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END")
+    fun getSuggestions(query: String, limit: Int?): List<String>*/
+
     @Query("SELECT * FROM charts WHERE id IN (:chartIds)")
     fun loadAllByIds(chartIds: List<String>): List<Chart>
 

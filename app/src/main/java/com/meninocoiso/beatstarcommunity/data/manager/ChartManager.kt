@@ -398,4 +398,21 @@ class ChartManager @Inject constructor(
         emit(FetchResult.Error("Unexpected error loading more charts", e))
         Log.e(TAG, "Unexpected error loading more charts", e)
     }
+    
+    fun getSuggestions(query: String): Flow<FetchResult<List<String>>> = flow {
+        emit(FetchResult.Loading)
+
+        val result = remoteChartRepository.getSuggestions(query).first()
+
+        result.fold(
+            onSuccess = { suggestions ->
+                emit(FetchResult.Success(suggestions))
+            },
+            onFailure = { error ->
+                emit(FetchResult.Error("Failed to fetch suggestions", error))
+            }
+        )
+    }.catch { e ->
+        emit(FetchResult.Error("Unexpected error fetching suggestions", e))
+    }
 }

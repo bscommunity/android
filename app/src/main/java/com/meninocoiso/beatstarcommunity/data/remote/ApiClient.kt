@@ -10,5 +10,6 @@ interface ApiClient {
     suspend fun getChart(id: String): Chart
     suspend fun getCharts(query: String? = null, limit: Int? = 10, offset: Int = 0): List<Chart>
     suspend fun getChartsById(ids: List<String>): List<Chart>
+    suspend fun getSuggestions(query: String, limit: Int? = null): List<String>
     suspend fun getLatestVersionsByChartIds(ids: List<String>): List<Version>
 }

@@ -76,6 +76,15 @@ class KtorApiClient @Inject constructor() : ApiClient {
             }
         }.body()
     }
+    
+    override suspend fun getSuggestions(query: String, limit: Int?): List<String> {
+        return client.get("charts/suggestions"){
+            url {
+                parameters.append("query", query)
+                limit?.let { parameters.append("limit", it.toString()) }
+            }
+        }.body()
+    }
 
     override suspend fun getLatestVersionsByChartIds(ids: List<String>): List<Version> {
         return client.get("charts/latest-versions"){

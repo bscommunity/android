@@ -36,6 +36,12 @@ class ChartRepositoryLocal(
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
+    
+    override suspend fun getSuggestions(query: String, limit: Int?): Flow<Result<List<String>>> = flow {
+        emit(Result.success(chartDao.getSuggestions(query, limit)))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }.flowOn(dispatcher)
 
     override suspend fun getChart(id: String): Flow<Result<Chart>> = flow {
          emit(Result.success(chartDao.getChart(id)))

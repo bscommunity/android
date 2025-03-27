@@ -1,6 +1,11 @@
 package com.meninocoiso.beatstarcommunity.presentation.viewmodel
 
 import android.util.Log
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.beatstarcommunity.data.manager.ChartManager
@@ -10,13 +15,13 @@ import com.meninocoiso.beatstarcommunity.data.manager.FetchResult
 import com.meninocoiso.beatstarcommunity.data.repository.CacheRepository
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -38,12 +43,19 @@ class WorkshopViewModel @Inject constructor(
 
     private var currentPage = 0
     private var hasMoreData = true
+    
+    var isLoadingMore by mutableStateOf(false)
+        private set
+    
+    var searchHistory: List<String> by mutableStateOf(emptyList())
+        private set
+    
+    var suggestions by mutableStateOf<List<String>?>(emptyList<String>())         
+        private set
 
-    private val _isLoadingMore = MutableStateFlow(false)
-    val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
-
-    private val _searchHistory = MutableStateFlow<List<String>>(emptyList())
-    val searchHistory: StateFlow<List<String>> = _searchHistory.asStateFlow()
+    val searchFieldState = TextFieldState()
+    var searchResults: List<String> by mutableStateOf(emptyList())         
+        private set
     
     init {
         viewModelScope.launch {
@@ -56,6 +68,31 @@ class WorkshopViewModel @Inject constructor(
 
             refresh(false)
         }
+    }
+    
+    @OptIn(FlowPreview::class)
+    suspend fun observeSuggestions() {
+        snapshotFlow { searchFieldState.text }
+            // Let fast typers get multiple keystrokes in before kicking off a search.
+            .debounce(500)
+            // collectLatest cancels the previous search if it's still running 
+            // when there's a new change.             
+            .collectLatest { query ->
+                /*TODO: Currently, if users type something and then delete it fast,
+                *  when the remote call returns, it will overwrite the suggestions,
+                *  even though the query is empty. This is a minor issue, but could
+                *  be improved in the future.
+                *  Some ideas:
+                * - Keep track of the last query and only update suggestions if the
+                *  new query is not empty and different from the last one.
+                * - Cancel the remote call if the query is empty.
+                 */
+                if (query.length > 2) {
+                    getSuggestions(query.toString())
+                } else {
+                    suggestions = null
+                }
+            }
     }
 
     /**
@@ -72,7 +109,7 @@ class WorkshopViewModel @Inject constructor(
             Log.d(TAG, "Refreshing charts...")
             
             currentPage = 0
-            _isLoadingMore.value = false
+            isLoadingMore = false
             hasMoreData = true
             
             chartManager.updateState(ChartState.Loading)
@@ -109,14 +146,14 @@ class WorkshopViewModel @Inject constructor(
      * Load the next batch of charts when user scrolls to the bottom
      */
     fun loadMoreCharts() {
-        if (_isLoadingMore.value || !hasMoreData) {
+        if (isLoadingMore || !hasMoreData) {
             Log.d(TAG, "Skipping load more: already loading or no more data")
             return
         }
 
         viewModelScope.launch {
             Log.d(TAG, "Loading more charts...")
-            _isLoadingMore.value = true
+            isLoadingMore = true
             currentPage++
 
             chartManager.loadMoreCharts(
@@ -129,11 +166,11 @@ class WorkshopViewModel @Inject constructor(
                         if (result.data.isEmpty() || result.data.size < BATCH_SIZE) {
                             hasMoreData = false
                         }
-                        _isLoadingMore.value = false
+                        isLoadingMore = false
                     }
                     is FetchResult.Error -> {
                         _events.emit(FetchEvent.Error(result.message))
-                        _isLoadingMore.value = false
+                        isLoadingMore = false
                     }
                     FetchResult.Loading -> {
                         // No-op
@@ -158,37 +195,74 @@ class WorkshopViewModel @Inject constructor(
             }
         }
     }
+    
+    fun getSuggestions(query: String) {
+        viewModelScope.launch {
+            chartManager.getSuggestions(query).collect { result ->
+                when (result) {
+                    is FetchResult.Success -> {
+                        Log.d(TAG, "Got suggestions: ${result.data} for the query $query")
+                        suggestions = result.data
+                    }
+                    is FetchResult.Error -> {
+                        // No-op
+                    }
+                    FetchResult.Loading -> {
+                        // No-op
+                    }
+                }
+            }
+        }
+    }
 
+    /*fun searchCharts(query: String) {
+        viewModelScope.launch {
+            chartManager.searchCharts(query).collect { result ->
+                when (result) {
+                    is FetchResult.Success -> {
+                        chartManager.updateState(ChartState.Success)
+                    }
+                    is FetchResult.Error -> {
+                        chartManager.updateState(ChartState.Error)
+                    }
+                    FetchResult.Loading -> {
+                        // No-op
+                    }
+                }
+            }
+        }
+    }*/
+    
     private fun getSearchHistory() {
         viewModelScope.launch {
-            _searchHistory.value = cacheRepository.getSearchHistory()
+            searchHistory = cacheRepository.getSearchHistory()
         }
     }
 
     fun addSearchHistory(search: String) {
         viewModelScope.launch {
-            if (_searchHistory.value.contains(search)) {
+            if (searchHistory.contains(search)) {
                 return@launch
             }
 
             // Add search to history if below max size, otherwise replace oldest item
-            if (_searchHistory.value.size < MAX_HISTORY_SIZE) {
-                _searchHistory.value = _searchHistory.value.toMutableList().apply { add(search) }
-                cacheRepository.setSearchHistory(_searchHistory.value)
+            if (searchHistory.size < MAX_HISTORY_SIZE) {
+                searchHistory = searchHistory.toMutableList().apply { add(search) }
+                cacheRepository.setSearchHistory(searchHistory)
             } else {
-                _searchHistory.value = _searchHistory.value.toMutableList().apply {
+                searchHistory = searchHistory.toMutableList().apply {
                     removeAt(0)
                     add(search)
                 }
-                cacheRepository.setSearchHistory(_searchHistory.value)
+                cacheRepository.setSearchHistory(searchHistory)
             }
         }
     }
     
     fun removeSearchHistory(search: String) {
         viewModelScope.launch {
-            _searchHistory.value = _searchHistory.value.toMutableList().apply { remove(search) }
-            cacheRepository.setSearchHistory(_searchHistory.value)
+            searchHistory = searchHistory.toMutableList().apply { remove(search) }
+            cacheRepository.setSearchHistory(searchHistory)
         }
     }
 }
