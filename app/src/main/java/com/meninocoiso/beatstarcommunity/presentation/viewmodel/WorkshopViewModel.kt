@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -50,7 +51,7 @@ class WorkshopViewModel @Inject constructor(
     var searchHistory: List<String> by mutableStateOf(emptyList())
         private set
     
-    var suggestions by mutableStateOf<List<String>?>(emptyList<String>())         
+    var suggestions by mutableStateOf<List<String>?>(null)         
         private set
 
     val searchFieldState = TextFieldState()
@@ -72,25 +73,28 @@ class WorkshopViewModel @Inject constructor(
     
     @OptIn(FlowPreview::class)
     suspend fun observeSuggestions() {
+        var lastQuery = ""
+        
         snapshotFlow { searchFieldState.text }
             // Let fast typers get multiple keystrokes in before kicking off a search.
-            .debounce(500)
+            .debounce(300)
             // collectLatest cancels the previous search if it's still running 
             // when there's a new change.             
-            .collectLatest { query ->
-                /*TODO: Currently, if users type something and then delete it fast,
-                *  when the remote call returns, it will overwrite the suggestions,
-                *  even though the query is empty. This is a minor issue, but could
-                *  be improved in the future.
-                *  Some ideas:
-                * - Keep track of the last query and only update suggestions if the
-                *  new query is not empty and different from the last one.
-                * - Cancel the remote call if the query is empty.
-                 */
-                if (query.length > 2) {
-                    getSuggestions(query.toString())
-                } else {
-                    suggestions = null
+            .collectLatest { currentQuery ->
+                // Only process if query has meaningfully changed
+                if (currentQuery.toString() != lastQuery) {
+                    lastQuery = currentQuery.toString()
+
+                    suggestions = when {
+                        lastQuery.length > 2 -> {
+                            chartManager.getSuggestions(currentQuery.toString()).first()
+                        }
+
+                        else -> {
+                            // Clear suggestions for very short queries
+                            null
+                        }
+                    }
                 }
             }
     }
@@ -192,25 +196,6 @@ class WorkshopViewModel @Inject constructor(
             }
             FetchResult.Loading -> {
                 // No-op, we're already in Loading state
-            }
-        }
-    }
-    
-    fun getSuggestions(query: String) {
-        viewModelScope.launch {
-            chartManager.getSuggestions(query).collect { result ->
-                when (result) {
-                    is FetchResult.Success -> {
-                        Log.d(TAG, "Got suggestions: ${result.data} for the query $query")
-                        suggestions = result.data
-                    }
-                    is FetchResult.Error -> {
-                        // No-op
-                    }
-                    FetchResult.Loading -> {
-                        // No-op
-                    }
-                }
             }
         }
     }
