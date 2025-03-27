@@ -7,6 +7,7 @@ import com.meninocoiso.beatstarcommunity.data.manager.ChartManager
 import com.meninocoiso.beatstarcommunity.data.manager.ChartState
 import com.meninocoiso.beatstarcommunity.data.manager.FetchEvent
 import com.meninocoiso.beatstarcommunity.data.manager.FetchResult
+import com.meninocoiso.beatstarcommunity.data.repository.CacheRepository
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -21,10 +22,12 @@ import javax.inject.Inject
 
 private const val TAG = "WorkshopViewModel"
 private const val BATCH_SIZE = 10
+private const val MAX_HISTORY_SIZE = 10
 
 @HiltViewModel
 class WorkshopViewModel @Inject constructor(
-    private val chartManager: ChartManager
+    private val chartManager: ChartManager,
+    private val cacheRepository: CacheRepository
 ) : ViewModel() {
 
     val charts: Flow<List<Chart>> = chartManager.workshopCharts
@@ -39,9 +42,15 @@ class WorkshopViewModel @Inject constructor(
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
 
+    private val _searchHistory = MutableStateFlow<List<String>>(emptyList())
+    val searchHistory: StateFlow<List<String>> = _searchHistory.asStateFlow()
+    
     init {
-        // Initialize by loading cached charts, then fetch fresh data
         viewModelScope.launch {
+            // Load search history
+            getSearchHistory()
+            
+            // Initialize by loading cached charts, then fetch fresh data
             val cachedResult = chartManager.loadCachedCharts()
             handleCachedChartsResult(cachedResult)
 
@@ -147,6 +156,39 @@ class WorkshopViewModel @Inject constructor(
             FetchResult.Loading -> {
                 // No-op, we're already in Loading state
             }
+        }
+    }
+
+    private fun getSearchHistory() {
+        viewModelScope.launch {
+            _searchHistory.value = cacheRepository.getSearchHistory()
+        }
+    }
+
+    fun addSearchHistory(search: String) {
+        viewModelScope.launch {
+            if (_searchHistory.value.contains(search)) {
+                return@launch
+            }
+
+            // Add search to history if below max size, otherwise replace oldest item
+            if (_searchHistory.value.size < MAX_HISTORY_SIZE) {
+                _searchHistory.value = _searchHistory.value.toMutableList().apply { add(search) }
+                cacheRepository.setSearchHistory(_searchHistory.value)
+            } else {
+                _searchHistory.value = _searchHistory.value.toMutableList().apply {
+                    removeAt(0)
+                    add(search)
+                }
+                cacheRepository.setSearchHistory(_searchHistory.value)
+            }
+        }
+    }
+    
+    fun removeSearchHistory(search: String) {
+        viewModelScope.launch {
+            _searchHistory.value = _searchHistory.value.toMutableList().apply { remove(search) }
+            cacheRepository.setSearchHistory(_searchHistory.value)
         }
     }
 }

@@ -12,9 +12,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
@@ -42,10 +39,10 @@ val WorkshopTabsItems = listOf(
 fun WorkshopTopBar(
 	connection: AppBarUtils.CollapsingAppBarNestedScrollConnection,
 	appBarHeights: Triple<Dp, Dp, Dp>,
-	pagerState: PagerState
+	pagerState: PagerState,
+	content: @Composable () -> Unit,
 ) {
 	val (collapsibleHeight, fixedHeight, statusBarHeight) = appBarHeights
-	val screenHeight = LocalConfiguration.current.screenHeightDp
 
 	Column(
 		modifier = Modifier
@@ -57,38 +54,10 @@ fun WorkshopTopBar(
 		horizontalAlignment = Alignment.CenterHorizontally
 	) {
 		Box(
-			modifier = Modifier
-				.weight(1f)
-				.zIndex(2f)
-				.layout { measurable, constraints ->
-					// Measure the composable
-					val placeable = measurable.measure(
-						constraints.copy(
-							maxWidth = constraints.maxWidth,
-							maxHeight = screenHeight * 3,
-						)
-					)
-
-					// Define the width and height of the layout
-					val width = constraints.maxWidth
-					val height = constraints.maxHeight
-
-					// Define the layout
-					layout(width, height) {
-						// Place the composable at (0, 0) coordinates
-						placeable.placeRelative(0, 0)
-					}
-				}
-				//.background(Color.Red)
-				.fillMaxWidth(),
+			modifier = Modifier.weight(1f).zIndex(2f).fillMaxWidth(),
 			contentAlignment = Alignment.Center
 		) {
-            WorkshopSearchBar(
-                topOffset = statusBarHeight,
-                modifier = Modifier
-                    //.background(Color.Green)
-                    .alpha(connection.appBarOpacity)
-            )
+            content()
 		}
 		TabsUI(pagerState = pagerState, tabs = WorkshopTabsItems, modifier = Modifier.zIndex(-1f))
 	}

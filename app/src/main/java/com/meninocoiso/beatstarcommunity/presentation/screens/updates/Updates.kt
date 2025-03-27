@@ -58,8 +58,10 @@ fun UpdatesScreen(
 		}
 		horizontalPagerState.requestScrollToPage(pageIndex)
 	}
-
-	val (connection, spaceHeight, statusBarHeight) = AppBarUtils.getConnection(collapsableHeight = TabsHeight)
+	
+	val (connection, spaceHeight, statusBarHeight) = AppBarUtils.getConnection(
+		collapsableHeight = TabsHeight,
+	)
 
 	Column {
 		Spacer(

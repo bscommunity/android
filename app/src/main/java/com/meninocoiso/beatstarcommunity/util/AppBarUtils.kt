@@ -4,10 +4,12 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
@@ -59,7 +61,7 @@ class AppBarUtils {
 		fun getConnection(
 			collapsableHeight: Dp,
 			fixedHeight: Dp = 0.dp,
-			bottomCollapsableHeight: Dp? = null
+			bottomCollapsableHeight: State<Dp?> = remember { mutableStateOf(null) }
 		): Triple<CollapsingAppBarNestedScrollConnection, Dp, Dp> {
 			val density = LocalDensity.current
 			val statusBarHeight = getStatusBarHeight()
@@ -77,23 +79,23 @@ class AppBarUtils {
 				}
 			}
 
-			val bottomCollapsableHeightPx = bottomCollapsableHeight?.let {
+			val bottomCollapsableHeightPx = bottomCollapsableHeight.value?.let {
 				with(density) { it.roundToPx() }
 			}
 
-			val connection = remember(appBarMaxHeightPx) {
+			val connection = remember(appBarMaxHeightPx, bottomCollapsableHeightPx) {
 				CollapsingAppBarNestedScrollConnection(fixedAppBarHeightPx, bottomCollapsableHeightPx)
 			}
 
-			val spaceHeight by remember(density) {
+			val spaceHeight by remember(density, connection, bottomCollapsableHeightPx) {
 				derivedStateOf {
 					with(density) {
-						(appBarMaxHeightPx + (connection.appBarAdditionalOffset.takeIf { bottomCollapsableHeight != null } ?: connection.appBarOffset)).toDp()
+						(appBarMaxHeightPx + (connection.appBarAdditionalOffset.takeIf { bottomCollapsableHeight.value != null } ?: connection.appBarOffset)).toDp()
 					}
 				}
 			}
 
 			return Triple(connection, spaceHeight, statusBarHeight)
-		}
+			}
 	}
 }
