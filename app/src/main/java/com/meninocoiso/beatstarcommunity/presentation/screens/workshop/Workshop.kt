@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -52,10 +51,6 @@ fun WorkshopScreen(
         fixedHeight = TabsHeight,
         bottomCollapsableHeight = bottomCollapsableHeight,
     )
-
-    LaunchedEffect(Unit) { 
-        viewModel.observeSuggestions()
-    }
 
     Column {
         Column(

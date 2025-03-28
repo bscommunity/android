@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CircularProgressIndicator
@@ -15,7 +13,6 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -28,9 +25,9 @@ import com.meninocoiso.beatstarcommunity.data.manager.FetchEvent
 import com.meninocoiso.beatstarcommunity.presentation.screens.details.OnNavigateToDetails
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartPreview
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.SectionWrapper
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.fabScrollObserver
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.WorkshopViewModel
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -121,10 +118,6 @@ internal fun ChartsSection(
                             onFabStateChange(shouldExtend)
                         },
                     listState = listState,
-                    onListEnd = {
-                        // Connect to pagination function
-                        viewModel.loadMoreCharts()
-                    }
                 ) {
                     itemsIndexed(charts) { index, chart ->
                         ChartPreview(
@@ -163,35 +156,4 @@ internal fun ChartsSection(
             }
         }
     }
-}
-
-@Composable
-private fun SectionWrapper(
-    modifier: Modifier = Modifier,
-    listState: LazyListState,
-    onListEnd: (() -> Unit)? = null,
-    content: LazyListScope.() -> Unit
-) {
-    // Detect when user reaches end of list
-    LaunchedEffect(listState) {
-        snapshotFlow {
-            val layoutInfo = listState.layoutInfo
-            val totalItems = layoutInfo.totalItemsCount
-            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-
-            lastVisibleItem >= totalItems - 3 // Load more when 3 items from end
-        }
-            .distinctUntilChanged()
-            .collect { isAtEnd ->
-                if (isAtEnd) {
-                    onListEnd?.invoke()
-                }
-            }
-    }
-
-    LazyColumn(
-        state = listState,
-        modifier = modifier,
-        content = content
-    )
 }

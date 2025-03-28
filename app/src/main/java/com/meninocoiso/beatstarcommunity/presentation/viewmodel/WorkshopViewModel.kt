@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -82,15 +83,24 @@ class WorkshopViewModel @Inject constructor(
         private set
     
     init {
+        // Load search history
+        getSearchHistory()
+        
+        // Initialize by loading cached charts, then fetch fresh data
         viewModelScope.launch {
-            // Load search history
-            getSearchHistory()
-            
-            // Initialize by loading cached charts, then fetch fresh data
             val cachedResult = chartManager.loadCachedCharts()
             handleCachedChartsResult(cachedResult)
 
             fetchFeedCharts(false)
+
+            // Observe scroll state for pagination
+            // Must be done sequentially after loading cached charts
+            observeScrollState()
+        }
+        
+        // Observe suggestions
+        viewModelScope.launch {
+            observeSuggestions()
         }
     }
 
@@ -224,6 +234,7 @@ class WorkshopViewModel @Inject constructor(
     @OptIn(FlowPreview::class)
     suspend fun observeSuggestions() {
         var lastQuery = ""
+        Log.d(TAG, "Observing suggestions for search field")
         
         snapshotFlow { searchFieldState.text }
             // Let fast typers get multiple keystrokes in before kicking off a search
@@ -248,6 +259,29 @@ class WorkshopViewModel @Inject constructor(
             }
     }
     
+    suspend fun observeScrollState() {
+        Log.d(TAG, "Observing scroll state for list")
+        
+        snapshotFlow {
+            val layoutInfo = listState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index
+            
+            // Ignore if no items are visible
+            if (lastVisibleItem == null) {
+                return@snapshotFlow false
+            }
+
+            lastVisibleItem >= totalItems - 3 // Load more when 3 items from end
+        }
+            .distinctUntilChanged()
+            .collect { isAtEnd ->
+                if (isAtEnd) {
+                    loadMoreCharts()
+                }
+            }
+    }
+    
     /**
      * Load the next batch of charts when user scrolls to the bottom
      */
@@ -263,7 +297,7 @@ class WorkshopViewModel @Inject constructor(
 
             // Determine which loading function to use based on context
             val flowToCollect = if (searchFieldState.text.isEmpty()) {
-                currentFeedPage++;
+                currentFeedPage++
                 
                 // We're in feed mode
                 chartManager.fetchFeedCharts(
@@ -272,7 +306,7 @@ class WorkshopViewModel @Inject constructor(
                     offset = currentFeedPage * BATCH_SIZE
                 )
             } else {
-                currentSearchPage++;
+                currentSearchPage++
                 
                 // We're on query mode
                 chartManager.searchCharts(
