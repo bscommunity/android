@@ -6,7 +6,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 
 @Composable
-fun Modifier.fullLayout(): Modifier {
+fun Modifier.nonClippingLayout(): Modifier {
     val screenHeight = LocalConfiguration.current.screenHeightDp
     
     return layout { measurable, constraints ->

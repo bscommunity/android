@@ -2,6 +2,7 @@ package com.meninocoiso.beatstarcommunity.presentation.viewmodel
 
 import android.util.Log
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -33,7 +34,7 @@ import javax.inject.Inject
 
 private const val TAG = "WorkshopViewModel"
 private const val BATCH_SIZE = 10
-private const val MAX_HISTORY_SIZE = 10
+private const val MAX_HISTORY_SIZE = 5
 
 @HiltViewModel
 class WorkshopViewModel @Inject constructor(
@@ -49,6 +50,9 @@ class WorkshopViewModel @Inject constructor(
     
     private val _events = MutableSharedFlow<FetchEvent>()
     val events: SharedFlow<FetchEvent> = _events.asSharedFlow()
+
+    var lastQuery = ""
+        private set
 
     // Pagination cacheState
     private var currentPage = 0
@@ -138,14 +142,19 @@ class WorkshopViewModel @Inject constructor(
      * @param query The search query string.
      */
     fun searchCharts(query: String) {
-        // If the query is empty, clear the charts and reset state to show the feed
-        if (query.isEmpty()) {
-            chartManager.clearRemoteCharts()
-            _searchState.value = ChartState.Success
-            return
-        }
-        
+        // val query = searchFieldState.text.toString()
         viewModelScope.launch {
+            lastQuery = query
+            
+            // If the query is empty, clear the charts and reset state to show the feed
+            if (query.isEmpty()) {
+                Log.d(TAG, "Clearing search results")
+                clearSearch()
+                return@launch
+            }
+
+            Log.d(TAG, "Searching for charts with query: $query")
+            
             _searchState.value = ChartState.Loading
 
             // Reset pagination
@@ -165,6 +174,15 @@ class WorkshopViewModel @Inject constructor(
             ).collect { result ->
                 when (result) {
                     is FetchResult.Success -> {
+                        if (lastQuery != query) {
+                            Log.d(TAG, "Skipping search result: query has changed")
+                            return@collect
+                        }
+
+                        // Since we need to check if query is valid after remote fetch,
+                        // we need to update value manually
+                        chartManager.updateRemoteCharts(result.data)
+                        
                         hasMoreData = result.data.size >= BATCH_SIZE
                         _searchState.value = ChartState.Success
                     }
@@ -207,10 +225,8 @@ class WorkshopViewModel @Inject constructor(
 
     @OptIn(FlowPreview::class)
     suspend fun observeSuggestions() {
-        var lastQuery = ""
-        
         snapshotFlow { searchFieldState.text }
-            // Let fast typers get multiple keystrokes in before kicking off a search.
+            // Let fast typers get multiple keystrokes in before kicking off a search
             .debounce(300)
             // collectLatest cancels the previous search if it's still running 
             // when there's a new change.             
@@ -223,7 +239,6 @@ class WorkshopViewModel @Inject constructor(
                         lastQuery.length > 1 -> {
                             chartManager.getSuggestions(currentQuery.toString()).first()
                         }
-
                         else -> {
                             // Clear suggestions for very short queries
                             null
@@ -264,6 +279,8 @@ class WorkshopViewModel @Inject constructor(
                     limit = BATCH_SIZE,
                     offset = currentPage * BATCH_SIZE
                 )
+                /*TODO: In the current implementation, we would need to handle search pagination
+                *  manually. In the next commit I'm going to change the current approach*/
             }
 
             flowToCollect.collect { result ->
@@ -300,6 +317,14 @@ class WorkshopViewModel @Inject constructor(
                 // No-op, we're already in Loading cacheState
             }
         }
+    }
+    
+    fun clearSearch() {
+        searchFieldState.setTextAndPlaceCursorAtEnd("")
+        lastQuery = ""
+        suggestions = null
+        chartManager.clearRemoteCharts()
+        _searchState.value = ChartState.Idle
     }
     
     // Search history management

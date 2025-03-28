@@ -92,7 +92,7 @@ fun WorkshopSearchBar(
     }
     
     val onQueryFinish: (String) -> Unit = { query ->
-        // textFieldState.setTextAndPlaceCursorAtEnd(query)
+        textFieldState.setTextAndPlaceCursorAtEnd(query)
         onSearch(query)
         scope.launch { searchBarState.animateToCollapsed() }
     }
