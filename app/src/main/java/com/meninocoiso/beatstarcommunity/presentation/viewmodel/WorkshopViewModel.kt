@@ -1,6 +1,7 @@
 package com.meninocoiso.beatstarcommunity.presentation.viewmodel
 
 import android.util.Log
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.getValue
@@ -51,11 +52,11 @@ class WorkshopViewModel @Inject constructor(
     private val _events = MutableSharedFlow<FetchEvent>()
     val events: SharedFlow<FetchEvent> = _events.asSharedFlow()
 
-    var lastQuery = ""
-        private set
-
-    // Pagination cacheState
-    private var currentPage = 0
+    // Pagination
+    val listState = LazyListState()
+    
+    private var currentFeedPage = 0
+    private var currentSearchPage = 0
     private var hasMoreData = true
     
     var isLoadingMore by mutableStateOf(false)
@@ -103,7 +104,7 @@ class WorkshopViewModel @Inject constructor(
             // Reset pagination cacheState
             Log.d(TAG, "Fetching feed charts with sort: $currentSortOption")
 
-            currentPage = 0
+            currentFeedPage = 0
             isLoadingMore = false
             hasMoreData = true
             
@@ -144,8 +145,6 @@ class WorkshopViewModel @Inject constructor(
     fun searchCharts(query: String) {
         // val query = searchFieldState.text.toString()
         viewModelScope.launch {
-            lastQuery = query
-            
             // If the query is empty, clear the charts and reset state to show the feed
             if (query.isEmpty()) {
                 Log.d(TAG, "Clearing search results")
@@ -155,12 +154,21 @@ class WorkshopViewModel @Inject constructor(
 
             Log.d(TAG, "Searching for charts with query: $query")
             
+            // Update the search query to prevent data racing
+            chartManager.searchQuery = query
+            
+            // Update the search field state
             _searchState.value = ChartState.Loading
 
             // Reset pagination
-            currentPage = 0
+            currentSearchPage = 0
             isLoadingMore = false
             hasMoreData = true
+            
+            // Scroll to top
+            viewModelScope.launch {
+                listState.scrollToItem(0)
+            }
 
             // Add search to history
             addSearchHistory(query)
@@ -174,21 +182,11 @@ class WorkshopViewModel @Inject constructor(
             ).collect { result ->
                 when (result) {
                     is FetchResult.Success -> {
-                        if (lastQuery != query) {
-                            Log.d(TAG, "Skipping search result: query has changed")
-                            return@collect
-                        }
-
-                        // Since we need to check if query is valid after remote fetch,
-                        // we need to update value manually
-                        chartManager.updateRemoteCharts(result.data)
-                        
                         hasMoreData = result.data.size >= BATCH_SIZE
                         _searchState.value = ChartState.Success
                     }
                     is FetchResult.Error -> {
                         _searchState.value = ChartState.Error
-                        _events.emit(FetchEvent.Error(result.message))
                     }
                     FetchResult.Loading -> {
                         // No-op
@@ -225,6 +223,8 @@ class WorkshopViewModel @Inject constructor(
 
     @OptIn(FlowPreview::class)
     suspend fun observeSuggestions() {
+        var lastQuery = ""
+        
         snapshotFlow { searchFieldState.text }
             // Let fast typers get multiple keystrokes in before kicking off a search
             .debounce(300)
@@ -253,34 +253,35 @@ class WorkshopViewModel @Inject constructor(
      */
     fun loadMoreCharts() {
         if (isLoadingMore || !hasMoreData) {
-            Log.d(TAG, "Skipping load more: already loading or no more data")
+            Log.d(TAG, "Skipping load more: already loading isLoadingMore=$isLoadingMore or no more data hasMoreData=$hasMoreData")
             return
         }
 
         viewModelScope.launch {
             Log.d(TAG, "Loading more charts...")
             isLoadingMore = true
-            currentPage++
 
             // Determine which loading function to use based on context
             val flowToCollect = if (searchFieldState.text.isEmpty()) {
+                currentFeedPage++;
+                
                 // We're in feed mode
                 chartManager.fetchFeedCharts(
                     sortBy = currentSortOption,
                     limit = BATCH_SIZE,
-                    offset = currentPage * BATCH_SIZE
+                    offset = currentFeedPage * BATCH_SIZE
                 )
             } else {
+                currentSearchPage++;
+                
                 // We're on query mode
                 chartManager.searchCharts(
                     query = searchFieldState.text.toString(),
                     difficulties = difficulties,
                     genres = genres,
                     limit = BATCH_SIZE,
-                    offset = currentPage * BATCH_SIZE
+                    offset = currentSearchPage * BATCH_SIZE
                 )
-                /*TODO: In the current implementation, we would need to handle search pagination
-                *  manually. In the next commit I'm going to change the current approach*/
             }
 
             flowToCollect.collect { result ->
@@ -320,11 +321,23 @@ class WorkshopViewModel @Inject constructor(
     }
     
     fun clearSearch() {
+        // Clear search state
         searchFieldState.setTextAndPlaceCursorAtEnd("")
-        lastQuery = ""
-        suggestions = null
-        chartManager.clearRemoteCharts()
         _searchState.value = ChartState.Idle
+        chartManager.searchQuery = ""
+        
+        // Reset pagination
+        currentSearchPage = 0
+        isLoadingMore = false
+        hasMoreData = true
+        
+        // Reset suggestions
+        suggestions = null
+        
+        // Scroll to top
+        viewModelScope.launch {
+            listState.scrollToItem(0)
+        }
     }
     
     // Search history management
