@@ -84,6 +84,7 @@ fun WorkshopScreen(
             ) {
                 0 -> ChartsSection(
                     connection,
+                    listState = viewModel.listState,
                     onNavigateToDetails,
                     onFabStateChange,
                     onSnackbar,

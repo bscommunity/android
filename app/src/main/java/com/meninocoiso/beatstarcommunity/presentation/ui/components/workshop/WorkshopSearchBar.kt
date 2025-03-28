@@ -167,7 +167,7 @@ fun WorkshopSearchBar(
                         bottom = 8.dp
                     )
                 )
-                historyItems.forEach { it ->
+                historyItems.asReversed().forEach { it ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
