@@ -1,5 +1,8 @@
 package com.meninocoiso.beatstarcommunity.data.remote
 
+import com.meninocoiso.beatstarcommunity.domain.enums.SortOption
+import com.meninocoiso.beatstarcommunity.domain.enums.Difficulty
+import com.meninocoiso.beatstarcommunity.domain.enums.Genre
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.model.User
 import com.meninocoiso.beatstarcommunity.domain.model.Version
@@ -58,11 +61,30 @@ class KtorApiClient @Inject constructor() : ApiClient {
         return client.get("charts/$id").body()
     }
 
-    override suspend fun getCharts(query: String?, limit: Int?, offset: Int): List<Chart> {
+    override suspend fun getFeedCharts(sortBy: SortOption, limit: Int?, offset: Int): List<Chart> {
+        return client.get("charts"){
+            url {
+                parameters.append("fetchContributors", "true")
+                parameters.append("sortBy", sortBy.toString())
+                limit?.let { parameters.append("limit", it.toString()) }
+                parameters.append("offset", offset.toString())
+            }
+        }.body()
+    }
+
+    override suspend fun getCharts(
+        query: String?,
+        difficulties: List<Difficulty>?,
+        genres: List<Genre>?,
+        limit: Int?,
+        offset: Int
+    ): List<Chart> {
         return client.get("charts"){
             url {
                 parameters.append("fetchContributors", "true")
                 query?.let { parameters.append("query", it) }
+                difficulties?.let { parameters.append("difficulties", it.joinToString(",")) }
+                genres?.let { parameters.append("genres", it.joinToString(",")) }
                 limit?.let { parameters.append("limit", it.toString()) }
                 parameters.append("offset", offset.toString())
             }

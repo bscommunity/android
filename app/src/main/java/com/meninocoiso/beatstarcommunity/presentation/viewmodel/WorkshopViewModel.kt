@@ -13,13 +13,18 @@ import com.meninocoiso.beatstarcommunity.data.manager.ChartState
 import com.meninocoiso.beatstarcommunity.data.manager.FetchEvent
 import com.meninocoiso.beatstarcommunity.data.manager.FetchResult
 import com.meninocoiso.beatstarcommunity.data.repository.CacheRepository
+import com.meninocoiso.beatstarcommunity.domain.enums.Difficulty
+import com.meninocoiso.beatstarcommunity.domain.enums.Genre
+import com.meninocoiso.beatstarcommunity.domain.enums.SortOption
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
@@ -35,27 +40,40 @@ class WorkshopViewModel @Inject constructor(
     private val chartManager: ChartManager,
     private val cacheRepository: CacheRepository
 ) : ViewModel() {
-
-    val charts: Flow<List<Chart>> = chartManager.workshopCharts
-    val state = chartManager.workshopState
-
+    val searchCharts: Flow<List<Chart>> = chartManager.searchCharts
+    val feedCharts: Flow<List<Chart>> = chartManager.workshopCharts
+    val cacheState = chartManager.cacheState
+    
+    private val _searchState = MutableStateFlow<ChartState>(ChartState.Idle)
+    val searchState: SharedFlow<ChartState> = _searchState.asStateFlow()
+    
     private val _events = MutableSharedFlow<FetchEvent>()
     val events: SharedFlow<FetchEvent> = _events.asSharedFlow()
 
+    // Pagination cacheState
     private var currentPage = 0
     private var hasMoreData = true
     
     var isLoadingMore by mutableStateOf(false)
         private set
     
+    // Search bar history and suggestions
+    val searchFieldState = TextFieldState()
+    
     var searchHistory: List<String> by mutableStateOf(emptyList())
         private set
     
     var suggestions by mutableStateOf<List<String>?>(null)         
         private set
+    
+    // Sorting and filtering
+    var currentSortOption by mutableStateOf(SortOption.WEEKLY_RANK)
+        private set
 
-    val searchFieldState = TextFieldState()
-    var searchResults: List<String> by mutableStateOf(emptyList())         
+    var difficulties by mutableStateOf<List<Difficulty>?>(null)
+        private set
+
+    var genres by mutableStateOf<List<Genre>?>(null)
         private set
     
     init {
@@ -67,10 +85,126 @@ class WorkshopViewModel @Inject constructor(
             val cachedResult = chartManager.loadCachedCharts()
             handleCachedChartsResult(cachedResult)
 
-            refresh(false)
+            fetchFeedCharts(false)
         }
     }
-    
+
+    /**
+     * Fetches the feed charts from the remote source.
+     *
+     * @param showLoading Whether to show loading indicators (either full screen or in PullToRefresh).
+     */
+    fun fetchFeedCharts(showLoading: Boolean = true) {
+        viewModelScope.launch {
+            // Reset pagination cacheState
+            Log.d(TAG, "Fetching feed charts with sort: $currentSortOption")
+
+            currentPage = 0
+            isLoadingMore = false
+            hasMoreData = true
+            
+            if (showLoading) {
+                chartManager.updateState(ChartState.Loading)
+            }
+
+            chartManager.fetchFeedCharts(
+                sortBy = currentSortOption,
+                forceRefresh = true,
+                limit = BATCH_SIZE,
+                offset = 0
+            ).collect { result ->
+                when (result) {
+                    is FetchResult.Success -> {
+                        hasMoreData = result.data.size >= BATCH_SIZE
+                        chartManager.updateState(ChartState.Success)
+                    }
+                    is FetchResult.Error -> {
+                        if (showLoading && chartManager.getChartsLength() > 0) {
+                            _events.emit(FetchEvent.Error(result.message))
+                        }
+                        chartManager.updateState(ChartState.Error)
+                    }
+                    FetchResult.Loading -> {
+                        // Already handled above
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Searches for charts based on the provided query.
+     *
+     * @param query The search query string.
+     */
+    fun searchCharts(query: String) {
+        // If the query is empty, clear the charts and reset state to show the feed
+        if (query.isEmpty()) {
+            chartManager.clearRemoteCharts()
+            _searchState.value = ChartState.Success
+            return
+        }
+        
+        viewModelScope.launch {
+            _searchState.value = ChartState.Loading
+
+            // Reset pagination
+            currentPage = 0
+            isLoadingMore = false
+            hasMoreData = true
+
+            // Add search to history
+            addSearchHistory(query)
+
+            chartManager.searchCharts(
+                query = query,
+                difficulties = difficulties,
+                genres = genres,
+                limit = BATCH_SIZE,
+                offset = 0
+            ).collect { result ->
+                when (result) {
+                    is FetchResult.Success -> {
+                        hasMoreData = result.data.size >= BATCH_SIZE
+                        _searchState.value = ChartState.Success
+                    }
+                    is FetchResult.Error -> {
+                        _searchState.value = ChartState.Error
+                        _events.emit(FetchEvent.Error(result.message))
+                    }
+                    FetchResult.Loading -> {
+                        // No-op
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Changes the current sort option for the charts.
+     *
+     * @param sortOption The new sort option to be applied.
+     */
+    fun changeSortOption(sortOption: SortOption) {
+        if (currentSortOption != sortOption) {
+            currentSortOption = sortOption
+            fetchFeedCharts(true)
+        }
+    }
+
+    /**
+     * Sets the list of difficulties to be used for filtering charts.
+     *
+     * @param newDifficulties The new list of difficulties to be set.
+     */
+    /*fun setDifficulties(newDifficulties: List<Difficulty>?) {
+        difficulties = newDifficulties
+    }*/
+
+    /*fun setGenres(newGenres: List<String>?) {
+        genres = newGenres
+    }*/
+
     @OptIn(FlowPreview::class)
     suspend fun observeSuggestions() {
         var lastQuery = ""
@@ -86,7 +220,7 @@ class WorkshopViewModel @Inject constructor(
                     lastQuery = currentQuery.toString()
 
                     suggestions = when {
-                        lastQuery.length > 2 -> {
+                        lastQuery.length > 1 -> {
                             chartManager.getSuggestions(currentQuery.toString()).first()
                         }
 
@@ -98,54 +232,7 @@ class WorkshopViewModel @Inject constructor(
                 }
             }
     }
-
-    /**
-     * Refresh charts data from remote source
-     * @param showLoading Whether to show loading state or keep showing existing data
-     */
-    fun refresh(showLoading: Boolean = true) {
-        viewModelScope.launch {
-            // If we want to show loading state, update the UI
-            /*if (showLoading) {
-                chartManager.updateState(ChartState.Loading)
-            }*/
-            // Reset pagination state
-            Log.d(TAG, "Refreshing charts...")
-            
-            currentPage = 0
-            isLoadingMore = false
-            hasMoreData = true
-            
-            chartManager.updateState(ChartState.Loading)
-
-            // Fetch first batch of data
-            chartManager.refreshRemoteCharts(
-                forceRefresh = true,
-                limit = BATCH_SIZE,
-                offset = 0
-            ).collect { result ->
-                when (result) {
-                    is FetchResult.Success -> {
-                        // Check if we received fewer items than requested (end of data)
-                        hasMoreData = result.data.size >= BATCH_SIZE
-                        chartManager.updateState(ChartState.Success)
-                    }
-
-                    is FetchResult.Error -> {
-                        if (showLoading && chartManager.getChartsLength() > 0) {
-                            _events.emit(FetchEvent.Error(result.message))
-                        }
-                        chartManager.updateState(ChartState.Error)
-                    }
-
-                    FetchResult.Loading -> {
-                        // Already handled above
-                    }
-                }
-            }
-        }
-    }
-
+    
     /**
      * Load the next batch of charts when user scrolls to the bottom
      */
@@ -160,13 +247,28 @@ class WorkshopViewModel @Inject constructor(
             isLoadingMore = true
             currentPage++
 
-            chartManager.loadMoreCharts(
-                limit = BATCH_SIZE,
-                offset = currentPage * BATCH_SIZE
-            ).collect { result ->
+            // Determine which loading function to use based on context
+            val flowToCollect = if (searchFieldState.text.isEmpty()) {
+                // We're in feed mode
+                chartManager.fetchFeedCharts(
+                    sortBy = currentSortOption,
+                    limit = BATCH_SIZE,
+                    offset = currentPage * BATCH_SIZE
+                )
+            } else {
+                // We're on query mode
+                chartManager.searchCharts(
+                    query = searchFieldState.text.toString(),
+                    difficulties = difficulties,
+                    genres = genres,
+                    limit = BATCH_SIZE,
+                    offset = currentPage * BATCH_SIZE
+                )
+            }
+
+            flowToCollect.collect { result ->
                 when (result) {
                     is FetchResult.Success -> {
-                        // Check if we're at the end of available data
                         if (result.data.isEmpty() || result.data.size < BATCH_SIZE) {
                             hasMoreData = false
                         }
@@ -195,29 +297,12 @@ class WorkshopViewModel @Inject constructor(
                 chartManager.updateState(ChartState.Error)
             }
             FetchResult.Loading -> {
-                // No-op, we're already in Loading state
+                // No-op, we're already in Loading cacheState
             }
         }
     }
-
-    /*fun searchCharts(query: String) {
-        viewModelScope.launch {
-            chartManager.searchCharts(query).collect { result ->
-                when (result) {
-                    is FetchResult.Success -> {
-                        chartManager.updateState(ChartState.Success)
-                    }
-                    is FetchResult.Error -> {
-                        chartManager.updateState(ChartState.Error)
-                    }
-                    FetchResult.Loading -> {
-                        // No-op
-                    }
-                }
-            }
-        }
-    }*/
     
+    // Search history management
     private fun getSearchHistory() {
         viewModelScope.launch {
             searchHistory = cacheRepository.getSearchHistory()

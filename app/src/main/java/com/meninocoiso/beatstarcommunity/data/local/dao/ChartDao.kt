@@ -41,6 +41,28 @@ interface ChartDao {
     @Query("SELECT v.* FROM charts c JOIN versions v ON c.latest_version = v.id WHERE c.id IN (:ids)")
     fun getLatestVersionsByChartIds(ids: List<String>): List<Version>
 
+    @Query("""
+    SELECT c.* FROM charts c 
+    JOIN versions v ON c.latest_version = v.id 
+    ORDER BY v.published_at DESC 
+    LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END 
+    OFFSET :offset
+    """)
+    fun getChartsSortedByLastUpdated(limit: Int?, offset: Int): List<Chart>
+
+    @Query("""
+    SELECT c.* FROM charts c 
+    LEFT JOIN (
+        SELECT chart_id, SUM(downloads_amount) as total_downloads 
+        FROM versions 
+        GROUP BY chart_id
+    ) v ON c.id = v.chart_id 
+    ORDER BY COALESCE(v.total_downloads, 0) DESC 
+    LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END 
+    OFFSET :offset
+""")
+    fun getChartsSortedByMostDownloaded(limit: Int?, offset: Int): List<Chart>
+    
     @Query("SELECT * FROM charts WHERE track LIKE :first AND " +
             "artist LIKE :last LIMIT 1")
     fun findByName(first: String, last: String): Chart

@@ -1,10 +1,10 @@
 package com.meninocoiso.beatstarcommunity.domain.lists
 
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.domain.enums.DifficultyEnum
+import com.meninocoiso.beatstarcommunity.domain.enums.Difficulty
 
 data class Difficulty(
-	val difficultyEnum: DifficultyEnum,
+	val difficulty: Difficulty,
 	val id: String,
 	val icon: Int? = null
 )
@@ -12,8 +12,8 @@ data class Difficulty(
 // In the future, in case of featuring multiple languages on the app,
 // remove the "name" property in favor of a dictionary for each language
 val difficultiesList = listOf(
-	Difficulty(DifficultyEnum.Normal, "Normal"),
-	Difficulty(DifficultyEnum.Hard, "Hard", R.drawable.hard),
-	Difficulty(DifficultyEnum.Extreme, "Extreme", R.drawable.extreme),
-	Difficulty(DifficultyEnum.Expert, "Expert"),
+	Difficulty(Difficulty.NORMAL, "Normal"),
+	Difficulty(Difficulty.HARD, "Hard", R.drawable.hard),
+	Difficulty(Difficulty.EXTREME, "Extreme", R.drawable.extreme),
+	Difficulty(Difficulty.EXPERT, "Expert"),
 )

@@ -64,7 +64,7 @@ fun BottomNavBar(
 						// reselecting the same item
 						launchSingleTop = true
 
-						// Restore state when reselecting a previously selected item
+						// Restore cacheState when reselecting a previously selected item
 						restoreState = true
 					}
 				},

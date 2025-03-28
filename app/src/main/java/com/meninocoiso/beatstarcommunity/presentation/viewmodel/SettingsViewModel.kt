@@ -34,7 +34,7 @@ private const val TAG = "SettingsViewModel"
 
 /**
  * ViewModel for managing application settings
- * Handles state management and updates for settings
+ * Handles cacheState management and updates for settings
  */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -90,7 +90,7 @@ class SettingsViewModel @Inject constructor(
 
 	/**
 	 * Check for app updates
-	 * @param silentMode If true, errors won't be exposed through the UI state
+	 * @param silentMode If true, errors won't be exposed through the UI cacheState
 	 */
 	fun checkAppUpdates(silentMode: Boolean = false) {
 		_updateState.value = AppUpdateState.Checking
@@ -119,7 +119,7 @@ class SettingsViewModel @Inject constructor(
 	}
 
 	/**
-	 * Helper function to compare versions and update state
+	 * Helper function to compare versions and update cacheState
 	 */
 	private fun compareVersionAndUpdateState(fetchedVersion: String) {
 		_updateState.value = if (fetchedVersion > currentVersion) {

@@ -23,7 +23,7 @@ class UpdatesViewModel @Inject constructor(
     val updatesAvailable: Flow<List<Chart>> = chartManager.chartsWithUpdates
     val localCharts: Flow<List<Chart>> = chartManager.installedCharts
 
-    val workshopState = chartManager.workshopState
+    val cacheState = chartManager.cacheState
 
     private val _updateState = MutableStateFlow<ChartState>(ChartState.Loading)
     val updateState: StateFlow<ChartState> = _updateState.asStateFlow()
@@ -36,11 +36,11 @@ class UpdatesViewModel @Inject constructor(
 
     /**
      * Check for updates to installed charts
-     * @param showLoading Whether to show loading state or keep showing existing data
+     * @param showLoading Whether to show loading cacheState or keep showing existing data
      */
     fun checkForUpdates(showLoading: Boolean = true) {
         viewModelScope.launch {
-            // If we want to show loading state, update the UI
+            // If we want to show loading cacheState, update the UI
             if (showLoading) {
                 _updateState.value = ChartState.Loading
             }

@@ -84,7 +84,7 @@ class ContentViewModel @Inject constructor(
     private fun handleDownloadEvent(event: DownloadEvent) {
         val chartId = event.chartId
 
-        // Update the state based on the event
+        // Update the cacheState based on the event
         when (event) {
             is DownloadEvent.Progress ->
                 updateState(chartId, ContentState.Downloading(chartId, event.progress))
@@ -109,7 +109,7 @@ class ContentViewModel @Inject constructor(
         _events.tryEmit(event)
     }
 
-    // Update state efficiently with .update
+    // Update cacheState efficiently with .update
     private fun updateState(chartId: String, state: ContentState) {
         _contentStates.update { currentStates ->
             currentStates.toMutableMap().apply {
@@ -121,7 +121,7 @@ class ContentViewModel @Inject constructor(
     fun downloadChart(chart: Chart) {
         val chartId = chart.id
 
-        // Update state immediately for UI feedback
+        // Update cacheState immediately for UI feedback
         updateState(chartId, ContentState.Downloading(chartId, 0f))
 
         // Start the download with error handling
@@ -157,7 +157,7 @@ class ContentViewModel @Inject constructor(
                 // Delete the actual chart files
                 downloadRepository.deleteChart(chart.id)
 
-                // Reset the state
+                // Reset the cacheState
                 updateState(chart.id, ContentState.Idle)
             }
                 .onFailure {
@@ -171,7 +171,7 @@ class ContentViewModel @Inject constructor(
         }
     }
 
-    // Get chart state efficiently - reusing the existing StateFlow
+    // Get chart cacheState efficiently - reusing the existing StateFlow
     fun getContentState(chartId: String): StateFlow<ContentState> {
         return contentStates
             .map { it[chartId] ?: ContentState.Idle }
@@ -194,7 +194,7 @@ class ContentViewModel @Inject constructor(
         settingsRepository.setFolderUri(uri.toString())
     }
 
-    // Helper method to get the current state of a chart synchronously
+    // Helper method to get the current cacheState of a chart synchronously
     fun getCurrentState(chartId: String): ContentState {
         return _contentStates.value[chartId] ?: ContentState.Idle
     }

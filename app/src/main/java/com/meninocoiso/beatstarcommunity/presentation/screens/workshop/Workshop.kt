@@ -110,18 +110,17 @@ fun WorkshopScreen(
             },
             suggestions = viewModel.suggestions,
             onSearch = { query ->
+                Log.d("WorkshopScreen", "onSearch")
+                viewModel.searchCharts(query)
+                
                 if (query.isEmpty()) {
                     // Restore WorkspaceChips when search is empty
                     bottomCollapsableHeight.value = WorkshopChipsHeight
                     return@WorkshopSearchBar
                 }
-
-                Log.d("WorkshopScreen", "onSearch")
-
+                
                 // Remove WorkspaceChips while searching
                 bottomCollapsableHeight.value = null
-
-                viewModel.addSearchHistory(query)
             }
         )
     }

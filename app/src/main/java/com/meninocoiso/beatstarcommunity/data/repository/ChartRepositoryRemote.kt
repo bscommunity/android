@@ -1,7 +1,10 @@
 package com.meninocoiso.beatstarcommunity.data.repository
 
 import com.meninocoiso.beatstarcommunity.data.remote.ApiClient
+import com.meninocoiso.beatstarcommunity.domain.enums.Difficulty
+import com.meninocoiso.beatstarcommunity.domain.enums.Genre
 import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
+import com.meninocoiso.beatstarcommunity.domain.enums.SortOption
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.model.Version
 import jakarta.inject.Inject
@@ -15,14 +18,37 @@ class ChartRepositoryRemote @Inject constructor(
     private val apiClient: ApiClient,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ChartRepository {
-    override suspend fun getCharts(query: String?, limit: Int?, offset: Int): Flow<Result<List<Chart>>> = flow {
-        try {
-            val charts = apiClient.getCharts(query, limit, offset)
-            emit(Result.success(charts))
-        } catch (e: Exception) {
-            emit(Result.failure(e))
-        }
-    }.flowOn(dispatcher)
+    override suspend fun getCharts(
+        query: String?,
+        difficulties: List<Difficulty>?,
+        genres: List<Genre>?,
+        limit: Int?,
+        offset: Int
+    ): Flow<Result<List<Chart>>> {
+        return flow {
+            try {
+                val charts = apiClient.getCharts(query, difficulties, genres, limit, offset)
+                emit(Result.success(charts))
+            } catch (e: Exception) {
+                emit(Result.failure(e))
+            }
+        }.flowOn(dispatcher)
+    }
+
+    override suspend fun getChartsSortedBy(
+        sortBy: SortOption,
+        limit: Int?,
+        offset: Int
+    ): Flow<Result<List<Chart>>> {
+        return flow {
+            try {
+                val charts = apiClient.getFeedCharts(sortBy, limit, offset)
+                emit(Result.success(charts))
+            } catch (e: Exception) {
+                emit(Result.failure(e))
+            }
+        }.flowOn(dispatcher)
+    }
 
     override suspend fun getChartsById(ids: List<String>): Flow<Result<List<Chart>>> = flow {
         try {
