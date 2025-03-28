@@ -42,8 +42,7 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.Confi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.launch
 
-/* TODO: For optional future improvement, Compose devs use the following strategy to
-*   detect touch
+/* TODO: For optional future improvement, Compose devs use the following strategy to detect touch
 @Composable
 private fun DetectClickFromInteractionSource(
     interactionSource: InteractionSource,
@@ -77,7 +76,7 @@ fun WorkshopSearchBar(
 
     val haptics = LocalHapticFeedback.current
     var historyItemToDelete by remember { mutableStateOf<String?>(null) }
-    
+
     /*var isFilterSheetOpen by rememberSaveable {
 		mutableStateOf(false)
 	}
@@ -91,27 +90,28 @@ fun WorkshopSearchBar(
             textFieldState.setTextAndSelectAll(textFieldState.text.toString())
         }
     }
+    
+    val onQueryFinish: (String) -> Unit = { query ->
+        // textFieldState.setTextAndPlaceCursorAtEnd(query)
+        onSearch(query)
+        scope.launch { searchBarState.animateToCollapsed() }
+    }
 
     val inputField =
         @Composable {
             SearchBarDefaults.InputField(
                 searchBarState = searchBarState,
                 textFieldState = textFieldState,
-                onSearch = { query ->
-                    onSearch(query)
-                    scope.launch {
-                        searchBarState.animateToCollapsed()
-                    }
-                },
+                onSearch = onQueryFinish,
                 placeholder = { Text("Search in workshop") },
                 leadingIcon = {
-                    if (searchBarState.currentValue == SearchBarValue.Expanded) {
-                        IconButton(
-                            onClick = {
-                                textFieldState.setTextAndPlaceCursorAtEnd("")
-                                onSearch("")
-                                scope.launch { searchBarState.animateToCollapsed() }
-                            }
+                    if (searchBarState.currentValue == SearchBarValue.Expanded ||
+                        !textFieldState.text.isEmpty()) {
+                        IconButton(onClick = {
+                            scope.launch { searchBarState.animateToCollapsed() }
+                            textFieldState.setTextAndPlaceCursorAtEnd("")
+                            onSearch("")
+                        }
                         ) {
                             Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
                         }
@@ -139,16 +139,11 @@ fun WorkshopSearchBar(
                 .verticalScroll(rememberScrollState())
         ) {
             if (suggestions != null) {
-                suggestions.forEach {
+                suggestions.forEach { it ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .combinedClickable(
-                                onClick = {
-                                    textFieldState.setTextAndPlaceCursorAtEnd(it)
-                                    scope.launch { searchBarState.animateToCollapsed() }
-                                }
-                            )
+                            .combinedClickable(onClick = { onQueryFinish(it) })
                             .padding(16.dp)
                     ) {
                         Icon(
@@ -172,16 +167,12 @@ fun WorkshopSearchBar(
                         bottom = 8.dp
                     )
                 )
-                historyItems.forEach {
+                historyItems.forEach { it ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .combinedClickable(
-                                onClick = {
-                                    textFieldState.setTextAndPlaceCursorAtEnd(it)
-                                    onSearch(it)
-                                    scope.launch { searchBarState.animateToCollapsed() }
-                                },
+                                onClick = { onQueryFinish(it) },
                                 onLongClick = {
                                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                     historyItemToDelete = it

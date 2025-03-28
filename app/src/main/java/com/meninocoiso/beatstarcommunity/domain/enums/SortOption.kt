@@ -1,7 +1,11 @@
 package com.meninocoiso.beatstarcommunity.domain.enums
+
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class DifficultyEnum {
-    Normal, Hard, Extreme, Expert
+enum class SortOption {
+    WEEKLY_RANK,
+    LAST_UPDATED,
+    MOST_DOWNLOADED,
+    MOST_LIKED
 }

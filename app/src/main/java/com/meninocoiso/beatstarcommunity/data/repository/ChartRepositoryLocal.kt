@@ -2,7 +2,10 @@ package com.meninocoiso.beatstarcommunity.data.repository
 
 import android.util.Log
 import com.meninocoiso.beatstarcommunity.data.local.dao.ChartDao
+import com.meninocoiso.beatstarcommunity.domain.enums.Difficulty
+import com.meninocoiso.beatstarcommunity.domain.enums.Genre
 import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
+import com.meninocoiso.beatstarcommunity.domain.enums.SortOption
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.model.Version
 import kotlinx.coroutines.CoroutineDispatcher
@@ -18,13 +21,35 @@ class ChartRepositoryLocal(
     private val chartDao: ChartDao,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ChartRepository {
-    override suspend fun getCharts(query: String?, limit: Int?, offset: Int): Flow<Result<List<Chart>>> = flow {
+    override suspend fun getCharts(
+        query: String?,
+        difficulties: List<Difficulty>?,
+        genres: List<Genre>?,
+        limit: Int?,
+        offset: Int
+    ): Flow<Result<List<Chart>>> = flow {
         val charts = chartDao.getAll(query, limit, offset)
         emit(Result.success(charts))
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
+    override suspend fun getChartsSortedBy(
+        sortBy: SortOption,
+        limit: Int?,
+        offset: Int
+    ): Flow<Result<List<Chart>>> {
+        return flow {
+            val charts = when (sortBy) {
+                SortOption.MOST_DOWNLOADED -> chartDao.getChartsSortedByMostDownloaded(limit, offset)
+                else -> chartDao.getChartsSortedByLastUpdated(limit, offset)
+            }
+            emit(Result.success(charts))
+        }.catch { e ->
+            emit(Result.failure(e))
+        }.flowOn(dispatcher)
+    }
+    
     override suspend fun getChartsById(ids: List<String>): Flow<Result<List<Chart>>> = flow {
         emit(Result.success(chartDao.loadAllByIds(ids)))
     }.catch { e ->

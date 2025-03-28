@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
         // Cleanup old updates
         viewModel.cleanupOldUpdates()
 
-        // Keep the splash screen on-screen until the UI state is loaded. This condition is
+        // Keep the splash screen on-screen until the UI cacheState is loaded. This condition is
         // evaluated each time the app needs to be redrawn so it should be fast to avoid blocking
         // the UI.
         splashScreen.setKeepOnScreenCondition {

@@ -2,7 +2,10 @@ package com.meninocoiso.beatstarcommunity.data.manager
 
 import android.util.Log
 import com.meninocoiso.beatstarcommunity.data.repository.ChartRepository
+import com.meninocoiso.beatstarcommunity.domain.enums.Difficulty
+import com.meninocoiso.beatstarcommunity.domain.enums.Genre
 import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
+import com.meninocoiso.beatstarcommunity.domain.enums.SortOption
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +31,7 @@ sealed class FetchResult<out T> {
 }
 
 sealed class ChartState {
+    data object Idle : ChartState()
     data object Loading : ChartState()
     data object Success : ChartState()
     data object Error : ChartState()
@@ -48,29 +52,36 @@ class ChartManager @Inject constructor(
     @Named("Remote") private val remoteChartRepository: ChartRepository,
     @Named("Local") private val localChartRepository: ChartRepository,
 ) {
-    private val _allCharts = MutableStateFlow<Map<String, Chart>>(emptyMap())
-    private val allCharts: StateFlow<Map<String, Chart>> = _allCharts.asStateFlow()
+    private val _remoteCharts = MutableStateFlow<Map<String, Chart>>(emptyMap())
+    private val remoteCharts : StateFlow<Map<String, Chart>> = _remoteCharts.asStateFlow()
+    
+    val searchCharts = remoteCharts.map { charts ->
+        charts.values.toList()
+    }
+    
+    private val _cachedCharts = MutableStateFlow<Map<String, Chart>>(emptyMap())
+    private val cachedCharts: StateFlow<Map<String, Chart>> = _cachedCharts.asStateFlow()
 
     // Filtered chart collections
-    val workshopCharts: Flow<List<Chart>> = allCharts.map { charts ->
+    val workshopCharts: Flow<List<Chart>> = cachedCharts.map { charts ->
         charts.values.toList()
     }
 
-    val installedCharts: Flow<List<Chart>> = allCharts.map { charts ->
+    val installedCharts: Flow<List<Chart>> = cachedCharts.map { charts ->
         charts.values.filter { it.isInstalled == true }.toList()
     }
 
-    val chartsWithUpdates: Flow<List<Chart>> = allCharts.map { charts ->
+    val chartsWithUpdates: Flow<List<Chart>> = cachedCharts.map { charts ->
         charts.values.filter {
             it.isInstalled == true && it.availableVersion != null
         }.toList()
     }
 
-    private val _workshopState = MutableStateFlow<ChartState>(ChartState.Loading)
-    val workshopState: StateFlow<ChartState> = _workshopState.asStateFlow()
+    private val _cacheState = MutableStateFlow<ChartState>(ChartState.Loading)
+    val cacheState: StateFlow<ChartState> = _cacheState.asStateFlow()
 
     fun updateState(newState: ChartState) {
-        _workshopState.value = newState
+        _cacheState.value = newState
     }
 
     /**
@@ -78,107 +89,188 @@ class ChartManager @Inject constructor(
      * This method uses the current value of the StateFlow to provide an immediate count
      */
     fun getChartsLength(): Int {
-        return _allCharts.value.size
+        return _cachedCharts.value.size
     }
 
     /**
-     * Refresh charts from remote source
-     * @param query Optional search query
-     * @param forceRefresh Whether to force refresh from remote or use cached data
-     * @param limit Maximum number of charts to fetch
-     * @param offset The offset from which to start fetching
+     * Loads charts from local cache
+     * @return FetchResult containing the cached charts
      */
-    fun refreshRemoteCharts(
-        query: String? = null,
-        forceRefresh: Boolean = false,
-        limit: Int? = null,
-        offset: Int = 0
-    ): Flow<FetchResult<List<Chart>>> = flow {
-        emit(FetchResult.Loading)
-
-        if (!forceRefresh) {
-            // Return cached charts if refresh isn't needed
-            emit(FetchResult.Success(_allCharts.value.values.toList()))
-            return@flow
-        }
-
-        try {
-            val remoteResult = remoteChartRepository.getCharts(query, limit, offset).first()
-
-            remoteResult.fold(
-                onSuccess = { remoteCharts ->
-                    Log.d(TAG, "Fetched ${remoteCharts.size} charts from remote")
-
-                    // Update local cache
-                    localChartRepository.insertCharts(remoteCharts).first()
-
-                    // If this is first page, clear existing non-installed charts
-                    if (offset == 0) {
-                        clearNonInstalledCharts()
-                    }
-
-                    // Update our in-memory cache with limit
-                    updateChartsWithLimit(remoteCharts)
-
-                    emit(FetchResult.Success(remoteCharts))
-                },
-                onFailure = { error ->
-                    emit(FetchResult.Error("Failed to fetch charts", error))
-                    Log.e(TAG, "Failed to fetch remote charts", error)
-                }
-            )
-        } catch (e: Exception) {
-            emit(FetchResult.Error("Error refreshing charts", e))
-            Log.e(TAG, "Error refreshing charts", e)
-        }
-    }.catch { e ->
-        emit(FetchResult.Error("Unexpected error refreshing charts", e))
-        Log.e(TAG, "Unexpected error refreshing charts", e)
-    }
-
-    /**
-     * Clear non-installed charts from memory when refreshing from first page
-     */
-    private fun clearNonInstalledCharts() {
-        val installedCharts = _allCharts.value.values.filter { it.isInstalled == true }
-        val newMap = mutableMapOf<String, Chart>()
-        installedCharts.forEach { newMap[it.id] = it }
-        _allCharts.value = newMap
-    }
-
-    /**
-     * Load charts from local cache
-     */
-    /**
-     * Load charts from local cache
-     * @param limit Maximum number of charts to load from cache
-     */
-    suspend fun loadCachedCharts(limit: Int? = null): FetchResult<List<Chart>> {
+    suspend fun loadCachedCharts(): FetchResult<List<Chart>> {
         return try {
-            val localResult = localChartRepository.getCharts(limit = limit).first()
+            val cachedCharts = localChartRepository.getCharts().first()
 
-            localResult.fold(
-                onSuccess = { localCharts ->
-                    Log.d(TAG, "Loaded ${localCharts.size} charts from local storage")
-                    updateChartsWithLimit(localCharts)
-                    FetchResult.Success(localCharts)
+            cachedCharts.fold(
+                onSuccess = { charts ->
+                    Log.d(TAG, "Loaded ${charts.size} charts from cache")
+                    updateCharts(charts)
+                    FetchResult.Success(charts)
                 },
                 onFailure = { error ->
+                    Log.e(TAG, "Failed to load cached charts", error)
                     FetchResult.Error("Failed to load cached charts", error)
                 }
             )
         } catch (e: Exception) {
-            FetchResult.Error("Error loading cached charts", e)
+            Log.e(TAG, "Unexpected error loading cached charts", e)
+            FetchResult.Error("Unexpected error loading cached charts", e)
         }
     }
 
+    /**
+     * Fetches charts in a feed-style format from remote source with specified sorting
+     * Results are cached for future use
+     *
+     * @param sortBy The sorting order for the feed (weekly_rank, last_updated, etc.)
+     * @param forceRefresh Whether to force a refresh or use cached results if available
+     * @param limit Maximum number of charts to fetch
+     * @param offset The offset from which to start fetching
+     */
+    fun fetchFeedCharts(
+        sortBy: SortOption,
+        forceRefresh: Boolean = false,
+        limit: Int = 10,
+        offset: Int = 0
+    ): Flow<FetchResult<List<Chart>>> = flow {
+        emit(FetchResult.Loading)
+
+        try {
+            // Only check cache for initial load (offset=0) and when not forcing refresh
+            if (offset == 0 && !forceRefresh) {
+                val cachedCharts = localChartRepository.getChartsSortedBy(sortBy, limit).first()
+
+                cachedCharts.fold(
+                    onSuccess = { charts ->
+                        if (charts.isNotEmpty()) {
+                            Log.d(TAG, "Using ${charts.size} cached charts for feed")
+                            updateCharts(charts)
+                            emit(FetchResult.Success(charts))
+                            return@flow
+                        }
+                    },
+                    onFailure = { /* Continue to remote fetch if cache fails */ }
+                )
+            }
+
+            // Fetch from remote
+            val remoteResult = remoteChartRepository.getChartsSortedBy(
+                sortBy = sortBy,
+                limit = limit,
+                offset = offset
+            ).first()
+
+            remoteResult.fold(
+                onSuccess = { remoteCharts ->
+                    Log.d(TAG, "Fetched ${remoteCharts.size} feed charts from remote")
+
+                    // Cache the results if this is the initial page
+                    if (offset == 0) {
+                        localChartRepository.insertCharts(remoteCharts).first()
+                    }
+
+                    // Update our in-memory collection with the new charts
+                    if (offset == 0) {
+                        // Replace charts for initial load
+                        updateChartsWithLimit(remoteCharts)
+                    } else {
+                        // Append charts for pagination
+                        updateCharts(remoteCharts)
+                    }
+
+                    emit(FetchResult.Success(remoteCharts))
+                },
+                onFailure = { error ->
+                    Log.e(TAG, "Failed to fetch feed charts", error)
+                    emit(FetchResult.Error("Failed to fetch feed charts", error))
+                }
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error fetching feed charts", e)
+            emit(FetchResult.Error("Unexpected error fetching feed charts", e))
+        }
+    }.catch { e ->
+        Log.e(TAG, "Exception in fetchFeedCharts flow", e)
+        emit(FetchResult.Error("Exception in feed charts flow", e))
+    }
+
+    /**
+     * Searches for charts based on query and filters
+     * Results are NOT cached
+     *
+     * @param query The search term to look for
+     * @param difficulties Optional list of difficulties to filter by
+     * @param genres Optional list of genres to filter by
+     * @param limit Maximum number of charts to fetch
+     * @param offset The offset from which to start fetching
+     */
+    fun searchCharts(
+        query: String,
+        difficulties: List<Difficulty>? = null,
+        genres: List<Genre>? = null,
+        limit: Int = 10,
+        offset: Int = 0
+    ): Flow<FetchResult<List<Chart>>> = flow {
+        if (query.isEmpty()) {
+            _remoteCharts.value = emptyMap()
+            emit(FetchResult.Success(emptyList()))
+            return@flow
+        }
+        
+        emit(FetchResult.Loading)
+
+        try {
+            val remoteResult = remoteChartRepository.getCharts(
+                query = query,
+                difficulties = difficulties,
+                genres = genres,
+                limit = limit,
+                offset = offset
+            ).first()
+
+            remoteResult.fold(
+                onSuccess = { searchResults ->
+                    Log.d(TAG, "Search found ${searchResults.size} charts for query: $query")
+                    
+                    // Update our in-memory collection
+                    if (offset == 0) {
+                        // For first page, replace existing charts with search results
+                        _remoteCharts.value = searchResults.associateBy { it.id }
+                    } else {
+                        // For pagination, append to existing results
+                        val updatedMap = _cachedCharts.value.toMutableMap()
+                        searchResults.forEach { chart ->
+                            updatedMap[chart.id] = chart
+                        }
+                        _remoteCharts.value = updatedMap
+                    }
+
+                    emit(FetchResult.Success(searchResults))
+                },
+                onFailure = { error ->
+                    Log.e(TAG, "Search failed for query: $query", error)
+                    emit(FetchResult.Error("Search failed", error))
+                }
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error searching charts", e)
+            emit(FetchResult.Error("Unexpected error searching charts", e))
+        }
+    }.catch { e ->
+        Log.e(TAG, "Exception in remoteCharts flow", e)
+        emit(FetchResult.Error("Exception in search charts flow", e))
+    }
+
+    fun clearRemoteCharts() {
+        _remoteCharts.value = emptyMap()
+    }
+    
     /**
      * Check for updates to installed charts
      */
     fun checkForUpdates(): Flow<FetchResult<List<Chart>>> = flow {
         emit(FetchResult.Loading)
 
-        val installedCharts = _allCharts.value.values
+        val installedCharts = _cachedCharts.value.values
             .filter { it.isInstalled == true }
             .toList()
 
@@ -232,7 +324,7 @@ class ChartManager @Inject constructor(
      * Update a single chart in memory
      */
     private fun updateChart(chart: Chart) {
-        _allCharts.value = _allCharts.value.toMutableMap().apply {
+        _cachedCharts.value = _cachedCharts.value.toMutableMap().apply {
             this[chart.id] = chart
         }
     }
@@ -241,11 +333,11 @@ class ChartManager @Inject constructor(
      * Update multiple charts in memory
      */
     private fun updateCharts(charts: List<Chart>) {
-        val updatedMap = _allCharts.value.toMutableMap()
+        val updatedMap = _cachedCharts.value.toMutableMap()
 
         charts.forEach { chart ->
             // Add to our map, preserving any existing data not in the update
-            updatedMap[chart.id] = _allCharts.value[chart.id]?.let { existingChart ->
+            updatedMap[chart.id] = _cachedCharts.value[chart.id]?.let { existingChart ->
                 // If we have this chart already, preserve certain fields
                 // that might not be in the new data
                 when {
@@ -260,7 +352,7 @@ class ChartManager @Inject constructor(
             } ?: chart
         }
 
-        _allCharts.value = updatedMap
+        _cachedCharts.value = updatedMap
     }
 
     /**
@@ -286,7 +378,7 @@ class ChartManager @Inject constructor(
         Log.d(TAG, "Updated chart with id: $chartId in local storage")
 
         // Find the chart in our in-memory cache
-        val existingChart = _allCharts.value[chartId] ?: run {
+        val existingChart = _cachedCharts.value[chartId] ?: run {
             Log.d(TAG, "Chart with id: $chartId not found")
             emit(FetchResult.Error("Chart not found"))
             return@flow
@@ -315,7 +407,7 @@ class ChartManager @Inject constructor(
         Log.d(TAG, "Updated chart with id: $chartId in memory")
 
         // Only emit a single success result
-        emit(FetchResult.Success(_allCharts.value.values.toList()))
+        emit(FetchResult.Success(_cachedCharts.value.values.toList()))
     }.catch { e ->
         emit(FetchResult.Error("Unexpected error updating chart", e))
     }
@@ -325,11 +417,11 @@ class ChartManager @Inject constructor(
      * Installed charts are preserved regardless of limit
      */
     private fun updateChartsWithLimit(newCharts: List<Chart>) {
-        val updatedMap = _allCharts.value.toMutableMap()
+        val updatedMap = _cachedCharts.value.toMutableMap()
 
         // Add all new charts to our map, preserving any existing data
         newCharts.forEach { chart ->
-            updatedMap[chart.id] = _allCharts.value[chart.id]?.let { existingChart ->
+            updatedMap[chart.id] = _cachedCharts.value[chart.id]?.let { existingChart ->
                 when {
                     chart.isInstalled == null -> chart.copy(
                         isInstalled = existingChart.isInstalled,
@@ -355,48 +447,11 @@ class ChartManager @Inject constructor(
             installedCharts.forEach { finalMap[it.id] = it }
             chartsToKeep.forEach { finalMap[it.id] = it }
 
-            _allCharts.value = finalMap
+            _cachedCharts.value = finalMap
         } else {
             // We're within limits, just update the map
-            _allCharts.value = updatedMap
+            _cachedCharts.value = updatedMap
         }
-    }
-
-    /**
-     * Load more charts from remote source with pagination
-     * @param limit Maximum number of charts to fetch
-     * @param offset The offset from which to start fetching
-     */
-    fun loadMoreCharts(limit: Int, offset: Int): Flow<FetchResult<List<Chart>>> = flow {
-        emit(FetchResult.Loading)
-
-        val remoteResult = remoteChartRepository.getCharts(limit = limit, offset = offset).first()
-
-        remoteResult.fold(
-            onSuccess = { remoteCharts ->
-                Log.d(TAG, "Fetched ${remoteCharts.size} more charts from remote (offset: $offset, limit: $limit)")
-
-                if (remoteCharts.isNotEmpty()) {
-                    // Update local cache
-                    localChartRepository.insertCharts(remoteCharts).first()
-
-                    // Update our in-memory cache while respecting the max cache size
-                    updateChartsWithLimit(remoteCharts)
-
-                    emit(FetchResult.Success(remoteCharts))
-                } else {
-                    // No more charts to fetch
-                    emit(FetchResult.Success(emptyList<Chart>()))
-                }
-            },
-            onFailure = { error ->
-                emit(FetchResult.Error("Failed to fetch more charts", error))
-                Log.e(TAG, "Failed to fetch more remote charts", error)
-            }
-        )
-    }.catch { e ->
-        emit(FetchResult.Error("Unexpected error loading more charts", e))
-        Log.e(TAG, "Unexpected error loading more charts", e)
     }
     
     fun getSuggestions(query: String): Flow<List<String>> = flow {

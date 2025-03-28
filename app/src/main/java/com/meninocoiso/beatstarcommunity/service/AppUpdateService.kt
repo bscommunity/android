@@ -81,7 +81,7 @@ class AppUpdateService : Service() {
                         _updateState.value = it
                     }
 
-                    // Monitor download state
+                    // Monitor download cacheState
                     updateState.collectLatest { state ->
                         when (state) {
                             is AppUpdateState.Downloading -> {

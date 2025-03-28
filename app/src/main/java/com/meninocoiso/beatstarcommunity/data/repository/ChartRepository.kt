@@ -1,12 +1,26 @@
 package com.meninocoiso.beatstarcommunity.data.repository
 
+import com.meninocoiso.beatstarcommunity.domain.enums.Difficulty
+import com.meninocoiso.beatstarcommunity.domain.enums.Genre
 import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
+import com.meninocoiso.beatstarcommunity.domain.enums.SortOption
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.model.Version
 import kotlinx.coroutines.flow.Flow
 
 interface ChartRepository {
-    suspend fun getCharts(query: String? = null, limit: Int? = 10, offset: Int = 0): Flow<Result<List<Chart>>>
+    suspend fun getCharts(
+        query: String? = null,
+        difficulties: List<Difficulty>? = null,
+        genres: List<Genre>? = null,
+        limit: Int? = 10,
+        offset: Int = 0
+    ): Flow<Result<List<Chart>>>
+    suspend fun getChartsSortedBy(
+        sortBy: SortOption,
+        limit: Int? = 10,
+        offset: Int = 0,
+    ): Flow<Result<List<Chart>>>
     suspend fun getChartsById(ids: List<String>): Flow<Result<List<Chart>>>
     suspend fun getChart(id: String): Flow<Result<Chart>>
     suspend fun getLatestVersionsByChartIds(ids: List<String>): Flow<Result<List<Version>>>

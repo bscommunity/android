@@ -126,7 +126,7 @@ fun GameplayPreview(
                         setLayerType(WebView.LAYER_TYPE_HARDWARE, null)
                     }
 
-                    // Custom WebViewClient to track loading state
+                    // Custom WebViewClient to track loading cacheState
                     webViewClient = object : WebViewClient() {
                         override fun shouldOverrideUrlLoading(
                             view: WebView,

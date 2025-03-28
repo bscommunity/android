@@ -1,7 +1,7 @@
 package com.meninocoiso.beatstarcommunity.domain.serialization
 
 import androidx.room.TypeConverter
-import com.meninocoiso.beatstarcommunity.domain.enums.DifficultyEnum
+import com.meninocoiso.beatstarcommunity.domain.enums.Difficulty
 import com.meninocoiso.beatstarcommunity.domain.model.Contributor
 import com.meninocoiso.beatstarcommunity.domain.model.KnownIssue
 import com.meninocoiso.beatstarcommunity.domain.model.StreamingLink
@@ -55,16 +55,16 @@ class Converters {
 
     // DifficultyEnum converters
     @TypeConverter
-    fun fromDifficultyEnum(difficulty: DifficultyEnum): String {
+    fun fromDifficultyEnum(difficulty: Difficulty): String {
         return difficulty.name
     }
 
     @TypeConverter
-    fun toDifficultyEnum(difficultyString: String): DifficultyEnum {
+    fun toDifficultyEnum(difficultyString: String): Difficulty {
         return try {
-            DifficultyEnum.valueOf(difficultyString)
+            Difficulty.valueOf(difficultyString)
         } catch (e: IllegalArgumentException) {
-            DifficultyEnum.Normal // Default value if conversion fails
+            Difficulty.NORMAL // Default value if conversion fails
         }
     }
 

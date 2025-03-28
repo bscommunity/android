@@ -4,7 +4,8 @@ import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.meninocoiso.beatstarcommunity.domain.enums.DifficultyEnum
+import com.meninocoiso.beatstarcommunity.domain.enums.Difficulty
+import com.meninocoiso.beatstarcommunity.domain.enums.Genre
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
@@ -19,7 +20,8 @@ data class Chart(
     @ColumnInfo(name = "cover_url") val coverUrl: String,
     @ColumnInfo(name = "track_urls") val trackUrls: List<StreamingLink>,
     @ColumnInfo(name = "track_preview_url") val trackPreviewUrl: String,
-    val difficulty: DifficultyEnum,
+    val difficulty: Difficulty,
+    val genre: Genre,
     @ColumnInfo(name = "is_deluxe") val isDeluxe: Boolean,
     @ColumnInfo(name = "is_explicit") val isExplicit: Boolean,
     @ColumnInfo(name = "is_featured") val isFeatured: Boolean,

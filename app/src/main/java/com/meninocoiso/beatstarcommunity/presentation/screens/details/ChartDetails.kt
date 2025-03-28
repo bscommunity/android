@@ -76,7 +76,7 @@ private val DropdownItemPadding = PaddingValues(
     bottom = 8.dp
 )
 
-// Extracted helper class for dialog state management
+// Extracted helper class for dialog cacheState management
 private class DialogState {
     var showReportDialog by mutableStateOf(false)
     var showDeleteConfirmation by mutableStateOf(false)
@@ -169,7 +169,7 @@ fun ChartDetailsScreen(
         }
     })
 
-    // Reset dismiss state when snackbar is dismissed
+    // Reset dismiss cacheState when snackbar is dismissed
     LaunchedEffect(dismissSnackbarState.currentValue) {
         if (dismissSnackbarState.currentValue != SwipeToDismissBoxValue.Settled) {
             dismissSnackbarState.reset()

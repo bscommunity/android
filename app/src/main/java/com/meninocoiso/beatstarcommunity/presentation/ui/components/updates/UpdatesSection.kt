@@ -88,7 +88,7 @@ fun UpdatesSection(
                     )
                 }
             }
-            is ChartState.Loading -> {
+            is ChartState.Loading, ChartState.Idle -> {
                 UpdatesPanel {
                     Box(
                         modifier = Modifier

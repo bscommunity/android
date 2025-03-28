@@ -5,10 +5,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,8 +41,23 @@ internal fun ChartsSection(
     onSnackbar: (String) -> Unit,
     viewModel: WorkshopViewModel
 ) {
-    val charts by viewModel.charts.collectAsStateWithLifecycle(initialValue = emptyList())
-    val state by viewModel.state.collectAsStateWithLifecycle(initialValue = ChartState.Loading)
+    val searchCharts by viewModel.searchCharts.collectAsStateWithLifecycle(initialValue = emptyList())
+    val feedCharts by viewModel.feedCharts.collectAsStateWithLifecycle(initialValue = emptyList())
+    
+    val charts = if (searchCharts.isNotEmpty()) {
+        searchCharts
+    } else {
+        feedCharts
+    }
+    
+    val searchState by viewModel.searchState.collectAsStateWithLifecycle(initialValue = ChartState.Idle)
+    val feedState by viewModel.cacheState.collectAsStateWithLifecycle(initialValue = ChartState.Loading)
+    
+    val workshopState = if (searchState !is ChartState.Idle) {
+        searchState
+    } else {
+        feedState
+    }
     
     // Collect events for snackbar
     LaunchedEffect(Unit) {
@@ -60,13 +74,12 @@ internal fun ChartsSection(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.TopCenter,
     ) {
-        // Show different UI based on whether we have charts to display
-        if (charts.isEmpty()) {
-            // Empty state - show loading or error
-            when (state) {
+        // If no cache or on search mode, show loading or error status on full page
+        if (charts.isEmpty() || searchState is ChartState.Loading || searchState is ChartState.Error) {
+            when (workshopState) {
                 is ChartState.Loading -> {
                     Box(Modifier.fillMaxSize(), Alignment.Center) {
-                        CircularProgressIndicator(Modifier.width(36.dp))
+                        CircularProgressIndicator(Modifier.size(36.dp))
                     }
                 }
 
@@ -75,7 +88,7 @@ internal fun ChartsSection(
                         title = "Looks like something went wrong...",
                         message = "Please check your connection and try again",
                         icon = R.drawable.rounded_emergency_home_24,
-                        onClick = { viewModel.refresh() },
+                        onClick = { viewModel.fetchFeedCharts() },
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -85,15 +98,15 @@ internal fun ChartsSection(
         } else {
             // We have charts to display - show them with pull-to-refresh
             PullToRefreshBox(
-                isRefreshing = state is ChartState.Loading,
-                onRefresh = { viewModel.refresh() }
+                isRefreshing = feedState is ChartState.Loading,
+                onRefresh = { viewModel.fetchFeedCharts() }
             ) {
                 SectionWrapper(
                     modifier = Modifier
                         .fillMaxSize()
                         .nestedScroll(nestedScrollConnection)
                         .fabScrollObserver { shouldExtend ->
-                            // Update FAB state based on scroll delta
+                            // Update FAB cacheState based on scroll delta
                             onFabStateChange(shouldExtend)
                         },
                     onListEnd = {
@@ -101,7 +114,7 @@ internal fun ChartsSection(
                         viewModel.loadMoreCharts()
                     }
                 ) {
-                    items(charts) { chart ->
+                    itemsIndexed(charts) { index, chart ->
                         ChartPreview(
                             chart = chart,
                             onNavigateToDetails = {

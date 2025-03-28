@@ -26,7 +26,7 @@ internal fun WorkshopSection(
     val updatesCharts by viewModel.updatesAvailable.collectAsStateWithLifecycle(initialValue = emptyList())
     val localCharts by viewModel.localCharts.collectAsStateWithLifecycle(initialValue = emptyList())
 
-    val workshopState by viewModel.workshopState.collectAsStateWithLifecycle()
+    val cacheState by viewModel.cacheState.collectAsStateWithLifecycle()
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
 
     Column(
@@ -48,7 +48,7 @@ internal fun WorkshopSection(
         }
 
         LocalContentSection(
-            state = workshopState,
+            state = cacheState,
             charts = localCharts,
             onNavigateToDetails = onNavigateToDetails,
             onFabStateChange = onFabStateChange,

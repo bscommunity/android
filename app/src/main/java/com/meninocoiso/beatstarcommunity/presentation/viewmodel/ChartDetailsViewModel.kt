@@ -19,7 +19,7 @@ import javax.inject.Named
 
 private const val TAG = "ChartDetailsViewModel"
 
-// Sealed class representing the state of chart data
+// Sealed class representing the cacheState of chart data
 sealed class DetailsState {
     data object Loading : DetailsState()
     data class Success(val chart: Chart) : DetailsState()

@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import coil.ImageLoader
 import coil3.compose.AsyncImage
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.domain.enums.DifficultyEnum
+import com.meninocoiso.beatstarcommunity.domain.enums.Difficulty
 import com.meninocoiso.beatstarcommunity.domain.lists.difficultiesList
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
@@ -51,7 +51,7 @@ fun imageLoaderSingleton(): ImageLoader {
 
 @Composable
 fun CoverArt(
-    difficulty: DifficultyEnum? = null,
+    difficulty: Difficulty? = null,
     isInstalled: Boolean? = null,
     borderRadius: Dp = 0.dp,
     size: Dp = 76.dp,
@@ -60,7 +60,7 @@ fun CoverArt(
     val sizeInPx = with(LocalDensity.current) { size.roundToPx() }
 
     val difficultyIcon =
-        if (difficulty != null) difficultiesList.first { it.difficultyEnum == difficulty }.icon
+        if (difficulty != null) difficultiesList.first { it.difficulty == difficulty }.icon
         else null
 
     Box(
