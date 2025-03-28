@@ -32,6 +32,7 @@ import com.meninocoiso.beatstarcommunity.domain.model.Contributor
 import com.meninocoiso.beatstarcommunity.presentation.screens.details.OnNavigateToDetails
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.Avatar
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.layout.CoverArt
+import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.debouncedClickable
 import com.meninocoiso.beatstarcommunity.util.DateUtils
 import java.time.LocalDate
 
@@ -112,7 +113,7 @@ fun ChartPreview(
 			.graphicsLayer {
 				alpha = if (chart.isInstalled == true) 0.5f else 1f
 			}
-			.clickable(onClick = onNavigateToDetails)
+			.debouncedClickable(onClick = onNavigateToDetails)
 	) {
 		Row(
 			modifier = Modifier

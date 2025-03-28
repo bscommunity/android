@@ -93,7 +93,10 @@ fun BottomNav(
     }
 
     val onNavigateToDetails = { chart: Chart ->
-        navController.navigate(route = ChartDetails(chart = chart))
+        navController.navigate(route = ChartDetails(chart = chart)) {
+            // Prevent users from opening multiple details screens
+            launchSingleTop = true
+        }
     }
 
     val onFabStateChange: (Boolean) -> Unit = { shouldExtend ->

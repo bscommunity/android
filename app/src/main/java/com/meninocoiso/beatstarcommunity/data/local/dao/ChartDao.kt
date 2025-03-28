@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Upsert
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.model.Version
 
@@ -70,7 +71,7 @@ interface ChartDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(charts: List<Chart>)
 
-    @Update
+    @Upsert
     fun update(chart: Chart)
 
     @Update

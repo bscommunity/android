@@ -95,7 +95,17 @@ internal fun ChartsSection(
 
                 else -> {}
             }
-        } else {
+        } else if (searchState is ChartState.Success && searchCharts.isEmpty()) {
+            // No charts to display - show empty state
+            StatusMessageUI(
+                title = "No charts found",
+                message = "Try searching for something else",
+                icon = R.drawable.outline_filter_alt_24,
+                onClick = { viewModel.clearSearch() },
+                buttonLabel = "Clear search",
+                modifier = Modifier.fillMaxSize()
+            )
+        }else {
             // We have charts to display - show them with pull-to-refresh
             PullToRefreshBox(
                 isRefreshing = feedState is ChartState.Loading,
