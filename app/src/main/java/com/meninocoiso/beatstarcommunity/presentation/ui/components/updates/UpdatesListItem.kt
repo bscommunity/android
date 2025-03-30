@@ -62,7 +62,8 @@ internal fun UpdateListItem(
         trailingContent = {
             IconButton(
                 onClick = onUpdateClick,
-                enabled = contentState !is ContentState.Downloading && contentState !is ContentState.Extracting,
+                enabled = contentState !is ContentState.Downloading && 
+                        contentState !is ContentState.Extracting,
                 colors = IconButtonDefaults.iconButtonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,

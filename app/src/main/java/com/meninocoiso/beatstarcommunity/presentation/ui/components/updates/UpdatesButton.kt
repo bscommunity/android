@@ -17,18 +17,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.data.manager.ChartState
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.infiniteRotation
 
 @Composable
-internal fun UpdatesButton(state: ChartState, onFetchUpdates: () -> Unit) {
+internal fun UpdatesButton(isLoading: Boolean, isDisabled: Boolean, onFetchUpdates: () -> Unit) {
     FilledTonalButton(
         onClick = { onFetchUpdates() },
         colors = ButtonDefaults.filledTonalButtonColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ),
-        enabled = state !is ChartState.Loading,
+        enabled = !isLoading && !isDisabled,
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp, end = 16.dp, top = 8.dp)
@@ -40,7 +39,7 @@ internal fun UpdatesButton(state: ChartState, onFetchUpdates: () -> Unit) {
             Icon(
                 modifier = Modifier
                     .run {
-                        if (state == ChartState.Loading) {
+                        if (isLoading) {
                             this.infiniteRotation(easing = CubicBezierEasing(
                                 0.4f, 0.0f, 0.2f, 1.0f
                             )
@@ -53,7 +52,7 @@ internal fun UpdatesButton(state: ChartState, onFetchUpdates: () -> Unit) {
                 painter = painterResource(id = R.drawable.rounded_autorenew_24),
                 contentDescription = "Check for updates icon"
             )
-            Text(text = if (state == ChartState.Loading) "Checking for updates..." else "Check for updates")
+            Text(text = if (isLoading) "Checking for updates..." else "Check for updates")
         }
     }
 }

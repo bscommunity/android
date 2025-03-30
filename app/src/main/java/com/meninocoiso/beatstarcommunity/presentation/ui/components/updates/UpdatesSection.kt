@@ -13,6 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,10 +51,13 @@ fun UpdatesSection(
     nestedScrollConnection: NestedScrollConnection,
     contentViewModel: ContentViewModel = hiltViewModel(),
 ) {
+    val itemsUpdating = remember { mutableStateListOf<String>() }
+    
     LaunchedEffect(Unit) {
         contentViewModel.events.collect { event ->
             when (event) {
                 is DownloadEvent.Complete -> {
+                    itemsUpdating.remove(event.chartId)
                     onSnackbar("Update complete")
                 }
                 is DownloadEvent.Error -> onSnackbar("Error: ${event.message}")
@@ -126,6 +131,7 @@ fun UpdatesSection(
                             UpdateListItem(
                                 chart = chart,
                                 onUpdateClick = {
+                                    itemsUpdating.add(chart.id)
                                     contentViewModel.downloadChart(chart)
                                 },
                                 contentState = contentState
@@ -135,6 +141,10 @@ fun UpdatesSection(
                 }
             }
         }
-        UpdatesButton(state = state, onFetchUpdates = onFetchUpdates)
+        UpdatesButton(
+            isLoading = state is ChartState.Loading,
+            isDisabled = itemsUpdating.isNotEmpty(),
+            onFetchUpdates = onFetchUpdates
+        )
     }
 }
