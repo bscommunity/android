@@ -43,7 +43,7 @@ private object SectionWrapperDefaults {
 fun UpdatesSection(
     state: ChartState,
     charts: List<Chart>,
-    onFetchUpdates: (chartToRemove: String?) -> Unit,
+    onFetchUpdates: () -> Unit,
     onSnackbar: (String) -> Unit,
     onFabStateChange: (Boolean) -> Unit,
     nestedScrollConnection: NestedScrollConnection,

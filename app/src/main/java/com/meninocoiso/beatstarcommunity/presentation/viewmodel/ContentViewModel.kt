@@ -33,7 +33,7 @@ sealed class ContentState {
     data class Downloading(val chartId: String, val progress: Float) : ContentState()
     data class Extracting(val chartId: String, val progress: Float) : ContentState()
     data class Error(val chartId: String, val message: String) : ContentState()
-    data class Installed(val chartId: String, val updateAvailable: Boolean? = false) : ContentState()
+    data class Installed(val chartId: String) : ContentState()
 }
 
 private const val TAG = "ContentViewModel"
@@ -70,10 +70,9 @@ class ContentViewModel @Inject constructor(
 
     fun checkStatus(chart: Chart) {
         val isInstalled = chart.isInstalled == true
-        val hasUpdateAvailable = chart.availableVersion != null
 
         val state = if (isInstalled) {
-            ContentState.Installed(chart.id, hasUpdateAvailable)
+            ContentState.Installed(chart.id)
         } else {
             ContentState.Idle
         }

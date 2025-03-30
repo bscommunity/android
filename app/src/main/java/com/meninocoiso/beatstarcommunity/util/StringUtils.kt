@@ -1,10 +1,12 @@
 package com.meninocoiso.beatstarcommunity.util
 
+import com.meninocoiso.beatstarcommunity.domain.enums.ContributorRole
 import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
 import com.meninocoiso.beatstarcommunity.domain.model.ContentMessage
 
-class ContentMessageUtils {
+class StringUtils {
     companion object {
+        // Download state messages
         fun getInitialMessage(
             chartName: String,
             type: OperationType
@@ -64,6 +66,14 @@ class ContentMessageUtils {
                     )
                 }
             }
+        }
+        
+        // Author roles
+        fun getAuthorRole(role: ContributorRole): String {
+            return role
+                .toString()
+                .lowercase()
+                .replaceFirstChar { it.uppercase() }
         }
     }
 }
