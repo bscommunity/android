@@ -43,16 +43,15 @@ class WorkshopViewModel @Inject constructor(
     private val chartManager: ChartManager,
     private val cacheRepository: CacheRepository
 ) : ViewModel() {
-    val searchCharts: Flow<List<Chart>> = chartManager.searchCharts
     val feedCharts: Flow<List<Chart>> = chartManager.workshopCharts
-    val cacheState = chartManager.cacheState
+    val searchCharts: Flow<List<Chart>> = chartManager.searchCharts
     
-    private val _searchState = MutableStateFlow<ChartState>(ChartState.Idle)
-    val searchState: SharedFlow<ChartState> = _searchState.asStateFlow()
+    private val _workshopState = MutableStateFlow<ChartState>(ChartState.Loading)
+    val workshopState: SharedFlow<ChartState> = _workshopState.asStateFlow()
     
     private val _events = MutableSharedFlow<FetchEvent>()
     val events: SharedFlow<FetchEvent> = _events.asSharedFlow()
-
+    
     // Pagination
     val listState = LazyListState()
     
@@ -65,7 +64,7 @@ class WorkshopViewModel @Inject constructor(
     
     // Search bar history and suggestions
     val searchFieldState = TextFieldState()
-    
+
     var searchHistory: List<String> by mutableStateOf(emptyList())
         private set
     
@@ -111,15 +110,15 @@ class WorkshopViewModel @Inject constructor(
      */
     fun fetchFeedCharts(showLoading: Boolean = true) {
         viewModelScope.launch {
-            // Reset pagination cacheState
             Log.d(TAG, "Fetching feed charts with sort: $currentSortOption")
 
+            // Reset pagination
             currentFeedPage = 0
             isLoadingMore = false
             hasMoreData = true
             
             if (showLoading) {
-                chartManager.updateState(ChartState.Loading)
+                _workshopState.value = ChartState.Loading
             }
 
             chartManager.fetchFeedCharts(
@@ -131,13 +130,13 @@ class WorkshopViewModel @Inject constructor(
                 when (result) {
                     is FetchResult.Success -> {
                         hasMoreData = result.data.size >= BATCH_SIZE
-                        chartManager.updateState(ChartState.Success)
+                        _workshopState.value = ChartState.Success
                     }
                     is FetchResult.Error -> {
                         if (showLoading && chartManager.getChartsLength() > 0) {
                             _events.emit(FetchEvent.Error(result.message))
                         }
-                        chartManager.updateState(ChartState.Error)
+                        _workshopState.value = ChartState.Error
                     }
                     FetchResult.Loading -> {
                         // Already handled above
@@ -164,11 +163,11 @@ class WorkshopViewModel @Inject constructor(
 
             Log.d(TAG, "Searching for charts with query: $query")
             
-            // Update the search query to prevent data racing
+            // Update the current search query to prevent data racing
             chartManager.searchQuery = query
             
-            // Update the search field state
-            _searchState.value = ChartState.Loading
+            // Show loading indicator
+            _workshopState.value = ChartState.Loading
 
             // Reset pagination
             currentSearchPage = 0
@@ -193,10 +192,10 @@ class WorkshopViewModel @Inject constructor(
                 when (result) {
                     is FetchResult.Success -> {
                         hasMoreData = result.data.size >= BATCH_SIZE
-                        _searchState.value = ChartState.Success
+                        _workshopState.value = ChartState.Success
                     }
                     is FetchResult.Error -> {
-                        _searchState.value = ChartState.Error
+                        _workshopState.value = ChartState.Error
                     }
                     FetchResult.Loading -> {
                         // No-op
@@ -357,7 +356,7 @@ class WorkshopViewModel @Inject constructor(
     fun clearSearch() {
         // Clear search state
         searchFieldState.setTextAndPlaceCursorAtEnd("")
-        _searchState.value = ChartState.Idle
+        _workshopState.value = ChartState.Success
         chartManager.searchQuery = ""
         
         // Reset pagination

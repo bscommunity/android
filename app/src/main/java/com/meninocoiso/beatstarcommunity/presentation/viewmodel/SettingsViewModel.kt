@@ -136,6 +136,8 @@ class SettingsViewModel @Inject constructor(
 	}
 
 	fun downloadUpdate(version: String) {
+		Log.d(TAG, "Downloading update for version: $version")
+		
 		viewModelScope.launch {
 			_updateState.value = AppUpdateState.Downloading(0f)
 
@@ -153,6 +155,8 @@ class SettingsViewModel @Inject constructor(
 	}
 
 	fun installApk(apkFile: File) {
+		Log.d(TAG, "Installing APK: ${apkFile.absolutePath}")
+		
 		try {
 			appUpdateRepository.installApk(apkFile)
 		} catch (e: Exception) {
