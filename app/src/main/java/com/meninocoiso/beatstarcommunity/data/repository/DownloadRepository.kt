@@ -23,6 +23,8 @@ class DownloadRepository @Inject constructor(
     /**
      * Downloads and extracts a chart to the beatstar folder
      * @param url URL of the chart zip file
+     * @param chartId ID of the chart
+     * @param operation Operation type (INSTALL or UPDATE)
      * @param folderName Name to use for the chart folder
      * @param onDownloadProgress Callback for download progress
      * @param onExtractProgress Callback for extraction progress
@@ -30,6 +32,7 @@ class DownloadRepository @Inject constructor(
     suspend fun downloadChart(
         url: String,
         chartId: String,
+        operation: OperationType,
         onDownloadProgress: (Float) -> Unit = {},
         onExtractProgress: (Float) -> Unit = {}
     ) {
@@ -59,7 +62,7 @@ class DownloadRepository @Inject constructor(
         downloadedFile.delete()
 
         // Update the chart list
-        chartManager.updateChart(chartId, OperationType.INSTALL).first().let {
+        chartManager.updateChart(chartId, operation).first().let {
             if (it is FetchResult.Error) {
                 throw Error(it.message)
             }

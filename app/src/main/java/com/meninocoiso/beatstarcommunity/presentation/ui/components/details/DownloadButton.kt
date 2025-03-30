@@ -67,7 +67,8 @@ fun DownloadButton(
         modifier = Modifier
             .sizeIn(minWidth = 56.dp, minHeight = 56.dp),
         enabled = contentState is ContentState.Idle ||
-                contentState is ContentState.Error,
+                contentState is ContentState.Error ||
+                (contentState is ContentState.Installed && chart.availableVersion != null),
         onClick = { startDownload(true) }
     ) {
         Row(
@@ -108,7 +109,7 @@ fun DownloadButton(
                     is ContentState.Extracting -> "Extracting..."
                     is ContentState.Installed -> {
                         if (chart.availableVersion != null) {
-                            "Update available"
+                            "Update"
                         } else {
                             "Installed"
                         }

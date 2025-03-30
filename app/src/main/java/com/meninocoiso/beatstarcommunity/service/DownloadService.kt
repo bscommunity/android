@@ -12,9 +12,9 @@ import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.data.manager.ChartManager
 import com.meninocoiso.beatstarcommunity.data.repository.DownloadRepository
 import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
-import com.meninocoiso.beatstarcommunity.util.ContentMessageUtils.Companion.getFinalMessage
-import com.meninocoiso.beatstarcommunity.util.ContentMessageUtils.Companion.getInitialMessage
-import com.meninocoiso.beatstarcommunity.util.ContentMessageUtils.Companion.getProgressMessage
+import com.meninocoiso.beatstarcommunity.util.StringUtils.Companion.getFinalMessage
+import com.meninocoiso.beatstarcommunity.util.StringUtils.Companion.getInitialMessage
+import com.meninocoiso.beatstarcommunity.util.StringUtils.Companion.getProgressMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -84,6 +84,7 @@ class DownloadService : Service() {
                     downloadRepository.downloadChart(
                         chartUrl,
                         chartId,
+                        operation,
                         onDownloadProgress = { progress ->
                             // Send progress event
                             serviceScope.launch {

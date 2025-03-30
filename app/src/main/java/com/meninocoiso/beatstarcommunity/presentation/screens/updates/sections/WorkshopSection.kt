@@ -38,7 +38,7 @@ internal fun WorkshopSection(
             UpdatesSection(
                 state = updateState,
                 charts = updatesCharts,
-                onFetchUpdates = { chartToRemove ->
+                onFetchUpdates = {
                     viewModel.checkForUpdates()
                 },
                 onSnackbar = onSnackbar,

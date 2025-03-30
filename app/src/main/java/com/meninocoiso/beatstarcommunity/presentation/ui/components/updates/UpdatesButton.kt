@@ -21,12 +21,9 @@ import com.meninocoiso.beatstarcommunity.data.manager.ChartState
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.infiniteRotation
 
 @Composable
-internal fun UpdatesButton(
-    state: ChartState,
-    onFetchUpdates: (chartToRemove: String?) -> Unit
-) {
+internal fun UpdatesButton(state: ChartState, onFetchUpdates: () -> Unit) {
     FilledTonalButton(
-        onClick = { onFetchUpdates(null) },
+        onClick = { onFetchUpdates() },
         colors = ButtonDefaults.filledTonalButtonColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
