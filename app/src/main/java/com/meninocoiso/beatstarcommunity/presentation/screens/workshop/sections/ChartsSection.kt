@@ -13,6 +13,9 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -41,27 +44,24 @@ internal fun ChartsSection(
 ) {
     val searchCharts by viewModel.searchCharts.collectAsStateWithLifecycle(initialValue = emptyList())
     val feedCharts by viewModel.feedCharts.collectAsStateWithLifecycle(initialValue = emptyList())
+
+    var searchFieldState by remember { mutableStateOf(viewModel.searchFieldState) }
+    val hasActiveQuery = searchFieldState.text.isNotEmpty()
     
-    val charts = if (searchCharts.isNotEmpty()) {
+    val charts = if (hasActiveQuery) {
         searchCharts
     } else {
         feedCharts
     }
     
-    val searchState by viewModel.searchState.collectAsStateWithLifecycle(initialValue = ChartState.Idle)
-    val feedState by viewModel.cacheState.collectAsStateWithLifecycle(initialValue = ChartState.Loading)
-    
-    val workshopState = if (searchState !is ChartState.Idle) {
-        searchState
-    } else {
-        feedState
-    }
+    val workshopState by viewModel.workshopState.collectAsStateWithLifecycle(initialValue = ChartState.Loading)
     
     // Collect events for snackbar
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
                 is FetchEvent.Error -> {
+                    println("Triggering snackbar: ${event.message}")
                     onSnackbar(event.message)
                 }
             }
@@ -73,7 +73,7 @@ internal fun ChartsSection(
         contentAlignment = Alignment.TopCenter,
     ) {
         // If no cache or on search mode, show loading or error status on full page
-        if (charts.isEmpty() || searchState is ChartState.Loading || searchState is ChartState.Error) {
+        if (feedCharts.isEmpty() || hasActiveQuery && workshopState !is ChartState.Success) {
             when (workshopState) {
                 is ChartState.Loading -> {
                     Box(Modifier.fillMaxSize(), Alignment.Center) {
@@ -93,7 +93,7 @@ internal fun ChartsSection(
 
                 else -> {}
             }
-        } else if (searchState is ChartState.Success && searchCharts.isEmpty()) {
+        } else if (hasActiveQuery && searchCharts.isEmpty()) {
             // No charts to display - show empty state
             StatusMessageUI(
                 title = "No charts found",
@@ -106,7 +106,7 @@ internal fun ChartsSection(
         } else {
             // We have charts to display - show them with pull-to-refresh
             PullToRefreshBox(
-                isRefreshing = feedState is ChartState.Loading,
+                isRefreshing = workshopState is ChartState.Loading,
                 onRefresh = { viewModel.fetchFeedCharts() }
             ) {
                 SectionWrapper(

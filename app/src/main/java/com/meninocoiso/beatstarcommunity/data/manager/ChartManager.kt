@@ -32,7 +32,6 @@ sealed class FetchResult<out T> {
 }
 
 sealed class ChartState {
-    data object Idle : ChartState()
     data object Loading : ChartState()
     data object Success : ChartState()
     data object Error : ChartState()

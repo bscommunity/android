@@ -68,7 +68,7 @@ fun LocalContentSection(
                     StatusMessageUI(
                         modifier = Modifier.fillMaxSize(),
                         title = "Looks like something went wrong...",
-                        message = "Please check your connection or try again later",
+                        message = "Please reopen the app and try again",
                         icon = R.drawable.rounded_hourglass_disabled_24
                     )
                 }

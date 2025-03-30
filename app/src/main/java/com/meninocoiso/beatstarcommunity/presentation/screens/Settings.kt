@@ -69,7 +69,7 @@ fun SettingsScreen(
             }
 
             is AppUpdateState.Error ->
-                onSnackbar("Error checking for updates")
+                onSnackbar((updateState as AppUpdateState.Error).message)
 
             else -> {}
         }

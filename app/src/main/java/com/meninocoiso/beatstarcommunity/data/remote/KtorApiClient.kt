@@ -1,8 +1,8 @@
 package com.meninocoiso.beatstarcommunity.data.remote
 
-import com.meninocoiso.beatstarcommunity.domain.enums.SortOption
 import com.meninocoiso.beatstarcommunity.domain.enums.Difficulty
 import com.meninocoiso.beatstarcommunity.domain.enums.Genre
+import com.meninocoiso.beatstarcommunity.domain.enums.SortOption
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.model.User
 import com.meninocoiso.beatstarcommunity.domain.model.Version
@@ -42,7 +42,7 @@ class KtorApiClient @Inject constructor() : ApiClient {
         defaultRequest {
             url {
                 protocol = URLProtocol.HTTP
-                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.5"
+                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.11"
                 port = 8080
             }
             contentType(ContentType.Application.Json)
