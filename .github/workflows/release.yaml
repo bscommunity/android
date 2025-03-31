@@ -38,17 +38,12 @@ jobs:
             LAST_TAG=$(git rev-list --max-parents=0 HEAD)
           fi
           echo "Generating changelog since $LAST_TAG"
-          {
-            echo "## Changelog"
-            git log --pretty=format:"- %s" $LAST_TAG..HEAD
-          } > changelog.md
 
-          # Store changelog safely using `EOF` to avoid formatting issues
-          {
-            echo "CHANGELOG<<EOF"
-            cat changelog.md
-            echo "EOF"
-          } >> $GITHUB_ENV
+          echo "## Changelog" > changelog.md
+          git log --pretty=format:"- %s" $LAST_TAG..HEAD >> changelog.md
+
+          # Store changelog as a file, to avoid multi-line env issues
+          echo "CHANGELOG_FILE=changelog.md" >> $GITHUB_ENV
       
       - name: Create Git Tag
         run: |
@@ -74,7 +69,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: "v${{ env.VERSION_NAME }}"
           name: "Release v${{ env.VERSION_NAME }}"
-          body: "${{ env.CHANGELOG }}"
+          body_path: "${{ env.CHANGELOG_FILE }}"  # Use the file instead of env var
           draft: false
           prerelease: false
           files: |
