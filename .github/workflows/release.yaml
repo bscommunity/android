@@ -67,6 +67,9 @@ jobs:
         run: |
           echo "${{ secrets.SIGNING_KEYSTORE_BASE64 }}" | base64 -d > app/keystore.jks
         
+      - name: Grant execute permission to gradlew
+        run: chmod +x ./gradlew
+        
       - name: Build Release APK
         run: ./gradlew assembleRelease
         env:
