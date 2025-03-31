@@ -39,7 +39,7 @@ jobs:
           fi
           echo "Generating changelog since $LAST_TAG"
           echo "## Changelog" > changelog.md
-          git log --pretty=format:"- %s" $LAST_TAG..HEAD >> changelog.md
+          git log --pretty=format:"%s" $LAST_TAG..HEAD | sed 's/^/- /' >> changelog.md
           echo "CHANGELOG=$(cat changelog.md)" >> $GITHUB_ENV
 
       - name: Create Git Tag
