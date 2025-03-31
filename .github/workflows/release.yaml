@@ -34,7 +34,7 @@ jobs:
         run: |
           if git ls-remote --tags origin | grep -q "refs/tags/${{ env.FINAL_VERSION }}$"; then
             echo "Tag ${{ env.FINAL_VERSION }} already exists. Skipping tagging."
-            exit 1
+            exit 78
           fi
       
       - name: Generate changelog from commits
