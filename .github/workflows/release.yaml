@@ -28,15 +28,15 @@ jobs:
           FINAL_VERSION="v${VERSION_NAME}${{ env.SUFFIX }}"
           echo "Extracted version: $FINAL_VERSION"
           echo "FINAL_VERSION=$FINAL_VERSION" >> $GITHUB_ENV
-      
+
       - name: Check if tag already exists
         id: check_tag
         run: |
-          if git rev-parse "v${{ env.VERSION_NAME }}" >/dev/null 2>&1; then
-            echo "Tag already exists!"
-            exit 0
+          if git ls-remote --tags origin | grep -q "refs/tags/${{ env.FINAL_VERSION }}$"; then
+            echo "Tag ${{ env.FINAL_VERSION }} already exists. Skipping tagging."
+            exit 1
           fi
-
+      
       - name: Generate changelog from commits
         id: changelog
         run: |
@@ -60,8 +60,8 @@ jobs:
 
       - name: Create new Tag
         run: |
-          git tag "v${{ env.FINAL_VERSION }}"
-          git push origin "v${{ env.FINAL_VERSION }}"
+          git tag "${{ env.FINAL_VERSION }}"
+          git push origin "${{ env.FINAL_VERSION }}"
 
       - name: Decode and Restore Keystore
         run: |
