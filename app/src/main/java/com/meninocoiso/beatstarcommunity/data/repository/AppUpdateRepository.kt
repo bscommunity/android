@@ -31,7 +31,6 @@ private data class GitHubRelease(
 
 private val json = Json { ignoreUnknownKeys = true }
 
-private const val DOWNLOAD_URL = "https://example.com/app.apk"
 private const val TAG = "AppUpdateRepository"
 
 @Singleton
@@ -45,7 +44,7 @@ class AppUpdateRepository @Inject constructor(
      * @return Flow emitting the latest version string
      */
     fun fetchLatestVersion(): Flow<String> = flow {
-        val url = "https://api.github.com/repos/zen-browser/desktop/releases/latest"
+        val url = "https://api.github.com/repos/bscommunity/android/releases/latest"
         val request = Request.Builder()
             .url(url)
             .header("Accept", "application/vnd.github.v3+json")
@@ -86,12 +85,14 @@ class AppUpdateRepository @Inject constructor(
         versionName: String,
         onProgress: (AppUpdateState) -> Unit
     ): File = withContext(Dispatchers.IO) {
+        val downloadUrl = "https://github.com/bscomunnity/android/releases/download/${versionName}/bscm-${versionName}.apk"
+        
         try {
             onProgress(AppUpdateState.Downloading(0f))
 
             // Download APK to cache directory with version name
             val apkFile = downloadUtils.downloadFileToCache(
-                "${DOWNLOAD_URL}_$versionName",
+                "${downloadUrl}_$versionName",
                 "update-$versionName",
                 "apk"
             ) { progress ->
