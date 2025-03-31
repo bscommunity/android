@@ -3,7 +3,7 @@ name: Auto Release
 on:
   push:
     branches:
-      - main  # Change this if your default branch is different
+      - stable
 
 jobs:
   create_tag_and_release:
@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensure we get the full history for changelog generation
 
       - name: Extract version from build.gradle.kts
         id: extract_version
@@ -25,8 +27,20 @@ jobs:
         run: |
           if git rev-parse "v${{ env.VERSION_NAME }}" >/dev/null 2>&1; then
             echo "Tag already exists!"
-            exit 1
+            exit 0
           fi
+
+      - name: Generate changelog from commits
+        id: changelog
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            LAST_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          echo "Generating changelog since $LAST_TAG"
+          echo "## Changelog" > changelog.md
+          git log --pretty=format:"- %s" $LAST_TAG..HEAD >> changelog.md
+          echo "CHANGELOG=$(cat changelog.md)" >> $GITHUB_ENV
 
       - name: Create Git Tag
         run: |
@@ -35,13 +49,25 @@ jobs:
           git tag "v${{ env.VERSION_NAME }}"
           git push origin "v${{ env.VERSION_NAME }}"
 
+      - name: Build release APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      - name: Upload APK as Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release
+          path: app/build/outputs/apk/release/*.apk
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: "v${{ env.VERSION_NAME }}"
           name: "Release v${{ env.VERSION_NAME }}"
-          body: |
-            🚀 New release: v${{ env.VERSION_NAME }}
+          body: "${{ env.CHANGELOG }}"
           draft: false
           prerelease: false
+          files: |
+            app/build/outputs/apk/release/*.apk
