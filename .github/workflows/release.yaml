@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - stable
+        
+permissions:
+  contents: write  # ✅ Allows pushing tags & creating releases
+  
+env:
+  SUFFIX: "b"  # In future commits, we can customize the suffix (e.g., "-beta", "b", "-rc1")
 
 jobs:
   create_tag_and_release:
@@ -19,9 +25,10 @@ jobs:
         id: extract_version
         run: |
           VERSION_NAME=$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts || grep -oP 'versionName\s+"[^"]+"' app/build.gradle | cut -d'"' -f2)
-          echo "Extracted version: $VERSION_NAME"
-          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
-
+          FINAL_VERSION="v${VERSION_NAME}${{ env.SUFFIX }}"
+          echo "Extracted version: $FINAL_VERSION"
+          echo "FINAL_VERSION=$FINAL_VERSION" >> $GITHUB_ENV
+      
       - name: Check if tag already exists
         id: check_tag
         run: |
@@ -44,14 +51,19 @@ jobs:
 
           # Store changelog as a file, to avoid multi-line env issues
           echo "CHANGELOG_FILE=changelog.md" >> $GITHUB_ENV
-      
-      - name: Create Git Tag
+
+      - name: Authenticate Git
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "v${{ env.VERSION_NAME }}"
-          git push origin "v${{ env.VERSION_NAME }}"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
 
+      - name: Create new Tag
+        run: |
+          git tag "v${{ env.FINAL_VERSION }}"
+          git push origin "v${{ env.FINAL_VERSION }}"
+          
+    
       - name: Build release APK
         run: |
           chmod +x gradlew
@@ -67,9 +79,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: "v${{ env.VERSION_NAME }}"
-          name: "Release v${{ env.VERSION_NAME }}"
-          body_path: "${{ env.CHANGELOG_FILE }}"  # Use the file instead of env var
+          tag_name: "${{ env.FINAL_VERSION }}"
+          name: "Release ${{ env.FINAL_VERSION }}"
+          body_path: "${{ env.CHANGELOG_FILE }}"
           draft: false
           prerelease: false
           files: |
