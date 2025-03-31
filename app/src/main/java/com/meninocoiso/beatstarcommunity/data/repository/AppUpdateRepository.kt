@@ -77,7 +77,6 @@ class AppUpdateRepository @Inject constructor(
 
     /**
      * Downloads an APK update and prepares it for installation
-     * @param url URL of the APK file
      * @param versionName Name of the version for display purposes
      * @return The downloaded APK file
      */
