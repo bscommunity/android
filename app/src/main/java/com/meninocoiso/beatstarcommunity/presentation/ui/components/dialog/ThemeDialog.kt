@@ -33,10 +33,12 @@ fun ThemeDialogPreview() {
 @Composable
 fun ThemeDialog(
 	option: ThemePreference,
-	onThemeSelected: (ThemePreference) -> Unit
+	onThemeSelected: (ThemePreference) -> Unit,
+	onCancel: (ThemePreference) -> Unit = {}
 ) {
 	val (isOpened, setIsOpened) = remember { mutableStateOf(false) }
-
+	val lastSelected = remember { mutableStateOf(option) }
+	
 	Button(onClick = {
 		setIsOpened(true)
 	}) {
@@ -67,18 +69,21 @@ fun ThemeDialog(
 						},
 						onOptionSelected = { index, _ ->
 							onThemeSelected(ThemePreference.entries[index])
+							lastSelected.value = ThemePreference.entries[index]
 						})
 				},
 				dismissButton = {
 					TextButton(onClick = {
 						setIsOpened(false)
+						if (option != lastSelected.value) {
+							onCancel(option)
+						}
 					}) {
 						Text(text = "Cancel")
 					}
 				},
 				confirmButton = {
 					Button(onClick = {
-						onThemeSelected(option)
 						setIsOpened(false)
 					}) {
 						Text(text = "Confirm")

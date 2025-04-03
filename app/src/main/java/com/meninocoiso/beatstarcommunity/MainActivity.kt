@@ -2,11 +2,13 @@ package com.meninocoiso.beatstarcommunity
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -73,7 +75,7 @@ class MainActivity : ComponentActivity() {
             // This is the same parameters as the default enableEdgeToEdge call, but we manually
             // resolve whether or not to show dark theme using uiState, since it can be different
             // than the configuration's dark theme value based on the user preference.
-            /*DisposableEffect(darkTheme) {
+            DisposableEffect(darkTheme) {
                 enableEdgeToEdge(
                     statusBarStyle = SystemBarStyle.auto(
                         android.graphics.Color.TRANSPARENT,
@@ -85,7 +87,7 @@ class MainActivity : ComponentActivity() {
                     ) { darkTheme },
                 )
                 onDispose {}
-            }*/
+            }
 
             BeatstarCommunityTheme(
                 darkTheme = darkTheme,

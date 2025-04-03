@@ -57,10 +57,6 @@ class SettingsViewModel @Inject constructor(
 
 	private val currentVersion = BuildConfig.VERSION_CODE.toString()
 
-	init {
-		checkAppUpdates(silentMode = true)
-	}
-
 	/**
 	 * Toggle explicit content setting
 	 */
@@ -90,9 +86,8 @@ class SettingsViewModel @Inject constructor(
 
 	/**
 	 * Check for app updates
-	 * @param silentMode If true, errors won't be exposed through the UI cacheState
 	 */
-	fun checkAppUpdates(silentMode: Boolean = false) {
+	fun checkAppUpdates() {
 		_updateState.value = AppUpdateState.Checking
 
 		viewModelScope.launch {
@@ -101,6 +96,10 @@ class SettingsViewModel @Inject constructor(
 
 			if (cachedVersion != null) {
 				compareVersionAndUpdateState(cachedVersion)
+				
+				// After using cache one time, clear it
+				settingsRepository.setLatestVersion("")
+				
 				return@launch
 			}
 
