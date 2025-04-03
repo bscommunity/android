@@ -31,7 +31,7 @@ android {
 		create("release") {
 			storeFile = file("keystore.jks")
 			storePassword = System.getenv("SIGNING_STORE_PASSWORD")
-			keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+			keyAlias = System.getenv("SIGNING_STORE_PASSWORD")
 			keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
 		}
 	}

@@ -204,6 +204,9 @@ fun SettingsScreen(
                         option = uiState.theme,
                         onThemeSelected = {
                             viewModel.updateAppTheme(it)
+                        },
+                        onCancel = {
+                            viewModel.updateAppTheme(it)
                         }
                     )
                 }
@@ -222,10 +225,6 @@ fun SettingsScreen(
                     ) {
                         Icon(imageVector = Icons.Outlined.Build, contentDescription = "")
                         HeadlineText(
-                            /*when(uiState.appUpdateVersion) {
-                                "" -> BuildConfig.VERSION_NAME
-                                else -> "${BuildConfig.VERSION_NAME} → ${uiState.appUpdateVersion}"
-                            }*/
                             when (updateState) {
                                 is AppUpdateState.UpdateAvailable -> "${BuildConfig.VERSION_NAME} → ${(updateState as AppUpdateState.UpdateAvailable).version}"
                                 else -> BuildConfig.VERSION_NAME

@@ -15,6 +15,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 object Workshop
 
+@Serializable
 enum class UpdatesSection {
 	Workshop,
 	Installations

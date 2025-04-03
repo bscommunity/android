@@ -7,3 +7,7 @@ To convert `keystore.jks` to `keystore.b64`:
 ```bash
 base64 -w 0 app/keystore.jks > keystore.b64
 ```
+
+To generate SHA-256 hash to chart deep link on web:
+```bash
+keytool -list -v -keystore keystore.jks

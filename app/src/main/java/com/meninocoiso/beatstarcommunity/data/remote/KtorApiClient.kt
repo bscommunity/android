@@ -6,7 +6,6 @@ import com.meninocoiso.beatstarcommunity.domain.enums.SortOption
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.model.User
 import com.meninocoiso.beatstarcommunity.domain.model.Version
-import com.meninocoiso.beatstarcommunity.util.DevelopmentUtils
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
@@ -15,7 +14,6 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.get
 import io.ktor.http.ContentType
-import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import jakarta.inject.Inject
@@ -40,11 +38,12 @@ class KtorApiClient @Inject constructor() : ApiClient {
             requestTimeoutMillis = 10000
         }
         defaultRequest {
-            url {
+            url("https://api-cyb1.onrender.com")
+            /*url {
                 protocol = URLProtocol.HTTP
                 host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.11"
                 port = 8080
-            }
+            }*/
             contentType(ContentType.Application.Json)
         }
     }

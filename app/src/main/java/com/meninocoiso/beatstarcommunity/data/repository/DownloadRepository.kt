@@ -12,8 +12,6 @@ import javax.inject.Singleton
 
 private const val TAG = "DownloadRepository"
 
-private const val PLACEHOLDER_FILE_URL = "https://cdn.discordapp.com/attachments/954166390619783268/1352171834493243482/wolf.zip?ex=67ea3aa7&is=67e8e927&hm=b5884fb82feb072f0fef6fa88903ce0d8616df8a409c1de33c054ae82649df36&"
-
 @Singleton
 class DownloadRepository @Inject constructor(
     private val downloadUtils: DownloadUtils,
@@ -25,7 +23,6 @@ class DownloadRepository @Inject constructor(
      * @param url URL of the chart zip file
      * @param chartId ID of the chart
      * @param operation Operation type (INSTALL or UPDATE)
-     * @param folderName Name to use for the chart folder
      * @param onDownloadProgress Callback for download progress
      * @param onExtractProgress Callback for extraction progress
      */
@@ -43,7 +40,7 @@ class DownloadRepository @Inject constructor(
 
         // Download the zip file to cache
         val downloadedFile = downloadUtils.downloadFileToCache(
-            PLACEHOLDER_FILE_URL,
+            url,
             folderName,
             ".zip",
             onDownloadProgress

@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun RadioGroupUI(
 	radioOptions: List<String>,
-	trailingElements: List<@Composable () -> Unit> = emptyList(),
+	trailingElements: List<@Composable () -> Unit>? = null,
 	initialSelected: String = radioOptions[0],
 	onOptionSelected: (Int, String) -> Unit
 ) {
@@ -58,7 +58,9 @@ fun RadioGroupUI(
 						modifier = Modifier.padding(start = 16.dp)
 					)
 				}
-				trailingElements[index].invoke()
+				if (trailingElements != null) {
+					trailingElements[index].invoke()
+				}
 			}
 		}
 	}

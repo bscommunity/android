@@ -54,6 +54,15 @@ fun LocalContentSection(
         // SegmentedButtonUI()
 
         if (charts.isEmpty()) {
+            StatusMessageUI(
+                title = "No downloads yet",
+                message = "Download some charts to get started",
+                icon = R.drawable.rounded_box_24,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 36.dp)
+            )
+        } else {
             when (state) {
                 is ChartState.Loading -> {
                     Box(
@@ -74,39 +83,30 @@ fun LocalContentSection(
                 }
 
                 else -> {
-                    StatusMessageUI(
-                        title = "No downloads yet",
-                        message = "Download some charts to get started",
-                        icon = R.drawable.rounded_box_24,
+                    SectionWrapper(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(bottom = 36.dp)
-                    )
+                            .padding(horizontal = 16.dp)
+                            .nestedScroll(nestedScrollConnection)
+                            .fabScrollObserver(onFabStateChange),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ){
+                        item {
+                            LocalContentSectionTitle("Charts")
+                        }
+                        items(charts) { chart ->
+                            LocalChartPreview(
+                                chart = chart,
+                                onNavigateToDetails = { onNavigateToDetails(chart) }
+                            )
+                        }
+                        /*item {
+                            LocalDownloadsSectionTitle("Tour Passes")
+                        }*/
+                        /*item {
+                            LocalDownloadsSectionTitle("Themes")
+                        }*/
+                    }
                 }
-            }
-        } else {
-            SectionWrapper(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .nestedScroll(nestedScrollConnection)
-                    .fabScrollObserver(onFabStateChange),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ){
-                item {
-                    LocalContentSectionTitle("Charts")
-                }
-                items(charts) { chart ->
-                    LocalChartPreview(
-                        chart = chart,
-                        onNavigateToDetails = { onNavigateToDetails(chart) }
-                    )
-                }
-                /*item {
-                    LocalDownloadsSectionTitle("Tour Passes")
-                }*/
-                /*item {
-                    LocalDownloadsSectionTitle("Themes")
-                }*/
             }
         }
     }

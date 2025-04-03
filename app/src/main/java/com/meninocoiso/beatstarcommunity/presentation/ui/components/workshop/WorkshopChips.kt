@@ -29,12 +29,12 @@ data class WorkshopChip(
 
 val chipItems = listOf(
 	WorkshopChip(
-		id = 1,
-		title = "Weekly Rank"
-	),
-	WorkshopChip(
 		id = 2,
 		title = "Last updated",
+	),
+	WorkshopChip(
+		id = 1,
+		title = "Weekly Rank"
 	),
 	WorkshopChip(
 		id = 3,
@@ -66,6 +66,7 @@ fun WorkshopChips(
 				label = {
 					Text(chip.title)
 				},
+				enabled = index == 0,
 				selected = selectedChipIndex == index,
 				leadingIcon = if (selectedChipIndex == index) {
 					{

@@ -85,7 +85,8 @@ class SettingsRepository @Inject constructor(
 			?: Settings().theme,
 		folderUri = preferences[FOLDER_URI]
 			?: Settings().folderUri,
-		latestUpdateVersion = preferences[LATEST_UPDATE_VERSION]
-			?: Settings().latestUpdateVersion
+		latestUpdateVersion = preferences[LATEST_UPDATE_VERSION].let { 
+			if (it.isNullOrEmpty()) null else it
+		} ?: Settings().latestUpdateVersion
 	)
 }

@@ -354,9 +354,8 @@ class WorkshopViewModel @Inject constructor(
     }
     
     fun clearSearch() {
-        // Clear search state
+        // Clear search
         searchFieldState.setTextAndPlaceCursorAtEnd("")
-        _workshopState.value = ChartState.Success
         chartManager.searchQuery = ""
         
         // Reset pagination
