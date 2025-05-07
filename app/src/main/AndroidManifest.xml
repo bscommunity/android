@@ -33,6 +33,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BeatstarCommunity"
         android:usesCleartextTraffic="true"
+        android:enableOnBackInvokedCallback="true"
         tools:targetApi="31">
 
         <!-- Service to background content download -->
