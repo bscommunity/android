@@ -5,7 +5,6 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Update
 import androidx.room.Upsert
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.model.Version
@@ -13,7 +12,7 @@ import com.meninocoiso.beatstarcommunity.domain.model.Version
 @Dao
 interface ChartDao {
     @Query("SELECT * FROM charts WHERE (:query IS NULL OR track LIKE '%' || :query || '%' OR artist LIKE '%' || :query || '%') ORDER BY track ASC LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END OFFSET :offset")
-    fun getAll(query: String?, limit: Int?, offset: Int): List<Chart>
+    fun getAll(query: String? = null, limit: Int? = null, offset: Int = 0): List<Chart>
 
     @Query("SELECT * FROM charts WHERE id = :id")
     fun getChart(id: String): Chart
@@ -74,7 +73,7 @@ interface ChartDao {
     @Upsert
     fun update(chart: Chart)
 
-    @Update
+    @Upsert
     fun update(chart: List<Chart>)
 
     /**

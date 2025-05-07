@@ -172,6 +172,8 @@ class ChartManager @Inject constructor(
                     onFailure = { /* Continue to remote fetch if cache fails */ }
                 )
             }
+            
+            Log.d(TAG, "Cache miss or forced refresh, fetching from remote")
 
             // Fetch from remote
             val remoteResult = remoteChartRepository.getChartsSortedBy(

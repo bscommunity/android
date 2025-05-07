@@ -338,9 +338,7 @@ class WorkshopViewModel @Inject constructor(
     private fun handleCachedChartsResult(result: FetchResult<List<Chart>>) {
         when (result) {
             is FetchResult.Success -> {
-                if (result.data.isNotEmpty()) {
-                    chartManager.updateState(ChartState.Success)
-                }
+                chartManager.updateState(ChartState.Success)
             }
             is FetchResult.Error -> {
                 chartManager.updateState(ChartState.Error)

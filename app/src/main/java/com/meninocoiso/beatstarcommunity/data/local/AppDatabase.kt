@@ -9,10 +9,10 @@ import com.meninocoiso.beatstarcommunity.domain.model.Version
 import com.meninocoiso.beatstarcommunity.domain.serialization.Converters
 
 @Database(
-    version = 6,
+    version = 7,
     entities = [
         Chart::class,
-        Version::class
+        Version::class,
     ],
     exportSchema = false
 )
