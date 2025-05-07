@@ -3,23 +3,21 @@ package com.meninocoiso.beatstarcommunity.util
 import android.content.Context
 import android.content.res.Resources.NotFoundException
 import android.net.Uri
-import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.io.IOException
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
-import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.util.Locale
-import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "DownloadUtils"
+
+private const val PLACEHOLDER = "https://cdn.discordapp.com/attachments/954166390619783268/1367386807364358184/shootadx.zip?ex=681c4eb3&is=681afd33&hm=f9b8e91586682ca63c14f563f0a602303475d6b91c1840a3342a1e769fc98ae9&"
 
 /**
  * Utility class for handling chart downloads, extraction and storage
@@ -49,7 +47,7 @@ class DownloadUtils @Inject constructor(
 
                 // Create the request
                 val request = Request.Builder()
-                    .url(url)
+                    .url(PLACEHOLDER)
                     .build()
 
                 // Execute the request
@@ -82,6 +80,8 @@ class DownloadUtils @Inject constructor(
                     }
                 }
 
+                println("Downloaded file size: ${cacheFile.length()} bytes")
+
                 return@withContext cacheFile
             } catch (e: Exception) {
                 // Clean up on failure
@@ -91,143 +91,39 @@ class DownloadUtils @Inject constructor(
                 throw e
             }
         }
-
-    /**
-     * Extracts a zip file to the specified folder
-     */
+    
     suspend fun extractZipToFolder(
         zipFile: File,
         folderName: String,
-        folderUri: Uri,
-        subFolders: List<String>? = null,
-        onProgress: (Float) -> Unit
-    ) = withContext(Dispatchers.IO) {
-        onProgress(0f)
+        rootUri: Uri,
+        subFolders: List<String> = listOf("songs"),
+        onProgress: (Float) -> Unit = {}
+    ) {
+        // Access the root folder using the URI
+        val rootFolder = DocumentFile.fromTreeUri(context, rootUri)
+            ?: throw IllegalStateException("Failed to access root folder")
 
-        try {
-            val rootFolder = getFolderFromUri(folderUri)
-                ?: throw IllegalStateException("Could not access or create root folder")
-
-            var destinationFolder = rootFolder
-
-            subFolders?.forEach { subFolderName ->
-                destinationFolder = getOrCreateSubfolder(destinationFolder.uri, subFolderName)
-            }
-
-            Log.d(TAG, "Destination folder: ${destinationFolder.uri}")
-
-            // Find existing chart folder and delete it if it exists
-            val existingChartFolder = destinationFolder.findFile(folderName)
-            if (existingChartFolder != null && existingChartFolder.exists()) {
-                if (!existingChartFolder.delete()) {
-                    throw Exception("Failed to delete existing chart folder")
-                }
-                Log.d(TAG, "Previous chart version folder deleted")
-            }
-
-            // If the folder does not exist, create it
-            val chartFolder = getOrCreateSubfolder(destinationFolder.uri, folderName)
-
-            Log.d(TAG, "Chart folder URI: ${chartFolder.uri}")
-            Log.d(TAG, "Chart folder exists: ${chartFolder.exists()}")
-            Log.d(TAG, "Chart folder can write: ${chartFolder.canWrite()}")
-            Log.d(TAG, "Chart folder name: ${chartFolder.name}")
-
-            // After creating the chart folder
-            if (!chartFolder.exists() || !chartFolder.canWrite()) {
-                Log.e(TAG, "Created folder not accessible: ${chartFolder.uri}")
-                throw Exception("Created folder not accessible or writable")
-            }
-
-            Log.d(TAG, "Chart folder created: ${chartFolder.uri}")
-
-            // Count entries for progress tracking
-            val totalEntries = countZipEntries(zipFile)
-            var processedEntries = 0
-
-            // Extract the zip file
-            ZipInputStream(FileInputStream(zipFile)).use { zipInputStream ->
-                var entry: ZipEntry? = zipInputStream.nextEntry
-                val buffer = ByteArray(8192)
-
-                while (entry != null) {
-                    val entryName = entry.name.substringAfterLast('/').replace("\\", "")
-                        .lowercase(Locale.getDefault())
-
-                    if (!entry.isDirectory && entryName.isNotEmpty()) {
-                        // Create the file in the destination folder
-                        val fileType = getMimeType(entryName)
-                        val outputFile = chartFolder.createFile(fileType, entryName)
-                            ?: throw Exception("Failed to create file: $entryName")
-
-                        // Write the file content
-                        context.contentResolver.openOutputStream(outputFile.uri)?.use { outputStream ->
-                            var bytesRead: Int
-                            while (zipInputStream.read(buffer).also { bytesRead = it } > 0) {
-                                outputStream.write(buffer, 0, bytesRead)
-                            }
-                        } ?: throw Exception("Failed to open output stream for: $entryName")
-                    }
-
-                    zipInputStream.closeEntry()
-                    entry = zipInputStream.nextEntry
-
-                    // Update progress
-                    processedEntries++
-                    onProgress(processedEntries.toFloat() / totalEntries)
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error extracting zip file", e)
-            throw e
+        // Create subfolders (ex: "songs/chart1")
+        var destination = rootFolder
+        for (sub in subFolders) {
+            destination = destination.getOrCreateSubfolder(sub)
         }
-    }
 
-    /**
-     * Count the number of entries in a zip file for progress tracking
-     */
-    private suspend fun countZipEntries(zipFile: File): Int = withContext(Dispatchers.IO) {
-        var count = 0
-        ZipInputStream(FileInputStream(zipFile)).use { zipInputStream ->
-            while (zipInputStream.nextEntry != null) {
-                count++
-                zipInputStream.closeEntry()
-            }
-        }
-        count
-    }
+        // Create (or recreate) the chart folder
+        destination.findFile(folderName)?.delete()
+        val chartFolder = destination.getOrCreateSubfolder(folderName)
 
-    /**
-     * Get MIME type based on file extension
-     */
-    private fun getMimeType(fileName: String): String {
-        return when {
-            fileName.endsWith(".png", true) -> "image/png"
-            fileName.endsWith(".jpg", true) || fileName.endsWith(".jpeg", true) -> "image/jpeg"
-            fileName.endsWith(".json", true) -> "application/json"
-            fileName.endsWith(".txt", true) -> "text/plain"
-            fileName.endsWith(".mp3", true) -> "audio/mpeg"
-            fileName.endsWith(".ogg", true) -> "audio/ogg"
-            fileName.endsWith(".wav", true) -> "audio/wav"
-            else -> "application/octet-stream"
-        }
-    }
-
-    private fun getFolderFromUri(uri: Uri): DocumentFile? {
-        return DocumentFile.fromTreeUri(context, uri)
-    }
-
-    private fun getOrCreateSubfolder(uri: Uri, folderName: String): DocumentFile {
-        val rootFolder = DocumentFile.fromTreeUri(context, uri)
-            ?: throw IllegalStateException("Could not access or create root folder")
-
-        return rootFolder.findFile(folderName) ?: rootFolder.createDirectory(folderName)
-            ?: throw IllegalStateException("Could not access or create subfolder")
+        // Extract the zip file into the chart folder
+        chartFolder.unzipFrom(
+            zipFile = zipFile,
+            context = context,
+            onProgress = onProgress
+        )
     }
 
     suspend fun deleteFolderFromUri(folderName: String, destinationFolderUri: Uri, subFolders: List<String>) {
         withContext(Dispatchers.IO) {
-            val rootFolder = getFolderFromUri(destinationFolderUri)
+            val rootFolder = DocumentFile.fromTreeUri(context, destinationFolderUri)
                 ?: throw IllegalStateException("Could not access or create root folder")
 
             var destinationFolder = rootFolder
@@ -245,4 +141,9 @@ class DownloadUtils @Inject constructor(
             }
         }
     }
+}
+
+internal fun DocumentFile.getOrCreateSubfolder(name: String): DocumentFile {
+    return findFile(name) ?: createDirectory(name)
+    ?: throw IOException("Failed to create/access subfolder: $name")
 }

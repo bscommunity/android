@@ -42,10 +42,10 @@ class DownloadRepository @Inject constructor(
         val downloadedFile = downloadUtils.downloadFileToCache(
             url,
             folderName,
-            ".zip",
+            "zip",
             onDownloadProgress
         )
-
+        
         // Extract the zip file to the beatstar folder
         downloadUtils.extractZipToFolder(
             downloadedFile,
