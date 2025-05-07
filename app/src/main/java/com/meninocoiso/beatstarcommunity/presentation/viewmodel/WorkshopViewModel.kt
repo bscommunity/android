@@ -110,8 +110,6 @@ class WorkshopViewModel @Inject constructor(
      */
     fun fetchFeedCharts(showLoading: Boolean = true) {
         viewModelScope.launch {
-            Log.d(TAG, "Fetching feed charts with sort: $currentSortOption")
-
             // Reset pagination
             currentFeedPage = 0
             isLoadingMore = false

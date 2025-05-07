@@ -61,14 +61,18 @@ class KtorApiClient @Inject constructor() : ApiClient {
     }
 
     override suspend fun getFeedCharts(sortBy: SortOption, limit: Int?, offset: Int): List<Chart> {
-        return client.get("charts"){
+        val charts = client.get("charts"){
             url {
                 parameters.append("fetchContributors", "true")
                 parameters.append("sortBy", sortBy.toString())
                 limit?.let { parameters.append("limit", it.toString()) }
                 parameters.append("offset", offset.toString())
             }
-        }.body()
+        }.body<List<Chart>>()
+        
+        print("API response: $charts")
+        
+        return charts
     }
 
     override suspend fun getCharts(

@@ -69,11 +69,11 @@ internal fun ChartsSection(
     }
     
     // Print all conditions to check
-    println("WorkshopState: $workshopState")
-    println("SearchCharts: $searchCharts")
-    println("FeedCharts: $feedCharts")
-    println("HasActiveQuery: $hasActiveQuery")
-    println("Charts: $charts")
+    // println("WorkshopState: $workshopState")
+    // println("SearchCharts: $searchCharts")
+    // println("FeedCharts: $feedCharts")
+    // println("HasActiveQuery: $hasActiveQuery")
+    // println("Charts: $charts")
 
     Box(
         modifier = Modifier.fillMaxSize(),

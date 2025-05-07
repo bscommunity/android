@@ -146,7 +146,7 @@ private fun CollapsedContributors(
                 with(sharedTransitionScope) {
                     Row(horizontalArrangement = Arrangement.spacedBy((-16).dp)) {
                         for (author in users) {
-                            println("id from collapsed: ${author.username} ${author.id}")
+                            // println("id from collapsed: ${author.username} ${author.id}")
                             Avatar(
                                 modifier = Modifier.sharedElement(
                                     rememberSharedContentState(key = author.id),
@@ -232,7 +232,7 @@ private fun ExpandedContributors(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    println("id from expanded: ${author.user.username} ${author.user.id}")
+                    // println("id from expanded: ${author.user.username} ${author.user.id}")
                     with(sharedTransitionScope) {
                         Avatar(
                             url = author.user.imageUrl,
