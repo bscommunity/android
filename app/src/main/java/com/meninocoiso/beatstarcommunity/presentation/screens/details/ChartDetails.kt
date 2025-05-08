@@ -48,6 +48,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.CarouselItem
+import com.meninocoiso.beatstarcommunity.presentation.ui.components.MediaCarousel
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.chart.ChartContributors
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.DownloadButton
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.details.StatListItem
@@ -299,7 +301,14 @@ fun ChartDetailsScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Media carousel
-            // TestCarousel()
+            MediaCarousel(listOf(
+                CarouselItem.ImageItem(
+                    imageUrl = chart.coverUrl,
+                ),
+                CarouselItem.VideoItem(
+                    videoId = null,
+                )
+            ))
 
             // Credits
             ChartContributors(chart.contributors)
@@ -320,7 +329,7 @@ fun ChartDetailsScreen(
                         icon = R.drawable.rounded_blur_medium_24
                     )*/
                     StatListItem(
-                        title = "+${chart.latestVersion.notesAmount} downloads",
+                        title = "+${chart.latestVersion.downloadsAmount} downloads",
                         icon = R.drawable.rounded_download_24
                     )
                     StatListItem(
