@@ -21,18 +21,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
-import com.meninocoiso.beatstarcommunity.domain.enums.ErrorType
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.StoragePermissionDialog
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentState
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentViewModel
-import com.meninocoiso.beatstarcommunity.util.PermissionUtils.Companion.StoragePermissionHandler
+import com.meninocoiso.beatstarcommunity.util.PermissionUtils
+import kotlinx.coroutines.launch
 
 @Composable
 fun DownloadButton(
@@ -41,24 +43,24 @@ fun DownloadButton(
     contentViewModel: ContentViewModel,
 ) {
     var showStoragePermissionDialog by remember { mutableStateOf(false) }
-    var hasStoragePermission by remember { mutableStateOf(false) }
 
-    fun startDownload(checkForPermission: Boolean) {
-        if ((checkForPermission && !hasStoragePermission) || 
-            contentState is ContentState.Error && contentState.type == ErrorType.PERMISSION_DENIED) {
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    suspend fun startDownload() {
+        // Check for storage permission
+        val hasStoragePermission = PermissionUtils.checkStoragePermission(
+            contentViewModel::getFolderUri,
+            context
+        )
+
+        if (!hasStoragePermission) {
             showStoragePermissionDialog = true
             return
         }
 
         contentViewModel.downloadChart(chart = chart)
     }
-
-    // Check for storage permission
-    // TODO: Should we check for permission on every "startDownload" call, or it's enough to check once?
-    StoragePermissionHandler(
-        onPermissionGranted = { hasStoragePermission = true },
-        getFolderUri = (contentViewModel::getFolderUri)
-    )
 
     Button(
         shape = FloatingActionButtonDefaults.extendedFabShape,
@@ -73,7 +75,11 @@ fun DownloadButton(
         enabled = contentState is ContentState.Idle ||
                 contentState is ContentState.Error ||
                 (contentState is ContentState.Installed && chart.availableVersion != null),
-        onClick = { startDownload(true) }
+        onClick = {
+            coroutineScope.launch {
+                startDownload()
+            }
+        }
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -84,10 +90,12 @@ fun DownloadButton(
                     painter = painterResource(id = R.drawable.rounded_download_24),
                     contentDescription = "Download chart"
                 )
+
                 is ContentState.Downloading, is ContentState.Extracting -> CircularProgressIndicator(
                     modifier = Modifier.size(16.dp),
                     strokeWidth = 2.dp
                 )
+
                 is ContentState.Installed -> {
                     if (chart.availableVersion != null) {
                         Icon(
@@ -101,6 +109,7 @@ fun DownloadButton(
                         )
                     }
                 }
+
                 is ContentState.Error -> Icon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = "Download failed"
@@ -118,6 +127,7 @@ fun DownloadButton(
                             "Installed"
                         }
                     }
+
                     is ContentState.Error -> "Try again"
                 }
             )
@@ -131,7 +141,6 @@ fun DownloadButton(
             onPermissionGranted = {
                 Log.d("DownloadButton", "Storage permission granted")
                 
-                hasStoragePermission = true
                 showStoragePermissionDialog = false
 
                 // Start download immediately after permission is granted
