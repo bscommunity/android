@@ -33,7 +33,7 @@ import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.StoragePermissionDialog
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentState
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentViewModel
-import com.meninocoiso.beatstarcommunity.util.PermissionUtils
+import com.meninocoiso.beatstarcommunity.util.StorageUtils
 import kotlinx.coroutines.launch
 
 @Composable
@@ -49,7 +49,7 @@ fun DownloadButton(
 
     suspend fun startDownload() {
         // Check for storage permission
-        val hasStoragePermission = PermissionUtils.checkStoragePermission(
+        val hasStoragePermission = StorageUtils.checkStoragePermission(
             contentViewModel::getFolderUri,
             context
         )

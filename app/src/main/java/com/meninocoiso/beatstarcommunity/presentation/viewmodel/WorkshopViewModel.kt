@@ -15,6 +15,7 @@ import com.meninocoiso.beatstarcommunity.data.manager.ChartState
 import com.meninocoiso.beatstarcommunity.data.manager.FetchEvent
 import com.meninocoiso.beatstarcommunity.data.manager.FetchResult
 import com.meninocoiso.beatstarcommunity.data.repository.CacheRepository
+import com.meninocoiso.beatstarcommunity.data.repository.SettingsRepository
 import com.meninocoiso.beatstarcommunity.domain.enums.Difficulty
 import com.meninocoiso.beatstarcommunity.domain.enums.Genre
 import com.meninocoiso.beatstarcommunity.domain.enums.SortOption
@@ -41,7 +42,7 @@ private const val MAX_HISTORY_SIZE = 5
 @HiltViewModel
 class WorkshopViewModel @Inject constructor(
     private val chartManager: ChartManager,
-    private val cacheRepository: CacheRepository
+    private val cacheRepository: CacheRepository,
 ) : ViewModel() {
     val feedCharts: Flow<List<Chart>> = chartManager.workshopCharts
     val searchCharts: Flow<List<Chart>> = chartManager.searchCharts

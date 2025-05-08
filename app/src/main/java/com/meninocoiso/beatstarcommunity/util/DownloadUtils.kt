@@ -98,16 +98,8 @@ class DownloadUtils @Inject constructor(
         subFolders: List<String> = listOf("songs"),
         onProgress: (Float) -> Unit = {}
     ) {
-        // Access the root folder using the URI
-        val rootFolder = DocumentFile.fromTreeUri(context, rootUri)
-            ?: throw IllegalStateException("Failed to access root folder")
-
-        // Create subfolders (ex: "songs/chart1")
-        var destination = rootFolder
-        for (sub in subFolders) {
-            destination = destination.getOrCreateSubfolder(sub)
-        }
-
+        val destination = StorageUtils.getFolder(rootUri, subFolders, context)
+        
         // Create (or recreate) the chart folder
         destination.findFile(folderName)?.delete()
         val chartFolder = destination.getOrCreateSubfolder(folderName)
