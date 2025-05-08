@@ -43,9 +43,9 @@ fun ChartAuthors(
 ) {
 	if (authors.isEmpty()) return
 
-	BoxWithConstraints {
+	BoxWithConstraints { 
 		val maxWidthFraction = 0.7f // 70% of the parent's width
-		val maxWidthDp = maxWidth * maxWidthFraction
+		val maxWidthDp = this.maxWidth * maxWidthFraction
 
 		Box(
 			modifier = Modifier.border(
@@ -130,8 +130,9 @@ fun ChartPreview(
 						verticalArrangement = Arrangement.Center,
 					) {
 						Text(
-							text = chart.track,
+							modifier = Modifier.weight(0.7f),
 							style = MaterialTheme.typography.titleMedium,
+							text = chart.track,
 						)
 						Text(
 							style = MaterialTheme.typography.labelMedium,

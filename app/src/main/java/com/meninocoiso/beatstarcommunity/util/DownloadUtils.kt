@@ -17,8 +17,6 @@ import javax.inject.Singleton
 
 private const val TAG = "DownloadUtils"
 
-private const val PLACEHOLDER = "https://cdn.discordapp.com/attachments/954166390619783268/1367386807364358184/shootadx.zip?ex=681c4eb3&is=681afd33&hm=f9b8e91586682ca63c14f563f0a602303475d6b91c1840a3342a1e769fc98ae9&"
-
 /**
  * Utility class for handling chart downloads, extraction and storage
  */
@@ -47,11 +45,12 @@ class DownloadUtils @Inject constructor(
 
                 // Create the request
                 val request = Request.Builder()
-                    .url(PLACEHOLDER)
+                    .url(url)
                     .build()
 
                 // Execute the request
                 okHttpClient.newCall(request).execute().use { response ->
+                    println("Response: $response")
                     if (!response.isSuccessful) {
                         throw Exception("Download failed: ${response.code}")
                     }
