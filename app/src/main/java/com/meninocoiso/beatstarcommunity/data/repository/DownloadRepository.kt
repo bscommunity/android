@@ -6,6 +6,7 @@ import com.meninocoiso.beatstarcommunity.data.manager.ChartManager
 import com.meninocoiso.beatstarcommunity.data.manager.FetchResult
 import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
 import com.meninocoiso.beatstarcommunity.util.DownloadUtils
+import com.meninocoiso.beatstarcommunity.util.StorageUtils
 import kotlinx.coroutines.flow.first
 import kotlinx.io.IOException
 import javax.inject.Inject
@@ -37,7 +38,7 @@ class DownloadRepository @Inject constructor(
         val folderUri = settingsRepository.getFolderUri()?.toUri()
             ?: throw IllegalStateException("Could not access or create beatstar folder")
 
-        val folderName = getChartFolderName(chartId)
+        val folderName = StorageUtils.getChartFolderName(chartId)
 
         // Download the zip file to cache
         val downloadedFile = downloadUtils.downloadFileToCache(
@@ -73,7 +74,7 @@ class DownloadRepository @Inject constructor(
     }
 
     suspend fun deleteChart(chartId: String) {
-        val folderName = getChartFolderName(chartId)
+        val folderName = StorageUtils.getChartFolderName(chartId)
         val destinationFolderUri = settingsRepository.getFolderUri()?.toUri()
             ?: throw IllegalStateException("Could not access or create beatstar folder")
 
@@ -93,9 +94,5 @@ class DownloadRepository @Inject constructor(
                 throw Error(it.message)
             }
         }
-    }
-
-    private fun getChartFolderName(chartId: String): String {
-        return chartId.split("-").first()
     }
 }

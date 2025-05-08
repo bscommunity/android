@@ -1,12 +1,17 @@
 package com.meninocoiso.beatstarcommunity.data.manager
 
+import android.content.Context
 import android.util.Log
+import androidx.core.net.toUri
 import com.meninocoiso.beatstarcommunity.data.repository.ChartRepository
+import com.meninocoiso.beatstarcommunity.data.repository.SettingsRepository
 import com.meninocoiso.beatstarcommunity.domain.enums.Difficulty
 import com.meninocoiso.beatstarcommunity.domain.enums.Genre
 import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
 import com.meninocoiso.beatstarcommunity.domain.enums.SortOption
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
+import com.meninocoiso.beatstarcommunity.util.StorageUtils
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -49,8 +54,10 @@ private const val MAX_CACHED_CHARTS = 50
  */
 @Singleton
 class ChartManager @Inject constructor(
+    @ApplicationContext private val context: Context,
     @Named("Remote") private val remoteChartRepository: ChartRepository,
     @Named("Local") private val localChartRepository: ChartRepository,
+    private val settingsRepository: SettingsRepository
 ) {
     private val _remoteCharts = MutableStateFlow<Map<String, Chart>>(emptyMap())
     private val remoteCharts : StateFlow<Map<String, Chart>> = _remoteCharts.asStateFlow()
@@ -111,6 +118,30 @@ class ChartManager @Inject constructor(
         return _cachedCharts.value.size
     }
 
+    suspend fun verifyInstalledCharts(cachedCharts: List<Chart>): List<Chart> {
+        val installedCharts = cachedCharts.filter { it.isInstalled == true }
+        val chartsToUpdate = mutableListOf<Chart>()
+
+        for (chart in installedCharts) {
+            val rootUri = settingsRepository.getFolderUri()?.toUri()
+                ?: throw IllegalStateException("Could not access or create beatstar folder")
+            
+            val destination = StorageUtils.getFolder(rootUri, listOf("songs"), context)
+            val folderName = StorageUtils.getChartFolderName(chart.id)
+
+            // Verify if the chart file exists physically
+            val chartFolder = destination.findFile(folderName)
+
+            if (chartFolder == null && chart.isInstalled == true) {
+                // The file doesn't exist anymore, but is marked as installed
+                chart.isInstalled = false
+                chartsToUpdate.add(chart)
+            }
+        }
+        
+        return chartsToUpdate
+    }
+
     /**
      * Loads charts from local cache
      * @return FetchResult containing the cached charts
@@ -120,7 +151,23 @@ class ChartManager @Inject constructor(
             val cachedCharts = localChartRepository.getCharts().first()
 
             cachedCharts.fold(
-                onSuccess = { charts ->
+                onSuccess = { allCharts ->
+                    var charts = allCharts
+                    
+                    // Verify if the charts are still installed
+                    val chartsToUpdate = verifyInstalledCharts(allCharts)
+                    
+                    if (chartsToUpdate.isNotEmpty()) {
+                        // Update the charts in local storage
+                        localChartRepository.updateCharts(chartsToUpdate)
+
+                        // Update the charts in memory
+                        charts = allCharts.filter {
+                            // Filter out charts on chartsToUpdate
+                            !chartsToUpdate.any { chart -> chart.id == it.id }
+                        }
+                    }
+                    
                     Log.d(TAG, "Loaded ${charts.size} charts from cache")
                     updateCharts(charts)
                     FetchResult.Success(charts)
