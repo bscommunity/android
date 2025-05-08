@@ -141,6 +141,7 @@ class DownloadService : Service() {
                     Log.d(TAG, finalString.title)
                     stopSelf()
                 } catch (e: Exception) {
+                    // TODO: Right now, it's unnecessary to check for specific exceptions
                     val errorType = when (e) {
                         is IOException -> ErrorType.PERMISSION_DENIED
                         is NotFoundException -> ErrorType.FILE_NOT_FOUND
