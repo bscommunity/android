@@ -52,7 +52,7 @@ class DownloadUtils @Inject constructor(
                 okHttpClient.newCall(request).execute().use { response ->
                     println("Response: $response")
                     if (!response.isSuccessful) {
-                        throw Exception("Download failed: ${response.code}")
+                        throw NotFoundException("Download failed: ${response.code}")
                     }
 
                     val responseBody = response.body ?: throw Exception("Empty response body")

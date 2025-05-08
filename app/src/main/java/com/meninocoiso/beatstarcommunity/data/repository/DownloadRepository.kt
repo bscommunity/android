@@ -7,6 +7,7 @@ import com.meninocoiso.beatstarcommunity.data.manager.FetchResult
 import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
 import com.meninocoiso.beatstarcommunity.util.DownloadUtils
 import kotlinx.coroutines.flow.first
+import kotlinx.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -47,16 +48,21 @@ class DownloadRepository @Inject constructor(
         )
         
         // Extract the zip file to the beatstar folder
-        downloadUtils.extractZipToFolder(
-            downloadedFile,
-            folderName,
-            folderUri,
-            listOf("songs"),
-            onExtractProgress
-        )
-
-        // Clean up temporary files
-        downloadedFile.delete()
+        try {
+            downloadUtils.extractZipToFolder(
+                downloadedFile,
+                folderName,
+                folderUri,
+                listOf("songs"),
+                onExtractProgress
+            )
+        } catch (e: IOException) {
+            throw e
+        } finally {
+            // Clean up temporary files independently of success
+            downloadedFile.delete()
+            println("Deleted temporary file: ${downloadedFile.absolutePath}")
+        }
 
         // Update the chart list
         chartManager.updateChart(chartId, operation).first().let {

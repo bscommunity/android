@@ -27,6 +27,8 @@ fun StoragePermissionDialog(
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? ->
+        println("Selected URI: $uri")
+        
         if (uri != null) {
             // Take persistent permission
             val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
