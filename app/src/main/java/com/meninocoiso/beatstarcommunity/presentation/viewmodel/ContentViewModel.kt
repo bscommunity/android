@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.meninocoiso.beatstarcommunity.data.repository.ChartRepository
 import com.meninocoiso.beatstarcommunity.data.repository.DownloadRepository
 import com.meninocoiso.beatstarcommunity.data.repository.SettingsRepository
+import com.meninocoiso.beatstarcommunity.domain.enums.ErrorType
 import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.service.DownloadEvent
@@ -32,7 +33,7 @@ sealed class ContentState {
     data object Idle : ContentState()
     data class Downloading(val chartId: String, val progress: Float) : ContentState()
     data class Extracting(val chartId: String, val progress: Float) : ContentState()
-    data class Error(val chartId: String, val message: String) : ContentState()
+    data class Error(val chartId: String, val message: String, val type: ErrorType? = null) : ContentState()
     data class Installed(val chartId: String) : ContentState()
 }
 
@@ -97,7 +98,7 @@ class ContentViewModel @Inject constructor(
             }
 
             is DownloadEvent.Error -> {
-                updateState(chartId, ContentState.Error(chartId, event.message))
+                updateState(chartId, ContentState.Error(chartId, event.message, event.type))
                 emitEvent(event)
             }
         }

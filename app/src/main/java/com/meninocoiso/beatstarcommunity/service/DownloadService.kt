@@ -5,12 +5,14 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.res.Resources.NotFoundException
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.data.manager.ChartManager
 import com.meninocoiso.beatstarcommunity.data.repository.DownloadRepository
+import com.meninocoiso.beatstarcommunity.domain.enums.ErrorType
 import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
 import com.meninocoiso.beatstarcommunity.util.StringUtils.Companion.getFinalMessage
 import com.meninocoiso.beatstarcommunity.util.StringUtils.Companion.getInitialMessage
@@ -21,6 +23,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.io.IOException
 import javax.inject.Inject
 
 private const val TAG = "DownloadService"
@@ -138,10 +141,18 @@ class DownloadService : Service() {
                     Log.d(TAG, finalString.title)
                     stopSelf()
                 } catch (e: Exception) {
+                    val errorType = when (e) {
+                        is IOException -> ErrorType.PERMISSION_DENIED
+                        is NotFoundException -> ErrorType.FILE_NOT_FOUND
+                        else -> ErrorType.UNKNOWN
+                    }
+                    
+                    Log.e(TAG, "Error: ${e.message}", e)
+                    
                     // Send error event
                     serviceScope.launch {
                         downloadServiceConnection.sendEvent(
-                            DownloadEvent.Error(chartId, e.message ?: "Unknown error")
+                            DownloadEvent.Error(chartId, e.message ?: "Unknown error", errorType)
                         )
                     }
 

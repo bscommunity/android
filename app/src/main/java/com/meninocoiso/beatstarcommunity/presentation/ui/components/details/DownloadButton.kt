@@ -1,5 +1,6 @@
 package com.meninocoiso.beatstarcommunity.presentation.ui.components.details
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.beatstarcommunity.R
+import com.meninocoiso.beatstarcommunity.domain.enums.ErrorType
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.StoragePermissionDialog
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentState
@@ -42,7 +44,8 @@ fun DownloadButton(
     var hasStoragePermission by remember { mutableStateOf(false) }
 
     fun startDownload(checkForPermission: Boolean) {
-        if (checkForPermission && !hasStoragePermission) {
+        if ((checkForPermission && !hasStoragePermission) || 
+            contentState is ContentState.Error && contentState.type == ErrorType.PERMISSION_DENIED) {
             showStoragePermissionDialog = true
             return
         }
@@ -51,6 +54,7 @@ fun DownloadButton(
     }
 
     // Check for storage permission
+    // TODO: Should we check for permission on every "startDownload" call, or it's enough to check once?
     StoragePermissionHandler(
         onPermissionGranted = { hasStoragePermission = true },
         getFolderUri = (contentViewModel::getFolderUri)
@@ -125,11 +129,15 @@ fun DownloadButton(
         StoragePermissionDialog(
             setFolderUri = (contentViewModel::setFolderUri),
             onPermissionGranted = {
+                Log.d("DownloadButton", "Storage permission granted")
+                
                 hasStoragePermission = true
                 showStoragePermissionDialog = false
 
                 // Start download immediately after permission is granted
-                startDownload(false)
+                contentViewModel.downloadChart(chart = chart)
+
+                Log.d("DownloadButton", "Starting download after permission granted")
             },
             onDismiss = {
                 showStoragePermissionDialog = false
