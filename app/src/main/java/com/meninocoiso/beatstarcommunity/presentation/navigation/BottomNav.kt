@@ -17,6 +17,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.toRoute
 import com.meninocoiso.beatstarcommunity.R
+import com.meninocoiso.beatstarcommunity.domain.enums.UpdatesSection
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 
 import com.meninocoiso.beatstarcommunity.presentation.screens.SettingsScreen
@@ -32,21 +33,21 @@ object MainRoute
 
 val bottomNavigationItems = listOf(
     BottomNavigationItem(
-        route = Workshop,
+        route = Route.Workshop,
         title = "Workshop",
         selectedIcon = R.drawable.baseline_library_music_24,
         unselectedIcon = R.drawable.outline_library_music_24,
         hasNews = false
     ),
     BottomNavigationItem(
-        route = Updates(section = UpdatesSection.Workshop),
+        route = Route.Updates(section = UpdatesSection.Workshop),
         title = "Updates",
         selectedIcon = R.drawable.baseline_deployed_code_24,
         unselectedIcon = R.drawable.outline_deployed_code_24,
         hasNews = false
     ),
     BottomNavigationItem(
-        route = Settings,
+        route = Route.Settings,
         title = "Settings",
         selectedIcon = R.drawable.baseline_settings_24,
         unselectedIcon = R.drawable.outline_settings_24,
