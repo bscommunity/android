@@ -22,7 +22,7 @@ enum class UpdatesSection {
 }
 
 @Serializable
-data class Updates(val section: UpdatesSection? = null)
+data class Updates(val section: UpdatesSection)
 
 @Serializable
 object Settings
