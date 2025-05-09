@@ -66,6 +66,10 @@ jobs:
       - name: Decode and Restore Keystore
         run: |
           echo "${{ secrets.SIGNING_KEYSTORE_BASE64 }}" | base64 -d > app/keystore.jks
+          
+      - name: List Keystore Aliases (Debugging)
+        run: |
+          keytool -list -keystore app/keystore.jks -storepass ${{ secrets.SIGNING_STORE_PASSWORD }}
         
       - name: Grant execute permission to gradlew
         run: chmod +x ./gradlew
