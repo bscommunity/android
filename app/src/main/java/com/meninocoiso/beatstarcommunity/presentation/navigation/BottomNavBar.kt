@@ -14,17 +14,12 @@ import com.meninocoiso.beatstarcommunity.domain.enums.UpdatesSection
 import kotlinx.serialization.Serializable
 
 @Serializable
-object Workshop
-
-@Serializable
-data class Updates(val section: UpdatesSection)
-
-@Serializable
-object Settings
-
 sealed class Route {
+	@Serializable
 	object Workshop : Route()
-	data class Updates(val section: UpdatesSection) : Route()
+	@Serializable
+	data class Updates(val section: UpdatesSection = UpdatesSection.Workshop) : Route()
+	@Serializable
 	object Settings : Route()
 }
 
@@ -54,7 +49,7 @@ fun BottomNavBar(
 
 					setItemIndex(index)
 
-					navController.navigate(item.route) {
+					navController.navigate(route = item.route) {
 						// Pop up to the start destination of the graph to
 						// avoid building up a large stack of destinations
 						// on the back stack as users select items
