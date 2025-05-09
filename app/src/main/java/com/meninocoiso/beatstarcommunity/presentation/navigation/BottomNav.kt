@@ -66,7 +66,7 @@ fun BottomNav(
     // We update Settings item icon based on the update status
     val updatedBottomNavigationItems = remember(hasUpdate) {
         bottomNavigationItems.map { item ->
-            if (item.route is Settings) {
+            if (item.route is Route.Settings) {
                 item.copy(hasNews = hasUpdate) // Update the badge dynamically
             } else {
                 item
