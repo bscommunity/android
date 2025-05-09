@@ -2,9 +2,15 @@ package com.meninocoiso.beatstarcommunity.util
 
 import android.content.Context
 import android.content.Intent
+import androidx.core.net.toUri
 
 class LinkingUtils {
     companion object {
+        fun openLink(context: Context, url: String) {
+            val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+            context.startActivity(intent)
+        }
+        
         fun shareChartLink(context: Context, chartId: String) {
             val deepLink = "bscm://chart/details/$chartId"
             // val shareableLink = "https://www.bscm.com/chart/$chartId"
