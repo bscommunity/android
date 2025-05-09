@@ -10,16 +10,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.navigation.NavHostController
+import com.meninocoiso.beatstarcommunity.domain.enums.UpdatesSection
 import kotlinx.serialization.Serializable
 
 @Serializable
 object Workshop
-
-@Serializable
-enum class UpdatesSection {
-	Workshop,
-	Installations
-}
 
 @Serializable
 data class Updates(val section: UpdatesSection)
@@ -27,8 +22,14 @@ data class Updates(val section: UpdatesSection)
 @Serializable
 object Settings
 
+sealed class Route {
+	object Workshop : Route()
+	data class Updates(val section: UpdatesSection) : Route()
+	object Settings : Route()
+}
+
 data class BottomNavigationItem(
-	val route: Any,
+	val route: Route,
 	val title: String,
 	val selectedIcon: Int,
 	val unselectedIcon: Int,
