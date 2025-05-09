@@ -1,10 +1,11 @@
 package com.meninocoiso.beatstarcommunity.domain.enums
 
+import androidx.annotation.Keep
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-@SerialName("com.meninocoiso.beatstarcommunity.domain.enums.UpdatesSection")
+@Keep
 enum class UpdatesSection {
     @SerialName("Workshop")
     Workshop,
