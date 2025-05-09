@@ -9,7 +9,7 @@ permissions:
   contents: write  # ✅ Allows pushing tags & creating releases
   
 env:
-  SUFFIX: "b"  # In future commits, we can customize the suffix (e.g., "-beta", "b", "-rc1")
+  SUFFIX: "-beta"  # In future commits, we can customize the suffix (e.g., "-beta", "b", "-rc1")
 
 jobs:
   create_tag_and_release:
@@ -66,11 +66,7 @@ jobs:
       - name: Decode and Restore Keystore
         run: |
           echo "${{ secrets.SIGNING_KEYSTORE_BASE64 }}" | base64 -d > app/keystore.jks
-          
-      - name: List Keystore Aliases (Debugging)
-        run: |
-          keytool -list -keystore app/keystore.jks -storepass ${{ secrets.SIGNING_STORE_PASSWORD }}
-        
+   
       - name: Grant execute permission to gradlew
         run: chmod +x ./gradlew
         
