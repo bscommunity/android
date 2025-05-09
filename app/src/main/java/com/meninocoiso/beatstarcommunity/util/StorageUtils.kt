@@ -5,6 +5,8 @@ import android.net.Uri
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 
+private const val TAG = "StorageUtils"
+
 class StorageUtils {
     companion object {
         fun getChartFolderName(chartId: String): String {
@@ -12,7 +14,13 @@ class StorageUtils {
         }
         
         fun checkIfExists(uri: Uri, context: Context): Boolean {
-            return DocumentFile.isDocumentUri(context, uri)
+            return try {
+                val documentFile = DocumentFile.fromTreeUri(context, uri)
+                documentFile?.exists() == true
+            } catch (e: Exception) {
+                Log.e(TAG, "Error checking URI existence", e)
+                false
+            }
         }
         
         fun getFolder(rootUri: Uri, subFolders: List<String>, context: Context): DocumentFile {
@@ -39,7 +47,7 @@ class StorageUtils {
                 try {
                     // Check if the folder exists
                     if (!checkIfExists(folderUri, context)) {
-                        Log.e("StoragePermission", "Invalid Document URI")
+                        Log.e(TAG, "Invalid Document URI")
                         return false
                     }
                     
@@ -51,7 +59,7 @@ class StorageUtils {
                         return true
                     }
                 } catch (e: Exception) {
-                    Log.e("StoragePermission", "Error checking URI permissions", e)
+                    Log.e(TAG, "Error checking URI permissions", e)
                 }
             }
 

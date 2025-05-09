@@ -96,7 +96,7 @@ fun CoverArt(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(24.dp),
                         painter = painterResource(R.drawable.rounded_emergency_home_24),
                         contentDescription = null
@@ -104,27 +104,27 @@ fun CoverArt(
                 }
             }
         )
+        if (isInstalled == true) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize().align(Alignment.Center),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.rounded_download_24),
+                    contentDescription = "Already downloaded chart indicator",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .size(40.dp),
+                )
+            }
+        }
         if (difficultyIcon != null) {
             Box(
                 modifier = Modifier
                     .size(40.dp),
                 contentAlignment = Alignment.BottomEnd
             ) {
-                if (isInstalled != null && isInstalled == true) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.rounded_download_24),
-                            contentDescription = "Already downloaded chart indicator",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .size(40.dp),
-                        )
-                    }
-                }
                 Icon(
                     painter = painterResource(id = R.drawable.corner),
                     contentDescription = "Corner for chart song cover art",
