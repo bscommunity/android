@@ -120,7 +120,7 @@ fun BottomNav(
             LaunchAppButton(
                 onNavigateToUpdates = {
                     bottomNavController.navigate(
-                        route = Updates(section = UpdatesSection.Installations)
+                        route = Route.Updates(section = UpdatesSection.Installations)
                     )
                     selectedItemIndex = 1
                 },
@@ -134,17 +134,17 @@ fun BottomNav(
         NavHost(
             modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
             navController = bottomNavController,
-            startDestination = Workshop,
+            startDestination = Route.Workshop,
         ) {
-            composableWithFade<Workshop> {
+            composableWithFade<Route.Workshop> {
                 WorkshopScreen(
                     onNavigateToDetails,
                     onFabStateChange,
                     onSnackbar,
                 )
             }
-            composableWithFade<Updates> { backStackEntry ->
-                val updates: Updates = backStackEntry.toRoute()
+            composableWithFade<Route.Updates> { backStackEntry ->
+                val updates: Route.Updates = backStackEntry.toRoute()
                 UpdatesScreen(
                     updates.section,
                     onNavigateToDetails,
@@ -152,7 +152,7 @@ fun BottomNav(
                     onFabStateChange
                 )
             }
-            composableWithFade<Settings> {
+            composableWithFade<Route.Settings> {
                 SettingsScreen(onFabStateChange, onSnackbar)
             }
         }
