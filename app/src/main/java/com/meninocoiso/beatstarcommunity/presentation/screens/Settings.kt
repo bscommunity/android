@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -48,6 +49,7 @@ import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.fabScrollObse
 import com.meninocoiso.beatstarcommunity.presentation.ui.modifiers.rememberFabNestedScrollConnection
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.AppUpdateState
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.SettingsViewModel
+import com.meninocoiso.beatstarcommunity.util.LinkingUtils
 import kotlinx.coroutines.launch
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -60,6 +62,7 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
 
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(updateState) {
@@ -274,7 +277,7 @@ fun SettingsScreen(
                     OutlinedButton(
                         modifier = Modifier
                             .fillMaxWidth(),
-                        onClick = { /*TODO*/ }
+                        onClick = { LinkingUtils.openLink(context, "https://bscm.netlify.app/release-notes") }
                     ) {
                         Row(
                             modifier = Modifier
@@ -307,7 +310,7 @@ fun SettingsScreen(
                         ),
                         modifier = Modifier
                             .fillMaxWidth(),
-                        onClick = { /*TODO*/ }
+                        onClick = { LinkingUtils.openLink(context, "https://bscm.netlify.app/terms-of-service") }
                     ) {
                         Row(
                             modifier = Modifier
@@ -337,7 +340,7 @@ fun SettingsScreen(
                         ),
                         modifier = Modifier
                             .fillMaxWidth(),
-                        onClick = { /*TODO*/ }
+                        onClick = { LinkingUtils.openLink(context, "https://bscm.netlify.app/privacy-policy") }
                     ) {
                         Row(
                             modifier = Modifier
@@ -346,7 +349,7 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = "Disclaimers")
+                            Text(text = "Privacy Police")
                             Icon(
                                 modifier = Modifier.size(ButtonDefaults.IconSize),
                                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
