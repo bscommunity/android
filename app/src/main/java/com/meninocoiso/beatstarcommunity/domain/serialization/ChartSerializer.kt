@@ -12,8 +12,14 @@ internal val ChartParameterType = object : NavType<Chart>(
     override fun put(bundle: Bundle, key: String, value: Chart) {
         bundle.putParcelable(key, value)
     }
+
     override fun get(bundle: Bundle, key: String): Chart? {
-        return bundle.getParcelable(key) as Chart?
+        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            bundle.getParcelable(key, Chart::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            bundle.getParcelable(key)
+        }
     }
 
     override fun serializeAsValue(value: Chart): String {
