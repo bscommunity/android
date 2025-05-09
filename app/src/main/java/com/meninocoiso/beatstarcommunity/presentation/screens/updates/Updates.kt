@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.meninocoiso.beatstarcommunity.presentation.navigation.UpdatesSection
+import com.meninocoiso.beatstarcommunity.domain.enums.UpdatesSection
 import com.meninocoiso.beatstarcommunity.presentation.screens.details.OnNavigateToDetails
 import com.meninocoiso.beatstarcommunity.presentation.screens.updates.sections.InstallationsSection
 import com.meninocoiso.beatstarcommunity.presentation.screens.updates.sections.WorkshopSection
@@ -38,7 +38,7 @@ private val TabsHeight = 55.dp
 
 @Composable
 fun UpdatesScreen(
-	section: UpdatesSection? = UpdatesSection.Workshop,
+	section: UpdatesSection = UpdatesSection.Workshop,
 	onNavigateToDetails: OnNavigateToDetails,
 	onSnackbar: (String) -> Unit,
 	onFabStateChange: (Boolean) -> Unit,
@@ -54,7 +54,6 @@ fun UpdatesScreen(
 		val pageIndex = when (section) {
 			UpdatesSection.Workshop -> 0
 			UpdatesSection.Installations -> 1
-			null -> UpdatesSection.Workshop.ordinal
 		}
 		horizontalPagerState.requestScrollToPage(pageIndex)
 	}
