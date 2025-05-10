@@ -1,5 +1,6 @@
 package com.meninocoiso.beatstarcommunity.data.remote
 
+import android.util.Log
 import com.meninocoiso.beatstarcommunity.domain.enums.Difficulty
 import com.meninocoiso.beatstarcommunity.domain.enums.Genre
 import com.meninocoiso.beatstarcommunity.domain.enums.SortOption
@@ -12,6 +13,9 @@ import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.get
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
@@ -21,13 +25,14 @@ import kotlinx.serialization.json.Json
 
 class KtorApiClient @Inject constructor() : ApiClient {
     private val client = HttpClient(Android) {
-        /*install(Logging) {
+        install(Logging) {
+            level = LogLevel.ALL
             logger = object : Logger {
                 override fun log(message: String) {
-                    Log.d("HttpLogging:", message)
+                    Log.d("HttpLogging", message)
                 }
             }
-        }*/
+        }
         install(ContentNegotiation) {
             json(Json {
                 ignoreUnknownKeys = true
@@ -36,6 +41,8 @@ class KtorApiClient @Inject constructor() : ApiClient {
         }
         install(HttpTimeout) {
             requestTimeoutMillis = 10000
+            connectTimeoutMillis = 10000
+            socketTimeoutMillis = 10000
         }
         defaultRequest {
             url("https://api-cyb1.onrender.com")
@@ -68,11 +75,11 @@ class KtorApiClient @Inject constructor() : ApiClient {
                 limit?.let { parameters.append("limit", it.toString()) }
                 parameters.append("offset", offset.toString())
             }
-        }.body<List<Chart>>()
+        }
         
-        print("API response: $charts")
+        // print("API response: $charts")
         
-        return charts
+        return charts.body<List<Chart>>()
     }
 
     override suspend fun getCharts(
