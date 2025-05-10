@@ -70,8 +70,8 @@ inline fun <reified T : Any> NavGraphBuilder.composableWithoutTransitions(
 	composable<T>(
 		enterTransition = { EnterTransition.None },
 		exitTransition = { ExitTransition.None },
-		popEnterTransition = { popEnterTransition(this) },
-		popExitTransition = { popExitTransition(this) },
+		popEnterTransition = { EnterTransition.None },
+		popExitTransition = { ExitTransition.None },
 		content = content
 	)
 }
