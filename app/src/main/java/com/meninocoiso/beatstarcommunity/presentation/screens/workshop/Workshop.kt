@@ -1,6 +1,5 @@
 package com.meninocoiso.beatstarcommunity.presentation.screens.workshop
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -106,7 +105,7 @@ fun WorkshopScreen(
             },
             suggestions = viewModel.suggestions,
             onSearch = { query ->
-                Log.d("WorkshopScreen", "onSearch")
+                // Log.d("WorkshopScreen", "onSearch")
                 
                 if (query.isEmpty()) {
                     // Restore WorkspaceChips when search is empty
@@ -115,7 +114,7 @@ fun WorkshopScreen(
                     // Remove WorkspaceChips while searching
                     bottomCollapsableHeight.value = null
                 }
-
+                
                 // Perform search or cleanup
                 viewModel.searchCharts(query)
             }
