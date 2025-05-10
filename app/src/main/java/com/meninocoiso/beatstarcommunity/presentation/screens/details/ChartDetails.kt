@@ -265,12 +265,6 @@ fun ChartDetailsScreen(
         bottomBar = {
             BottomAppBar(
                 actions = {
-                    IconButton(onClick = { dialogs.showListenTrackDialog = true }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.baseline_artist_24),
-                            contentDescription = "Track link"
-                        )
-                    }
                     IconButton(onClick = {
                         scope.launch {
                             snackbarHostState.showSnackbar("Like feature not yet implemented")
@@ -279,6 +273,12 @@ fun ChartDetailsScreen(
                         Icon(
                             Icons.Default.FavoriteBorder,
                             contentDescription = "Like chart",
+                        )
+                    }
+                    IconButton(onClick = { dialogs.showListenTrackDialog = true }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_artist_24),
+                            contentDescription = "Track link"
                         )
                     }
                 },
