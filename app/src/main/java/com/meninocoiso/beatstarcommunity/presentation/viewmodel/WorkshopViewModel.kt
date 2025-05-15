@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -43,7 +44,11 @@ private const val MAX_HISTORY_SIZE = 5
 class WorkshopViewModel @Inject constructor(
     private val chartManager: ChartManager,
     private val cacheRepository: CacheRepository,
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
+    val isExplicitAllowed: Flow<Boolean> = settingsRepository.settingsFlow
+        .map { it.allowExplicitContent }
+    
     val feedCharts: Flow<List<Chart>> = chartManager.workshopCharts
     val searchCharts: Flow<List<Chart>> = chartManager.searchCharts
     

@@ -74,6 +74,8 @@ internal fun ChartsSection(
     // println("FeedCharts: $feedCharts")
     // println("HasActiveQuery: $hasActiveQuery")
     // println("Charts: $charts")
+    
+    val isExplicitAllowed = viewModel.isExplicitAllowed.collectAsStateWithLifecycle(initialValue = false)
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -129,6 +131,10 @@ internal fun ChartsSection(
                     itemsIndexed(charts) { index, chart ->
                         ChartPreview(
                             chart = chart,
+                            isBlocked = chart.isExplicit && !isExplicitAllowed.value,
+                            onBlocked = {
+                                onSnackbar("Explicit content is deactivated")
+                            },
                             onNavigateToDetails = {
                                 onNavigateToDetails(chart)
                             },
