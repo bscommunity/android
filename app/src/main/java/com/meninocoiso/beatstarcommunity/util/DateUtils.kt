@@ -22,7 +22,28 @@ class DateUtils {
 			}
 
 			// weeks
-			return "$diff weeks ago"
+			if (diff < 30) { // 30 days
+				if (diff.toInt() == 7) {
+					return "1 week ago"
+				}
+				
+				return "${diff / 7} weeks ago"
+			}
+			
+			// months
+			if (diff < 365) { // 365 days
+				if (diff.toInt() == 30) {
+					return "1 month ago"
+				}
+				
+				return "${diff / 30} months ago"
+			}
+
+			if (diff.toInt() == 365) {
+				return "1 year ago"
+			}
+			
+			return "${diff / 365} years ago"
 		}
 
 		fun toDurationString(seconds: Float): String {
