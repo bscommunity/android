@@ -279,7 +279,9 @@ class WorkshopViewModel @Inject constructor(
         }
             .distinctUntilChanged()
             .collect { isAtEnd ->
-                if (isAtEnd) {
+                // Check if we are at the end of the list 
+                // and if there's data already loaded
+                if (isAtEnd && _workshopState.value is ChartState.Success) {
                     loadMoreCharts()
                 }
             }
