@@ -1,6 +1,5 @@
 package com.meninocoiso.beatstarcommunity.data.remote
 
-import android.util.Log
 import com.meninocoiso.beatstarcommunity.domain.enums.Difficulty
 import com.meninocoiso.beatstarcommunity.domain.enums.Genre
 import com.meninocoiso.beatstarcommunity.domain.enums.SortOption
@@ -13,9 +12,6 @@ import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logger
-import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.get
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
@@ -25,14 +21,14 @@ import kotlinx.serialization.json.Json
 
 class KtorApiClient @Inject constructor() : ApiClient {
     private val client = HttpClient(Android) {
-        install(Logging) {
+        /*install(Logging) {
             level = LogLevel.ALL
             logger = object : Logger {
                 override fun log(message: String) {
                     Log.d("HttpLogging", message)
                 }
             }
-        }
+        }*/
         install(ContentNegotiation) {
             json(Json {
                 ignoreUnknownKeys = true

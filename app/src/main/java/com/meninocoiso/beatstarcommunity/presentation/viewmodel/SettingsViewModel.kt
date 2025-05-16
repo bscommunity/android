@@ -21,13 +21,13 @@ import java.io.File
 import javax.inject.Inject
 
 sealed class AppUpdateState {
-	data object Idle : AppUpdateState()
-	data object UpToDate : AppUpdateState()
-	data object Checking : AppUpdateState()
-	data class Downloading(val progress: Float) : AppUpdateState()
-	data class UpdateAvailable(val version: String) : AppUpdateState()
-	data class ReadyToInstall(val apkFile: File) : AppUpdateState()
-	data class Error(val message: String) : AppUpdateState()
+    data object Idle : AppUpdateState()
+    data object UpToDate : AppUpdateState()
+    data object Checking : AppUpdateState()
+    data class Downloading(val progress: Float) : AppUpdateState()
+    data class UpdateAvailable(val version: String) : AppUpdateState()
+    data class ReadyToInstall(val apkFile: File) : AppUpdateState()
+    data class Error(val message: String) : AppUpdateState()
 }
 
 private const val TAG = "SettingsViewModel"
@@ -38,129 +38,144 @@ private const val TAG = "SettingsViewModel"
  */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-	private val settingsRepository: SettingsRepository,
-	private val appUpdateRepository: AppUpdateRepository
+    private val settingsRepository: SettingsRepository,
+    private val appUpdateRepository: AppUpdateRepository
 ) : ViewModel() {
-	/**
-	 * Expose settings as a StateFlow for reactive UI updates
-	 */
-	val uiState: StateFlow<Settings> = settingsRepository.settingsFlow
-		.map { it }  // Simplified - removed unnecessary mapping if Settings object structure matches
-		.stateIn(
-			scope = viewModelScope,
-			started = SharingStarted.WhileSubscribed(5_000),
-			initialValue = Settings()
-		)
+    /**
+     * Expose settings as a StateFlow for reactive UI updates
+     */
+    val uiState: StateFlow<Settings> = settingsRepository.settingsFlow
+        .map { it }  // Simplified - removed unnecessary mapping if Settings object structure matches
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = Settings()
+        )
 
-	private val _updateState = MutableStateFlow<AppUpdateState>(AppUpdateState.Idle)
-	val updateState: StateFlow<AppUpdateState> = _updateState.asStateFlow()
+    private val _updateState = MutableStateFlow<AppUpdateState>(AppUpdateState.Idle)
+    val updateState: StateFlow<AppUpdateState> = _updateState.asStateFlow()
 
-	private val currentVersion = BuildConfig.VERSION_CODE.toString()
+    private val currentVersion = BuildConfig.VERSION_CODE.toString()
 
-	/**
-	 * Toggle explicit content setting
-	 */
-	fun allowExplicitContent(allow: Boolean) {
-		viewModelScope.launch {
-			settingsRepository.setExplicitContent(allow)
-		}
-	}
+    init {
+        // Initialize the update state with the current version
+        viewModelScope.launch {
+            val cachedVersion = settingsRepository.getLatestVersion()
+            if (cachedVersion != null) {
+                compareVersionAndUpdateState(cachedVersion)
+            }
+        }
+    }
 
-	/**
-	 * Toggle dynamic colors setting
-	 */
-	fun useDynamicColors(use: Boolean) {
-		viewModelScope.launch {
-			settingsRepository.setDynamicColors(use)
-		}
-	}
+    /**
+     * Toggle explicit content setting
+     */
+    fun allowExplicitContent(allow: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setExplicitContent(allow)
+        }
+    }
 
-	/**
-	 * Update app theme
-	 */
-	fun updateAppTheme(theme: ThemePreference) {
-		viewModelScope.launch {
-			settingsRepository.setAppTheme(theme)
-		}
-	}
+    /**
+     * Toggle dynamic colors setting
+     */
+    fun useDynamicColors(use: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setDynamicColors(use)
+        }
+    }
 
-	/**
-	 * Check for app updates
-	 */
-	fun checkAppUpdates() {
-		_updateState.value = AppUpdateState.Checking
+    /**
+     * Update app theme
+     */
+    fun updateAppTheme(theme: ThemePreference) {
+        viewModelScope.launch {
+            settingsRepository.setAppTheme(theme)
+        }
+    }
 
-		viewModelScope.launch {
-			// First try to get cached version
-			val cachedVersion = settingsRepository.getLatestVersion()
+    /**
+     * Check for app updates
+     */
+    fun checkAppUpdates() {
+        _updateState.value = AppUpdateState.Checking
 
-			if (cachedVersion != null) {
-				compareVersionAndUpdateState(cachedVersion)
-				
-				// After using cache one time, clear it
-				settingsRepository.setLatestVersion("")
-				
-				return@launch
-			}
+        viewModelScope.launch {
+            // First try to get cached version
+            val cachedVersion = settingsRepository.getLatestVersion()
 
-			// If no cached version, fetch from remote
-			appUpdateRepository.fetchLatestVersion()
-				.catch { exception ->
-					_updateState.value = AppUpdateState.Error(exception.message ?: "Failed to check for updates")
-				}
-				.collect { fetchedVersion ->
-					// Store the version in DataStore
-					settingsRepository.setLatestVersion(fetchedVersion)
+            if (cachedVersion != null) {
+                compareVersionAndUpdateState(cachedVersion)
 
-					compareVersionAndUpdateState(fetchedVersion)
-				}
-		}
-	}
+                // After using cache one time, clear it
+                settingsRepository.setLatestVersion("")
 
-	/**
-	 * Helper function to compare versions and update cacheState
-	 */
-	private fun compareVersionAndUpdateState(fetchedVersion: String) {
-		_updateState.value = if (fetchedVersion > currentVersion) {
-			val apkFile = appUpdateRepository.getApkFile(fetchedVersion)
+                return@launch
+            }
 
-			if (apkFile != null) {
-				AppUpdateState.ReadyToInstall(apkFile)
-			} else {
-				AppUpdateState.UpdateAvailable(fetchedVersion)
-			}
-		} else {
-			AppUpdateState.UpToDate
-		}
-	}
+            // If no cached version, fetch from remote
+            appUpdateRepository.fetchLatestVersion()
+                .catch { exception ->
+                    _updateState.value =
+                        AppUpdateState.Error(exception.message ?: "Failed to check for updates")
+                }
+                .collect { fetchedVersion ->
+                    // Store the version in DataStore
+                    settingsRepository.setLatestVersion(fetchedVersion)
 
-	fun downloadUpdate(version: String) {
-		Log.d(TAG, "Downloading update for version: $version")
-		
-		viewModelScope.launch {
-			_updateState.value = AppUpdateState.Downloading(0f)
+                    compareVersionAndUpdateState(fetchedVersion)
+                }
+        }
+    }
 
-			try {
-				val apkFile = appUpdateRepository.downloadApkUpdate(version) {
-					_updateState.value = it
-				}
+    /**
+     * Helper function to compare versions and update cacheState
+     */
+    private fun compareVersionAndUpdateState(fetchedVersion: String) {
+        Log.d(TAG, "Fetched version: $fetchedVersion, Current version: $currentVersion")
 
-				_updateState.value = AppUpdateState.ReadyToInstall(apkFile)
-			} catch (e: Exception) {
-				Log.e(TAG, "APK download failed", e)
-				_updateState.value = AppUpdateState.Error(e.message ?: "Unknown error")
-			}
-		}
-	}
+        _updateState.value = if (fetchedVersion > currentVersion) {
+            val apkFile = appUpdateRepository.getApkFile(fetchedVersion)
 
-	fun installApk(apkFile: File) {
-		Log.d(TAG, "Installing APK: ${apkFile.absolutePath}")
-		
-		try {
-			appUpdateRepository.installApk(apkFile)
-		} catch (e: Exception) {
-			Log.e(TAG, "APK installation failed", e)
-			_updateState.value = AppUpdateState.Error(e.message ?: "Unknown error")
-		}
-	}
+            if (apkFile != null) {
+                AppUpdateState.ReadyToInstall(apkFile)
+            } else {
+                AppUpdateState.UpdateAvailable(fetchedVersion)
+            }
+        } else {
+            AppUpdateState.UpToDate
+        }
+    }
+
+    fun downloadUpdate(version: String) {
+        Log.d(TAG, "Downloading update for version: $version")
+
+        viewModelScope.launch {
+            _updateState.value = AppUpdateState.Downloading(0f)
+
+            try {
+                val apkFile = appUpdateRepository.downloadApkUpdate(version) {
+                    _updateState.value = it
+                }
+
+                _updateState.value = AppUpdateState.ReadyToInstall(apkFile)
+            } catch (e: Exception) {
+                Log.e(TAG, "APK download failed", e)
+                _updateState.value = AppUpdateState.Error(e.message ?: "Unknown error")
+            }
+        }
+    }
+
+    fun installApk(apkFile: File) {
+        Log.d(TAG, "Installing APK: ${apkFile.absolutePath}")
+
+        viewModelScope.launch {
+            try {
+                appUpdateRepository.installApk(apkFile)
+            } catch (e: Exception) {
+                Log.e(TAG, "APK installation failed", e)
+                _updateState.value = AppUpdateState.Error(e.message ?: "Unknown error")
+            }
+        }
+    }
 }
