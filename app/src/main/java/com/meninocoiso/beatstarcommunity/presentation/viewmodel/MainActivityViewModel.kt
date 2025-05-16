@@ -1,6 +1,7 @@
 package com.meninocoiso.beatstarcommunity.presentation.viewmodel
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.beatstarcommunity.BuildConfig
@@ -41,9 +42,12 @@ class MainActivityViewModel @Inject constructor(
 		viewModelScope.launch {
 			appUpdateRepository.fetchLatestVersion()
 				.catch { 
+					// Log.d("MainActivityViewModel", "Error fetching version: $it")
 					settingsRepository.setLatestVersion("")
 				}
 				.collect { fetchedVersion ->
+					// Log.d("MainActivityViewModel", "Fetched version: $fetchedVersion")
+					
 					// Store the version in DataStore
 					settingsRepository.setLatestVersion(fetchedVersion)
 				}
@@ -61,6 +65,7 @@ class MainActivityViewModel @Inject constructor(
 				viewModelScope.launch(Dispatchers.IO) {
 					context.cacheDir.listFiles()?.forEach { file ->
 						if (file.name.startsWith("update-") && file.extension == "apk") {
+							Log.d("MainActivityViewModel", "Deleting old update file: ${file.name}")
 							file.delete()
 						}
 					}

@@ -2,8 +2,10 @@ package com.meninocoiso.beatstarcommunity.data.repository
 
 import android.content.Context
 import android.content.Intent
+import android.provider.Settings
 import android.util.Log
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.AppUpdateState
 import com.meninocoiso.beatstarcommunity.util.DownloadUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -45,6 +47,9 @@ class AppUpdateRepository @Inject constructor(
      */
     fun fetchLatestVersion(): Flow<String> = flow {
         val url = "https://api.github.com/repos/bscommunity/android/releases/latest"
+        
+        Log.d(TAG, "Fetching latest version from $url")
+        
         val request = Request.Builder()
             .url(url)
             .header("Accept", "application/vnd.github.v3+json")
@@ -60,6 +65,9 @@ class AppUpdateRepository @Inject constructor(
 
             // Parse the JSON response
             val release = json.decodeFromString<GitHubRelease>(responseBody)
+
+            Log.d(TAG, "Latest: $release")
+            Log.d(TAG, "Latest version: ${release.tagName}")
 
             // Emit the version
             emit(release.tagName)
@@ -84,14 +92,14 @@ class AppUpdateRepository @Inject constructor(
         versionName: String,
         onProgress: (AppUpdateState) -> Unit
     ): File = withContext(Dispatchers.IO) {
-        val downloadUrl = "https://github.com/bscomunnity/android/releases/download/${versionName}/bscm-${versionName}.apk"
+        val downloadUrl = "https://github.com/bscommunity/android/releases/download/${versionName}/app-release.apk"
         
         try {
             onProgress(AppUpdateState.Downloading(0f))
 
             // Download APK to cache directory with version name
             val apkFile = downloadUtils.downloadFileToCache(
-                "${downloadUrl}_$versionName",
+                downloadUrl,
                 "update-$versionName",
                 "apk"
             ) { progress ->
@@ -112,24 +120,28 @@ class AppUpdateRepository @Inject constructor(
      * Triggers the APK installation process
      * @param apkFile The APK file to install
      */
-    fun installApk(apkFile: File) {
-        // Create content URI for the APK
-        val apkUri =
-            // For Android 7.0+ we need to use FileProvider
-            FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.provider",
-                apkFile
-            )
+    suspend fun installApk(apkFile: File) = withContext(Dispatchers.IO) {
+        if (!context.packageManager.canRequestPackageInstalls()) {
+            val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                data = "package:${context.packageName}".toUri()
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+            return@withContext
+        }
 
-        // Create intent to install the APK
-        val installIntent = Intent(Intent.ACTION_VIEW).apply {
+        val apkUri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.provider",
+            apkFile
+        )
+
+        val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(apkUri, "application/vnd.android.package-archive")
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
 
-        // Start the installation activity
-        context.startActivity(installIntent)
+        context.startActivity(intent)
     }
 }

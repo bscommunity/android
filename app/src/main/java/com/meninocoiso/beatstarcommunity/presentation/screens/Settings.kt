@@ -216,7 +216,14 @@ fun SettingsScreen(
             )
         }
 
-        SettingsCard(title = "Version") {
+        SettingsCard(
+            title = "Version",
+            supportingText = when(updateState) {
+                is AppUpdateState.Downloading -> "${((updateState as AppUpdateState.Downloading).progress * 100).toInt()}% concluded"
+                is AppUpdateState.UpdateAvailable -> "Client outdated"
+                else -> null
+            }
+        ) {
             ListItem(
                 modifier = Modifier.settingsCard(
                     padding = PaddingValues(top = 8.dp, bottom = 0.dp, start = 8.dp, end = 8.dp)
@@ -263,6 +270,7 @@ fun SettingsScreen(
                                 is AppUpdateState.Checking -> "Checking for updates..."
                                 is AppUpdateState.UpdateAvailable -> "Update now"
                                 is AppUpdateState.Downloading -> "Downloading..."
+                                is AppUpdateState.ReadyToInstall -> "Install update"
                                 else -> "Check for updates"
                             }
                         )
@@ -277,7 +285,12 @@ fun SettingsScreen(
                     OutlinedButton(
                         modifier = Modifier
                             .fillMaxWidth(),
-                        onClick = { LinkingUtils.openLink(context, "https://bscm.netlify.app/release-notes") }
+                        onClick = {
+                            LinkingUtils.openLink(
+                                context,
+                                "https://bscm.netlify.app/release-notes"
+                            )
+                        }
                     ) {
                         Row(
                             modifier = Modifier
@@ -310,7 +323,12 @@ fun SettingsScreen(
                         ),
                         modifier = Modifier
                             .fillMaxWidth(),
-                        onClick = { LinkingUtils.openLink(context, "https://bscm.netlify.app/terms-of-service") }
+                        onClick = {
+                            LinkingUtils.openLink(
+                                context,
+                                "https://bscm.netlify.app/terms-of-service"
+                            )
+                        }
                     ) {
                         Row(
                             modifier = Modifier
@@ -340,7 +358,12 @@ fun SettingsScreen(
                         ),
                         modifier = Modifier
                             .fillMaxWidth(),
-                        onClick = { LinkingUtils.openLink(context, "https://bscm.netlify.app/privacy-policy") }
+                        onClick = {
+                            LinkingUtils.openLink(
+                                context,
+                                "https://bscm.netlify.app/privacy-policy"
+                            )
+                        }
                     ) {
                         Row(
                             modifier = Modifier
