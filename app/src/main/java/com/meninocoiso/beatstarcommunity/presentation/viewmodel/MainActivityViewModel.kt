@@ -53,6 +53,10 @@ class MainActivityViewModel @Inject constructor(
 				}
 		}
 	}
+	
+	fun hasUpdate(fetchedVersion: String): Boolean {
+		return appUpdateRepository.hasUpdate(fetchedVersion)
+	}
 
 	 fun cleanupOldUpdates() {
 		val currentVersionCode = BuildConfig.VERSION_CODE

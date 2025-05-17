@@ -7,6 +7,6 @@ data class Settings(
 	val useDynamicColors: Boolean = true,
 	val theme: ThemePreference = ThemePreference.SYSTEM,
 	val folderUri: String? = null,
-	val latestUpdateVersion: String? = null,
+	val latestUpdateVersion: String = "",
 	val latestCleanedVersion: Int? = null
 )
