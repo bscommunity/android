@@ -9,7 +9,7 @@ permissions:
   contents: write  # ✅ Allows pushing tags & creating releases
   
 env:
-  SUFFIX: "-beta"  # In future commits, we can customize the suffix (e.g., "-beta", "b", "-rc1")
+  SUFFIX: ""  # In future commits, we can customize the suffix (e.g., "-beta", "b", "-rc1")
 
 jobs:
   create_tag_and_release:

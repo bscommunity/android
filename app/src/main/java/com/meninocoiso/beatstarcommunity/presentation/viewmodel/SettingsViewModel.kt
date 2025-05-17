@@ -3,7 +3,6 @@ package com.meninocoiso.beatstarcommunity.presentation.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.meninocoiso.beatstarcommunity.BuildConfig
 import com.meninocoiso.beatstarcommunity.data.repository.AppUpdateRepository
 import com.meninocoiso.beatstarcommunity.data.repository.SettingsRepository
 import com.meninocoiso.beatstarcommunity.domain.enums.ThemePreference
@@ -55,14 +54,19 @@ class SettingsViewModel @Inject constructor(
     private val _updateState = MutableStateFlow<AppUpdateState>(AppUpdateState.Idle)
     val updateState: StateFlow<AppUpdateState> = _updateState.asStateFlow()
 
-    private val currentVersion = BuildConfig.VERSION_CODE.toString()
-
     init {
         // Initialize the update state with the current version
         viewModelScope.launch {
             val cachedVersion = settingsRepository.getLatestVersion()
-            if (cachedVersion != null) {
-                compareVersionAndUpdateState(cachedVersion)
+            if (cachedVersion != "") {
+                val newState = appUpdateRepository.getUpdateState(cachedVersion)
+                
+                // We verify the new state to not trigger the snackbar if the app is up to date
+                _updateState.value = if (newState is AppUpdateState.UpToDate) {
+                    AppUpdateState.Idle
+                } else {
+                    newState
+                }
             }
         }
     }
@@ -94,24 +98,36 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    var lastCacheTime: Long? = null
+    val cacheWindowMs = 5_000L
+
     /**
      * Check for app updates
      */
     fun checkAppUpdates() {
         _updateState.value = AppUpdateState.Checking
 
+        val currentTime = System.currentTimeMillis()
+        
         viewModelScope.launch {
             // First try to get cached version
             val cachedVersion = settingsRepository.getLatestVersion()
-
-            if (cachedVersion != null) {
-                compareVersionAndUpdateState(cachedVersion)
-
-                // After using cache one time, clear it
-                settingsRepository.setLatestVersion("")
+            
+            Log.d(TAG, "Cached version: $cachedVersion")
+            Log.d(TAG, "Current time: $currentTime")
+            Log.d(TAG, "Last cache time: ${lastCacheTime ?: 0}")
+            Log.d(TAG, "Time since last cache: ${currentTime - (lastCacheTime ?: 0)}")
+            
+            // If cached version is available and within the cache window, use it
+            if (cachedVersion != "" && currentTime - (lastCacheTime ?: 0) < cacheWindowMs) {
+                Log.d(TAG, "Using cached version: $cachedVersion")
+                
+                _updateState.value = appUpdateRepository.getUpdateState(cachedVersion)
 
                 return@launch
             }
+
+            lastCacheTime = currentTime
 
             // If no cached version, fetch from remote
             appUpdateRepository.fetchLatestVersion()
@@ -120,32 +136,17 @@ class SettingsViewModel @Inject constructor(
                         AppUpdateState.Error(exception.message ?: "Failed to check for updates")
                 }
                 .collect { fetchedVersion ->
+                    Log.d(TAG, "Fetched version: $fetchedVersion")
+                    
                     // Store the version in DataStore
                     settingsRepository.setLatestVersion(fetchedVersion)
 
-                    compareVersionAndUpdateState(fetchedVersion)
+                    _updateState.value = appUpdateRepository.getUpdateState(fetchedVersion)
                 }
         }
     }
 
-    /**
-     * Helper function to compare versions and update cacheState
-     */
-    private fun compareVersionAndUpdateState(fetchedVersion: String) {
-        Log.d(TAG, "Fetched version: $fetchedVersion, Current version: $currentVersion")
-
-        _updateState.value = if (fetchedVersion > currentVersion) {
-            val apkFile = appUpdateRepository.getApkFile(fetchedVersion)
-
-            if (apkFile != null) {
-                AppUpdateState.ReadyToInstall(apkFile)
-            } else {
-                AppUpdateState.UpdateAvailable(fetchedVersion)
-            }
-        } else {
-            AppUpdateState.UpToDate
-        }
-    }
+    
 
     fun downloadUpdate(version: String) {
         Log.d(TAG, "Downloading update for version: $version")

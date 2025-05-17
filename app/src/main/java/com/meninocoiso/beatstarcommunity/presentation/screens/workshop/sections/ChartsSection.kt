@@ -133,7 +133,7 @@ internal fun ChartsSection(
                             chart = chart,
                             isBlocked = chart.isExplicit && !isExplicitAllowed.value,
                             onBlocked = {
-                                onSnackbar("Explicit content is disabled")
+                                onSnackbar("Explicit content disabled in settings")
                             },
                             onNavigateToDetails = {
                                 onNavigateToDetails(chart)

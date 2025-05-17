@@ -6,6 +6,7 @@ import android.provider.Settings
 import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import com.meninocoiso.beatstarcommunity.BuildConfig
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.AppUpdateState
 import com.meninocoiso.beatstarcommunity.util.DownloadUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -41,6 +42,33 @@ class AppUpdateRepository @Inject constructor(
     private val downloadUtils: DownloadUtils,
     private val okHttpClient: OkHttpClient
 ) {
+    private val currentVersion = BuildConfig.VERSION_NAME
+    
+    fun hasUpdate(fetchedVersion: String): Boolean {
+        // Log.d(TAG, "Fetched version: $fetchedVersion, Current version: v$currentVersion")
+
+        return fetchedVersion > "v$currentVersion"
+    }
+    
+    /**
+     * Helper function to compare versions and update cacheState
+     */
+    fun getUpdateState(fetchedVersion: String): AppUpdateState {
+        // Log.d(TAG, "Fetched version: $fetchedVersion, Current version: $currentVersion")
+
+        return if (hasUpdate(fetchedVersion)) {
+            val apkFile = getApkFile(fetchedVersion)
+
+            if (apkFile != null) {
+                AppUpdateState.ReadyToInstall(apkFile)
+            } else {
+                AppUpdateState.UpdateAvailable(fetchedVersion)
+            }
+        } else {
+            AppUpdateState.UpToDate
+        }
+    }
+    
     /**
      * Fetches the latest version from GitHub releases API
      * @return Flow emitting the latest version string
@@ -66,15 +94,15 @@ class AppUpdateRepository @Inject constructor(
             // Parse the JSON response
             val release = json.decodeFromString<GitHubRelease>(responseBody)
 
-            Log.d(TAG, "Latest: $release")
-            Log.d(TAG, "Latest version: ${release.tagName}")
+            // Log.d(TAG, "Latest: $release")
+            // Log.d(TAG, "Latest version: ${release.tagName}")
 
             // Emit the version
             emit(release.tagName)
         }
     }.flowOn(Dispatchers.IO) // Execute network operations on IO dispatcher
 
-    fun getApkFile(versionName: String): File? {
+    private fun getApkFile(versionName: String): File? {
         val apkFile = File(context.cacheDir, "update-$versionName.apk")
         return if (apkFile.exists()) {
             apkFile

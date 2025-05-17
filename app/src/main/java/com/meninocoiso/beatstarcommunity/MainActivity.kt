@@ -100,7 +100,7 @@ class MainActivity : ComponentActivity() {
                 MainNav(
                     hasUpdate = when (uiState) {
                         Loading -> false
-                        is Success -> (uiState as Success).settings.latestUpdateVersion != null
+                        is Success -> viewModel.hasUpdate((uiState as Success).settings.latestUpdateVersion)
                     }
                 )
 

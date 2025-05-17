@@ -60,8 +60,8 @@ class SettingsRepository @Inject constructor(
 		return dataStore.data.first()[FOLDER_URI]
 	}
 
-	suspend fun getLatestVersion(): String? {
-		return dataStore.data.first()[LATEST_UPDATE_VERSION]
+	suspend fun getLatestVersion(): String {
+		return dataStore.data.first()[LATEST_UPDATE_VERSION] ?: ""
 	}
 
 	suspend fun setLatestVersion(version: String) {

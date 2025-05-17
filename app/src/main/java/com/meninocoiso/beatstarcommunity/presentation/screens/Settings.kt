@@ -64,6 +64,11 @@ fun SettingsScreen(
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    
+    val shrunkVersionName = BuildConfig.VERSION_NAME.substringBeforeLast("-")
+    val shrunkLatestVersion = if (updateState is AppUpdateState.UpdateAvailable) 
+        (updateState as AppUpdateState.UpdateAvailable).version.substringBeforeLast("-")
+    else ""
 
     LaunchedEffect(updateState) {
         when (updateState) {
@@ -236,8 +241,8 @@ fun SettingsScreen(
                         Icon(imageVector = Icons.Outlined.Build, contentDescription = "")
                         HeadlineText(
                             when (updateState) {
-                                is AppUpdateState.UpdateAvailable -> "${BuildConfig.VERSION_NAME} → ${(updateState as AppUpdateState.UpdateAvailable).version}"
-                                else -> BuildConfig.VERSION_NAME
+                                is AppUpdateState.UpdateAvailable -> "$shrunkVersionName → $shrunkLatestVersion"
+                                else -> shrunkVersionName
                             }
                         )
                     }
