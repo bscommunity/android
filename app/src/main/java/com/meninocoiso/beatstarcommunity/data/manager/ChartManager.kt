@@ -62,26 +62,27 @@ class ChartManager @Inject constructor(
     @Named("Local") private val localChartRepository: ChartRepository,
     private val settingsRepository: SettingsRepository
 ) {
-    private val _remoteCharts = MutableStateFlow<Map<String, Chart>>(emptyMap())
-    private val remoteCharts : StateFlow<Map<String, Chart>> = _remoteCharts.asStateFlow()
+    private val _remoteCharts = MutableStateFlow<List<Chart>>(emptyList())
+    private val remoteCharts: StateFlow<List<Chart>> = _remoteCharts.asStateFlow()
 
     var searchQuery: String = ""
         set(value) {
             field = value
-            _remoteCharts.value = emptyMap()
+            _remoteCharts.value = emptyList()
         }
 
-    private val _cachedCharts = MutableStateFlow<Map<String, Chart>>(emptyMap())
-    private val cachedCharts: StateFlow<Map<String, Chart>> = _cachedCharts.asStateFlow()
+    private val _cachedCharts = MutableStateFlow<List<Chart>>(emptyList())
+    val cachedCharts: StateFlow<List<Chart>> = _cachedCharts.asStateFlow()
 
     val searchCharts = remoteCharts.combine(cachedCharts) { remote, cached ->
         val result = mutableListOf<Chart>()
 
         // Add all remote charts from the search
-        remote.values.forEach { remoteChart ->
+        remote.forEach { remoteChart ->
             // If there's a cached version installed, use it
-            if (cached.containsKey(remoteChart.id)) {
-                result.add(cached[remoteChart.id]!!)
+            val cachedChart = cached.find { it.id == remoteChart.id }
+            if (cachedChart != null) {
+                result.add(cachedChart)
             } else {
                 // Otherwise, just add the remote chart
                 result.add(remoteChart)
@@ -92,18 +93,16 @@ class ChartManager @Inject constructor(
     }
 
     // Filtered chart collections
-    val workshopCharts: Flow<List<Chart>> = cachedCharts.map { charts ->
-        charts.values.toList()
-    }
+    val workshopCharts: Flow<List<Chart>> = cachedCharts
 
     val installedCharts: Flow<List<Chart>> = cachedCharts.map { charts ->
-        charts.values.filter { it.isInstalled == true }.toList()
+        charts.filter { it.isInstalled == true }
     }
 
     val chartsWithUpdates: Flow<List<Chart>> = cachedCharts.map { charts ->
-        charts.values.filter {
+        charts.filter {
             it.isInstalled == true && it.availableVersion != null
-        }.toList()
+        }
     }
 
     private val _cacheState = MutableStateFlow<ChartState>(ChartState.Loading)
@@ -243,10 +242,11 @@ class ChartManager @Inject constructor(
 
                         // Since we're on initial page, cache them in local storage
                         localChartRepository.updateCharts(updatedCache).first()
-                    } else {
+                    }/* else {
                         // Append charts for pagination
                         updateCharts(remoteCharts)
-                    }
+                    }*/
+                    updateCharts(remoteCharts)
 
                     emit(FetchResult.Success(remoteCharts))
                 },
@@ -271,30 +271,30 @@ class ChartManager @Inject constructor(
      * @return List of charts to be cached
      */
     private suspend fun handleDeletedCharts(remoteCharts: List<Chart>, sortBy: SortOption): List<Chart> {
-        val cachedMap = _cachedCharts.value.toMutableMap()
+        val cachedMap = _cachedCharts.value.toMutableList()
         val remoteIds = remoteCharts.map { it.id }.toSet()
 
         // Find charts of the same type in cache that aren't in the remote result
         // This suggests they've been deleted or made private
-        val potentiallyDeleted = cachedMap.filter { (id, chart) ->
+        val potentiallyDeleted = cachedMap.filter { chart ->
             // Only consider non-installed charts for deletion
-            chart.isInstalled != true && id !in remoteIds
+            chart.isInstalled != true && chart.id !in remoteIds
         }
 
         if (potentiallyDeleted.isNotEmpty()) {
             Log.d(TAG, "Found ${potentiallyDeleted.size} charts that may have been deleted/unpublished")
 
             // Remove these charts from cache
-            potentiallyDeleted.keys.forEach { id ->
-                cachedMap.remove(id)
-                Log.d(TAG, "Removed chart with id: $id from cache as it no longer exists on remote")
+            potentiallyDeleted.forEach { chart ->
+                cachedMap.remove(chart)
+                Log.d(TAG, "Removed chart with id: ${chart.id} from cache as it no longer exists on remote")
             }
 
             // Update the in-memory cache
             _cachedCharts.value = cachedMap
 
             // Also remove from local repository
-            localChartRepository.deleteCharts(potentiallyDeleted.values.toList()).first()
+            localChartRepository.deleteCharts(potentiallyDeleted).first()
         }
 
         // Now add/update the remote charts
@@ -319,7 +319,7 @@ class ChartManager @Inject constructor(
         offset: Int = 0
     ): Flow<FetchResult<List<Chart>>> = flow {
         if (query.isEmpty()) {
-            _remoteCharts.value = emptyMap()
+            _remoteCharts.value = emptyList()
             emit(FetchResult.Success(emptyList()))
             return@flow
         }
@@ -348,14 +348,12 @@ class ChartManager @Inject constructor(
                     // Update in-memory state
                     if (offset == 0) {
                         // For first page, replace existing charts with search results
-                        _remoteCharts.value = searchResults.associateBy { it.id }
+                        _remoteCharts.value = searchResults
                     } else {
                         // For pagination, append to existing results
-                        val updatedMap = _remoteCharts.value.toMutableMap()
-                        searchResults.forEach { chart ->
-                            updatedMap[chart.id] = chart
-                        }
-                        _remoteCharts.value = updatedMap
+                        val updatedList = _remoteCharts.value.toMutableList()
+                        updatedList.addAll(searchResults)
+                        _remoteCharts.value = updatedList
                     }
 
                     emit(FetchResult.Success(searchResults))
@@ -380,9 +378,8 @@ class ChartManager @Inject constructor(
     fun checkForUpdates(): Flow<FetchResult<List<Chart>>> = flow {
         emit(FetchResult.Loading)
 
-        val installedCharts = _cachedCharts.value.values
+        val installedCharts = _cachedCharts.value
             .filter { it.isInstalled == true }
-            .toList()
 
         if (installedCharts.isEmpty()) {
             emit(FetchResult.Success(emptyList<Chart>()))
@@ -446,8 +443,8 @@ class ChartManager @Inject constructor(
     * Add a single chart to cache
     */
     fun addChart(chart: Chart) {
-        _cachedCharts.value = _cachedCharts.value.toMutableMap().apply {
-            this[chart.id] = chart
+        _cachedCharts.value = _cachedCharts.value.toMutableList().apply {
+            add(chart)
         }
     }
 
@@ -455,8 +452,13 @@ class ChartManager @Inject constructor(
      * Update a single chart in memory
      */
     private fun updateChart(chart: Chart) {
-        _cachedCharts.value = _cachedCharts.value.toMutableMap().apply {
-            this[chart.id] = chart
+        _cachedCharts.value = _cachedCharts.value.toMutableList().apply {
+            val index = indexOfFirst { it.id == chart.id }
+            if (index != -1) {
+                set(index, chart)
+            } else {
+                add(chart)
+            }
         }
     }
 
@@ -465,9 +467,9 @@ class ChartManager @Inject constructor(
      */
     fun updateChart(chartId: String, operation: OperationType): Flow<FetchResult<List<Chart>>> = flow {
         // Find the chart in our in-memory cache
-        val existingChart = _cachedCharts.value[chartId] ?: run {
+        val existingChart = _cachedCharts.value.find { it.id == chartId } ?: run {
             // If chart was not found on cache, check in remote and cache it
-            val remoteChart = remoteCharts.value[chartId]
+            val remoteChart = remoteCharts.value.find { it.id == chartId }
             if (remoteChart != null) {
                 Log.d(TAG, "Chart with id: $chartId not found in cache, added from remote")
                 addChart(remoteChart.copy(
@@ -522,7 +524,7 @@ class ChartManager @Inject constructor(
         Log.d(TAG, "Updated chart with id: $chartId in memory")
 
         // Only emit a single success result
-        emit(FetchResult.Success(_cachedCharts.value.values.toList()))
+        emit(FetchResult.Success(_cachedCharts.value))
     }.catch { e ->
         emit(FetchResult.Error("Unexpected error updating chart", e))
     }
@@ -532,19 +534,24 @@ class ChartManager @Inject constructor(
      * Update multiple charts in memory
      */
     private fun updateCharts(charts: List<Chart>) {
-        val updatedMap = _cachedCharts.value.toMutableMap()
-
-        charts.forEach { chart ->
-            // Add to our map, preserving any existing data not in the update
-            updatedMap[chart.id] = _cachedCharts.value[chart.id]?.let { existingChart ->
+        // Log.d("SERVER", charts.joinToString { it.track })
+        
+        val currentCache = _cachedCharts.value
+        val updatedList = charts.map { chart ->
+            val existingChart = currentCache.find { it.id == chart.id }
+            if (existingChart != null) {
                 chart.copy(
                     isInstalled = existingChart.isInstalled,
                     availableVersion = existingChart.availableVersion
                 )
-            } ?: chart
-        }
+            } else {
+                chart
+            }
+        }.toMutableList()
 
-        _cachedCharts.value = updatedMap
+        // Log.d("UPDATED", updatedList.joinToString { it.track })
+
+        _cachedCharts.value = updatedList
     }
 
     /**
@@ -552,21 +559,26 @@ class ChartManager @Inject constructor(
      * Installed charts are preserved regardless of limit
      */
     private fun updateChartsWithLimit(newCharts: List<Chart>): List<Chart> {
-        val updatedMap = _cachedCharts.value.toMutableMap()
+        val updatedList = _cachedCharts.value.toMutableList()
 
-        // Add all new charts to our map, preserving any existing data
+        // Add all new charts to our list, preserving any existing data
         newCharts.forEach { chart ->
-            updatedMap[chart.id] = _cachedCharts.value[chart.id]?.let { existingChart ->
-                chart.copy(
-                    isInstalled = existingChart.isInstalled,
-                    availableVersion = existingChart.availableVersion
-                )
-            } ?: chart
+            val index = updatedList.indexOfFirst { it.id == chart.id }
+            if (index != -1) {
+                updatedList[index] = _cachedCharts.value[index].let { existingChart ->
+                    chart.copy(
+                        isInstalled = existingChart.isInstalled,
+                        availableVersion = existingChart.availableVersion
+                    )
+                }
+            } else {
+                updatedList.add(chart)
+            }
         }
 
         // Enforce the maximum cache size for non-installed charts
-        val installedCharts = updatedMap.values.filter { it.isInstalled == true }
-        val nonInstalledCharts = updatedMap.values.filter { it.isInstalled != true }
+        val installedCharts = updatedList.filter { it.isInstalled == true }
+        val nonInstalledCharts = updatedList.filter { it.isInstalled != true }
 
         // If we have too many non-installed charts, keep only the most recent ones
         if (nonInstalledCharts.size > MAX_CACHED_CHARTS) {
@@ -574,19 +586,19 @@ class ChartManager @Inject constructor(
                 .sortedByDescending { it.latestVersion.publishedAt } // Keep newest charts
                 .take(MAX_CACHED_CHARTS)
 
-            // Create new map with installed charts and the charts to keep
-            val finalMap = mutableMapOf<String, Chart>()
-            installedCharts.forEach { finalMap[it.id] = it }
-            chartsToKeep.forEach { finalMap[it.id] = it }
+            // Create new list with installed charts and the charts to keep
+            val finalList = mutableListOf<Chart>()
+            finalList.addAll(installedCharts)
+            finalList.addAll(chartsToKeep)
 
-            _cachedCharts.value = finalMap
+            _cachedCharts.value = finalList
 
-            return finalMap.values.toList()
+            return finalList
         } else {
-            // We're within limits, just update the map
-            _cachedCharts.value = updatedMap
+            // We're within limits, just update the list
+            _cachedCharts.value = updatedList
 
-            return updatedMap.values.toList()
+            return updatedList
         }
     }
 
@@ -630,3 +642,6 @@ class ChartManager @Inject constructor(
         }
     }
 }
+
+
+
