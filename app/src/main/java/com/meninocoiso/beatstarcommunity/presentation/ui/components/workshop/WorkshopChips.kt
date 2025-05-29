@@ -15,73 +15,73 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.meninocoiso.beatstarcommunity.domain.enums.SortOption
 
 data class WorkshopChip(
-	val id: Int,
-	val title: String,
+    val id: SortOption,
+    val title: String,
+    val enabled: Boolean = true,
 )
 
 val chipItems = listOf(
-	WorkshopChip(
-		id = 2,
-		title = "Last updated",
-	),
-	WorkshopChip(
-		id = 1,
-		title = "Weekly Rank"
-	),
-	WorkshopChip(
-		id = 3,
-		title = "Most downloaded",
-	),
-	WorkshopChip(
-		id = 3,
-		title = "Most liked",
-	),
+    WorkshopChip(
+        id = SortOption.LAST_UPDATED,
+        title = "Last updated",
+    ),
+    WorkshopChip(
+        id = SortOption.MOST_DOWNLOADED,
+        title = "Most downloaded",
+    ),
+    WorkshopChip(
+        id = SortOption.WEEKLY_RANK,
+        title = "Weekly Rank",
+        enabled = false
+    ),
+    WorkshopChip(
+        id = SortOption.MOST_LIKED,
+        title = "Most liked",
+        enabled = false
+    ),
 )
 
 @Composable
 fun WorkshopChips(
-	modifier: Modifier = Modifier,
+    currentSortOption: SortOption,
+    onSortOptionChange: (SortOption) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-	var selectedChipIndex by remember { mutableIntStateOf(0) }
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Spacer(modifier = Modifier.width(8.dp)) // Leading padding
 
-	Row(
-		modifier = modifier
-			.fillMaxWidth()
-			.horizontalScroll(rememberScrollState()),
-		horizontalArrangement = Arrangement.spacedBy(8.dp),
-	) {
-		Spacer(modifier = Modifier.width(8.dp)) // Leading padding
+        chipItems.forEach { chip ->
+            FilterChip(
+                onClick = { onSortOptionChange(chip.id) },
+                label = {
+                    Text(chip.title)
+                },
+                enabled = chip.enabled,
+                selected = currentSortOption == chip.id,
+                leadingIcon = if (currentSortOption == chip.id) {
+                    {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = "Check icon",
+                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                        )
+                    }
+                } else {
+                    null
+                },
+            )
+        }
 
-		chipItems.forEachIndexed { index, chip ->
-			FilterChip(
-				onClick = { selectedChipIndex = index },
-				label = {
-					Text(chip.title)
-				},
-				enabled = index == 0,
-				selected = selectedChipIndex == index,
-				leadingIcon = if (selectedChipIndex == index) {
-					{
-						Icon(
-							imageVector = Icons.Filled.Check,
-							contentDescription = "Check icon",
-							modifier = Modifier.size(FilterChipDefaults.IconSize)
-						)
-					}
-				} else {
-					null
-				},
-			)
-		}
-
-		Spacer(modifier = Modifier.width(8.dp)) // Leading padding
-	}
+        Spacer(modifier = Modifier.width(8.dp)) // Leading padding
+    }
 }
