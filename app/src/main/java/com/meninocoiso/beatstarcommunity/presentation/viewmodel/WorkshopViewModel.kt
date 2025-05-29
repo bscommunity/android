@@ -78,7 +78,7 @@ class WorkshopViewModel @Inject constructor(
         private set
     
     // Sorting and filtering
-    var currentSortOption by mutableStateOf(SortOption.WEEKLY_RANK)
+    var currentSortOption by mutableStateOf(SortOption.LAST_UPDATED)
         private set
 
     var difficulties by mutableStateOf<List<Difficulty>?>(null)

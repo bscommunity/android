@@ -111,7 +111,7 @@ fun CoverArt(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.rounded_download_24),
+                    painter = painterResource(id = R.drawable.rounded_download_done_24),
                     contentDescription = "Already downloaded chart indicator",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier

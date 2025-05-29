@@ -63,7 +63,9 @@ fun WorkshopScreen(
                 WorkshopChips(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .zIndex(5f)
+                        .zIndex(5f),
+                    currentSortOption = viewModel.currentSortOption,
+                    onSortOptionChange = viewModel::changeSortOption
                 )
             }
         }
