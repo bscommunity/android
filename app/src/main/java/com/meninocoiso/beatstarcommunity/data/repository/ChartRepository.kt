@@ -35,4 +35,8 @@ interface ChartRepository {
     ): Flow<Result<Boolean>>
     suspend fun deleteChart(chart: Chart): Flow<Result<Boolean>>
     suspend fun deleteCharts(charts: List<Chart>): Flow<Result<Boolean>>
+    suspend fun postAnalytics(
+        chartId: String,
+        action: OperationType,
+    ): Flow<Result<Boolean>>
 }

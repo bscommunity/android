@@ -1,8 +1,9 @@
 package com.meninocoiso.beatstarcommunity.data.remote
 
-import com.meninocoiso.beatstarcommunity.domain.enums.SortOption
 import com.meninocoiso.beatstarcommunity.domain.enums.Difficulty
 import com.meninocoiso.beatstarcommunity.domain.enums.Genre
+import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
+import com.meninocoiso.beatstarcommunity.domain.enums.SortOption
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.model.User
 import com.meninocoiso.beatstarcommunity.domain.model.Version
@@ -22,4 +23,8 @@ interface ApiClient {
     suspend fun getChartsById(ids: List<String>): List<Chart>
     suspend fun getSuggestions(query: String, limit: Int? = null): List<String>
     suspend fun getLatestVersionsByChartIds(ids: List<String>): List<Version>
+    suspend fun postAnalytics(
+        id: String,
+        operationType: OperationType
+    ): Boolean
 }

@@ -47,15 +47,15 @@ internal fun ChartsSection(
 
     var searchFieldState by remember { mutableStateOf(viewModel.searchFieldState) }
     val hasActiveQuery = searchFieldState.text.isNotEmpty()
-    
+
     val charts = if (hasActiveQuery) {
         searchCharts
     } else {
         feedCharts
     }
-    
+
     val workshopState by viewModel.workshopState.collectAsStateWithLifecycle(initialValue = ChartState.Loading)
-    
+
     // Collect events for snackbar
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -67,15 +67,16 @@ internal fun ChartsSection(
             }
         }
     }
-    
+
     // Print all conditions to check
     // println("WorkshopState: $workshopState")
     // println("SearchCharts: $searchCharts")
     // println("FeedCharts: $feedCharts")
     // println("HasActiveQuery: $hasActiveQuery")
     // println("Charts: $charts")
-    
-    val isExplicitAllowed = viewModel.isExplicitAllowed.collectAsStateWithLifecycle(initialValue = false)
+
+    val isExplicitAllowed =
+        viewModel.isExplicitAllowed.collectAsStateWithLifecycle(initialValue = false)
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -129,46 +130,6 @@ internal fun ChartsSection(
                     listState = listState,
                 ) {
                     itemsIndexed(charts) { index, chart ->
-                        ChartPreview(
-                            chart = chart,
-                            isBlocked = chart.isExplicit && !isExplicitAllowed.value,
-                            onBlocked = {
-                                onSnackbar("Explicit content disabled in settings")
-                            },
-                            onNavigateToDetails = {
-                                onNavigateToDetails(chart)
-                            },
-                        )
-                        ChartPreview(
-                            chart = chart,
-                            isBlocked = chart.isExplicit && !isExplicitAllowed.value,
-                            onBlocked = {
-                                onSnackbar("Explicit content disabled in settings")
-                            },
-                            onNavigateToDetails = {
-                                onNavigateToDetails(chart)
-                            },
-                        )
-                        ChartPreview(
-                            chart = chart,
-                            isBlocked = chart.isExplicit && !isExplicitAllowed.value,
-                            onBlocked = {
-                                onSnackbar("Explicit content disabled in settings")
-                            },
-                            onNavigateToDetails = {
-                                onNavigateToDetails(chart)
-                            },
-                        )
-                        ChartPreview(
-                            chart = chart,
-                            isBlocked = chart.isExplicit && !isExplicitAllowed.value,
-                            onBlocked = {
-                                onSnackbar("Explicit content disabled in settings")
-                            },
-                            onNavigateToDetails = {
-                                onNavigateToDetails(chart)
-                            },
-                        )
                         ChartPreview(
                             chart = chart,
                             isBlocked = chart.isExplicit && !isExplicitAllowed.value,

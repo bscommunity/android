@@ -97,7 +97,7 @@ class ChartRepositoryLocal(
         id: String,
         operation: OperationType
     ): Flow<Result<Boolean>> = flow {
-        Log.d(TAG, "Current chart: ${chartDao.getChart(id)}")
+        // Log.d(TAG, "Current chart: ${chartDao.getChart(id)}")
 
         when (operation) {
             OperationType.INSTALL -> {
@@ -114,7 +114,7 @@ class ChartRepositoryLocal(
             }
         }
 
-        Log.d(TAG, "Updated chart: ${chartDao.getChart(id)}")
+        // Log.d(TAG, "Updated chart: ${chartDao.getChart(id)}")
         emit(Result.success(true))
     }.catch { e ->
         emit(Result.failure(e))
@@ -140,4 +140,11 @@ class ChartRepositoryLocal(
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
+
+    override suspend fun postAnalytics(
+        chartId: String,
+        action: OperationType
+    ): Flow<Result<Boolean>> {
+        TODO("Not yet implemented")
+    }
 }

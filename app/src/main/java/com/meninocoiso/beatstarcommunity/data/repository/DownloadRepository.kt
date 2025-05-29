@@ -48,6 +48,9 @@ class DownloadRepository @Inject constructor(
             onDownloadProgress
         )
         
+        // Notify server about the download (this should not block)
+        chartManager.postAnalytics(chartId, operation)
+        
         // Extract the zip file to the beatstar folder
         try {
             downloadUtils.extractZipToFolder(
