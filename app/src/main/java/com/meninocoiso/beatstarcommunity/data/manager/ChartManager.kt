@@ -12,6 +12,8 @@ import com.meninocoiso.beatstarcommunity.domain.enums.SortOption
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.util.StorageUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +23,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
@@ -603,5 +606,27 @@ class ChartManager @Inject constructor(
     }.catch { e ->
         // emit(FetchResult.Error("Unexpected error fetching suggestions", e))
         emit(emptyList<String>())
+    }
+    
+    /**
+     * Notify the server about a chart download operation
+     */
+    fun postAnalytics(
+        chartId: String,
+        operation: OperationType
+    ) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                remoteChartRepository.postAnalytics(chartId, operation).collect { result ->
+                    if (result.isSuccess) {
+                        Log.i(TAG, "Analytics posted for chartId: $chartId with operation: $operation")
+                    } else {
+                        Log.e(TAG, "Failed to post analytics for chartId: $chartId", result.exceptionOrNull())
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Exception posting analytics for chartId: $chartId", e)
+            }
+        }
     }
 }

@@ -1,11 +1,14 @@
 package com.meninocoiso.beatstarcommunity.data.remote
 
+import android.util.Log
 import com.meninocoiso.beatstarcommunity.domain.enums.Difficulty
 import com.meninocoiso.beatstarcommunity.domain.enums.Genre
+import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
 import com.meninocoiso.beatstarcommunity.domain.enums.SortOption
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
 import com.meninocoiso.beatstarcommunity.domain.model.User
 import com.meninocoiso.beatstarcommunity.domain.model.Version
+import com.meninocoiso.beatstarcommunity.util.DevelopmentUtils
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
@@ -13,7 +16,9 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.get
+import io.ktor.client.request.post
 import io.ktor.http.ContentType
+import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import jakarta.inject.Inject
@@ -41,12 +46,11 @@ class KtorApiClient @Inject constructor() : ApiClient {
             socketTimeoutMillis = 10000
         }
         defaultRequest {
-            url("https://api-cyb1.onrender.com")
-            /*url {
+            url {
                 protocol = URLProtocol.HTTP
                 host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.11"
                 port = 8080
-            }*/
+            }
             contentType(ContentType.Application.Json)
         }
     }
@@ -120,5 +124,14 @@ class KtorApiClient @Inject constructor() : ApiClient {
                 parameters.append("chartIds", ids.joinToString(","))
             }
         }.body()
+    }
+
+    override suspend fun postAnalytics(id: String, operationType: OperationType): Boolean {
+        Log.d("KtorApiClient", "Posting analytics for chart $id with operation $operationType")
+        return client.post("charts/analytics/$id") {
+            url {
+                parameters.append("type", operationType.toString())
+            }
+        }.body<Boolean>()
     }
 }
