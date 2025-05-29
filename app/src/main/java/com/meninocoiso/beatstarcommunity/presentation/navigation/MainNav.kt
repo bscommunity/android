@@ -22,7 +22,7 @@ fun MainNav(hasUpdate: Boolean) {
         // Deep link to chart details
         composableWithTransitions<DeepLinkChartDetails>(
             deepLinks = listOf(
-                navDeepLink { uriPattern = "bscm://chart/details/{chartId}" }
+                navDeepLink { uriPattern = "bscm://chart/{chartId}" }
             )
         ) { backStackEntry ->
             val chartDetails: DeepLinkChartDetails = backStackEntry.toRoute()
@@ -48,16 +48,6 @@ fun MainNav(hasUpdate: Boolean) {
                 }
             )
         }
-
-        /*composableWithTransitions<Search> { backStackEntry ->
-            val search: Search = backStackEntry.toRoute()
-            SearchScreen(
-                query = search.query,
-                onNavigateBack = {
-                    navController.navigateUp()
-                }
-            )
-        }*/
 
         composableWithoutTransitions<MainRoute> {
             BottomNav(bottomNavController, navController, hasUpdate)

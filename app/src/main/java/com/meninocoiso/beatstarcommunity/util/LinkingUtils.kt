@@ -12,13 +12,12 @@ class LinkingUtils {
         }
         
         fun shareChartLink(context: Context, chartId: String) {
-            val deepLink = "bscm://chart/details/$chartId"
-            // val shareableLink = "https://www.bscm.com/chart/$chartId"
+            // val deepLink = "bscm://chart/details/$chartId"
+            val shareableLink = "https://bscm.netlify.app/link/chart/$chartId"
 
             val shareIntent = Intent().apply {
                 action = Intent.ACTION_SEND
-                putExtra(Intent.EXTRA_TEXT, deepLink)
-                // putExtra(Intent.EXTRA_TEXT, shareableLink)
+                putExtra(Intent.EXTRA_TEXT, shareableLink)
                 type = "text/plain"
             }
 
