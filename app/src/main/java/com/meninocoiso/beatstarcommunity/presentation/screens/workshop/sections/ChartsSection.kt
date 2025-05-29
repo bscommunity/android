@@ -139,6 +139,46 @@ internal fun ChartsSection(
                                 onNavigateToDetails(chart)
                             },
                         )
+                        ChartPreview(
+                            chart = chart,
+                            isBlocked = chart.isExplicit && !isExplicitAllowed.value,
+                            onBlocked = {
+                                onSnackbar("Explicit content disabled in settings")
+                            },
+                            onNavigateToDetails = {
+                                onNavigateToDetails(chart)
+                            },
+                        )
+                        ChartPreview(
+                            chart = chart,
+                            isBlocked = chart.isExplicit && !isExplicitAllowed.value,
+                            onBlocked = {
+                                onSnackbar("Explicit content disabled in settings")
+                            },
+                            onNavigateToDetails = {
+                                onNavigateToDetails(chart)
+                            },
+                        )
+                        ChartPreview(
+                            chart = chart,
+                            isBlocked = chart.isExplicit && !isExplicitAllowed.value,
+                            onBlocked = {
+                                onSnackbar("Explicit content disabled in settings")
+                            },
+                            onNavigateToDetails = {
+                                onNavigateToDetails(chart)
+                            },
+                        )
+                        ChartPreview(
+                            chart = chart,
+                            isBlocked = chart.isExplicit && !isExplicitAllowed.value,
+                            onBlocked = {
+                                onSnackbar("Explicit content disabled in settings")
+                            },
+                            onNavigateToDetails = {
+                                onNavigateToDetails(chart)
+                            },
+                        )
                     }
 
                     if (viewModel.isLoadingMore) {
