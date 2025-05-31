@@ -3,7 +3,6 @@ package com.meninocoiso.bscm.data.manager
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.data.repository.ChartRepository
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
@@ -59,8 +58,7 @@ private const val MAX_CACHED_CHARTS = 50
 class ChartManager @Inject constructor(
     @ApplicationContext private val context: Context,
     @Named("Remote") private val remoteChartRepository: ChartRepository,
-    @Named("Local") private val localChartRepository: ChartRepository,
-    private val cacheRepository: CacheRepository
+    @Named("Local") private val localChartRepository: ChartRepository
 ) {
     private val _remoteCharts = MutableStateFlow<List<Chart>>(emptyList())
     private val remoteCharts: StateFlow<List<Chart>> = _remoteCharts.asStateFlow()
