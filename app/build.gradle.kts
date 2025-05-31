@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-	namespace = "com.meninocoiso.beatstarcommunity"
+	namespace = "com.meninocoiso.bscm"
 	compileSdk = 35
 
 	defaultConfig {
