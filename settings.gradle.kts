@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Beatstar Community"
+rootProject.name = "bscm"
 include(":app")

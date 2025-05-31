@@ -37,10 +37,10 @@
 }
 
 # Keep your serializable classes
--keep,includedescriptorclasses class com.meninocoiso.beatstarcommunity.presentation.navigation.** {
+-keep,includedescriptorclasses class com.meninocoiso.bscm.presentation.navigation.** {
     *;
 }
--keep,includedescriptorclasses class com.meninocoiso.beatstarcommunity.domain.enums.** {
+-keep,includedescriptorclasses class com.meninocoiso.bscm.domain.enums.** {
     *;
 }
 
@@ -48,9 +48,9 @@
 -keepattributes Signature
 
 # Keep serializers for your classes
--keepclassmembers class com.meninocoiso.beatstarcommunity.** {
+-keepclassmembers class com.meninocoiso.bscm.** {
     *** Companion;
 }
--keepclasseswithmembers class com.meninocoiso.beatstarcommunity.** {
+-keepclasseswithmembers class com.meninocoiso.bscm.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
