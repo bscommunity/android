@@ -1,11 +1,10 @@
 package com.meninocoiso.beatstarcommunity.data.repository
 
 import android.content.res.Resources.NotFoundException
-import androidx.core.net.toUri
 import com.meninocoiso.beatstarcommunity.data.manager.ChartManager
 import com.meninocoiso.beatstarcommunity.data.manager.FetchResult
 import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
-import com.meninocoiso.beatstarcommunity.util.DownloadUtils
+import com.meninocoiso.beatstarcommunity.data.manager.DownloadManager
 import com.meninocoiso.beatstarcommunity.util.StorageUtils
 import kotlinx.coroutines.flow.first
 import kotlinx.io.IOException
@@ -16,9 +15,9 @@ private const val TAG = "DownloadRepository"
 
 @Singleton
 class DownloadRepository @Inject constructor(
-    private val downloadUtils: DownloadUtils,
+    private val downloadManager: DownloadManager,
     private val chartManager: ChartManager,
-    private val settingsRepository: SettingsRepository,
+    private val cacheRepository: CacheRepository,
 ) {
     /**
      * Downloads and extracts a chart to the beatstar folder
@@ -35,13 +34,13 @@ class DownloadRepository @Inject constructor(
         onDownloadProgress: (Float) -> Unit = {},
         onExtractProgress: (Float) -> Unit = {}
     ) {
-        val folderUri = settingsRepository.getFolderUri()?.toUri()
+        val folderUri = cacheRepository.getFolderUri()
             ?: throw IllegalStateException("Could not access or create beatstar folder")
 
         val folderName = StorageUtils.getChartFolderName(chartId)
 
         // Download the zip file to cache
-        val downloadedFile = downloadUtils.downloadFileToCache(
+        val downloadedFile = downloadManager.downloadFileToCache(
             url,
             folderName,
             "zip",
@@ -53,7 +52,7 @@ class DownloadRepository @Inject constructor(
         
         // Extract the zip file to the beatstar folder
         try {
-            downloadUtils.extractZipToFolder(
+            downloadManager.extractZipToFolder(
                 downloadedFile,
                 folderName,
                 folderUri,
@@ -78,11 +77,11 @@ class DownloadRepository @Inject constructor(
 
     suspend fun deleteChart(chartId: String) {
         val folderName = StorageUtils.getChartFolderName(chartId)
-        val destinationFolderUri = settingsRepository.getFolderUri()?.toUri()
+        val destinationFolderUri = cacheRepository.getFolderUri()
             ?: throw IllegalStateException("Could not access or create beatstar folder")
 
         try {
-            downloadUtils.deleteFolderFromUri(
+            downloadManager.deleteFolderFromUri(
                 folderName,
                 destinationFolderUri,
                 listOf("songs"),

@@ -7,7 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.meninocoiso.beatstarcommunity.BuildConfig
 import com.meninocoiso.beatstarcommunity.data.repository.AppUpdateRepository
 import com.meninocoiso.beatstarcommunity.data.repository.SettingsRepository
-import com.meninocoiso.beatstarcommunity.domain.model.Settings
+import com.meninocoiso.beatstarcommunity.domain.model.internal.Settings
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -37,19 +37,27 @@ class MainActivityViewModel @Inject constructor(
 		initialValue = MainActivityUiState.Loading,
 		started = SharingStarted.WhileSubscribed(5_000),
 	)
+	
+	val latestUpdateVersion = appUpdateRepository.appUpdateFlow
+		.map { it.latestUpdateVersion }
+		.stateIn(
+			scope = viewModelScope,
+			initialValue = "",
+			started = SharingStarted.WhileSubscribed(5_000),
+		)
 
 	init {
 		viewModelScope.launch {
 			appUpdateRepository.fetchLatestVersion()
 				.catch { 
 					// Log.d("MainActivityViewModel", "Error fetching version: $it")
-					settingsRepository.setLatestVersion("")
+					appUpdateRepository.setLatestVersion("")
 				}
 				.collect { fetchedVersion ->
 					// Log.d("MainActivityViewModel", "Fetched version: $fetchedVersion")
 					
 					// Store the version in DataStore
-					settingsRepository.setLatestVersion(fetchedVersion)
+					appUpdateRepository.setLatestVersion(fetchedVersion)
 				}
 		}
 	}
@@ -62,7 +70,7 @@ class MainActivityViewModel @Inject constructor(
 		val currentVersionCode = BuildConfig.VERSION_CODE
 
 		viewModelScope.launch(Dispatchers.IO) {
-			val lastCleanedVersion = settingsRepository.getLatestCleanedVersion()
+			val lastCleanedVersion = appUpdateRepository.getLatestCleanedVersion()
 
 			// Only clean if we've updated since last cleaning
 			if (currentVersionCode > lastCleanedVersion) {
@@ -75,7 +83,7 @@ class MainActivityViewModel @Inject constructor(
 					}
 
 					// Update the last cleaned version
-					settingsRepository.setLatestCleanedVersion(currentVersionCode)
+					appUpdateRepository.setLatestCleanedVersion(currentVersionCode)
 				}
 			}
 		}

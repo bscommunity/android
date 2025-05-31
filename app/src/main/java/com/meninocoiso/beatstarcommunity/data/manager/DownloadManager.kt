@@ -1,9 +1,11 @@
-package com.meninocoiso.beatstarcommunity.util
+package com.meninocoiso.beatstarcommunity.data.manager
 
 import android.content.Context
 import android.content.res.Resources.NotFoundException
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
+import com.meninocoiso.beatstarcommunity.util.StorageUtils
+import com.meninocoiso.beatstarcommunity.util.unzipFrom
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -15,13 +17,13 @@ import java.io.FileOutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val TAG = "DownloadUtils"
+private const val TAG = "DownloadManager"
 
 /**
  * Utility class for handling chart downloads, extraction and storage
  */
 @Singleton
-class DownloadUtils @Inject constructor(
+class DownloadManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val okHttpClient: OkHttpClient,
 ) {

@@ -17,6 +17,10 @@ interface ChartDao {
     @Query("SELECT * FROM charts WHERE id = :id")
     fun getChart(id: String): Chart
 
+    //@Query("SELECT latest_version FROM charts WHERE id IN (:ids)")
+    @Query("SELECT v.* FROM charts c JOIN versions v ON c.latest_version = v.id WHERE c.id IN (:ids)")
+    fun getLatestVersionsByChartIds(ids: List<String>): List<Version>
+
     @Query("""
     SELECT 
         CASE 
@@ -34,33 +38,20 @@ interface ChartDao {
     /*@Query("SELECT track FROM charts WHERE track LIKE '%' || :query || '%' OR artist LIKE '%' || :query || '%' LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END")
     fun getSuggestions(query: String, limit: Int?): List<String>*/
 
-    @Query("SELECT * FROM charts WHERE id IN (:chartIds)")
-    fun loadAllByIds(chartIds: List<String>): List<Chart>
-
-    //@Query("SELECT latest_version FROM charts WHERE id IN (:ids)")
-    @Query("SELECT v.* FROM charts c JOIN versions v ON c.latest_version = v.id WHERE c.id IN (:ids)")
-    fun getLatestVersionsByChartIds(ids: List<String>): List<Version>
-
     @Query("""
-    SELECT c.* FROM charts c 
-    JOIN versions v ON c.latest_version = v.id 
-    ORDER BY v.published_at DESC 
-    LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END 
-    OFFSET :offset
+        SELECT c.* FROM charts c
+        ORDER BY c.latest_published_at DESC
+        LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END
+        OFFSET :offset
     """)
     fun getChartsSortedByLastUpdated(limit: Int?, offset: Int): List<Chart>
 
     @Query("""
-    SELECT c.* FROM charts c 
-    LEFT JOIN (
-        SELECT chart_id, SUM(downloads_amount) as total_downloads 
-        FROM versions 
-        GROUP BY chart_id
-    ) v ON c.id = v.chart_id 
-    ORDER BY COALESCE(v.total_downloads, 0) DESC 
-    LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END 
-    OFFSET :offset
-""")
+        SELECT * FROM charts
+        ORDER BY downloads_sum DESC
+        LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END
+        OFFSET :offset
+    """)
     fun getChartsSortedByMostDownloaded(limit: Int?, offset: Int): List<Chart>
     
     @Query("SELECT * FROM charts WHERE track LIKE :first AND " +

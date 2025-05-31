@@ -21,7 +21,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-class AppBarUtils {
+object AppBarUtils {
     class CollapsingAppBarNestedScrollConnection(
         private val appBarMaxHeight: Int,
         private val additionalHeight: Int?
@@ -54,74 +54,72 @@ class AppBarUtils {
         }
     }
 
-    companion object {
-        @Composable
-        fun getStatusBarHeight(): Dp {
-            return WindowInsets.systemBars.asPaddingValues().calculateTopPadding()
+    @Composable
+    fun getStatusBarHeight(): Dp {
+        return WindowInsets.systemBars.asPaddingValues().calculateTopPadding()
+    }
+
+    @Composable
+    fun getConnection(
+        collapsableHeight: Dp,
+        fixedHeight: Dp = 0.dp,
+        bottomCollapsableHeight: State<Dp?> = remember { mutableStateOf(null) }
+    ): Triple<CollapsingAppBarNestedScrollConnection, Dp, Dp> {
+        val density = LocalDensity.current
+        val statusBarHeight = getStatusBarHeight()
+
+        val appBarMaxHeight = collapsableHeight + fixedHeight + statusBarHeight
+        val appBarMaxHeightPx = with(LocalDensity.current) {
+            appBarMaxHeight.roundToPx()
         }
 
-        @Composable
-        fun getConnection(
-            collapsableHeight: Dp,
-            fixedHeight: Dp = 0.dp,
-            bottomCollapsableHeight: State<Dp?> = remember { mutableStateOf(null) }
-        ): Triple<CollapsingAppBarNestedScrollConnection, Dp, Dp> {
-            val density = LocalDensity.current
-            val statusBarHeight = getStatusBarHeight()
-
-            val appBarMaxHeight = collapsableHeight + fixedHeight + statusBarHeight
-            val appBarMaxHeightPx = with(LocalDensity.current) {
-                appBarMaxHeight.roundToPx()
+        val fixedAppBarHeightPx = if (fixedHeight == 0.dp) {
+            appBarMaxHeightPx
+        } else {
+            with(LocalDensity.current) {
+                (fixedHeight + statusBarHeight).roundToPx()
             }
-
-            val fixedAppBarHeightPx = if (fixedHeight == 0.dp) {
-                appBarMaxHeightPx
-            } else {
-                with(LocalDensity.current) {
-                    (fixedHeight + statusBarHeight).roundToPx()
-                }
-            }
-
-            val bottomCollapsableHeightPx = bottomCollapsableHeight.value?.let {
-                with(density) { it.roundToPx() }
-            }
-
-            val connection = rememberSaveable(
-                appBarMaxHeightPx, bottomCollapsableHeightPx, saver = listSaver(
-                    save = {
-                        listOf(
-                            it.appBarOffset,
-                            it.appBarAdditionalOffset,
-                            it.appBarOpacity
-                        )
-                    },
-                    restore = {
-                        CollapsingAppBarNestedScrollConnection(
-                            fixedAppBarHeightPx,
-                            bottomCollapsableHeightPx
-                        ).apply {
-                            appBarOffset = it[0] as Int
-                            appBarAdditionalOffset = it[1] as Int
-                            appBarOpacity = it[2] as Float
-                        }
-                    }
-                )) {
-                CollapsingAppBarNestedScrollConnection(
-                    fixedAppBarHeightPx,
-                    bottomCollapsableHeightPx
-                )
-            }
-
-            val spaceHeight by remember(density, connection, bottomCollapsableHeightPx) {
-                derivedStateOf {
-                    with(density) {
-                        (appBarMaxHeightPx + (connection.appBarAdditionalOffset.takeIf { bottomCollapsableHeight.value != null }
-                            ?: connection.appBarOffset)).toDp()
-                    }
-                }
-            }
-
-            return Triple(connection, spaceHeight, statusBarHeight)
         }
+
+        val bottomCollapsableHeightPx = bottomCollapsableHeight.value?.let {
+            with(density) { it.roundToPx() }
+        }
+
+        val connection = rememberSaveable(
+            appBarMaxHeightPx, bottomCollapsableHeightPx, saver = listSaver(
+                save = {
+                    listOf(
+                        it.appBarOffset,
+                        it.appBarAdditionalOffset,
+                        it.appBarOpacity
+                    )
+                },
+                restore = {
+                    CollapsingAppBarNestedScrollConnection(
+                        fixedAppBarHeightPx,
+                        bottomCollapsableHeightPx
+                    ).apply {
+                        appBarOffset = it[0] as Int
+                        appBarAdditionalOffset = it[1] as Int
+                        appBarOpacity = it[2] as Float
+                    }
+                }
+            )) {
+            CollapsingAppBarNestedScrollConnection(
+                fixedAppBarHeightPx,
+                bottomCollapsableHeightPx
+            )
+        }
+
+        val spaceHeight by remember(density, connection, bottomCollapsableHeightPx) {
+            derivedStateOf {
+                with(density) {
+                    (appBarMaxHeightPx + (connection.appBarAdditionalOffset.takeIf { bottomCollapsableHeight.value != null }
+                        ?: connection.appBarOffset)).toDp()
+                }
+            }
+        }
+
+        return Triple(connection, spaceHeight, statusBarHeight)
     }
 }

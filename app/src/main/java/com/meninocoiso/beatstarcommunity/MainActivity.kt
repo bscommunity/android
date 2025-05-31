@@ -37,6 +37,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         var uiState: MainActivityUiState by mutableStateOf(Loading)
+        var latestUpdateVersion: String by mutableStateOf("")
 
         // Update the uiState
         lifecycleScope.launch {
@@ -46,6 +47,11 @@ class MainActivity : ComponentActivity() {
                     .collect(
                         collector = ::println
                     )
+                latestUpdateVersion.let { version ->
+                    if (version.isNotEmpty()) {
+                        viewModel.latestUpdateVersion.collect { latestUpdateVersion = it }
+                    }
+                }
             }
         }
 
@@ -100,7 +106,7 @@ class MainActivity : ComponentActivity() {
                 MainNav(
                     hasUpdate = when (uiState) {
                         Loading -> false
-                        is Success -> viewModel.hasUpdate((uiState as Success).settings.latestUpdateVersion)
+                        is Success -> viewModel.hasUpdate(latestUpdateVersion)
                     }
                 )
 

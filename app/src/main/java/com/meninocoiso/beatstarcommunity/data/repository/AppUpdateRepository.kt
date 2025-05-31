@@ -6,14 +6,23 @@ import android.provider.Settings
 import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.meninocoiso.beatstarcommunity.BuildConfig
+import com.meninocoiso.beatstarcommunity.domain.model.internal.UpdateCache
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.AppUpdateState
-import com.meninocoiso.beatstarcommunity.util.DownloadUtils
+import com.meninocoiso.beatstarcommunity.data.manager.DownloadManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -39,14 +48,60 @@ private const val TAG = "AppUpdateRepository"
 @Singleton
 class AppUpdateRepository @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val downloadUtils: DownloadUtils,
-    private val okHttpClient: OkHttpClient
+    private val downloadManager: DownloadManager,
+    private val okHttpClient: OkHttpClient,
+    private val dataStore: DataStore<Preferences>,
 ) {
     private val currentVersion = BuildConfig.VERSION_NAME
+
+    companion object AppUpdateKeys {
+        val LATEST_UPDATE_VERSION = stringPreferencesKey("app_update_version")
+        val LATEST_CLEANED_VERSION = stringPreferencesKey("latest_cleaned_version")
+    }
+
+    val appUpdateFlow: Flow<UpdateCache> = dataStore.data
+        .catch { exception ->
+            when (exception) {
+                is IOException -> {
+                    Log.e("SettingsRepository", "Error reading preferences", exception)
+                    emit(emptyPreferences())
+                }
+                else -> throw exception
+            }
+        }
+        .map { preferences ->
+            mapSettings(preferences)
+        }
+
+    suspend fun getLatestVersion(): String {
+        return dataStore.data.first()[LATEST_UPDATE_VERSION] ?: ""
+    }
+
+    suspend fun setLatestVersion(version: String) {
+        dataStore.edit { it[LATEST_UPDATE_VERSION] = version }
+    }
+
+    suspend fun getLatestCleanedVersion(): Int {
+        return dataStore.data.first()[LATEST_CLEANED_VERSION]?.toIntOrNull() ?: 0
+    }
+
+    suspend fun setLatestCleanedVersion(version: Int) {
+        dataStore.edit { it[LATEST_CLEANED_VERSION] = version.toString() }
+    }
+
+    private fun mapSettings(preferences: Preferences): UpdateCache =
+        UpdateCache(
+            latestUpdateVersion = preferences[LATEST_UPDATE_VERSION].let {
+                if (it.isNullOrEmpty()) null else it
+            } ?: UpdateCache().latestUpdateVersion,
+            latestCleanedVersion = preferences[LATEST_CLEANED_VERSION]?.toIntOrNull()
+                ?: UpdateCache().latestCleanedVersion,
+        )
+    
+    /* Helper Functions */
     
     fun hasUpdate(fetchedVersion: String): Boolean {
         // Log.d(TAG, "Fetched version: $fetchedVersion, Current version: v$currentVersion")
-
         return fetchedVersion > "v$currentVersion"
     }
     
@@ -126,7 +181,7 @@ class AppUpdateRepository @Inject constructor(
             onProgress(AppUpdateState.Downloading(0f))
 
             // Download APK to cache directory with version name
-            val apkFile = downloadUtils.downloadFileToCache(
+            val apkFile = downloadManager.downloadFileToCache(
                 downloadUrl,
                 "update-$versionName",
                 "apk"

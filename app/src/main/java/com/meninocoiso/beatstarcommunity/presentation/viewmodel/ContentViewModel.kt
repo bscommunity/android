@@ -2,12 +2,11 @@ package com.meninocoiso.beatstarcommunity.presentation.viewmodel
 
 import android.net.Uri
 import android.util.Log
-import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.meninocoiso.beatstarcommunity.data.repository.CacheRepository
 import com.meninocoiso.beatstarcommunity.data.repository.ChartRepository
 import com.meninocoiso.beatstarcommunity.data.repository.DownloadRepository
-import com.meninocoiso.beatstarcommunity.data.repository.SettingsRepository
 import com.meninocoiso.beatstarcommunity.domain.enums.ErrorType
 import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
 import com.meninocoiso.beatstarcommunity.domain.model.Chart
@@ -43,7 +42,7 @@ private const val TAG = "ContentViewModel"
 class ContentViewModel @Inject constructor(
     private val downloadServiceConnection: DownloadServiceConnection,
     private val downloadRepository: DownloadRepository,
-    private val settingsRepository: SettingsRepository,
+    private val cacheRepository: CacheRepository,
     @Named("Local") private val localChartRepository: ChartRepository,
 ) : ViewModel() {
 
@@ -184,14 +183,14 @@ class ContentViewModel @Inject constructor(
 
     // Folder URI handling with caching for better performance
     suspend fun getFolderUri(): Uri? {
-        return cachedFolderUri ?: settingsRepository.getFolderUri()?.toUri()?.also {
+        return cachedFolderUri ?: cacheRepository.getFolderUri()?.also {
             cachedFolderUri = it
         }
     }
 
     suspend fun setFolderUri(uri: Uri) {
         cachedFolderUri = uri
-        settingsRepository.setFolderUri(uri.toString())
+        cacheRepository.setFolderUri(uri.toString())
     }
 
     // Helper method to get the current cacheState of a chart synchronously

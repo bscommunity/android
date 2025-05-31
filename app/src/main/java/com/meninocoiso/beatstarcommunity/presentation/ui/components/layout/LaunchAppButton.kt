@@ -11,7 +11,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import com.meninocoiso.beatstarcommunity.R
 import com.meninocoiso.beatstarcommunity.presentation.ui.components.dialog.RequestAppDownloadDialog
-import com.meninocoiso.beatstarcommunity.util.LaunchUtils.Companion.launchBeatClone
+import com.meninocoiso.beatstarcommunity.util.LinkingUtils.launchBeatClone
 
 @Composable
 fun LaunchAppButton(
