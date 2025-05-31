@@ -4,7 +4,7 @@ enum class ErrorType {
     UNKNOWN,
     PERMISSION_DENIED,
     FILE_NOT_FOUND,
-    NO_INTERNET,
+    /*NO_INTERNET,
     TIMEOUT,
     SERVER_ERROR,
     INVALID_URL,
@@ -13,5 +13,5 @@ enum class ErrorType {
     BAD_REQUEST,
     CONFLICT,
     UNSUPPORTED_MEDIA_TYPE,
-    INTERNAL_SERVER_ERROR
+    INTERNAL_SERVER_ERROR*/
 }
