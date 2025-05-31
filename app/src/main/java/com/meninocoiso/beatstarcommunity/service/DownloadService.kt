@@ -14,9 +14,9 @@ import com.meninocoiso.beatstarcommunity.data.manager.ChartManager
 import com.meninocoiso.beatstarcommunity.data.repository.DownloadRepository
 import com.meninocoiso.beatstarcommunity.domain.enums.ErrorType
 import com.meninocoiso.beatstarcommunity.domain.enums.OperationType
-import com.meninocoiso.beatstarcommunity.util.StringUtils.Companion.getFinalMessage
-import com.meninocoiso.beatstarcommunity.util.StringUtils.Companion.getInitialMessage
-import com.meninocoiso.beatstarcommunity.util.StringUtils.Companion.getProgressMessage
+import com.meninocoiso.beatstarcommunity.util.StringUtils.getFinalMessage
+import com.meninocoiso.beatstarcommunity.util.StringUtils.getInitialMessage
+import com.meninocoiso.beatstarcommunity.util.StringUtils.getProgressMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

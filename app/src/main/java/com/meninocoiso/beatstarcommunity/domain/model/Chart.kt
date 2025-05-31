@@ -1,5 +1,6 @@
 package com.meninocoiso.beatstarcommunity.domain.model
 
+import LocalDateSerializer
 import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -8,6 +9,7 @@ import com.meninocoiso.beatstarcommunity.domain.enums.Difficulty
 import com.meninocoiso.beatstarcommunity.domain.enums.Genre
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
+import java.time.LocalDate
 
 @Entity(tableName = "charts")
 @Serializable
@@ -26,7 +28,10 @@ data class Chart(
     @ColumnInfo(name = "is_explicit") val isExplicit: Boolean,
     @ColumnInfo(name = "is_featured") val isFeatured: Boolean,
     @ColumnInfo(name = "is_installed") var isInstalled: Boolean? = false,
-    @ColumnInfo(name = "available_version") var availableVersion: Version? = null,
+    @ColumnInfo(name = "downloads_sum") var downloadsSum: Int = 0,
+    @Serializable(with = LocalDateSerializer::class)
+    @ColumnInfo(name = "latest_published_at") val latestPublishedAt: LocalDate,
     @ColumnInfo(name = "latest_version") val latestVersion: Version,
+    @ColumnInfo(name = "available_version") var availableVersion: Version? = null,
     val contributors: List<Contributor>
 ) : Parcelable

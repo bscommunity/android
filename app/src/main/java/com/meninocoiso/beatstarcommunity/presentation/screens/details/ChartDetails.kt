@@ -61,7 +61,7 @@ import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentState
 import com.meninocoiso.beatstarcommunity.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.beatstarcommunity.service.DownloadEvent
 import com.meninocoiso.beatstarcommunity.util.DateUtils
-import com.meninocoiso.beatstarcommunity.util.LinkingUtils.Companion.shareChartLink
+import com.meninocoiso.beatstarcommunity.util.LinkingUtils.shareChartLink
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 

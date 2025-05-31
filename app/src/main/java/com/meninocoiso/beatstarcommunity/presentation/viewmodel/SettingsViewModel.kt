@@ -4,9 +4,10 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.beatstarcommunity.data.repository.AppUpdateRepository
+import com.meninocoiso.beatstarcommunity.data.repository.CacheRepository
 import com.meninocoiso.beatstarcommunity.data.repository.SettingsRepository
 import com.meninocoiso.beatstarcommunity.domain.enums.ThemePreference
-import com.meninocoiso.beatstarcommunity.domain.model.Settings
+import com.meninocoiso.beatstarcommunity.domain.model.internal.Settings
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -38,6 +39,7 @@ private const val TAG = "SettingsViewModel"
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
+    private val cacheRepository: CacheRepository,
     private val appUpdateRepository: AppUpdateRepository
 ) : ViewModel() {
     /**
@@ -57,7 +59,7 @@ class SettingsViewModel @Inject constructor(
     init {
         // Initialize the update state with the current version
         viewModelScope.launch {
-            val cachedVersion = settingsRepository.getLatestVersion()
+            val cachedVersion = appUpdateRepository.getLatestVersion()
             if (cachedVersion != "") {
                 val newState = appUpdateRepository.getUpdateState(cachedVersion)
                 
@@ -111,7 +113,7 @@ class SettingsViewModel @Inject constructor(
         
         viewModelScope.launch {
             // First try to get cached version
-            val cachedVersion = settingsRepository.getLatestVersion()
+            val cachedVersion = appUpdateRepository.getLatestVersion()
             
             Log.d(TAG, "Cached version: $cachedVersion")
             Log.d(TAG, "Current time: $currentTime")
@@ -139,7 +141,7 @@ class SettingsViewModel @Inject constructor(
                     Log.d(TAG, "Fetched version: $fetchedVersion")
                     
                     // Store the version in DataStore
-                    settingsRepository.setLatestVersion(fetchedVersion)
+                    appUpdateRepository.setLatestVersion(fetchedVersion)
 
                     _updateState.value = appUpdateRepository.getUpdateState(fetchedVersion)
                 }

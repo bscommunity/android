@@ -42,25 +42,14 @@ class ChartRepositoryLocal(
         return flow {
             val charts = when (sortBy) {
                 SortOption.MOST_DOWNLOADED -> chartDao.getChartsSortedByMostDownloaded(limit, offset)
-                else -> chartDao.getChartsSortedByLastUpdated(limit, offset)
+                SortOption.LAST_UPDATED -> chartDao.getChartsSortedByLastUpdated(limit, offset)
+                else -> chartDao.getAll(null, limit, offset)
             }
             emit(Result.success(charts))
         }.catch { e ->
             emit(Result.failure(e))
         }.flowOn(dispatcher)
     }
-    
-    override suspend fun getChartsById(ids: List<String>): Flow<Result<List<Chart>>> = flow {
-        emit(Result.success(chartDao.loadAllByIds(ids)))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
-    override suspend fun getLatestVersionsByChartIds(ids: List<String>): Flow<Result<List<Version>>> = flow {
-        emit(Result.success(chartDao.getLatestVersionsByChartIds(ids)))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
     
     override suspend fun getSuggestions(query: String, limit: Int?): Flow<Result<List<String>>> = flow {
         emit(Result.success(chartDao.getSuggestions(query, limit)))
@@ -77,6 +66,12 @@ class ChartRepositoryLocal(
     override suspend fun getInstallStatus(id: String): Boolean {
         return chartDao.getChart(id).isInstalled == true
     }
+
+    override suspend fun getLatestVersionsByChartIds(ids: List<String>): Flow<Result<List<Version>>> = flow {
+        emit(Result.success(chartDao.getLatestVersionsByChartIds(ids)))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }.flowOn(dispatcher)
 
     override suspend fun insertCharts(charts: List<Chart>): Flow<Result<Boolean>> = flow {
         chartDao.insert(charts)
@@ -121,9 +116,9 @@ class ChartRepositoryLocal(
     }.flowOn(dispatcher)
 
     override suspend fun updateCharts(charts: List<Chart>): Flow<Result<Boolean>> = flow {
-        // Log.d(TAG, "Updating charts: $charts")
+        Log.d(TAG, "Updating charts: $charts")
         chartDao.update(charts)
-        // Log.d(TAG, "Updated charts locally: ${chartDao.getAll()}")
+        Log.d(TAG, "Updated charts locally: ${chartDao.getAll()}")
         emit(Result.success(true))
     }.catch { e->
         emit(Result.failure(e))

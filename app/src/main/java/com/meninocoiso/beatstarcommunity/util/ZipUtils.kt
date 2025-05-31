@@ -127,7 +127,7 @@ suspend fun DocumentFile.unzipFrom(
 /**
  * Creates a directory path recursively in a DocumentFile
  */
-private suspend fun createDirectoryPath(path: String, rootDir: DocumentFile): DocumentFile {
+private fun createDirectoryPath(path: String, rootDir: DocumentFile): DocumentFile {
     val pathSegments = path.split('/')
     var currentDir = rootDir
 

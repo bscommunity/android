@@ -44,7 +44,7 @@ private const val MAX_HISTORY_SIZE = 5
 class WorkshopViewModel @Inject constructor(
     private val chartManager: ChartManager,
     private val cacheRepository: CacheRepository,
-    private val settingsRepository: SettingsRepository,
+    settingsRepository: SettingsRepository,
 ) : ViewModel() {
     val isExplicitAllowed: Flow<Boolean> = settingsRepository.settingsFlow
         .map { it.allowExplicitContent }
@@ -78,7 +78,7 @@ class WorkshopViewModel @Inject constructor(
         private set
     
     // Sorting and filtering
-    var currentSortOption by mutableStateOf(SortOption.LAST_UPDATED)
+    var currentSortOption by mutableStateOf<SortOption>(SortOption.LAST_UPDATED)
         private set
 
     var difficulties by mutableStateOf<List<Difficulty>?>(null)
@@ -93,9 +93,13 @@ class WorkshopViewModel @Inject constructor(
         
         // Initialize by loading cached charts, then fetch fresh data
         viewModelScope.launch {
-            val cachedResult = chartManager.loadCachedCharts()
-            handleCachedChartsResult(cachedResult)
+            currentSortOption = cacheRepository.getLatestWorkshopSort() ?: SortOption.LAST_UPDATED
+            
+            // Load cached charts first
+            val rootUri = cacheRepository.getFolderUri()
+            chartManager.loadCachedCharts(currentSortOption, rootUri)
 
+            // Then fetch fresh data
             fetchFeedCharts(false)
 
             // Observe scroll state for pagination
@@ -218,6 +222,9 @@ class WorkshopViewModel @Inject constructor(
         if (currentSortOption != sortOption) {
             currentSortOption = sortOption
             fetchFeedCharts(true)
+            viewModelScope.launch { 
+                cacheRepository.setLatestWorkshopSort(sortOption.name)
+            }
         }
     }
 
@@ -339,20 +346,6 @@ class WorkshopViewModel @Inject constructor(
                         // No-op
                     }
                 }
-            }
-        }
-    }
-
-    private fun handleCachedChartsResult(result: FetchResult<List<Chart>>) {
-        when (result) {
-            is FetchResult.Success -> {
-                chartManager.updateState(ChartState.Success)
-            }
-            is FetchResult.Error -> {
-                chartManager.updateState(ChartState.Error)
-            }
-            FetchResult.Loading -> {
-                // No-op, we're already in Loading cacheState
             }
         }
     }

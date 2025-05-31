@@ -32,6 +32,14 @@ class ChartRepositoryRemote @Inject constructor(
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
+    override suspend fun getLatestVersionsByChartIds(ids: List<String>): Flow<Result<List<Version>>> =
+        flow {
+            val charts = apiClient.getLatestVersionsByChartIds(ids)
+            emit(Result.success(charts))
+        }.catch { e ->
+            emit(Result.failure(e))
+        }.flowOn(dispatcher)
+
     override suspend fun getChartsSortedBy(
         sortBy: SortOption,
         limit: Int?,
@@ -42,21 +50,6 @@ class ChartRepositoryRemote @Inject constructor(
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
-
-    override suspend fun getChartsById(ids: List<String>): Flow<Result<List<Chart>>> = flow {
-        val charts = apiClient.getChartsById(ids)
-        emit(Result.success(charts))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
-    override suspend fun getLatestVersionsByChartIds(ids: List<String>): Flow<Result<List<Version>>> =
-        flow {
-            val charts = apiClient.getLatestVersionsByChartIds(ids)
-            emit(Result.success(charts))
-        }.catch { e ->
-            emit(Result.failure(e))
-        }.flowOn(dispatcher)
 
     override suspend fun getSuggestions(query: String, limit: Int?): Flow<Result<List<String>>> =
         flow {
