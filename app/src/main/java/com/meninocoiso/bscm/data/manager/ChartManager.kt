@@ -243,16 +243,16 @@ class ChartManager @Inject constructor(
                         if (deletedCharts.isNotEmpty()) {
                             Log.d(TAG, "Removing ${deletedCharts.size} deleted charts from cache")
                             CoroutineScope(Dispatchers.IO).launch {
-                                localChartRepository.deleteCharts(deletedCharts)
+                                localChartRepository.deleteCharts(deletedCharts).first()
                             }
                         }
 
                         // Insert or update the new charts in local repository
                         // Log.d(TAG, "Inserting/updating ${remoteCharts.size} charts into local storage")
                         CoroutineScope(Dispatchers.IO).launch {
-                            localChartRepository.updateCharts(remoteCharts)
-                        
+                            localChartRepository.updateCharts(remoteCharts).first()
                         }
+                        // Log.d(TAG, "Charts updated in local storage")
                     }
 
                     // Update the in-memory cache with the new charts
@@ -555,41 +555,20 @@ class ChartManager @Inject constructor(
 
 
     /**
-     * Update multiple charts in memory
+     * Updates multiple charts in memory, with an optional cache size limit for non-installed charts.
+     * Installed charts are always preserved regardless of the limit.
+     *
+     * @param charts The list of charts to update.
+     * @param limitCache If true, applies the MAX_CACHED_CHARTS limit to non-installed charts.
+     * @return The final list of charts in cache.
      */
-    private fun updateCharts(charts: List<Chart>) {
-        // Log.d("SERVER", charts.joinToString { it.track })
-
-        val currentCache = _cachedCharts.value
-        val updatedList = charts.map { chart ->
-            val existingChart = currentCache.find { it.id == chart.id }
-            if (existingChart != null) {
-                chart.copy(
-                    isInstalled = existingChart.isInstalled,
-                    availableVersion = existingChart.availableVersion
-                )
-            } else {
-                chart
-            }
-        }.toMutableList()
-
-        // Log.d("UPDATED", updatedList.joinToString { it.track })
-
-        _cachedCharts.value = updatedList
-    }
-
-    /**
-     * Update charts while respecting the maximum cache size limit
-     * Installed charts are preserved regardless of limit
-     */
-    private fun updateChartsWithLimit(newCharts: List<Chart>): List<Chart> {
-        // Updates the cached charts while respecting the maximum cache size limit
+    private fun updateCharts(charts: List<Chart>, limitCache: Boolean = true): List<Chart> {
         val currentCache = _cachedCharts.value
         val installedCharts = currentCache.filter { it.isInstalled == true }
             .associateBy { it.id }
 
-        // Updates the new charts with installed status and available version
-        val updatedNewCharts = newCharts.map { chart ->
+        // Update charts with installed status and available version from cache
+        val updatedCharts = charts.map { chart ->
             val installed = installedCharts[chart.id]
             if (installed != null) {
                 chart.copy(
@@ -601,18 +580,19 @@ class ChartManager @Inject constructor(
             }
         }
 
-        val nonInstalled = updatedNewCharts.filter { it.isInstalled != true }
-
-        // Limit the number of non-installed charts to MAX_CACHED_CHARTS
-        val limitedNonInstalled = if (nonInstalled.size > MAX_CACHED_CHARTS) {
-            nonInstalled.takeLast(MAX_CACHED_CHARTS)
+        val finalList = if (limitCache) {
+            val nonInstalled = updatedCharts.filter { it.isInstalled != true }
+            // Limit the number of non-installed charts to MAX_CACHED_CHARTS
+            val limitedNonInstalled = if (nonInstalled.size > MAX_CACHED_CHARTS) {
+                nonInstalled.takeLast(MAX_CACHED_CHARTS)
+            } else {
+                nonInstalled
+            }
+            // Keep original order, but only with the limited non-installed charts
+            updatedCharts.filter { it.isInstalled == true || it in limitedNonInstalled }
         } else {
-            nonInstalled
+            updatedCharts.toMutableList()
         }
-
-        // Keeps the original order, but only with the limited non-installed charts
-        val finalList =
-            updatedNewCharts.filter { it.isInstalled == true || it in limitedNonInstalled }
 
         _cachedCharts.value = finalList
         return finalList
