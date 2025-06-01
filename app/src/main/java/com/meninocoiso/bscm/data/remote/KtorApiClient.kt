@@ -19,11 +19,16 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import jakarta.inject.Inject
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+
+@Serializable
+data class ApiError(val message: String)
 
 class KtorApiClient @Inject constructor() : ApiClient {
     private val client = HttpClient(Android) {
@@ -77,18 +82,34 @@ class KtorApiClient @Inject constructor() : ApiClient {
     }
 
     override suspend fun getFeedCharts(sortBy: SortOption, limit: Int?, offset: Int): List<Chart> {
-        val charts = client.get("charts"){
+        val response = client.get("charts") {
             url {
-                parameters.append("fetchContributors", "true")
                 parameters.append("sortBy", sortBy.toString())
                 limit?.let { parameters.append("limit", it.toString()) }
                 parameters.append("offset", offset.toString())
             }
         }
-        
-        // print("API response: $charts")
-        
-        return charts.body<List<Chart>>()
+
+        // Check the response status first
+        when (response.status) {
+            HttpStatusCode.OK -> {
+                return response.body<List<Chart>>()
+            }
+            HttpStatusCode.TooManyRequests -> {
+                val errorResponse = response.body<ApiError>()
+                // throw Exception("Rate limited: ${errorResponse.message}")
+                throw Exception(errorResponse.message)
+            }
+            else -> {
+                // Handle other error cases
+                val errorResponse = try {
+                    response.body<ApiError>()
+                } catch (e: Exception) {
+                    ApiError("Unknown error occurred")
+                }
+                throw Exception("API Error (${response.status.value}): ${errorResponse.message}")
+            }
+        }
     }
 
     override suspend fun getCharts(
@@ -100,7 +121,6 @@ class KtorApiClient @Inject constructor() : ApiClient {
     ): List<Chart> {
         return client.get("charts"){
             url {
-                parameters.append("fetchContributors", "true")
                 query?.let { parameters.append("query", it) }
                 difficulties?.let { parameters.append("difficulties", it.joinToString(",")) }
                 genres?.let { parameters.append("genres", it.joinToString(",")) }

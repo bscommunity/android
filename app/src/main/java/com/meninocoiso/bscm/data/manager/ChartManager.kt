@@ -205,70 +205,65 @@ class ChartManager @Inject constructor(
 
         Log.d(TAG, "Fetching feed charts with sortBy: $sortBy, limit: $limit, offset: $offset")
 
-        try {
-            // Only check cache for initial load (offset=0) and when not forcing refresh
-            if (offset == 0 && !forceRefresh) {
-                val cachedCharts = localChartRepository.getChartsSortedBy(sortBy, limit).first()
+        // Only check cache for initial load (offset=0) and when not forcing refresh
+        if (offset == 0 && !forceRefresh) {
+            val cachedCharts = localChartRepository.getChartsSortedBy(sortBy, limit).first()
 
-                cachedCharts.fold(
-                    onSuccess = { charts ->
-                        if (charts.isNotEmpty()) {
-                            Log.d(TAG, "Using ${charts.size} cached charts for feed")
-                            updateCharts(charts)
-                            emit(FetchResult.Success(charts))
-                            return@flow
-                        }
-                    },
-                    onFailure = { /* Continue to remote fetch if cache fails */ }
-                )
-            }
+            cachedCharts.fold(
+                onSuccess = { charts ->
+                    if (charts.isNotEmpty()) {
+                        Log.d(TAG, "Using ${charts.size} cached charts for feed")
+                        updateCharts(charts)
+                        emit(FetchResult.Success(charts))
+                        return@flow
+                    }
+                },
+                onFailure = { /* Continue to remote fetch if cache fails */ }
+            )
+        }
 
-            Log.d(TAG, "Cache miss or forced refresh, fetching from remote")
+        Log.d(TAG, "Cache miss or forced refresh, fetching from remote")
 
-            // Fetch from remote
-            val remoteResult = remoteChartRepository.getChartsSortedBy(
-                sortBy = sortBy,
-                limit = limit,
-                offset = offset
-            ).first()
+        // Fetch from remote
+        val remoteResult = remoteChartRepository.getChartsSortedBy(
+            sortBy = sortBy,
+            limit = limit,
+            offset = offset
+        ).first()
 
-            remoteResult.fold(
-                onSuccess = { remoteCharts ->
-                    Log.d(TAG, "Fetched ${remoteCharts.size} feed charts from remote")
+        remoteResult.fold(
+            onSuccess = { remoteCharts ->
+                Log.d(TAG, "Fetched ${remoteCharts.size} feed charts from remote")
 
-                    // For initial load
-                    if (offset == 0) {
-                        // Check and remove charts that are no longer on remote
-                        val deletedCharts = handleDeletedCharts(remoteCharts)
-                        if (deletedCharts.isNotEmpty()) {
-                            Log.d(TAG, "Removing ${deletedCharts.size} deleted charts from cache")
-                            CoroutineScope(Dispatchers.IO).launch {
-                                localChartRepository.deleteCharts(deletedCharts).first()
-                            }
-                        }
-
-                        // Insert or update the new charts in local repository
-                        // Log.d(TAG, "Inserting/updating ${remoteCharts.size} charts into local storage")
+                // For initial load
+                if (offset == 0) {
+                    // Check and remove charts that are no longer on remote
+                    val deletedCharts = handleDeletedCharts(remoteCharts)
+                    if (deletedCharts.isNotEmpty()) {
+                        Log.d(TAG, "Removing ${deletedCharts.size} deleted charts from cache")
                         CoroutineScope(Dispatchers.IO).launch {
-                            localChartRepository.updateCharts(remoteCharts).first()
+                            localChartRepository.deleteCharts(deletedCharts).first()
                         }
-                        // Log.d(TAG, "Charts updated in local storage")
                     }
 
-                    // Update the in-memory cache with the new charts
-                    updateCharts(remoteCharts)
-
-                    emit(FetchResult.Success(remoteCharts))
-                },
-                onFailure = { error ->
-                    Log.e(TAG, "Failed to fetch feed charts", error)
-                    emit(FetchResult.Error("Failed to fetch feed charts", error))
+                    // Insert or update the new charts in local repository
+                    // Log.d(TAG, "Inserting/updating ${remoteCharts.size} charts into local storage")
+                    CoroutineScope(Dispatchers.IO).launch {
+                        localChartRepository.updateCharts(remoteCharts).first()
+                    }
+                    // Log.d(TAG, "Charts updated in local storage")
                 }
-            )
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error fetching feed charts", e)
-            emit(FetchResult.Error("Unexpected error fetching feed charts", e))
-        }
+
+                // Update the in-memory cache with the new charts
+                updateCharts(remoteCharts)
+
+                emit(FetchResult.Success(remoteCharts))
+            },
+            onFailure = { error ->
+                Log.e(TAG, "Failed to fetch feed charts", error)
+                emit(FetchResult.Error(error.message ?: "Failed to fetch feed charts", error))
+            }
+        )
     }.catch { e ->
         Log.e(TAG, "Exception in fetchFeedCharts flow", e)
         emit(FetchResult.Error("Exception in feed charts flow", e))
