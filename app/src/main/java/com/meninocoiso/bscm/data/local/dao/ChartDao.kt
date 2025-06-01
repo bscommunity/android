@@ -18,7 +18,7 @@ interface ChartDao {
     fun getChart(id: String): Chart
 
     //@Query("SELECT latest_version FROM charts WHERE id IN (:ids)")
-    @Query("SELECT v.* FROM charts c JOIN versions v ON c.latest_version = v.id WHERE c.id IN (:ids)")
+    @Query("SELECT * from versions WHERE chart_id IN (:ids) ORDER BY `index` DESC")
     fun getLatestVersionsByChartIds(ids: List<String>): List<Version>
 
     @Query("""
