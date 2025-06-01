@@ -9,6 +9,7 @@ import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.util.DevelopmentUtils
+import com.meninocoiso.bscm.util.KeystoreUtils
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
@@ -17,7 +18,9 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.post
+import io.ktor.http.ContentType
 import io.ktor.http.URLProtocol
+import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import jakarta.inject.Inject
 import kotlinx.serialization.json.Json
@@ -50,14 +53,14 @@ class KtorApiClient @Inject constructor() : ApiClient {
                 port = 8080
             }
 
-            /*val timestamp = System.currentTimeMillis().toString()
+            val timestamp = System.currentTimeMillis().toString()
             val payload = "$timestamp:"
             val signature = KeystoreUtils.signData(payload)
 
             headers.append("X-App-Timestamp", timestamp)
             headers.append("X-App-Signature", signature)
 
-            contentType(ContentType.Application.Json)*/
+            contentType(ContentType.Application.Json)
         }
     }
 
