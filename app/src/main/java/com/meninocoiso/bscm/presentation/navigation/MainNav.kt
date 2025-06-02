@@ -11,7 +11,11 @@ import com.meninocoiso.bscm.presentation.screens.details.ChartDetails
 import com.meninocoiso.bscm.presentation.screens.details.ChartDetailsRoute
 import com.meninocoiso.bscm.presentation.screens.details.ChartDetailsScreen
 import com.meninocoiso.bscm.presentation.screens.details.DeepLinkChartDetails
+import kotlinx.serialization.Serializable
 import kotlin.reflect.typeOf
+
+@Serializable
+object MainRoute
 
 @Composable
 fun MainNav(hasUpdate: Boolean) {

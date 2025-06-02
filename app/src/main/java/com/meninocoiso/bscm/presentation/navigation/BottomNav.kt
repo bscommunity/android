@@ -6,20 +6,18 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.toRoute
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.UpdatesSection
 import com.meninocoiso.bscm.domain.model.Chart
-
 import com.meninocoiso.bscm.presentation.screens.SettingsScreen
 import com.meninocoiso.bscm.presentation.screens.details.ChartDetails
 import com.meninocoiso.bscm.presentation.screens.updates.UpdatesScreen
@@ -29,7 +27,16 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 @Serializable
-object MainRoute
+sealed class Route {
+    @Serializable
+    object Workshop : Route()
+
+    @Serializable
+    data class Updates(val section: UpdatesSection = UpdatesSection.Workshop) : Route()
+
+    @Serializable
+    object Settings : Route()
+}
 
 val bottomNavigationItems = listOf(
     BottomNavigationItem(
@@ -40,6 +47,8 @@ val bottomNavigationItems = listOf(
         hasNews = false
     ),
     BottomNavigationItem(
+        // NOTE: If you use routes with arguments as your BottomBar navigation routes, 
+        // // first of all, you should instantiate such classes Route.Updates():
         route = Route.Updates(section = UpdatesSection.Workshop),
         title = "Updates",
         selectedIcon = R.drawable.baseline_deployed_code_24,
@@ -61,7 +70,7 @@ fun BottomNav(
     navController: NavHostController,
     hasUpdate: Boolean = false
 ) {
-    var selectedItemIndex by rememberSaveable { mutableIntStateOf(0) }
+    val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
 
     // We update Settings item icon based on the update status
     val updatedBottomNavigationItems = remember(hasUpdate) {
@@ -78,14 +87,6 @@ fun BottomNav(
     val coroutineScope = rememberCoroutineScope()
 
     var fabExtended by remember { mutableStateOf(true) }
-    // var fabOffset by remember { mutableFloatStateOf(0f) }
-
-    /*LaunchedEffect(snackbarHostState) {
-        snapshotFlow { snackbarHostState.currentSnackbarData }
-            .collect { snackbarData ->
-                fabOffset = if (snackbarData != null) -250f else 0f
-            }
-    }*/
 
     val onSnackbar: (String) -> Unit = { message ->
         coroutineScope.launch {
@@ -110,9 +111,24 @@ fun BottomNav(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             BottomNavBar(
-                selectedItemIndex,
-                setItemIndex = { selectedItemIndex = it },
-                navController = bottomNavController,
+                navBackStackEntry = navBackStackEntry,
+                onClick = { route ->
+                    bottomNavController.navigate(route) {
+                        // Pop up to the start destination of the graph to
+                        // avoid building up a large stack of destinations
+                        // on the back stack as users select items
+                        popUpTo(bottomNavController.graph.startDestinationId) {
+                            saveState = true
+                        }
+
+                        // Avoid multiple copies of the same destination when
+                        // reselecting the same item
+                        launchSingleTop = true
+
+                        // Restore cacheState when reselecting a previously selected item
+                        restoreState = true
+                    }
+                },
                 bottomNavigationItems = updatedBottomNavigationItems,
             )
         },
@@ -121,8 +137,13 @@ fun BottomNav(
                 onNavigateToUpdates = {
                     bottomNavController.navigate(
                         route = Route.Updates(section = UpdatesSection.Installations)
-                    )
-                    selectedItemIndex = 1
+                    ) {
+                        launchSingleTop = true
+                        restoreState = true
+                        popUpTo(bottomNavController.graph.startDestinationId) {
+                            saveState = true
+                        }
+                    }
                 },
                 extended = fabExtended,
                 /*modifier = Modifier.graphicsLayer {
