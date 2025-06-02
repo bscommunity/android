@@ -138,8 +138,6 @@ fun BottomNav(
                     bottomNavController.navigate(
                         route = Route.Updates(section = UpdatesSection.Installations)
                     ) {
-                        launchSingleTop = true
-                        restoreState = true
                         popUpTo(bottomNavController.graph.startDestinationId) {
                             saveState = true
                         }

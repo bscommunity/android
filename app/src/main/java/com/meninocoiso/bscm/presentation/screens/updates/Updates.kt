@@ -38,7 +38,7 @@ private val TabsHeight = 55.dp
 
 @Composable
 fun UpdatesScreen(
-	section: UpdatesSection = UpdatesSection.Workshop,
+	section: UpdatesSection,
 	onNavigateToDetails: OnNavigateToDetails,
 	onSnackbar: (String) -> Unit,
 	onFabStateChange: (Boolean) -> Unit,
@@ -51,6 +51,7 @@ fun UpdatesScreen(
 
 	// Scroll (horizontally) to the correct section
 	LaunchedEffect(section) {
+		println("UpdatesScreen LaunchedEffect: section = $section")
 		val pageIndex = when (section) {
 			UpdatesSection.Workshop -> 0
 			UpdatesSection.Installations -> 1
