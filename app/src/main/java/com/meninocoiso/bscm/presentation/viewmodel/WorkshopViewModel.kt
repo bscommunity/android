@@ -248,7 +248,7 @@ class WorkshopViewModel @Inject constructor(
         
         snapshotFlow { searchFieldState.text }
             // Let fast typers get multiple keystrokes in before kicking off a search
-            .debounce(300)
+            .debounce(150)
             // collectLatest cancels the previous search if it's still running 
             // when there's a new change.             
             .collectLatest { currentQuery ->
