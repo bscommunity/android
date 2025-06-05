@@ -12,9 +12,9 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.meninocoiso.bscm.BuildConfig
+import com.meninocoiso.bscm.data.manager.DownloadManager
 import com.meninocoiso.bscm.domain.model.internal.UpdateCache
 import com.meninocoiso.bscm.presentation.viewmodel.AppUpdateState
-import com.meninocoiso.bscm.data.manager.DownloadManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
