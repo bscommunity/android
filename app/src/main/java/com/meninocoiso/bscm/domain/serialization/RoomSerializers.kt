@@ -23,7 +23,7 @@ class Converters {
     // Chart
     private val json = Json { ignoreUnknownKeys = true }
 
-    // StreamingLink List converters
+    // StreamingLink
     @TypeConverter
     fun fromStreamingLinkList(streamingLinks: List<StreamingLink>): String {
         return json.encodeToString(streamingLinks)

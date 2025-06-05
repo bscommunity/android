@@ -22,17 +22,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.domain.enums.StreamingPlatform
 import com.meninocoiso.bscm.domain.model.StreamingLink
 import com.meninocoiso.bscm.presentation.ui.components.RadioGroupUI
-
-enum class StreamingPlatform {
-    SPOTIFY,
-    APPLE_MUSIC,
-    YOUTUBE_MUSIC,
-    DEEZER,
-    TIDAL,
-    // SOUNDCLOUD,
-}
 
 val StreamingPlatformStrings = mapOf(
     StreamingPlatform.SPOTIFY to "Spotify",
@@ -40,7 +32,8 @@ val StreamingPlatformStrings = mapOf(
     StreamingPlatform.YOUTUBE_MUSIC to "Youtube Music",
     StreamingPlatform.DEEZER to "Deezer",
     StreamingPlatform.TIDAL to "Tidal",
-    // StreamingPlatform.SOUNDCLOUD to "SoundCloud"
+    StreamingPlatform.SOUNDCLOUD to "SoundCloud",
+    StreamingPlatform.AMAZON_MUSIC to "Amazon Music"
 )
 
 val StreamingPlatformIcons = mapOf(
@@ -49,28 +42,18 @@ val StreamingPlatformIcons = mapOf(
     StreamingPlatform.YOUTUBE_MUSIC to R.drawable.platform_youtube_music,
     StreamingPlatform.DEEZER to R.drawable.platform_deezer,
     StreamingPlatform.TIDAL to R.drawable.platform_tidal,
-    // StreamingPlatform.SOUNDCLOUD to "soundcloud"
+    StreamingPlatform.AMAZON_MUSIC to R.drawable.platform_amazonmusic,
+    StreamingPlatform.SOUNDCLOUD to R.drawable.platform_soundcloud
 )
-
-fun cleanName(name: String?): String {
-    return name?.replace(" ", "")?.lowercase() ?: ""
-}
 
 fun getAvailablePlatforms(
     streamingLinks: List<StreamingLink>
 ): List<Triple<StreamingPlatform, String, Int?>> {
-    val cleanedLinks = streamingLinks.associate { cleanName(it.platform) to it.url }
-    return StreamingPlatform.entries
-        .filter { platform ->
-            cleanName(StreamingPlatformStrings[platform]) in cleanedLinks.keys
-        }
-        .map { platform ->
-            Triple(
-                platform,
-                StreamingPlatformStrings[platform] ?: "",
-                StreamingPlatformIcons[platform]
-            )
-        }
+    return streamingLinks.mapNotNull { link ->
+        val name = StreamingPlatformStrings[link.platform]
+        val icon = StreamingPlatformIcons[link.platform]
+        if (name != null) Triple(link.platform, name, icon) else null
+    }
 }
 
 private const val TAG = "ListenTrackDialog"
@@ -139,7 +122,7 @@ fun ListenTrackDialog(
 
                     platform?.let { selectedPlatform ->
                         val url = streamingLinks.find {
-                            cleanName(it.platform) == cleanName(StreamingPlatformStrings[selectedPlatform])
+                            it.platform == selectedPlatform
                         }?.url
 
                         Log.d(TAG, "String: ${StreamingPlatformStrings[selectedPlatform]}")
@@ -149,9 +132,7 @@ fun ListenTrackDialog(
                             Log.d(TAG, "Opening link: $it")
                             val intent = Intent(Intent.ACTION_VIEW, it.toUri())
                             context.startActivity(intent)
-                        }/* ?: run {
-                            Log.d(TAG, "No URL found for platform: $selectedPlatform")
-                        }*/
+                        }
                     }
 
                     platform = null
