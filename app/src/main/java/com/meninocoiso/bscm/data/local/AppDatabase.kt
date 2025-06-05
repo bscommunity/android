@@ -5,14 +5,16 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.StreamingLink
 import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.domain.serialization.Converters
 
 @Database(
-    version = 10,
+    version = 11,
     entities = [
         Chart::class,
         Version::class,
+        StreamingLink::class
     ],
     exportSchema = false
 )
