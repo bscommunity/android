@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -21,7 +22,10 @@ import javax.inject.Inject
 
 sealed interface MainActivityUiState {
 	data object Loading : MainActivityUiState
-	data class Success(val settings: Settings) : MainActivityUiState
+	data class Success(
+		val settings: Settings,
+		val latestUpdateVersion: String,	
+	) : MainActivityUiState
 }
 
 @HiltViewModel
@@ -30,21 +34,16 @@ class MainActivityViewModel @Inject constructor(
 	private val appUpdateRepository: AppUpdateRepository,
 	private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
-	val uiState: StateFlow<MainActivityUiState> = settingsRepository.settingsFlow.map {
-		MainActivityUiState.Success(it)
-	}.stateIn(
-		scope = viewModelScope,
-		initialValue = MainActivityUiState.Loading,
-		started = SharingStarted.WhileSubscribed(5_000),
-	)
-	
-	val latestUpdateVersion = appUpdateRepository.appUpdateFlow
-		.map { it.latestUpdateVersion }
-		.stateIn(
-			scope = viewModelScope,
-			initialValue = "",
-			started = SharingStarted.WhileSubscribed(5_000),
-		)
+	val uiState: StateFlow<MainActivityUiState> =
+    settingsRepository.settingsFlow
+        .combine(appUpdateRepository.appUpdateFlow.map { it.latestUpdateVersion }) { settings, latestUpdateVersion ->
+            MainActivityUiState.Success(settings, latestUpdateVersion)
+        }
+        .stateIn(
+            scope = viewModelScope,
+            initialValue = MainActivityUiState.Loading,
+            started = SharingStarted.WhileSubscribed(5_000),
+        )
 
 	init {
 		viewModelScope.launch {
