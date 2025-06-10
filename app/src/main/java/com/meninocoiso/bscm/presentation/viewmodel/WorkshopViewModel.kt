@@ -35,10 +35,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
 private const val TAG = "WorkshopViewModel"
 private const val BATCH_SIZE = 10
 private const val MAX_HISTORY_SIZE = 5
+private const val SUGGESTION_DEBOUNCE_MILLIS = 600L
+// 600L works as a value to prevent calling the API again after fast-deleting, since Android
+// has an initial delay, after deleting the first char, to start fast-deleting the remaining
 
 @HiltViewModel
 class WorkshopViewModel @Inject constructor(
@@ -243,27 +247,32 @@ class WorkshopViewModel @Inject constructor(
 
     @OptIn(FlowPreview::class)
     suspend fun observeSuggestions() {
-        var lastQuery = ""
         Log.d(TAG, "Observing suggestions for search field")
-        
-        snapshotFlow { searchFieldState.text }
-            // Let fast typers get multiple keystrokes in before kicking off a search
-            .debounce(150)
-            // collectLatest cancels the previous search if it's still running 
-            // when there's a new change.             
-            .collectLatest { currentQuery ->
-                // Only process if query has meaningfully changed
-                if (currentQuery.toString() != lastQuery) {
-                    lastQuery = currentQuery.toString()
 
-                    suggestions = when {
-                        lastQuery.length > 1 -> {
-                            chartManager.getSuggestions(currentQuery.toString()).first()
+        snapshotFlow { searchFieldState.text.toString() } // Emit string directly
+            // We only process the text if it has changed
+            .distinctUntilChanged()
+            // Let fast typers get multiple keystrokes in before kicking off a search
+            .debounce(SUGGESTION_DEBOUNCE_MILLIS)
+            // collectLatest cancels the previous search if it's still running 
+            // when there's a new change.   
+            .collectLatest { query ->
+                suggestions = when {
+                    query.length > 1 -> {
+                        Log.d(TAG, "Fetching suggestions for query: $query")
+                        try {
+                            chartManager.getSuggestions(query).first()
+                        } catch (e: CancellationException) {
+                            Log.d(TAG, "Suggestion fetching cancelled for query: $query")
+                            throw e // Re-throw to cancel the flow
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error fetching suggestions for query: $query", e)
+                            null // Clean suggestions on error
                         }
-                        else -> {
-                            // Clear suggestions for very short queries
-                            null
-                        }
+                    }
+                    else -> {
+                        // Clean suggestions for very short or empty queries
+                        null
                     }
                 }
             }
