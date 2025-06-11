@@ -46,7 +46,7 @@ fun GameplayPreview(
                             <meta name="viewport" content="width=device-width, initial-scale=1.0">
                             <style>
                                 body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: transparent; }
-                                #player { position: absolute; width: 100%; height: 100%; border: none }
+                                #player { position: absolute; left: -50%; width: 200%; height: 100%; border: none }
                             </style>
                         </head>
                         <body>

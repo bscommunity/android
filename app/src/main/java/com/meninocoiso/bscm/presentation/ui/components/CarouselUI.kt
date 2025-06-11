@@ -85,7 +85,7 @@ fun MediaCarousel(items: List<CarouselItem>) {
                 }
 
                 is CarouselItem.VideoItem -> {
-                    if (item.videoId == null) {
+                    if (item.videoId.isNullOrEmpty()) {
                         Box(
                             modifier = Modifier
                                 .maskClip(MaterialTheme.shapes.extraLarge)

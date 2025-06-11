@@ -21,7 +21,7 @@ data class Version(
     @ColumnInfo(name = "effects_amount") val effectsAmount: Int,
     val bpm: Int,
     @ColumnInfo(name = "chart_url") val chartUrl: String,
-    @ColumnInfo(name = "chart_preview_urls") val chartPreviewUrls: List<String> = emptyList(),
+    @ColumnInfo(name = "chart_preview_url") val chartPreviewUrl: String? = null,
     @ColumnInfo(name = "downloads_amount") val downloadsAmount: Int = 0,
     @ColumnInfo(name = "known_issues") val knownIssues: List<KnownIssue> = emptyList(),
     @Serializable(with = LocalDateSerializer::class)
