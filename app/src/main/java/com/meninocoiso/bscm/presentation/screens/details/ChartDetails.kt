@@ -306,7 +306,7 @@ fun ChartDetailsScreen(
                     imageUrl = chart.coverUrl,
                 ),
                 CarouselItem.VideoItem(
-                    videoId = null,
+                    videoId = chart.latestVersion.chartPreviewUrl
                 )
             ))
 
