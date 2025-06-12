@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.buildAnnotatedString
@@ -110,6 +111,66 @@ fun ChartAuthorsPreview() {
     )
 }
 
+private fun TrackTitle(
+    track: String,
+    isExplicit: Boolean,
+    isDeluxe: Boolean
+): AnnotatedString {
+    return buildAnnotatedString {
+        append(track)
+
+        if (isExplicit) {
+            // Add spacing before the icon
+            append("  ") // Two spaces for approximate spacing
+            appendInlineContent("explicit", "[E]")
+        }
+        if (isDeluxe) {
+            // Add spacing before the icon
+            append("  ") // Two spaces for approximate spacing
+            appendInlineContent("deluxe", "[D]")
+        }
+    }
+}
+
+private fun TrackTitleInlineContent(
+    track: String,
+    isExplicit: Boolean,
+    isDeluxe: Boolean
+): Map<String, InlineTextContent> {
+    val inlineContent = mutableMapOf<String, InlineTextContent>()
+    if (isExplicit) {
+        inlineContent["explicit"] = InlineTextContent(
+            Placeholder(
+                width = 14.sp,
+                height = 14.sp,
+                placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
+            )
+        ) {
+            Icon(
+                modifier = Modifier.size(14.dp),
+                painter = painterResource(R.drawable.explicit),
+                contentDescription = "Explicit"
+            )
+        }
+    }
+    if (isDeluxe) {
+        inlineContent["deluxe"] = InlineTextContent(
+            Placeholder(
+                width = 14.sp,
+                height = 14.sp,
+                placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
+            )
+        ) {
+            Icon(
+                modifier = Modifier.size(14.dp),
+                painter = painterResource(R.drawable.deluxe),
+                contentDescription = "Deluxe"
+            )
+        }
+    }
+    return inlineContent
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ChartPreview(
@@ -159,48 +220,16 @@ fun ChartPreview(
                                 modifier = Modifier.weight(1f),
                                 style = MaterialTheme.typography.titleMedium,
                                 lineHeight = 20.sp,
-                                text = buildAnnotatedString {
-                                    append(chart.track)
-
-                                    if (chart.isExplicit) {
-                                        // Add spacing before the icon
-                                        append("  ") // Two spaces for approximate spacing
-                                        appendInlineContent("explicit", "[E]")
-                                    }
-                                    if (chart.isDeluxe) {
-                                        // Add spacing before the icon
-                                        append("  ") // Two spaces for approximate spacing
-                                        appendInlineContent("deluxe", "[D]")
-                                    }
-                                },
-                                inlineContent = mapOf(
-                                    "explicit" to InlineTextContent(
-                                        Placeholder(
-                                            width = 14.sp,
-                                            height = 14.sp,
-                                            placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
-                                        )
-                                    ) {
-                                        Icon(
-                                            modifier = Modifier.size(14.dp),
-                                            painter = painterResource(R.drawable.explicit),
-                                            contentDescription = "Explicit"
-                                        )
-                                    },
-                                    "deluxe" to InlineTextContent(
-                                        Placeholder(
-                                            width = 14.sp,
-                                            height = 14.sp,
-                                            placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
-                                        )
-                                    ) {
-                                        Icon(
-                                            modifier = Modifier.size(14.dp),
-                                            painter = painterResource(R.drawable.deluxe),
-                                            contentDescription = "Deluxe"
-                                        )
-                                    }
-                                )
+                                text = TrackTitle(
+                                    track = chart.track,
+                                    isExplicit = chart.isExplicit,
+                                    isDeluxe = chart.isDeluxe
+                                ),
+                                inlineContent = TrackTitleInlineContent(
+                                    track = chart.track,
+                                    isExplicit = chart.isExplicit,
+                                    isDeluxe = chart.isDeluxe
+                                ),
                             )
 
                             Text(
@@ -255,11 +284,20 @@ fun LocalChartPreview(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = chart.track,
                             style = MaterialTheme.typography.titleMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            text = TrackTitle(
+                                track = chart.track,
+                                isExplicit = chart.isExplicit,
+                                isDeluxe = chart.isDeluxe
+                            ),
+                            inlineContent = TrackTitleInlineContent(
+                                track = chart.track,
+                                isExplicit = chart.isExplicit,
+                                isDeluxe = chart.isDeluxe
+                            )
                         )
                         Text(
                             style = MaterialTheme.typography.labelLarge,

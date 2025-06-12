@@ -65,7 +65,7 @@ fun StoragePermissionDialog(
         text = {
             Text(
                 text = "To download charts, the app needs permission to access your storage.\n" +
-                        "Please select or create a 'beatstar' folder on the root folder."
+                        "Please select or create a 'beatstar' folder on the root folder of your phone."
             )
         },
         onDismissRequest = onDismiss,
