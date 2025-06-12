@@ -67,15 +67,10 @@ fun UpdatesSection(
     }
 
     Section(
-        title = when (state) {
-            is ChartState.Success -> {
-                if (charts.isNotEmpty()) {
-                    "Updates available (${charts.size})"
-                } else {
-                    "Updates"
-                }
-            }
-            else -> null
+        title = if (charts.isNotEmpty()) {
+            "Updates available (${charts.size})"
+        } else {
+            "Updates"
         },
         thickness = 0.dp,
         titleModifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
@@ -98,7 +93,7 @@ fun UpdatesSection(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(20.dp)
+                            .height(21.5.dp)
                             .clip(RoundedCornerShape(8.dp))
                             .shimmerLoading(
                                 colors = listOf(
