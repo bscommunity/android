@@ -177,10 +177,10 @@ fun GameplayPreview(
                     )
                 )
                 CoilImage(
-                    imageModel = { "https://img.youtube.com/vi/$videoId/0.jpg" },
+                    imageModel = { "http://img.youtube.com/vi/$videoId/maxresdefault.jpg" },
                     modifier = Modifier
                         .zIndex(1f)
-                        .matchParentSize(),
+                        .fillMaxSize(),
                     imageOptions = ImageOptions(
                         contentScale = ContentScale.Crop,
                         alignment = Alignment.Center,
