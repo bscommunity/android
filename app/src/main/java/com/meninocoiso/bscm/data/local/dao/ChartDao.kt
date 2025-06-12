@@ -15,7 +15,7 @@ interface ChartDao {
     fun getAll(query: String? = null, limit: Int? = null, offset: Int = 0): List<Chart>
 
     @Query("SELECT * FROM charts WHERE id = :id")
-    fun getChart(id: String): Chart
+    fun getChart(id: String): Chart?
 
     //@Query("SELECT latest_version FROM charts WHERE id IN (:ids)")
     @Query("SELECT * from versions WHERE chart_id IN (:ids) ORDER BY `index` DESC")

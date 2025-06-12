@@ -58,13 +58,18 @@ class ChartRepositoryLocal(
     }.flowOn(dispatcher)
 
     override suspend fun getChart(id: String): Flow<Result<Chart>> = flow {
-         emit(Result.success(chartDao.getChart(id)))
+        val chart = chartDao.getChart(id)
+        if (chart != null) {
+            emit(Result.success(chart))
+        } else {
+            emit(Result.failure(IllegalArgumentException("Chart with id $id not found")))
+        }
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
     override suspend fun getInstallStatus(id: String): Boolean {
-        return chartDao.getChart(id).isInstalled == true
+        return chartDao.getChart(id)?.isInstalled == true
     }
 
     override suspend fun getLatestVersionsByChartIds(ids: List<String>): Flow<Result<List<Version>>> = flow {
@@ -127,6 +132,18 @@ class ChartRepositoryLocal(
     override suspend fun deleteChart(chart: Chart): Flow<Result<Boolean>> = flow<Result<Boolean>> {
         chartDao.delete(chart)
         emit(Result.success(true))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }.flowOn(dispatcher)
+
+    override suspend fun deleteChart(id: String): Flow<Result<Boolean>> = flow<Result<Boolean>> {
+        val chart = chartDao.getChart(id)
+        if (chart != null) {
+            chartDao.delete(chart)
+            emit(Result.success(true))
+        } else {
+            emit(Result.failure(IllegalArgumentException("Chart with id $id not found")))
+        }
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
