@@ -2,6 +2,7 @@ package com.meninocoiso.bscm.presentation.ui.components
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,11 +20,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.meninocoiso.bscm.presentation.ui.components.details.GameplayPreview
+import com.meninocoiso.bscm.presentation.ui.components.details.GameplayPreviewThumbnail
+import com.meninocoiso.bscm.presentation.ui.components.details.OpenLinkIntent
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
 import com.skydoves.landscapist.components.rememberImageComponent
@@ -43,7 +47,9 @@ sealed class CarouselItem {
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MediaCarousel(items: List<CarouselItem>) {
+fun MediaCarousel(items: List<CarouselItem>, isVideoEnabled: Boolean) {
+    val context = LocalContext.current
+
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
@@ -101,12 +107,25 @@ fun MediaCarousel(items: List<CarouselItem>) {
                                 textAlign = TextAlign.Center
                             )
                         }
-                    } else {
+                    } else if (isVideoEnabled) {
                         // Video: height equals carouselHeight and width is scaled by 9:16 ratio
                         GameplayPreview(
                             videoId = item.videoId,
+                            context = context,
                             modifier = Modifier
                                 .maskClip(MaterialTheme.shapes.extraLarge)
+                        )
+                    } else {
+                        GameplayPreviewThumbnail(
+                            videoId = item.videoId,
+                            modifier = Modifier
+                                .maskClip(MaterialTheme.shapes.extraLarge)
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surfaceContainer)
+                                .zIndex(2f)
+                                .clickable {
+                                    context.startActivity(OpenLinkIntent(item.videoId))
+                                }
                         )
                     }
                 }
