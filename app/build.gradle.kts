@@ -18,8 +18,8 @@ android {
 		// to use the new Date API, since desugar is not working
 		minSdk = 26
 		targetSdk = 35
-		versionCode = 8
-		versionName = "0.0.8-beta"
+		versionCode = 9
+		versionName = "0.0.9-beta"
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 		vectorDrawables {
