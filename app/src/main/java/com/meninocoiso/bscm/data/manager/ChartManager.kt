@@ -259,22 +259,22 @@ class ChartManager @Inject constructor(
             onSuccess = { remoteCharts ->
                 Log.d(TAG, "Fetched ${remoteCharts.size} feed charts from remote")
 
+                // Update the in-memory cache with the new charts
+                val updatedCharts = updateCharts(remoteCharts)
+
                 // For initial load
                 if (offset == 0) {
                     // Check and remove charts that are no longer on remote
                     handleDeletedCharts(remoteCharts)
 
-                    // Insert or update the new charts in local repository
+                    // Insert or update charts (processed by updateCharts) in local repository
                     CoroutineScope(Dispatchers.IO).launch {
                         // Log.d(TAG, "Inserting/updating ${remoteCharts.size} charts into local storage")
-                        localChartRepository.updateCharts(remoteCharts).first()
+                        localChartRepository.updateCharts(updatedCharts).first()
                         // Log.d(TAG, "Charts updated in local storage")
                     }
                 }
-
-                // Update the in-memory cache with the new charts
-                updateCharts(remoteCharts)
-
+                
                 emit(FetchResult.Success(remoteCharts))
             },
             onFailure = { error ->
