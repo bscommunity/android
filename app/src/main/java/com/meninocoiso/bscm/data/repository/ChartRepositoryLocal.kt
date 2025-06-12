@@ -126,12 +126,14 @@ class ChartRepositoryLocal(
 
     override suspend fun deleteChart(chart: Chart): Flow<Result<Boolean>> = flow<Result<Boolean>> {
         chartDao.delete(chart)
+        emit(Result.success(true))
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
     override suspend fun deleteCharts(charts: List<Chart>): Flow<Result<Boolean>> = flow<Result<Boolean>> {
         chartDao.delete(charts)
+        emit(Result.success(true))
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
