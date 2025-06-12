@@ -153,6 +153,26 @@ fun SettingsScreen(
                     )
                 }
             )
+            ListDivider()
+            ListItem(
+                modifier = Modifier.settingsCard(),
+                headlineContent = {
+                    HeadlineText("Gameplay preview")
+                },
+                supportingContent = {
+                    SupportingText(
+                        "Enable gameplay video previews.\nThis may affect performance."
+                    )
+                },
+                trailingContent = {
+                    SwitchUI(
+                        checked = uiState.enableGameplayPreviewVideo,
+                        onCheckedChange = {
+                            viewModel.enableGameplayPreviewVideo(it)
+                        }
+                    )
+                }
+            )
             /*ListDivider()
             ListItem(
                 modifier = Modifier.settingsCard(),

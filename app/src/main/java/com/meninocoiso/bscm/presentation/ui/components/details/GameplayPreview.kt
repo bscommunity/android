@@ -1,6 +1,7 @@
 package com.meninocoiso.bscm.presentation.ui.components.details
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
@@ -21,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import androidx.core.net.toUri
@@ -34,9 +34,9 @@ import com.skydoves.landscapist.placeholder.shimmer.ShimmerContainer
 @Composable
 fun GameplayPreview(
     videoId: String,
-    modifier: Modifier = Modifier
+    context: Context,
+    modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
     var isLoading by remember { mutableStateOf(true) }
 
     val customHtml = """
@@ -176,16 +176,7 @@ fun GameplayPreview(
                         highlightColor = Color(0xFF1A1C15)
                     )
                 )
-                CoilImage(
-                    imageModel = { "http://img.youtube.com/vi/$videoId/maxresdefault.jpg" },
-                    modifier = Modifier
-                        .zIndex(1f)
-                        .fillMaxSize(),
-                    imageOptions = ImageOptions(
-                        contentScale = ContentScale.Crop,
-                        alignment = Alignment.Center,
-                    ),
-                )
+                GameplayPreviewThumbnail(videoId = videoId)
             }
         }
 
@@ -194,8 +185,7 @@ fun GameplayPreview(
             modifier = Modifier
                 .matchParentSize()
                 .clickable {
-                    val intent = Intent(Intent.ACTION_VIEW, "https://youtu.be/$videoId".toUri())
-                    context.startActivity(intent)
+                    context.startActivity(OpenLinkIntent(videoId))
                 }
         )
 
@@ -206,4 +196,22 @@ fun GameplayPreview(
             }
         }
     }
+}
+
+fun OpenLinkIntent(videoId: String): Intent {
+    return Intent(Intent.ACTION_VIEW, "https://youtu.be/$videoId".toUri())
+}
+
+@Composable
+fun GameplayPreviewThumbnail(videoId: String, modifier: Modifier = Modifier) {
+    CoilImage(
+        imageModel = { "http://img.youtube.com/vi/$videoId/maxresdefault.jpg" },
+        modifier = modifier
+            .zIndex(1f)
+            .fillMaxSize(),
+        imageOptions = ImageOptions(
+            contentScale = ContentScale.Crop,
+            alignment = Alignment.Center,
+        ),
+    )
 }

@@ -22,6 +22,7 @@ class SettingsRepository @Inject constructor(
 ) {
 	companion object SettingsKeys {
 		val ALLOW_EXPLICIT_CONTENT = booleanPreferencesKey("allow_explicit_content")
+		val ALLOW_GAMEPLAY_PREVIEW_VIDEO = booleanPreferencesKey("allow_gameplay_preview_video")
 		val USE_MATERIAL_YOU = booleanPreferencesKey("use_material_you")
 		val THEME = stringPreferencesKey("theme")
 	}
@@ -43,15 +44,21 @@ class SettingsRepository @Inject constructor(
 	suspend fun setExplicitContent(allow: Boolean) =
 		dataStore.edit { it[ALLOW_EXPLICIT_CONTENT] = allow }
 
+	suspend fun setGameplayPreviewVideo(allow: Boolean) = 
+		dataStore.edit { it[ALLOW_GAMEPLAY_PREVIEW_VIDEO] = allow }
+		
 	suspend fun setDynamicColors(use: Boolean) =
 		dataStore.edit { it[USE_MATERIAL_YOU] = use }
 
 	suspend fun setAppTheme(theme: ThemePreference) =
 		dataStore.edit { it[THEME] = theme.name }
+	
 
 	private fun mapSettings(preferences: Preferences): Settings = Settings(
 		allowExplicitContent = preferences[ALLOW_EXPLICIT_CONTENT]
 			?: Settings().allowExplicitContent,
+		enableGameplayPreviewVideo = preferences[ALLOW_GAMEPLAY_PREVIEW_VIDEO]
+			?: Settings().enableGameplayPreviewVideo,
 		useDynamicColors = preferences[USE_MATERIAL_YOU]
 			?: Settings().useDynamicColors,
 		theme = preferences[THEME]?.let { ThemePreference.valueOf(it) }

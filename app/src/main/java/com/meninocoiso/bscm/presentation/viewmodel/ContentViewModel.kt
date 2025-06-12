@@ -7,9 +7,11 @@ import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.data.repository.ChartRepository
 import com.meninocoiso.bscm.data.repository.DownloadRepository
+import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.ErrorType
 import com.meninocoiso.bscm.domain.enums.OperationType
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.internal.Settings
 import com.meninocoiso.bscm.service.DownloadEvent
 import com.meninocoiso.bscm.service.DownloadServiceConnection
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -43,6 +45,7 @@ class ContentViewModel @Inject constructor(
     private val downloadServiceConnection: DownloadServiceConnection,
     private val downloadRepository: DownloadRepository,
     private val cacheRepository: CacheRepository,
+    private val settingsRepository: SettingsRepository,
     @Named("Local") private val localChartRepository: ChartRepository,
 ) : ViewModel() {
 
@@ -55,6 +58,14 @@ class ContentViewModel @Inject constructor(
 
     // Cache for folder URI to reduce repository calls
     private var cachedFolderUri: Uri? = null
+    
+    val isGameplayVideoPreviewEnabled = settingsRepository.settingsFlow
+        .map { it.enableGameplayPreviewVideo }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = Settings().enableGameplayPreviewVideo
+        )
 
     init {
         observeDownloadEvents()

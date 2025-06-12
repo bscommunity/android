@@ -103,6 +103,8 @@ fun ChartDetailsScreen(
         .collectAsStateWithLifecycle()
 
     // UI State
+    val isGameplayVideoPreviewEnabled = contentViewModel.isGameplayVideoPreviewEnabled
+        .collectAsStateWithLifecycle(initialValue = true)
     var isMoreOptionsExpanded by remember { mutableStateOf(false) }
     val dialogs = remember { DialogState() }
 
@@ -115,9 +117,12 @@ fun ChartDetailsScreen(
             when (event) {
                 is DownloadEvent.Complete ->
                     snackbarHostState.showSnackbar("Download complete")
+
                 is DownloadEvent.Error ->
                     snackbarHostState.showSnackbar("Error: ${event.message}")
-                else -> { /* Other events don't need UI feedback */ }
+
+                else -> { /* Other events don't need UI feedback */
+                }
             }
         }
     }
@@ -190,7 +195,7 @@ fun ChartDetailsScreen(
                     )
                 },
             )
-       },
+        },
         topBar = {
             TopAppBar(
                 modifier = Modifier.padding(horizontal = 8.dp),
@@ -245,7 +250,12 @@ fun ChartDetailsScreen(
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,
                                 text = { Text("Delete chart") },
-                                leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Outlined.Delete,
+                                        contentDescription = null
+                                    )
+                                },
                                 onClick = {
                                     isMoreOptionsExpanded = false
                                     dialogs.showDeleteConfirmation = true
@@ -301,14 +311,17 @@ fun ChartDetailsScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Media carousel
-            MediaCarousel(listOf(
-                CarouselItem.ImageItem(
-                    imageUrl = chart.coverUrl,
+            MediaCarousel(
+                listOf(
+                    CarouselItem.ImageItem(
+                        imageUrl = chart.coverUrl,
+                    ),
+                    CarouselItem.VideoItem(
+                        videoId = chart.latestVersion.chartPreviewUrl
+                    )
                 ),
-                CarouselItem.VideoItem(
-                    videoId = chart.latestVersion.chartPreviewUrl
-                )
-            ))
+                isVideoEnabled = isGameplayVideoPreviewEnabled.value
+            )
 
             // Credits
             ChartContributors(chart.contributors)
@@ -378,8 +391,9 @@ fun ChartDetailsScreen(
                 .fillMaxSize(),
             contentAlignment = Alignment.BottomCenter
         ) {
-        if (chartState is ContentState.Downloading ||
-            chartState is ContentState.Extracting) {
+            if (chartState is ContentState.Downloading ||
+                chartState is ContentState.Extracting
+            ) {
                 LinearProgressIndicator(
                     progress = {
                         when (val state = chartState) {

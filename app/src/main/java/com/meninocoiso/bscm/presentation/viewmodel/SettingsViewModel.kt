@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.data.repository.AppUpdateRepository
-import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.ThemePreference
 import com.meninocoiso.bscm.domain.model.internal.Settings
@@ -39,7 +38,6 @@ private const val TAG = "SettingsViewModel"
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
-    private val cacheRepository: CacheRepository,
     private val appUpdateRepository: AppUpdateRepository
 ) : ViewModel() {
     /**
@@ -79,6 +77,15 @@ class SettingsViewModel @Inject constructor(
     fun allowExplicitContent(allow: Boolean) {
         viewModelScope.launch {
             settingsRepository.setExplicitContent(allow)
+        }
+    }
+    
+    /*
+    *  Toggle gameplay preview video setting
+    */
+    fun enableGameplayPreviewVideo(enable: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setGameplayPreviewVideo(enable)
         }
     }
 
