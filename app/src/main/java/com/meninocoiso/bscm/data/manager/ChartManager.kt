@@ -118,8 +118,8 @@ class ChartManager @Inject constructor(
         return _cachedCharts.value.size
     }
 
-    fun verifyInstalledCharts(cachedCharts: List<Chart>, rootUri: Uri): List<Chart> {
-        val installedCharts = cachedCharts.filter { it.isInstalled == true }
+    fun verifyInstalledCharts(chartsToVerify: List<Chart>, rootUri: Uri): List<Chart> {
+        val installedCharts = chartsToVerify.filter { it.isInstalled == true }
         val chartsToUpdate = mutableListOf<Chart>()
 
         for (chart in installedCharts) {
@@ -138,6 +138,27 @@ class ChartManager @Inject constructor(
 
         return chartsToUpdate
     }
+    
+    fun verifyNotInstalledCharts(chartsToVerify: List<Chart>, rootUri: Uri): List<Chart> {
+        val notInstalledCharts = chartsToVerify.filter { it.isInstalled == false }
+        val chartsToUpdate = mutableListOf<Chart>()
+
+        for (chart in notInstalledCharts) {
+            val destination = StorageUtils.getFolder(rootUri, listOf("songs"), context)
+            val folderName = StorageUtils.getChartFolderName(chart.id)
+
+            // Verify if the chart file exists physically
+            val chartFolder = destination.findFile(folderName)
+
+            if (chartFolder != null && chart.isInstalled == false) {
+                // The file exists, but is marked as not installed
+                chart.isInstalled = true
+                chartsToUpdate.add(chart)
+            }
+        }
+
+        return chartsToUpdate
+    }
 
     /**
      * Loads charts from local cache
@@ -150,7 +171,7 @@ class ChartManager @Inject constructor(
             cachedCharts.fold(
                 onSuccess = { allCharts ->
                     var charts = allCharts
-                    Log.d(TAG, "Charts order: ${charts.joinToString { it.track }}")
+                    // Log.d(TAG, "Charts order: ${charts.joinToString { it.track }}")
 
                     // Verify if the charts are still installed
                     val chartsToUpdate = if (rootUri != null) verifyInstalledCharts(
@@ -160,16 +181,19 @@ class ChartManager @Inject constructor(
 
                     // If some charts were deleted externally, we update them
                     if (chartsToUpdate.isNotEmpty()) {
-                        // Update the charts in local storage
-                        localChartRepository.updateCharts(chartsToUpdate)
-
+                        CoroutineScope(Dispatchers.IO).launch {
+                            // Log.d(TAG, "Updating ${chartsToUpdate.size} charts in local storage")
+                            localChartRepository.updateCharts(chartsToUpdate).first()
+                            Log.d(TAG, "Charts updated in local storage")
+                        }
+                        
                         // Update the charts in memory (bellow)
                         charts = allCharts.filter {
                             // Filter out charts on chartsToUpdate
                             !chartsToUpdate.any { chart -> chart.id == it.id }
                         }
                     }
-
+                    
                     Log.d(TAG, "Loaded ${charts.size} charts from cache with sortBy: $sortBy")
                     updateCharts(charts)
                     updateState(ChartState.Success)
@@ -238,20 +262,14 @@ class ChartManager @Inject constructor(
                 // For initial load
                 if (offset == 0) {
                     // Check and remove charts that are no longer on remote
-                    val deletedCharts = handleDeletedCharts(remoteCharts)
-                    if (deletedCharts.isNotEmpty()) {
-                        Log.d(TAG, "Removing ${deletedCharts.size} deleted charts from cache")
-                        CoroutineScope(Dispatchers.IO).launch {
-                            localChartRepository.deleteCharts(deletedCharts).first()
-                        }
-                    }
+                    handleDeletedCharts(remoteCharts)
 
                     // Insert or update the new charts in local repository
-                    // Log.d(TAG, "Inserting/updating ${remoteCharts.size} charts into local storage")
                     CoroutineScope(Dispatchers.IO).launch {
+                        // Log.d(TAG, "Inserting/updating ${remoteCharts.size} charts into local storage")
                         localChartRepository.updateCharts(remoteCharts).first()
+                        // Log.d(TAG, "Charts updated in local storage")
                     }
-                    // Log.d(TAG, "Charts updated in local storage")
                 }
 
                 // Update the in-memory cache with the new charts
@@ -274,7 +292,7 @@ class ChartManager @Inject constructor(
      * @param remoteCharts The charts fetched from remote
      * @return List of charts to be cached
      */
-    private fun handleDeletedCharts(remoteCharts: List<Chart>): List<Chart> {
+    private fun handleDeletedCharts(remoteCharts: List<Chart>) {
         val cachedMap = _cachedCharts.value.toMutableList()
         val remoteIds = remoteCharts.map { it.id }.toSet()
 
@@ -304,10 +322,14 @@ class ChartManager @Inject constructor(
             _cachedCharts.value = cachedMap
 
             // Also remove from local repository
-            return potentiallyDeleted
+            if (potentiallyDeleted.isNotEmpty()) {
+                Log.d(TAG, "Removing ${potentiallyDeleted.size} deleted charts from cache")
+                CoroutineScope(Dispatchers.IO).launch {
+                    localChartRepository.deleteCharts(potentiallyDeleted).first()
+                    Log.d(TAG, "Remotely deleted charts removed from local storage")
+                }
+            }
         }
-
-        return emptyList()
     }
 
     /**

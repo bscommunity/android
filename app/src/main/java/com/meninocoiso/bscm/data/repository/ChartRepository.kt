@@ -33,6 +33,7 @@ interface ChartRepository {
         operation: OperationType = OperationType.INSTALL,
     ): Flow<Result<Boolean>>
     suspend fun deleteChart(chart: Chart): Flow<Result<Boolean>>
+    suspend fun deleteChart(id: String): Flow<Result<Boolean>>
     suspend fun deleteCharts(charts: List<Chart>): Flow<Result<Boolean>>
     suspend fun postAnalytics(
         id: String,
