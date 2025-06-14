@@ -16,7 +16,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.SortOption
 
 data class WorkshopChip(
@@ -25,26 +27,29 @@ data class WorkshopChip(
     val enabled: Boolean = true,
 )
 
-val chipItems = listOf(
-    WorkshopChip(
-        id = SortOption.LAST_UPDATED,
-        title = "Last updated",
-    ),
-    WorkshopChip(
-        id = SortOption.MOST_DOWNLOADED,
-        title = "Most downloaded",
-    ),
-    WorkshopChip(
-        id = SortOption.WEEKLY_RANK,
-        title = "Weekly Rank",
-        enabled = false
-    ),
-    WorkshopChip(
-        id = SortOption.MOST_LIKED,
-        title = "Most liked",
-        enabled = false
-    ),
-)
+@Composable
+fun getChipItems(): List<WorkshopChip> {
+    return listOf(
+        WorkshopChip(
+            id = SortOption.LAST_UPDATED,
+            title = stringResource(R.string.last_updated),
+        ),
+        WorkshopChip(
+            id = SortOption.MOST_DOWNLOADED,
+            title = stringResource(R.string.most_downloaded),
+        ),
+        WorkshopChip(
+            id = SortOption.WEEKLY_RANK,
+            title = stringResource(R.string.weekly_rank),
+            enabled = false
+        ),
+        WorkshopChip(
+            id = SortOption.MOST_LIKED,
+            title = stringResource(R.string.most_liked),
+            enabled = false
+        ),
+    )
+}
 
 @Composable
 fun WorkshopChips(
@@ -52,6 +57,8 @@ fun WorkshopChips(
     onSortOptionChange: (SortOption) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val chipItems = getChipItems()
+    
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -72,7 +79,7 @@ fun WorkshopChips(
                     {
                         Icon(
                             imageVector = Icons.Filled.Check,
-                            contentDescription = "Check icon",
+                            contentDescription = stringResource(R.string.checked),
                             modifier = Modifier.size(FilterChipDefaults.IconSize)
                         )
                     }

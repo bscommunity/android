@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,11 +44,11 @@ enum class Size(
 @Composable
 fun StatusMessagePreviewUI() {
     StatusMessageUI(
-        title = "No internet connection",
-        message = "Please check your connection and try again",
+        title = stringResource(R.string.no_internet_connection),
+        message = stringResource(R.string.no_internet_connection_description),
         icon = R.drawable.rounded_wifi_off_24,
         onClick = {},
-        buttonLabel = "Try again"
+        buttonLabel = stringResource(R.string.try_again)
     )
 }
 
@@ -59,7 +60,7 @@ fun StatusMessageUI(
     modifier: Modifier? = Modifier,
     size: Size = Size.Medium,
     onClick: (() -> Unit)? = null,
-    buttonLabel: String = "Try again"
+    buttonLabel: String = stringResource(R.string.try_again)
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp).let {
@@ -74,7 +75,7 @@ fun StatusMessageUI(
         Icon(
             painter = painterResource(id = icon),
             modifier = Modifier.size(size.icon.dp),
-            contentDescription = ""
+            contentDescription = null
         )
         Text(
             text = title,

@@ -3,6 +3,7 @@ package com.meninocoiso.bscm.util
 import android.content.Context
 import android.content.Intent
 import androidx.core.net.toUri
+import com.meninocoiso.bscm.R
 
 object LinkingUtils {
     fun openLink(context: Context, url: String) {
@@ -20,7 +21,8 @@ object LinkingUtils {
             type = "text/plain"
         }
 
-        context.startActivity(Intent.createChooser(shareIntent, "Share via"))
+        context.startActivity(Intent.createChooser(shareIntent,
+            context.getString(R.string.share_via)))
     }
 
     fun launchBeatClone(

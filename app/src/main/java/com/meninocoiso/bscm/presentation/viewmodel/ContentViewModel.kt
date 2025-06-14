@@ -1,9 +1,11 @@
 package com.meninocoiso.bscm.presentation.viewmodel
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.data.repository.ChartRepository
 import com.meninocoiso.bscm.data.repository.DownloadRepository
@@ -15,6 +17,7 @@ import com.meninocoiso.bscm.domain.model.internal.Settings
 import com.meninocoiso.bscm.service.DownloadEvent
 import com.meninocoiso.bscm.service.DownloadServiceConnection
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -42,6 +45,7 @@ private const val TAG = "ContentViewModel"
 
 @HiltViewModel
 class ContentViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val downloadServiceConnection: DownloadServiceConnection,
     private val downloadRepository: DownloadRepository,
     private val cacheRepository: CacheRepository,
@@ -145,8 +149,9 @@ class ContentViewModel @Inject constructor(
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to start download", e)
-                updateState(chartId, ContentState.Error(chartId, "Failed to start download"))
-                emitEvent(DownloadEvent.Error(chartId, "Failed to start download"))
+                updateState(chartId, ContentState.Error(chartId,
+                    context.getString(R.string.failed_to_start_download)))
+                emitEvent(DownloadEvent.Error(chartId, context.getString(R.string.failed_to_start_download)))
             }
         }
     }
@@ -172,7 +177,7 @@ class ContentViewModel @Inject constructor(
             }
                 .onFailure {
                     Log.e(TAG, "Failed to delete chart", it)
-                    onError("Failed to delete chart")
+                    onError(context.getString(R.string.failed_to_delete_chart))
                 }
                 .onSuccess {
                     Log.d(TAG, "Chart deleted successfully")

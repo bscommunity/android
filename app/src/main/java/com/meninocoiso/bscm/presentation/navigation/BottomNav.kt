@@ -11,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -38,31 +39,34 @@ sealed class Route {
     object Settings : Route()
 }
 
-val bottomNavigationItems = listOf(
-    BottomNavigationItem(
-        route = Route.Workshop,
-        title = "Workshop",
-        selectedIcon = R.drawable.baseline_library_music_24,
-        unselectedIcon = R.drawable.outline_library_music_24,
-        hasNews = false
-    ),
-    BottomNavigationItem(
-        // NOTE: If you use routes with arguments as your BottomBar navigation routes, 
-        // // first of all, you should instantiate such classes Route.Updates():
-        route = Route.Updates(section = UpdatesSection.Workshop),
-        title = "Updates",
-        selectedIcon = R.drawable.baseline_deployed_code_24,
-        unselectedIcon = R.drawable.outline_deployed_code_24,
-        hasNews = false
-    ),
-    BottomNavigationItem(
-        route = Route.Settings,
-        title = "Settings",
-        selectedIcon = R.drawable.baseline_settings_24,
-        unselectedIcon = R.drawable.outline_settings_24,
-        hasNews = false
+@Composable
+fun getBottomNavigationItems(): List<BottomNavigationItem> {
+    return listOf(
+        BottomNavigationItem(
+            route = Route.Workshop,
+            title = stringResource(R.string.workshop),
+            selectedIcon = R.drawable.baseline_library_music_24,
+            unselectedIcon = R.drawable.outline_library_music_24,
+            hasNews = false
+        ),
+        BottomNavigationItem(
+            // NOTE: If you use routes with arguments as your BottomBar navigation routes, 
+            // // first of all, you should instantiate such classes Route.Updates():
+            route = Route.Updates(section = UpdatesSection.Workshop),
+            title = stringResource(R.string.updates),
+            selectedIcon = R.drawable.baseline_deployed_code_24,
+            unselectedIcon = R.drawable.outline_deployed_code_24,
+            hasNews = false
+        ),
+        BottomNavigationItem(
+            route = Route.Settings,
+            title = stringResource(R.string.settings),
+            selectedIcon = R.drawable.baseline_settings_24,
+            unselectedIcon = R.drawable.outline_settings_24,
+            hasNews = false
+        )
     )
-)
+}
 
 @Composable
 fun BottomNav(
@@ -72,8 +76,10 @@ fun BottomNav(
 ) {
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
 
+    val bottomNavigationItems = getBottomNavigationItems()
+
     // We update Settings item icon based on the update status
-    val updatedBottomNavigationItems = remember(hasUpdate) {
+    val updatedBottomNavigationItems = remember(bottomNavigationItems, hasUpdate) {
         bottomNavigationItems.map { item ->
             if (item.route is Route.Settings) {
                 item.copy(hasNews = hasUpdate) // Update the badge dynamically

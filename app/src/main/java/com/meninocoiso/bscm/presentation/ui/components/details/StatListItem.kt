@@ -32,7 +32,7 @@ fun StatListItem(
             ) {
                 Icon(
                     painter = painterResource(id = icon),
-                    contentDescription = "Stat icon",
+                    contentDescription = null,
                     modifier = Modifier.size(24.dp)
                 )
             }

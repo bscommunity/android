@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.manager.ChartState
@@ -36,7 +37,7 @@ fun LocalContentSection(
         title = when (state) {
             is ChartState.Success -> {
                 if (charts.isNotEmpty()) {
-                    "Downloaded (${charts.size})"
+                    stringResource(R.string.downloaded, charts.size)
                 } else {
                     null
                 }
@@ -55,8 +56,8 @@ fun LocalContentSection(
 
         if (charts.isEmpty()) {
             StatusMessageUI(
-                title = "No downloads yet",
-                message = "Download some charts to get started",
+                title = stringResource(R.string.empty_downloads),
+                message = stringResource(R.string.empty_downloads_description),
                 icon = R.drawable.rounded_box_24,
                 modifier = Modifier
                     .fillMaxSize()
@@ -76,8 +77,8 @@ fun LocalContentSection(
                 is ChartState.Error -> {
                     StatusMessageUI(
                         modifier = Modifier.fillMaxSize(),
-                        title = "Looks like something went wrong...",
-                        message = "Please reopen the app and try again",
+                        title = stringResource(R.string.something_went_wrong),
+                        message = stringResource(R.string.reopen_app),
                         icon = R.drawable.rounded_hourglass_disabled_24
                     )
                 }
@@ -91,7 +92,7 @@ fun LocalContentSection(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ){
                         item {
-                            LocalContentSectionTitle("Charts")
+                            LocalContentSectionTitle(stringResource(R.string.charts))
                         }
                         items(charts) { chart ->
                             LocalChartPreview(

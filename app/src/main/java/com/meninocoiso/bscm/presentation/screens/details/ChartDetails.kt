@@ -43,6 +43,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,8 +62,8 @@ import com.meninocoiso.bscm.presentation.ui.components.layout.Section
 import com.meninocoiso.bscm.presentation.viewmodel.ContentState
 import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.bscm.service.DownloadEvent
-import com.meninocoiso.bscm.util.DateUtils
 import com.meninocoiso.bscm.util.LinkingUtils.shareChartLink
+import com.meninocoiso.bscm.util.StringUtils
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -116,10 +118,10 @@ fun ChartDetailsScreen(
         contentViewModel.events.collect { event ->
             when (event) {
                 is DownloadEvent.Complete ->
-                    snackbarHostState.showSnackbar("Download complete")
+                    snackbarHostState.showSnackbar(context.getString(R.string.download_complete))
 
                 is DownloadEvent.Error ->
-                    snackbarHostState.showSnackbar("Error: ${event.message}")
+                    snackbarHostState.showSnackbar(context.getString(R.string.error, event.message))
 
                 else -> { /* Other events don't need UI feedback */
                 }
@@ -129,20 +131,20 @@ fun ChartDetailsScreen(
 
     if (dialogs.showDeleteConfirmation) {
         ConfirmationDialog(
-            title = "Delete chart",
-            message = "Are you sure you want to delete this chart?\nYou'll be able to download it again later.",
+            title = stringResource(R.string.delete_chart),
+            message = stringResource(R.string.delete_chart_description),
             onDismiss = { dialogs.showDeleteConfirmation = false },
             onConfirm = {
                 contentViewModel.deleteChart(
                     chart,
                     onSuccess = {
                         scope.launch {
-                            snackbarHostState.showSnackbar("Chart deleted")
+                            snackbarHostState.showSnackbar(context.getString(R.string.chart_deleted))
                         }
                     },
                     onError = {
                         scope.launch {
-                            snackbarHostState.showSnackbar("Failed to delete chart")
+                            snackbarHostState.showSnackbar(context.getString(R.string.failed_to_delete_chart))
                         }
                     }
                 )
@@ -182,6 +184,9 @@ fun ChartDetailsScreen(
             dismissSnackbarState.reset()
         }
     }
+    
+    val lastUpdated = StringUtils.toRelativeString(chart.latestVersion.publishedAt)
+    println("Chart last updated: $lastUpdated")
 
     Scaffold(
         snackbarHost = {
@@ -208,7 +213,7 @@ fun ChartDetailsScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             tint = MaterialTheme.colorScheme.onSurface,
-                            contentDescription = "Return"
+                            contentDescription = stringResource(R.string.return_screen)
                         )
                     }
                 },
@@ -216,7 +221,7 @@ fun ChartDetailsScreen(
                     IconButton(onClick = { isMoreOptionsExpanded = !isMoreOptionsExpanded }) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
-                            contentDescription = "More options menu"
+                            contentDescription = stringResource(R.string.more_options_menu)
                         )
                     }
                     DropdownMenu(
@@ -225,7 +230,7 @@ fun ChartDetailsScreen(
                     ) {
                         DropdownMenuItem(
                             contentPadding = DropdownItemPadding,
-                            text = { Text("Share") },
+                            text = { Text(stringResource(R.string.share)) },
                             leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
                             onClick = {
                                 isMoreOptionsExpanded = false
@@ -234,7 +239,7 @@ fun ChartDetailsScreen(
                         )
                         DropdownMenuItem(
                             contentPadding = DropdownItemPadding,
-                            text = { Text("Report") },
+                            text = { Text(stringResource(R.string.report)) },
                             leadingIcon = {
                                 Icon(
                                     painter = painterResource(R.drawable.rounded_flag_24),
@@ -249,7 +254,7 @@ fun ChartDetailsScreen(
                         if (chartState == ContentState.Installed(chart.id)) {
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,
-                                text = { Text("Delete chart") },
+                                text = { Text(stringResource(R.string.delete_chart)) },
                                 leadingIcon = {
                                     Icon(
                                         Icons.Outlined.Delete,
@@ -277,18 +282,18 @@ fun ChartDetailsScreen(
                 actions = {
                     IconButton(onClick = {
                         scope.launch {
-                            snackbarHostState.showSnackbar("Like feature not yet implemented")
+                            snackbarHostState.showSnackbar(context.getString(R.string.feature_not_implemented))
                         }
                     }) {
                         Icon(
                             Icons.Default.FavoriteBorder,
-                            contentDescription = "Like chart",
+                            contentDescription = stringResource(R.string.like_chart),
                         )
                     }
                     IconButton(onClick = { dialogs.showListenTrackDialog = true }) {
                         Icon(
                             painter = painterResource(id = R.drawable.baseline_artist_24),
-                            contentDescription = "Track link"
+                            contentDescription = stringResource(R.string.listen_to_track),
                         )
                     }
                 },
@@ -327,14 +332,18 @@ fun ChartDetailsScreen(
             ChartContributors(chart.contributors)
 
             // Stats
-            Section(title = "Stats") {
+            Section(title = stringResource(R.string.stats)) {
                 Column(modifier = Modifier.padding(bottom = 8.dp)) {
                     StatListItem(
-                        title = "~${DateUtils.toDurationString(chart.latestVersion.duration)}",
+                        title = "~${StringUtils.toDurationString(chart.latestVersion.duration)}",
                         icon = R.drawable.outline_access_time_24
                     )
                     StatListItem(
-                        title = "${chart.latestVersion.notesAmount} notes",
+                        title = pluralStringResource(
+                            R.plurals.notes_amount,
+                            chart.latestVersion.notesAmount,
+                            chart.latestVersion.notesAmount
+                        ),
                         icon = R.drawable.rounded_music_note_24
                     )
                     /*StatListItem(
@@ -342,18 +351,22 @@ fun ChartDetailsScreen(
                         icon = R.drawable.rounded_blur_medium_24
                     )*/
                     StatListItem(
-                        title = "+${chart.latestVersion.downloadsAmount} downloads",
+                        title = pluralStringResource(
+                            R.plurals.downloads_amount,
+                            chart.latestVersion.downloadsAmount,
+                            chart.latestVersion.downloadsAmount
+                        ),
                         icon = R.drawable.rounded_download_24
                     )
                     StatListItem(
-                        title = "Updated ${DateUtils.toRelativeString(chart.latestVersion.publishedAt)}",
+                        title = stringResource(R.string.updated_at, lastUpdated),
                         icon = R.drawable.rounded_calendar_today_24
                     )
                 }
             }
 
             // Known Issues
-            Section(title = "Known Issues") {
+            Section(title = stringResource(R.string.known_issues)) {
                 Box(modifier = Modifier.padding(16.dp)) {
                     Column(
                         modifier = Modifier
@@ -367,7 +380,7 @@ fun ChartDetailsScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .align(Alignment.CenterHorizontally),
-                                text = "No known issues",
+                                text = stringResource(R.string.no_known_issues),
                                 style = MaterialTheme.typography.bodyLarge
                             )
                         } else {

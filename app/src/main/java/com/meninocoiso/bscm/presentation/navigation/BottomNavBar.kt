@@ -69,7 +69,7 @@ fun BottomNavBar(
                             painter = if (isSelected) {
                                 painterResource(id = item.selectedIcon)
                             } else painterResource(id = item.unselectedIcon),
-                            contentDescription = item.title
+                            contentDescription = null
                         )
                     }
                 }

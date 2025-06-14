@@ -1,13 +1,16 @@
 package com.meninocoiso.bscm.presentation.viewmodel
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.repository.AppUpdateRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.ThemePreference
 import com.meninocoiso.bscm.domain.model.internal.Settings
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -37,6 +40,7 @@ private const val TAG = "SettingsViewModel"
  */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val settingsRepository: SettingsRepository,
     private val appUpdateRepository: AppUpdateRepository
 ) : ViewModel() {
@@ -142,7 +146,7 @@ class SettingsViewModel @Inject constructor(
             appUpdateRepository.fetchLatestVersion()
                 .catch { exception ->
                     _updateState.value =
-                        AppUpdateState.Error(exception.message ?: "Failed to check for updates")
+                        AppUpdateState.Error(exception.message ?: context.getString(R.string.failed_to_check_for_updates))
                 }
                 .collect { fetchedVersion ->
                     Log.d(TAG, "Fetched version: $fetchedVersion")
@@ -171,7 +175,7 @@ class SettingsViewModel @Inject constructor(
                 _updateState.value = AppUpdateState.ReadyToInstall(apkFile)
             } catch (e: Exception) {
                 Log.e(TAG, "APK download failed", e)
-                _updateState.value = AppUpdateState.Error(e.message ?: "Unknown error")
+                _updateState.value = AppUpdateState.Error(e.message ?: context.getString(R.string.unknown_error))
             }
         }
     }
@@ -184,7 +188,7 @@ class SettingsViewModel @Inject constructor(
                 appUpdateRepository.installApk(apkFile)
             } catch (e: Exception) {
                 Log.e(TAG, "APK installation failed", e)
-                _updateState.value = AppUpdateState.Error(e.message ?: "Unknown error")
+                _updateState.value = AppUpdateState.Error(e.message ?: context.getString(R.string.unknown_error))
             }
         }
     }

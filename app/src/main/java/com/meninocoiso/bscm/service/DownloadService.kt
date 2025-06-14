@@ -121,8 +121,11 @@ class DownloadService : Service() {
 
                             val progressInt = (progress * 100).toInt()
                             updateNotification(
-                                title = "Extracting $chartName",
-                                message = "Extracting files... $progressInt%",
+                                title = getString(R.string.extracting_progress_title, chartName),
+                                message = getString(
+                                    R.string.extracting_progress_description,
+                                    progressInt
+                                ),
                                 progress = progressInt
                             )
                         }
@@ -153,13 +156,13 @@ class DownloadService : Service() {
                     // Send error event
                     serviceScope.launch {
                         downloadServiceConnection.sendEvent(
-                            DownloadEvent.Error(chartId, e.message ?: "Unknown error", errorType)
+                            DownloadEvent.Error(chartId, e.message ?: getString(R.string.unknown_error), errorType)
                         )
                     }
 
                     updateNotification(
-                        title = "Download Failed",
-                        message = "Error: ${e.message}",
+                        title = getString(R.string.download_failed),
+                        message = getString(R.string.error, e.message),
                         progress = 0,
                         isOngoing = false
                     )

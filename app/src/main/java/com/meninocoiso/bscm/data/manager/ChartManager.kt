@@ -3,6 +3,7 @@ package com.meninocoiso.bscm.data.manager
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.repository.ChartRepository
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
@@ -200,13 +201,13 @@ class ChartManager @Inject constructor(
                 },
                 onFailure = { error ->
                     Log.e(TAG, "Failed to load cached charts", error)
-                    FetchResult.Error("Failed to load cached charts", error)
+                    FetchResult.Error(context.getString(R.string.failed_to_load_cached_charts), error)
                     updateState(ChartState.Error)
                 }
             )
         } catch (e: Exception) {
             Log.e(TAG, "Unexpected error loading cached charts", e)
-            FetchResult.Error("Unexpected error loading cached charts", e)
+            FetchResult.Error(context.getString(R.string.failed_to_load_cached_charts), e)
         }
     }
 
@@ -279,12 +280,12 @@ class ChartManager @Inject constructor(
             },
             onFailure = { error ->
                 Log.e(TAG, "Failed to fetch feed charts", error)
-                emit(FetchResult.Error(error.message ?: "Failed to fetch feed charts", error))
+                emit(FetchResult.Error(error.message ?: context.getString(R.string.failed_to_fetch_feed_charts), error))
             }
         )
     }.catch { e ->
         Log.e(TAG, "Exception in fetchFeedCharts flow", e)
-        emit(FetchResult.Error("Exception in feed charts flow", e))
+        emit(FetchResult.Error(context.getString(R.string.failed_to_fetch_feed_charts), e))
     }
 
     /**
@@ -391,16 +392,16 @@ class ChartManager @Inject constructor(
                 },
                 onFailure = { error ->
                     Log.e(TAG, "Search failed for query: $query", error)
-                    emit(FetchResult.Error("Search failed", error))
+                    emit(FetchResult.Error(context.getString(R.string.search_failed), error))
                 }
             )
         } catch (e: Exception) {
             Log.e(TAG, "Unexpected error searching charts", e)
-            emit(FetchResult.Error("Unexpected error searching charts", e))
+            emit(FetchResult.Error(context.getString(R.string.search_failed), e))
         }
     }.catch { e ->
         Log.e(TAG, "Exception in remoteCharts flow", e)
-        emit(FetchResult.Error("Exception in search charts flow", e))
+        emit(FetchResult.Error(context.getString(R.string.search_failed), e))
     }
 
     /**
@@ -463,14 +464,14 @@ class ChartManager @Inject constructor(
                     }
                 },
                 onFailure = { error ->
-                    emit(FetchResult.Error("Failed to check for updates", error))
+                    emit(FetchResult.Error(context.getString(R.string.failed_to_check_for_updates), error))
                 }
             )
         } catch (e: Exception) {
-            emit(FetchResult.Error("Error checking for updates", e))
+            emit(FetchResult.Error(context.getString(R.string.failed_to_check_for_updates), e))
         }
     }.catch { e ->
-        emit(FetchResult.Error("Unexpected error checking for updates", e))
+        emit(FetchResult.Error(context.getString(R.string.failed_to_check_for_updates), e))
     }
 
     /*
@@ -515,7 +516,7 @@ class ChartManager @Inject constructor(
                     return@run remoteChart
                 } else {
                     Log.d(TAG, "Chart with id: $chartId not found")
-                    emit(FetchResult.Error("Chart not found"))
+                    emit(FetchResult.Error(context.getString(R.string.chart_not_found)))
                     return@flow
                 }
             }
@@ -526,12 +527,12 @@ class ChartManager @Inject constructor(
             result.fold(
                 onSuccess = { updated ->
                     if (!updated) {
-                        emit(FetchResult.Error("Failed to update chart in local storage"))
+                        emit(FetchResult.Error(context.getString(R.string.failed_to_update)))
                         return@flow
                     }
                 },
                 onFailure = { error ->
-                    emit(FetchResult.Error("Error updating chart in local storage", error))
+                    emit(FetchResult.Error(context.getString(R.string.failed_to_update), error))
                     return@flow
                 }
             )
@@ -546,7 +547,7 @@ class ChartManager @Inject constructor(
 
                 OperationType.UPDATE -> {
                     if (existingChart.availableVersion == null) {
-                        emit(FetchResult.Error("No available version to update"))
+                        emit(FetchResult.Error(context.getString(R.string.no_available_version)))
                         return@flow
                     }
                     updateChart(
@@ -567,7 +568,7 @@ class ChartManager @Inject constructor(
             // Only emit a single success result
             emit(FetchResult.Success(_cachedCharts.value))
         }.catch { e ->
-            emit(FetchResult.Error("Unexpected error updating chart", e))
+            emit(FetchResult.Error(context.getString(R.string.failed_to_update), e))
         }
 
 

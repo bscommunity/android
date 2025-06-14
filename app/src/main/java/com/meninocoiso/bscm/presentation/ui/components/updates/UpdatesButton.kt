@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.ui.modifiers.infiniteRotation
@@ -50,9 +51,9 @@ internal fun UpdatesButton(isLoading: Boolean, isDisabled: Boolean, onFetchUpdat
                     }
                     .size(ButtonDefaults.IconSize),
                 painter = painterResource(id = R.drawable.rounded_autorenew_24),
-                contentDescription = "Check for updates icon"
+                contentDescription = null
             )
-            Text(text = if (isLoading) "Checking for updates..." else "Check for updates")
+            Text(text = if (isLoading) stringResource(R.string.checking_for_updates) else stringResource(R.string.check_for_updates))
         }
     }
 }
