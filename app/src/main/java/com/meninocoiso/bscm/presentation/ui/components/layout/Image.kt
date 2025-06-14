@@ -17,37 +17,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import coil.ImageLoader
 import coil3.compose.AsyncImage
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.Difficulty
-import com.meninocoiso.bscm.domain.lists.difficultiesList
+import com.meninocoiso.bscm.domain.lists.getDifficultiesList
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
 import com.skydoves.landscapist.components.rememberImageComponent
 import com.skydoves.landscapist.placeholder.shimmer.Shimmer
 import com.skydoves.landscapist.placeholder.shimmer.ShimmerPlugin
 import java.util.Locale
-
-@Composable
-fun imageLoaderSingleton(): ImageLoader {
-    val context = LocalContext.current
-    return ImageLoader.Builder(context)
-        .allowHardware(false) // Disable hardware bitmaps for shared transitions
-        .crossfade(true)
-        .memoryCache(
-            coil.memory.MemoryCache.Builder(context)
-                .maxSizePercent(0.25)
-                .build()
-        )
-        .build()
-}
 
 @Composable
 fun CoverArt(
@@ -59,8 +43,10 @@ fun CoverArt(
 ) {
     val sizeInPx = with(LocalDensity.current) { size.roundToPx() }
 
+    val difficultiesList = getDifficultiesList()
+    
     val difficultyIcon =
-        if (difficulty != null) difficultiesList.first { it.difficulty == difficulty }.icon
+        if (difficulty != null) difficultiesList.first { it.id == difficulty }.icon
         else null
 
     Box(
@@ -112,7 +98,7 @@ fun CoverArt(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.rounded_download_done_24),
-                    contentDescription = "Already downloaded chart indicator",
+                    contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .size(40.dp),
@@ -127,7 +113,7 @@ fun CoverArt(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.corner),
-                    contentDescription = "Corner for chart song cover art",
+                    contentDescription = null,
                     tint = Color.Black,
                     modifier = Modifier
                         .size(40.dp),
@@ -137,7 +123,7 @@ fun CoverArt(
                     modifier = Modifier
 						.size(24.dp)
 						.offset(x = 0.8.dp),
-                    contentDescription = "Difficulty icon for chart",
+                    contentDescription = null,
                 )
             }
         }

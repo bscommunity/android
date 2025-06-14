@@ -66,8 +66,8 @@ class AppUpdateService : Service() {
         if (versionName != null) {
             // Start as foreground service with initial notification
             val notification = createNotification(
-                title = "Downloading Update",
-                message = "Starting download for version $versionName...",
+                title = getString(R.string.downloading_update),
+                message = getString(R.string.starting_download_for_version, versionName),
                 progress = 0
             )
             startForeground(notificationId, notification)
@@ -88,15 +88,22 @@ class AppUpdateService : Service() {
                                 val progress = (state.progress * 100).toInt()
                                 Log.d(TAG, "Downloading update: $progress%")
                                 updateNotification(
-                                    title = "Downloading Update",
-                                    message = "Downloading version $versionName... $progress%",
+                                    title = getString(R.string.downloading_update),
+                                    message = getString(
+                                        R.string.downloading_version,
+                                        versionName,
+                                        progress
+                                    ),
                                     progress = progress
                                 )
                             }
                             is AppUpdateState.ReadyToInstall -> {
                                 updateNotification(
-                                    title = "Update Ready",
-                                    message = "Tap to install version $versionName",
+                                    title = getString(R.string.update_ready),
+                                    message = getString(
+                                        R.string.tap_to_install_version,
+                                        versionName
+                                    ),
                                     progress = 100,
                                     isOngoing = false,
                                     installIntent = buildInstallPendingIntent(apkFile)
@@ -114,8 +121,8 @@ class AppUpdateService : Service() {
                             }
                             is AppUpdateState.Error -> {
                                 updateNotification(
-                                    title = "Update Failed",
-                                    message = "Error: ${state.message}",
+                                    title = getString(R.string.update_failed),
+                                    message = getString(R.string.error, state.message),
                                     progress = 0,
                                     isOngoing = false
                                 )
@@ -127,8 +134,8 @@ class AppUpdateService : Service() {
                     }
                 } catch (e: Exception) {
                     updateNotification(
-                        title = "Update Failed",
-                        message = "Error: ${e.message}",
+                        title = getString(R.string.update_failed),
+                        message = getString(R.string.error, e.message),
                         progress = 0,
                         isOngoing = false
                     )

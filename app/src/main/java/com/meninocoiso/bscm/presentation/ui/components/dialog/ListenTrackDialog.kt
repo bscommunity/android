@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.meninocoiso.bscm.R
@@ -74,14 +75,14 @@ fun ListenTrackDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(text = "Support the artist")
+            Text(text = stringResource(R.string.support_the_artist))
         },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(text = "Check out the full song from this chart on your favorite streaming service and support the artist work")
+                Text(text = stringResource(R.string.support_the_artist_description))
                 if (platformsNames.isNotEmpty()) {
                     RadioGroupUI(
                         initialSelected = "",
@@ -103,7 +104,7 @@ fun ListenTrackDialog(
                         }
                     )
                 } else {
-                    Text(text = "No streaming links available")
+                    Text(text = stringResource(R.string.empty_streaming_links))
                 }
             }
         },
@@ -112,7 +113,7 @@ fun ListenTrackDialog(
                 onDismiss()
                 platform = null
             }) {
-                Text(text = "Cancel")
+                Text(text = stringResource(R.string.cancel))
             }
         },
         confirmButton = {
@@ -139,7 +140,7 @@ fun ListenTrackDialog(
                 },
                 enabled = platform != null
             ) {
-                Text(text = "Listen")
+                Text(text = stringResource(R.string.listen))
             }
         }
     )

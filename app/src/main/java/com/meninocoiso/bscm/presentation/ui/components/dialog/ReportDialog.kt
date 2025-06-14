@@ -13,23 +13,22 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.domain.enums.ReportType
 import com.meninocoiso.bscm.presentation.ui.components.RadioGroupUI
 
-enum class ReportType {
-    EXPLICIT_CONTENT,
-    VIOLENT_CONTENT,
-    SPAM,
-    INTELLECTUAL_PROPERTY
+@Composable
+private fun getReportTypeString(): Map<ReportType, String> {
+    return mapOf(
+        ReportType.EXPLICIT_CONTENT to stringResource(R.string.explicit_content),
+        ReportType.VIOLENT_CONTENT to stringResource(R.string.violent_content),
+        ReportType.SPAM to stringResource(R.string.spam),
+        ReportType.INTELLECTUAL_PROPERTY to stringResource(R.string.intellectual_property)
+    )
 }
-
-val ReportTypeStrings = mapOf(
-    ReportType.EXPLICIT_CONTENT to "Explicit content",
-    ReportType.VIOLENT_CONTENT to "Violent content",
-    ReportType.SPAM to "Spam",
-    ReportType.INTELLECTUAL_PROPERTY to "Intellectual property"
-)
 
 @Preview
 @Composable
@@ -63,22 +62,23 @@ fun ReportDialog(
     ) -> Unit
 ) {
     var type by remember { mutableStateOf<ReportType?>(null) }
+    val reportTypeStrings = getReportTypeString()
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(text = "Report")
+            Text(text = stringResource(R.string.report))
         },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(text = "Help the community by flagging inappropriate content\nYour report is anonymous")
+                Text(text = stringResource(R.string.report_description))
                 RadioGroupUI(
                     initialSelected = "",
                     radioOptions = ReportType.entries.map {
-                        ReportTypeStrings[it]!!
+                        reportTypeStrings[it]!!
                     },
                     onOptionSelected = { index, _ ->
                         type = ReportType.entries.elementAt(index)
@@ -88,7 +88,7 @@ fun ReportDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(text = "Cancel")
+                Text(text = stringResource(R.string.cancel))
             }
         },
         confirmButton = {
@@ -99,7 +99,7 @@ fun ReportDialog(
                     onDismiss()
                 }
             ) {
-                Text(text = "Confirm")
+                Text(text = stringResource(R.string.confirm))
             }
         }
     )

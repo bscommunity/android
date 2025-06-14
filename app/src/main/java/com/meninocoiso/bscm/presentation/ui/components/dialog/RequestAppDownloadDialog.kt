@@ -8,6 +8,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 
@@ -23,24 +24,24 @@ fun RequestAppDownloadDialog(
                     R.drawable.baseline_device_unknown_24
                 ),
                 modifier = Modifier.size(24.dp),
-                contentDescription = "App not found icon"
+                contentDescription = null
             )
         },
         title = {
-            Text(text = "Modded app not installed")
+            Text(text = stringResource(R.string.mod_not_installed))
         },
         text = {
-            Text(text = "We couldn't find the modded app on your device. Visit the 'Installations' section on the Updates page to download the latest version.")
+            Text(text = stringResource(R.string.mod_not_installed_description))
         },
         onDismissRequest = onDismissRequest,
         confirmButton = {
             TextButton(onClick = onConfirmation) {
-                Text("Go to Updates")
+                Text(stringResource(R.string.go_to_updates))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismissRequest) {
-                Text("Dismiss")
+                Text(stringResource(R.string.dismiss))
             }
         }
     )

@@ -38,6 +38,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -73,7 +74,7 @@ fun SettingsScreen(
     LaunchedEffect(updateState) {
         when (updateState) {
             is AppUpdateState.UpToDate -> {
-                onSnackbar("App is up to date")
+                onSnackbar(context.getString(R.string.up_to_date))
             }
 
             is AppUpdateState.Error ->
@@ -82,6 +83,8 @@ fun SettingsScreen(
             else -> {}
         }
     }
+    
+    val featureNotImplementedString = stringResource(R.string.feature_not_implemented)
 
     Column(
         modifier = Modifier
@@ -99,23 +102,23 @@ fun SettingsScreen(
                 .fillMaxWidth()
                 .padding(top = 64.dp)
         ) {
-            Text(text = "Settings", style = MaterialTheme.typography.displayMedium)
+            Text(text = stringResource(R.string.settings), style = MaterialTheme.typography.displayMedium)
         }
 
-        SettingsCard(title = "Account") {
+        SettingsCard(title = stringResource(R.string.account)) {
             ListItem(
                 modifier = Modifier.settingsCard(),
                 headlineContent = {
-                    HeadlineText("Link account")
+                    HeadlineText(stringResource(R.string.link_account))
                 },
                 supportingContent = {
                     SupportingText(
-                        "Save your favorite content and keep it with yourself"
+                        stringResource(R.string.link_account_description)
                     )
                 },
                 trailingContent = {
                     Button(onClick = {
-                        onSnackbar("Account linking not yet implemented")
+                        onSnackbar(featureNotImplementedString) 
                     }) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(ButtonDefaults.IconSpacing),
@@ -124,24 +127,24 @@ fun SettingsScreen(
                             Icon(
                                 modifier = Modifier.size(ButtonDefaults.IconSize),
                                 painter = painterResource(id = R.drawable.discord),
-                                contentDescription = "Discord icon"
+                                contentDescription = stringResource(R.string.discord_icon)
                             )
-                            Text(text = "Connect")
+                            Text(text = stringResource(R.string.connect))
                         }
                     }
                 }
             )
         }
 
-        SettingsCard(title = "Preferences") {
+        SettingsCard(title = stringResource(R.string.preferences)) {
             ListItem(
                 modifier = Modifier.settingsCard(),
                 headlineContent = {
-                    HeadlineText("Explicit content")
+                    HeadlineText(stringResource(R.string.explicit_content))
                 },
                 supportingContent = {
                     SupportingText(
-                        "Allow the display of charts with explicit songs"
+                        stringResource(R.string.explicit_content_description)
                     )
                 },
                 trailingContent = {
@@ -157,11 +160,11 @@ fun SettingsScreen(
             ListItem(
                 modifier = Modifier.settingsCard(),
                 headlineContent = {
-                    HeadlineText("Gameplay preview")
+                    HeadlineText(stringResource(R.string.gameplay_preview))
                 },
                 supportingContent = {
                     SupportingText(
-                        "Enable gameplay video previews.\nThis may affect performance."
+                        stringResource(R.string.gameplay_preview_description)
                     )
                 },
                 trailingContent = {
@@ -196,15 +199,15 @@ fun SettingsScreen(
             )*/
         }
 
-        SettingsCard(title = "Customization") {
+        SettingsCard(title = stringResource(R.string.customization)) {
             ListItem(
                 modifier = Modifier.settingsCard(),
                 headlineContent = {
-                    HeadlineText("Material You")
+                    HeadlineText(stringResource(R.string.material_you))
                 },
                 supportingContent = {
                     SupportingText(
-                        "Toggle use of your system accent color"
+                        stringResource(R.string.material_you_description)
                     )
                 },
                 trailingContent = {
@@ -220,11 +223,11 @@ fun SettingsScreen(
             ListItem(
                 modifier = Modifier.settingsCard(),
                 headlineContent = {
-                    HeadlineText("Theme")
+                    HeadlineText(stringResource(R.string.theme))
                 },
                 supportingContent = {
                     SupportingText(
-                        "Choose between your system preference, light and dark mode"
+                        stringResource(R.string.theme_description)
                     )
                 },
                 trailingContent = {
@@ -242,10 +245,13 @@ fun SettingsScreen(
         }
 
         SettingsCard(
-            title = "Version",
+            title = stringResource(R.string.version),
             supportingText = when(updateState) {
-                is AppUpdateState.Downloading -> "${((updateState as AppUpdateState.Downloading).progress * 100).toInt()}% concluded"
-                is AppUpdateState.UpdateAvailable -> "Client outdated"
+                is AppUpdateState.Downloading -> stringResource(
+                    R.string.concluded_progress,
+                    ((updateState as AppUpdateState.Downloading).progress * 100).toInt()
+                )
+                is AppUpdateState.UpdateAvailable -> stringResource(R.string.client_outdated)
                 else -> null
             }
         ) {
@@ -258,7 +264,7 @@ fun SettingsScreen(
                         horizontalArrangement = Arrangement.spacedBy(24.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(imageVector = Icons.Outlined.Build, contentDescription = "")
+                        Icon(imageVector = Icons.Outlined.Build, contentDescription = null)
                         HeadlineText(
                             when (updateState) {
                                 is AppUpdateState.UpdateAvailable -> "$shrunkVersionName → $shrunkLatestVersion"
@@ -292,11 +298,11 @@ fun SettingsScreen(
                     ) {
                         Text(
                             text = when (updateState) {
-                                is AppUpdateState.Checking -> "Checking for updates..."
-                                is AppUpdateState.UpdateAvailable -> "Update now"
-                                is AppUpdateState.Downloading -> "Downloading..."
-                                is AppUpdateState.ReadyToInstall -> "Install update"
-                                else -> "Check for updates"
+                                is AppUpdateState.Checking -> stringResource(R.string.checking_for_updates)
+                                is AppUpdateState.UpdateAvailable -> stringResource(R.string.update_now)
+                                is AppUpdateState.Downloading -> stringResource(R.string.downloading)
+                                is AppUpdateState.ReadyToInstall -> stringResource(R.string.install_update)
+                                else -> stringResource(R.string.check_for_updates)
                             }
                         )
                     }
@@ -324,11 +330,11 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = "Read changelog")
+                            Text(text = stringResource(R.string.read_changelog))
                             Icon(
                                 modifier = Modifier.size(ButtonDefaults.IconSize),
                                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                contentDescription = ""
+                                contentDescription = null
                             )
                         }
                     }
@@ -336,7 +342,7 @@ fun SettingsScreen(
             )
         }
 
-        SettingsCard(title = "Legal") {
+        SettingsCard(title = stringResource(R.string.legal)) {
             ListItem(
                 modifier = Modifier.settingsCard(
                     padding = PaddingValues(top = 8.dp, bottom = 0.dp, start = 8.dp, end = 8.dp)
@@ -362,11 +368,11 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = "Terms of Use")
+                            Text(text = stringResource(R.string.terms_of_use))
                             Icon(
                                 modifier = Modifier.size(ButtonDefaults.IconSize),
                                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                contentDescription = ""
+                                contentDescription = null
                             )
                         }
                     }
@@ -397,11 +403,11 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = "Privacy Police")
+                            Text(text = stringResource(R.string.privacy_police))
                             Icon(
                                 modifier = Modifier.size(ButtonDefaults.IconSize),
                                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                contentDescription = ""
+                                contentDescription = null
                             )
                         }
                     }

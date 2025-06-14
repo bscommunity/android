@@ -29,7 +29,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.meninocoiso.bscm.R
 
 const val EXPANSION_ANIMATION_DURATION = 300
 
@@ -62,7 +64,7 @@ fun CollapsableSection(
 			Text(text = title, style = MaterialTheme.typography.titleMedium)
 			Icon(
 				imageVector = Icons.Default.KeyboardArrowDown,
-				contentDescription = "Expand/Collapse icon",
+				contentDescription = stringResource(R.string.expand_collapse),
 				modifier = Modifier
 					.rotate(iconRotationDeg)
 					.clickable {

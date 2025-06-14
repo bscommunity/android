@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.res.stringResource
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 
@@ -18,8 +19,8 @@ internal fun InstallationsSection(
         contentAlignment = Alignment.Center,
     ) {
         StatusMessageUI(
-            title = "Work in progress!",
-            message = "This feature still needs some work\nPlease, check back later",
+            title = stringResource(R.string.work_in_progress),
+            message = stringResource(R.string.work_in_progress_description),
             icon = R.drawable.rounded_hourglass_24,
         )
     }

@@ -2,6 +2,7 @@ package com.meninocoiso.bscm.presentation.ui.components.workshop
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,10 +33,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ConfirmationDialog
@@ -90,7 +94,7 @@ fun WorkshopSearchBar(
             textFieldState.setTextAndSelectAll(textFieldState.text.toString())
         }
     }
-    
+
     val onQueryFinish: (String) -> Unit = { query ->
         textFieldState.setTextAndPlaceCursorAtEnd(query)
         onSearch(query)
@@ -103,17 +107,23 @@ fun WorkshopSearchBar(
                 searchBarState = searchBarState,
                 textFieldState = textFieldState,
                 onSearch = onQueryFinish,
-                placeholder = { Text("Search in workshop") },
+                placeholder = { Text(stringResource(R.string.search_in_workshop)) },
                 leadingIcon = {
                     if (searchBarState.currentValue == SearchBarValue.Expanded ||
-                        !textFieldState.text.isEmpty()) {
+                        !textFieldState.text.isEmpty()
+                    ) {
                         IconButton(onClick = {
                             scope.launch { searchBarState.animateToCollapsed() }
                             textFieldState.setTextAndPlaceCursorAtEnd("")
                             onSearch("")
                         }
                         ) {
-                            Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
+                            Icon(
+                                Icons.AutoMirrored.Default.ArrowBack,
+                                contentDescription = stringResource(
+                                    R.string.back
+                                )
+                            )
                         }
                     } else {
                         Icon(Icons.Default.Search, contentDescription = null)
@@ -148,7 +158,7 @@ fun WorkshopSearchBar(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Search,
-                            contentDescription = "Search icon",
+                            contentDescription = null,
                             modifier = Modifier.padding(end = 10.dp)
                         )
                         Text(
@@ -158,7 +168,7 @@ fun WorkshopSearchBar(
                 }
             } else if (historyItems.isNotEmpty()) {
                 Text(
-                    text = "Recent searches",
+                    text = stringResource(R.string.recent_searches),
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(
                         start = 16.dp,
@@ -177,19 +187,34 @@ fun WorkshopSearchBar(
                                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                     historyItemToDelete = it
                                 },
-                                onLongClickLabel = "Delete history item"
+                                onLongClickLabel = stringResource(R.string.delete_history_item)
                             )
                             .padding(16.dp)
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.rounded_history_24),
-                            contentDescription = "History icon",
+                            contentDescription = stringResource(R.string.history),
                             modifier = Modifier.padding(end = 10.dp)
                         )
                         Text(
                             text = it,
                         )
                     }
+                }
+            } else {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier
+                        .padding(top = 32.dp)
+                        .fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(R.string.search_description),
+                        style = MaterialTheme.typography.labelLarge,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(0.5f)
+                    )
                 }
             }
         }
@@ -201,8 +226,8 @@ fun WorkshopSearchBar(
                 onHistoryItemDelete(historyItemToDelete!!)
                 historyItemToDelete = null
             },
-            title = "Remove ${historyItemToDelete!!}",
-            message = "Are you sure you want to remove this item from your search history?"
+            title = stringResource(R.string.remove_history_item, historyItemToDelete!!),
+            message = stringResource(R.string.remove_history_item_description)
         )
     }
     /*if (isFilterSheetOpen) {

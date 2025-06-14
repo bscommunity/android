@@ -21,10 +21,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.ui.components.details.GameplayPreview
 import com.meninocoiso.bscm.presentation.ui.components.details.GameplayPreviewThumbnail
 import com.meninocoiso.bscm.presentation.ui.components.details.OpenLinkIntent
@@ -101,8 +103,10 @@ fun MediaCarousel(items: List<CarouselItem>, isVideoEnabled: Boolean) {
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                "No gameplay available",
-                                modifier = Modifier.align(Alignment.Center).widthIn(max = 75.dp),
+                                stringResource(R.string.no_gameplay_available),
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .widthIn(max = 75.dp),
                                 fontSize = 14.sp,
                                 textAlign = TextAlign.Center
                             )

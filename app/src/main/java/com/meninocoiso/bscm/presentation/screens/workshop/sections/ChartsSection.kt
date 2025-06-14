@@ -20,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
@@ -42,6 +44,8 @@ internal fun ChartsSection(
     onSnackbar: (String) -> Unit,
     viewModel: WorkshopViewModel
 ) {
+    val context = LocalContext.current
+    
     val searchCharts by viewModel.searchCharts.collectAsStateWithLifecycle(initialValue = emptyList())
     val feedCharts by viewModel.feedCharts.collectAsStateWithLifecycle(initialValue = emptyList())
 
@@ -93,8 +97,8 @@ internal fun ChartsSection(
 
                 is ChartState.Error -> {
                     StatusMessageUI(
-                        title = "Looks like something went wrong...",
-                        message = "Please check your connection and try again",
+                        title = stringResource(R.string.something_went_wrong),
+                        message = stringResource(R.string.check_connection),
                         icon = R.drawable.rounded_emergency_home_24,
                         onClick = { viewModel.fetchFeedCharts() },
                         modifier = Modifier.fillMaxSize()
@@ -106,11 +110,11 @@ internal fun ChartsSection(
         } else if (hasActiveQuery && searchCharts.isEmpty()) {
             // No charts to display - show empty state
             StatusMessageUI(
-                title = "No charts found",
-                message = "Try searching for something else",
+                title = stringResource(R.string.no_charts_found),
+                message = stringResource(R.string.no_charts_found_description),
                 icon = R.drawable.outline_filter_alt_24,
                 onClick = { viewModel.clearSearch() },
-                buttonLabel = "Clear search",
+                buttonLabel = stringResource(R.string.clear_search),
                 modifier = Modifier.fillMaxSize()
             )
         } else {
@@ -134,7 +138,7 @@ internal fun ChartsSection(
                             chart = chart,
                             isBlocked = chart.isExplicit && !isExplicitAllowed.value,
                             onBlocked = {
-                                onSnackbar("Explicit content disabled in settings")
+                                onSnackbar(context.getString(R.string.explicit_content_disabled))
                             },
                             onNavigateToDetails = {
                                 onNavigateToDetails(chart)

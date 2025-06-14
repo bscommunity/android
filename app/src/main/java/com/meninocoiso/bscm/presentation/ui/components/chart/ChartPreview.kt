@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
@@ -44,7 +45,7 @@ import com.meninocoiso.bscm.presentation.screens.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.bscm.presentation.ui.modifiers.debouncedClickable
-import com.meninocoiso.bscm.util.DateUtils
+import com.meninocoiso.bscm.util.StringUtils
 import java.time.LocalDate
 
 @Composable
@@ -81,7 +82,12 @@ fun ChartAuthors(
                 }
                 Text(
                     style = MaterialTheme.typography.bodySmall,
-                    text = "Chart by @${authors[0].user.username}${if (authors.size > 1) " and others" else ""}",
+                    text = "${stringResource(
+                        R.string.chart_by,
+                        authors[0].user.username
+                    )} ${if (authors.size > 1) stringResource(
+                        R.string.and_others
+                    ) else ""}",
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.sizeIn(maxWidth = maxWidthDp)
@@ -149,7 +155,7 @@ private fun TrackTitleInlineContent(
             Icon(
                 modifier = Modifier.size(14.dp),
                 painter = painterResource(R.drawable.explicit),
-                contentDescription = "Explicit"
+                contentDescription = stringResource(R.string.explicit)
             )
         }
     }
@@ -164,7 +170,7 @@ private fun TrackTitleInlineContent(
             Icon(
                 modifier = Modifier.size(14.dp),
                 painter = painterResource(R.drawable.deluxe),
-                contentDescription = "Deluxe"
+                contentDescription = stringResource(R.string.deluxe)
             )
         }
     }
@@ -212,7 +218,9 @@ fun ChartPreview(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
@@ -235,7 +243,7 @@ fun ChartPreview(
                             Text(
                                 modifier = Modifier.padding(start = 8.dp),
                                 style = MaterialTheme.typography.labelMedium,
-                                text = DateUtils.toRelativeString(chart.latestVersion.publishedAt)
+                                text = StringUtils.toRelativeString(chart.latestVersion.publishedAt)
                             )
                         }
                     }

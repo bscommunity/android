@@ -11,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -59,11 +60,11 @@ fun ChartDetailsRoute(
 
                 is DetailsState.Error -> {
                     StatusMessageUI(
-                        title = "Failed to load chart details",
+                        title = stringResource(R.string.failed_to_load_chart_details),
                         icon = R.drawable.rounded_error_24,
                         message = (chartState as DetailsState.Error).message
-                            ?: "An error occurred while loading the chart details",
-                        buttonLabel = "Retry",
+                            ?: stringResource(R.string.failed_to_load_chart_details_description),
+                        buttonLabel = stringResource(R.string.retry),
                         onClick = {
                             viewModel.fetchChartById(chartId)
                         },

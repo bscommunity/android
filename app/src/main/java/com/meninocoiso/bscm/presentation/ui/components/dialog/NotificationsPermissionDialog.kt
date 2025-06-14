@@ -17,7 +17,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
+import com.meninocoiso.bscm.R
 
 @Composable
 fun NotificationsPermissionDialog() {
@@ -66,8 +68,8 @@ fun NotificationsPermissionDialog() {
     if (showRationale) {
         AlertDialog(
             onDismissRequest = { showRationale = false },
-            title = { Text("Notifications Required") },
-            text = { Text("Notifications are important to show you the status of your downloads.\nWould you like to enable them?") },
+            title = { Text(stringResource(R.string.notifications_required)) },
+            text = { Text(stringResource(R.string.notifications_required_description)) },
             confirmButton = {
                 TextButton(onClick = {
                     showRationale = false
@@ -75,12 +77,12 @@ fun NotificationsPermissionDialog() {
                         permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     }
                 }) {
-                    Text("Try Again")
+                    Text(stringResource(R.string.try_again))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showRationale = false }) {
-                    Text("Not Now")
+                    Text(stringResource(R.string.not_now))
                 }
             }
         )
@@ -90,8 +92,8 @@ fun NotificationsPermissionDialog() {
     if (showSettings) {
         AlertDialog(
             onDismissRequest = { showSettings = false },
-            title = { Text("Enable Notifications") },
-            text = { Text("To enable notifications, please open app settings and grant notification permission.") },
+            title = { Text(stringResource(R.string.enable_notifications)) },
+            text = { Text(stringResource(R.string.enable_notifications_description)) },
             confirmButton = {
                 TextButton(onClick = {
                     showSettings = false
@@ -101,12 +103,12 @@ fun NotificationsPermissionDialog() {
                     }
                     context.startActivity(intent)
                 }) {
-                    Text("Open Settings")
+                    Text(stringResource(R.string.open_settings))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showSettings = false }) {
-                    Text("Not Now")
+                    Text(stringResource(R.string.not_now))
                 }
             }
         )

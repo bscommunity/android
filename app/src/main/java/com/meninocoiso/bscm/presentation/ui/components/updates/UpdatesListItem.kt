@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
@@ -54,7 +55,11 @@ internal fun UpdateListItem(
         },
         supportingContent = {
             Text(
-                text = "Update from v${chart.latestVersion.index + 1} → v${chart.availableVersion?.index?.plus(1)}",
+                text = stringResource(
+                    R.string.update_from_to,
+                    chart.latestVersion.index + 1,
+                    chart.availableVersion?.index?.plus(1) ?: 0
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 lineHeight = TextUnit(1f, TextUnitType.Em)
             )
@@ -87,13 +92,13 @@ internal fun UpdateListItem(
                     is ContentState.Error -> {
                         Icon(
                             painter = painterResource(id = R.drawable.rounded_error_24),
-                            contentDescription = "Error icon"
+                            contentDescription = null
                         )
                     }
                     else -> {
                         Icon(
                             painter = painterResource(id = R.drawable.rounded_download_24),
-                            contentDescription = "Update icon"
+                            contentDescription = stringResource(R.string.update)
                         )
                     }
                 }

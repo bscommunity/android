@@ -1,11 +1,14 @@
 package com.meninocoiso.bscm.presentation.viewmodel
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.repository.ChartRepository
 import com.meninocoiso.bscm.domain.model.Chart
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,6 +31,7 @@ sealed class DetailsState {
 
 @HiltViewModel
 class ChartDetailsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     @Named("Remote") private val remoteChartRepository: ChartRepository,
     @Named("Local") private val localChartRepository: ChartRepository
 ) : ViewModel() {
@@ -36,7 +40,7 @@ class ChartDetailsViewModel @Inject constructor(
 
     fun fetchChartById(chartId: String?) {
         if (chartId.isNullOrEmpty()) {
-            _chart.value = DetailsState.Error("Invalid chart ID")
+            _chart.value = DetailsState.Error(context.getString(R.string.invalid_chart_id))
             return
         }
 

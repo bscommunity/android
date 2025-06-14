@@ -11,9 +11,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.UpdatesSection
 import com.meninocoiso.bscm.presentation.screens.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.screens.updates.sections.InstallationsSection
@@ -23,16 +25,19 @@ import com.meninocoiso.bscm.presentation.ui.components.TabsUI
 import com.meninocoiso.bscm.presentation.viewmodel.UpdatesViewModel
 import com.meninocoiso.bscm.util.AppBarUtils
 
-private val updatesTabsItems = listOf(
-	TabItem(
-		title = "Workshop",
-		hasNews = false
-	),
-	TabItem(
-		title = "Installations",
-		hasNews = false
+@Composable
+private fun getUpdatesTabsItems(): List<TabItem> {
+	return listOf(
+		TabItem(
+			title = stringResource(R.string.workshop),
+			hasNews = false
+		),
+		TabItem(
+			title = stringResource(R.string.installations),
+			hasNews = false
+		)
 	)
-)
+}
 
 private val TabsHeight = 55.dp
 
@@ -44,6 +49,8 @@ fun UpdatesScreen(
 	onFabStateChange: (Boolean) -> Unit,
 	viewModel: UpdatesViewModel = hiltViewModel(),
 ) {
+	
+	val updatesTabsItems = getUpdatesTabsItems()
 
 	val horizontalPagerState = rememberPagerState {
 		updatesTabsItems.size

@@ -25,10 +25,11 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.domain.lists.difficultiesList
-import com.meninocoiso.bscm.domain.lists.genresList
+import com.meninocoiso.bscm.domain.lists.getDifficultiesList
+import com.meninocoiso.bscm.domain.lists.getGenresList
 import com.meninocoiso.bscm.presentation.ui.components.CollapsableSection
 import java.util.Locale
 
@@ -71,6 +72,9 @@ fun WorkshopFilterBottomSheet(
 	onDismissRequest: () -> Unit,
 	onClose: () -> Unit
 ) {
+	val difficultiesList = getDifficultiesList()
+	val genresList = getGenresList()
+	
 	ModalBottomSheet(
 		sheetState = sheetState,
 		onDismissRequest = onDismissRequest,
@@ -82,15 +86,15 @@ fun WorkshopFilterBottomSheet(
 			horizontalArrangement = Arrangement.SpaceBetween,
 			verticalAlignment = Alignment.CenterVertically
 		) {
-			Text(text = "Filters", style = MaterialTheme.typography.titleLarge)
+			Text(text = stringResource(R.string.filters), style = MaterialTheme.typography.titleLarge)
 			IconButton(onClick = onClose) {
-				Icon(imageVector = Icons.Default.Close, contentDescription = "Close BottomSheet")
+				Icon(imageVector = Icons.Default.Close, contentDescription = stringResource(R.string.close_bottomsheet))
 			}
 		}
 		Column(
 			modifier = Modifier.verticalScroll(rememberScrollState())
 		) {
-			CollapsableSection(title = "Awarded") {
+			CollapsableSection(title = stringResource(R.string.awarded)) {
 				ExtendedFilterChip(
 					filtersList = filtersList,
 					id = "editor_choice",
@@ -98,11 +102,11 @@ fun WorkshopFilterBottomSheet(
 						Icon(
 							modifier = Modifier.size(FilterChipDefaults.IconSize),
 							painter = painterResource(id = R.drawable.rounded_award_star_24),
-							contentDescription = "Editor's Choice"
+							contentDescription = null
 						)
 					},
 					label = {
-						Text(text = "Editor’s Choice")
+						Text(text = stringResource(R.string.editors_choice))
 					}
 				)
 				ExtendedFilterChip(
@@ -112,11 +116,11 @@ fun WorkshopFilterBottomSheet(
 						Icon(
 							modifier = Modifier.size(FilterChipDefaults.IconSize),
 							painter = painterResource(id = R.drawable.rounded_local_fire_department_24),
-							contentDescription = "Featured"
+							contentDescription = null
 						)
 					},
 					label = {
-						Text(text = "Featured")
+						Text(text = stringResource(R.string.featured))
 					}
 				)
 				ExtendedFilterChip(
@@ -126,56 +130,56 @@ fun WorkshopFilterBottomSheet(
 						Icon(
 							modifier = Modifier.size(FilterChipDefaults.IconSize),
 							painter = painterResource(id = R.drawable.rounded_trending_up_24),
-							contentDescription = "Trending"
+							contentDescription = null
 						)
 					},
 					label = {
-						Text(text = "Trending")
+						Text(text = stringResource(R.string.trending))
 					}
 				)
 			}
-			CollapsableSection(title = "Difficulty") {
+			CollapsableSection(title = stringResource(R.string.difficulty)) {
 				difficultiesList.forEach {
 					ExtendedFilterChip(
 						filtersList = filtersList,
-						id = it.id.lowercase(Locale.ROOT),
+						id = it.label.lowercase(Locale.ROOT),
 						label = {
-							Text(text = it.id)
+							Text(text = it.label)
 						}
 					)
 				}
 			}
-			CollapsableSection(title = "Genre") {
+			CollapsableSection(title = stringResource(R.string.genre)) {
 				genresList.forEach {
 					ExtendedFilterChip(
 						filtersList = filtersList,
-						id = it.name,
+						id = it.label,
 						leadingIcon = {
 							Icon(
 								painter = painterResource(id = it.icon),
-								contentDescription = it.name
+								contentDescription = it.label
 							)
 						},
 						label = {
-							Text(text = it.name.lowercase()
+							Text(text = it.label.lowercase()
 								.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() })
 						}
 					)
 				}
 			}
-			CollapsableSection(title = "Version") {
+			CollapsableSection(title = stringResource(R.string.version)) {
 				ExtendedFilterChip(
 					filtersList = filtersList,
 					id = "default",
 					label = {
-						Text(text = "Default")
+						Text(text = stringResource(R.string.no_deluxe))
 					}
 				)
 				ExtendedFilterChip(
 					filtersList = filtersList,
 					id = "deluxe",
 					label = {
-						Text(text = "Deluxe")
+						Text(text = stringResource(R.string.deluxe))
 					}
 				)
 			}

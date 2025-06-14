@@ -14,8 +14,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.ui.components.RadioGroupUI
 
 enum class FeedbackType {
@@ -23,10 +25,13 @@ enum class FeedbackType {
     SUGGESTION,
 }
 
-val FeedbackTypeStrings = mapOf<FeedbackType, String>(
-    FeedbackType.BUG to "Bug",
-    FeedbackType.SUGGESTION to "Suggestion"
-)
+@Composable
+fun getFeedbackTypeString(): Map<FeedbackType, String> {
+    return mapOf<FeedbackType, String>(
+        FeedbackType.BUG to stringResource(R.string.bug),
+        FeedbackType.SUGGESTION to stringResource(R.string.suggestion)
+    )
+}
 
 @Preview
 @Composable
@@ -50,6 +55,8 @@ fun FeedbackDialog(
 
     var type by remember { mutableStateOf(FeedbackType.BUG) }
     var text by remember { mutableStateOf("") }
+    
+    val feedbackTypeStrings = getFeedbackTypeString()
 
     Button(onClick = {
         setIsOpened(true)
@@ -63,17 +70,17 @@ fun FeedbackDialog(
             AlertDialog(
                 onDismissRequest = { setIsOpened(false) },
                 title = {
-                    Text(text = "Feedback")
+                    Text(text = stringResource(R.string.feedback))
                 },
                 text = {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(text = "Help the chart contributors to improve by reporting bugs or suggesting new features.")
+                        Text(text = stringResource(R.string.feedback_description))
                         RadioGroupUI(
                             radioOptions = FeedbackType.entries.map {
-                                FeedbackTypeStrings[it]!!
+                                feedbackTypeStrings[it]!!
                             },
                             onOptionSelected = { index, _ ->
                                 type = FeedbackType.entries.elementAt(index)
@@ -86,7 +93,7 @@ fun FeedbackDialog(
                                     text = newText
                                 }
                             },
-                            label = { Text("Feedback") },
+                            label = { Text(stringResource(R.string.feedback)) },
                             maxLines = 5,
                             minLines = 3,
                             supportingText = { Text("${text.length}/200") }
@@ -97,7 +104,7 @@ fun FeedbackDialog(
                     TextButton(onClick = {
                         setIsOpened(false)
                     }) {
-                        Text(text = "Cancel")
+                        Text(text = stringResource(R.string.cancel))
                     }
                 },
                 confirmButton = {
@@ -105,7 +112,7 @@ fun FeedbackDialog(
                         onSubmit(FeedbackType.BUG, "Test")
                         setIsOpened(false)
                     }) {
-                        Text(text = "Confirm")
+                        Text(text = stringResource(R.string.confirm))
                     }
                 }
             )

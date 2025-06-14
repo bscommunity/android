@@ -9,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.ui.components.dialog.RequestAppDownloadDialog
 import com.meninocoiso.bscm.util.LinkingUtils.launchBeatClone
@@ -24,11 +25,11 @@ fun LaunchAppButton(
 
 	ExtendedFloatingActionButton(
 		modifier = modifier,
-		text = { Text("Launch app") },
+		text = { Text(stringResource(R.string.launch_app)) },
 		icon = {
 			Icon(
 				painter = painterResource(id = R.drawable.outline_play_circle_24),
-				contentDescription = "Launch app"
+				contentDescription = stringResource(R.string.launch_app)
 			)
 		},
 		onClick = {

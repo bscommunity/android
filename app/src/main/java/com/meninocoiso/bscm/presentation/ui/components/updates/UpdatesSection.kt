@@ -20,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,6 +53,7 @@ fun UpdatesSection(
     nestedScrollConnection: NestedScrollConnection,
     contentViewModel: ContentViewModel = hiltViewModel(),
 ) {
+    val context = LocalContext.current
     val itemsUpdating = remember { mutableStateListOf<String>() }
     
     LaunchedEffect(Unit) {
@@ -58,9 +61,9 @@ fun UpdatesSection(
             when (event) {
                 is DownloadEvent.Complete -> {
                     itemsUpdating.remove(event.chartId)
-                    onSnackbar("Update complete")
+                    onSnackbar(context.getString(R.string.update_complete))
                 }
-                is DownloadEvent.Error -> onSnackbar("Error: ${event.message}")
+                is DownloadEvent.Error -> onSnackbar(context.getString(R.string.error, event.message))
                 else -> {}
             }
         }
@@ -68,9 +71,9 @@ fun UpdatesSection(
 
     Section(
         title = if (charts.isNotEmpty()) {
-            "Updates available (${charts.size})"
+            stringResource(R.string.updates_available, charts.size)
         } else {
-            "Updates"
+            stringResource(R.string.updates)
         },
         thickness = 0.dp,
         titleModifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
@@ -80,8 +83,8 @@ fun UpdatesSection(
             is ChartState.Error -> {
                 UpdatesPanel {
                     StatusMessageUI(
-                        title = "We couldn't fetch updates...",
-                        message = "Please check your connection and try again later",
+                        title = stringResource(R.string.fetch_updates_error),
+                        message = stringResource(R.string.check_connection),
                         icon = R.drawable.rounded_hourglass_disabled_24,
                         size = Size.Small,
                         modifier = Modifier.padding(16.dp)
@@ -108,7 +111,7 @@ fun UpdatesSection(
             is ChartState.Success -> {
                 if (charts.isEmpty()) {
                     UpdatesPanel {
-                        Text(text = "No updates available")
+                        Text(text = stringResource(R.string.no_updates_available))
                     }
                 } else {
                     SectionWrapper(

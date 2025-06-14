@@ -11,7 +11,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
+import com.meninocoiso.bscm.R
 import kotlinx.coroutines.launch
 
 @Composable
@@ -58,14 +60,13 @@ fun StoragePermissionDialog(
         },*/
         title = {
             Text(
-                text = "Storage Permission Required",
+                text = stringResource(R.string.storage_permission_required),
                 style = MaterialTheme.typography.headlineSmall
             )
         },
         text = {
             Text(
-                text = "To download charts, the app needs permission to access your storage.\n" +
-                        "Please select or create a 'beatstar' folder on the root folder of your phone."
+                text = stringResource(R.string.storage_permission_required_description)
             )
         },
         onDismissRequest = onDismiss,
@@ -78,12 +79,12 @@ fun StoragePermissionDialog(
                     folderPickerLauncher.launch(initialUri)
                 }
             ) {
-                Text("Select folder")
+                Text(stringResource(R.string.select_folder))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )

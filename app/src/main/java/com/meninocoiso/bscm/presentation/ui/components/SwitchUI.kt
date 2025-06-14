@@ -9,6 +9,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.meninocoiso.bscm.R
 
 @Composable
 fun SwitchUI(
@@ -24,7 +26,7 @@ fun SwitchUI(
 			{
 				Icon(
 					imageVector = Icons.Filled.Check,
-					contentDescription = null,
+					contentDescription = stringResource(R.string.checked),
 					modifier = Modifier.size(SwitchDefaults.IconSize),
 				)
 			}
@@ -32,7 +34,7 @@ fun SwitchUI(
 			{
 				Icon(
 					imageVector = Icons.Filled.Close,
-					contentDescription = null,
+					contentDescription = stringResource(R.string.unchecked),
 					modifier = Modifier.size(SwitchDefaults.IconSize),
 				)
 			}

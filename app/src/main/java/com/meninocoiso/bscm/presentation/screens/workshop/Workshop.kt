@@ -23,8 +23,8 @@ import com.meninocoiso.bscm.presentation.screens.workshop.sections.ThemesSection
 import com.meninocoiso.bscm.presentation.screens.workshop.sections.TourPassesSection
 import com.meninocoiso.bscm.presentation.ui.components.workshop.WorkshopChips
 import com.meninocoiso.bscm.presentation.ui.components.workshop.WorkshopSearchBar
-import com.meninocoiso.bscm.presentation.ui.components.workshop.WorkshopTabsItems
 import com.meninocoiso.bscm.presentation.ui.components.workshop.WorkshopTopBar
+import com.meninocoiso.bscm.presentation.ui.components.workshop.getWorkshopTabsItems
 import com.meninocoiso.bscm.presentation.viewmodel.WorkshopViewModel
 import com.meninocoiso.bscm.util.AppBarUtils
 
@@ -39,8 +39,10 @@ fun WorkshopScreen(
     onSnackbar: (String) -> Unit,
     viewModel: WorkshopViewModel = hiltViewModel()
 ) {
+    val workshopTabsItems = getWorkshopTabsItems()
+    
     val horizontalPagerState = rememberPagerState {
-        WorkshopTabsItems.size
+        workshopTabsItems.size
     }
 
     val bottomCollapsableHeight = remember { mutableStateOf<Dp?>(WorkshopChipsHeight) }

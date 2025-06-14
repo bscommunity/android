@@ -7,7 +7,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import com.meninocoiso.bscm.R
 
 @Preview
 @Composable
@@ -19,7 +21,7 @@ fun ConfirmationDialogPreview(
             isOpened.value = true
         }
     ) {
-        Text(text = "Open dialog")
+        Text(text = stringResource(R.string.open_dialog))
     }
     ConfirmationDialog(
         onDismiss = {
@@ -33,8 +35,8 @@ fun ConfirmationDialogPreview(
 fun ConfirmationDialog(
     onDismiss: () -> Unit = {},
     onConfirm: () -> Unit,
-    title: String = "Are you sure?",
-    message: String = "This action cannot be undone",
+    title: String = stringResource(R.string.confirmation_title),
+    message: String = stringResource(R.string.confirmation_description),
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -46,7 +48,7 @@ fun ConfirmationDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(text = "Cancel")
+                Text(text = stringResource(R.string.cancel))
             }
         },
         confirmButton = {
@@ -56,7 +58,7 @@ fun ConfirmationDialog(
                     onDismiss()
                 }
             ) {
-                Text(text = "Confirm")
+                Text(text = stringResource(R.string.confirm))
             }
         }
     )

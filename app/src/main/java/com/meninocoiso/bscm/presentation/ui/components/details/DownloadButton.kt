@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
@@ -88,7 +89,7 @@ fun DownloadButton(
             when (contentState) {
                 is ContentState.Idle -> Icon(
                     painter = painterResource(id = R.drawable.rounded_download_24),
-                    contentDescription = "Download chart"
+                    contentDescription = stringResource(R.string.download_chart)
                 )
 
                 is ContentState.Downloading, is ContentState.Extracting -> CircularProgressIndicator(
@@ -100,35 +101,35 @@ fun DownloadButton(
                     if (chart.availableVersion != null) {
                         Icon(
                             painter = painterResource(id = R.drawable.rounded_download_24),
-                            contentDescription = "Update chart"
+                            contentDescription = stringResource(R.string.update_chart)
                         )
                     } else {
                         Icon(
                             imageVector = Icons.Default.Check,
-                            contentDescription = "Download complete"
+                            contentDescription = stringResource(R.string.download_complete)
                         )
                     }
                 }
 
                 is ContentState.Error -> Icon(
                     imageVector = Icons.Default.Refresh,
-                    contentDescription = "Download failed"
+                    contentDescription = stringResource(R.string.download_failed)
                 )
             }
             Text(
                 text = when (contentState) {
-                    is ContentState.Idle -> "Download"
-                    is ContentState.Downloading -> "Downloading..."
-                    is ContentState.Extracting -> "Extracting..."
+                    is ContentState.Idle -> stringResource(R.string.download)
+                    is ContentState.Downloading -> stringResource(R.string.downloading)
+                    is ContentState.Extracting -> stringResource(R.string.extracting)
                     is ContentState.Installed -> {
                         if (chart.availableVersion != null) {
-                            "Update"
+                            stringResource(R.string.update)
                         } else {
-                            "Installed"
+                            stringResource(R.string.installed)
                         }
                     }
 
-                    is ContentState.Error -> "Try again"
+                    is ContentState.Error -> stringResource(R.string.try_again)
                 }
             )
         }

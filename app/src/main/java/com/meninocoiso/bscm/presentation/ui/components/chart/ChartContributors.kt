@@ -30,11 +30,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.domain.lists.getRolesList
 import com.meninocoiso.bscm.domain.model.Contributor
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
-import com.meninocoiso.bscm.util.StringUtils
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -112,7 +114,7 @@ private fun Layout(
                         .width(48.dp)
                         .rotate(iconRotationDeg),
                     imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = "Collapse/expand chart contributors"
+                    contentDescription = stringResource(R.string.collapse_expand_chart_contributors)
                 )
             }
         }
@@ -165,7 +167,7 @@ private fun CollapsedContributors(
                                 rememberSharedContentState(key = "credits-title"),
                                 animatedVisibilityScope = animatedVisibilityScope
                             ),
-                            text = "Credits",
+                            text = stringResource(R.string.credits),
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
@@ -175,7 +177,7 @@ private fun CollapsedContributors(
                                     rememberSharedContentState(key = "credits-description"),
                                     animatedVisibilityScope = animatedVisibilityScope
                                 ),
-                            text = "Chart by $authorsNames",
+                            text = stringResource(R.string.chart_by, authorsNames),
                             overflow = TextOverflow.Ellipsis,
                             maxLines = 1, // Limiting to 1 line
                             style = MaterialTheme.typography.bodyMedium,
@@ -196,6 +198,8 @@ private fun ExpandedContributors(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
+    val rolesList = getRolesList()
+    
     Layout(
         onEvent = onCollapse,
         iconRotationDeg,
@@ -207,7 +211,7 @@ private fun ExpandedContributors(
                             rememberSharedContentState(key = "credits-title"),
                             animatedVisibilityScope = animatedVisibilityScope
                         ),
-                        text = "Credits",
+                        text = stringResource(R.string.credits),
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
@@ -215,7 +219,7 @@ private fun ExpandedContributors(
                             rememberSharedContentState(key = "credits-description"),
                             animatedVisibilityScope = animatedVisibilityScope
                         ),
-                        text = "The following users contributed to this chart:",
+                        text = stringResource(R.string.contributors_list_title),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
@@ -225,6 +229,11 @@ private fun ExpandedContributors(
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
             for (author in authors) {
+                val roles= author.roles
+                    .map { role ->
+                        rolesList.find { it.id == role }?.name
+                    }
+                
                 Row(
                     Modifier.padding(
                         vertical = 8.dp
@@ -251,9 +260,7 @@ private fun ExpandedContributors(
                             style = MaterialTheme.typography.labelLarge
                         )
                         Text(
-                            text = author.roles.joinToString(", ") {
-                                StringUtils.getAuthorRole(it)
-                            },
+                            text = roles.joinToString(", "),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }

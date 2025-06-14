@@ -12,28 +12,33 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.ui.components.TabItem
 import com.meninocoiso.bscm.presentation.ui.components.TabsUI
 import com.meninocoiso.bscm.util.AppBarUtils
 
-val WorkshopTabsItems = listOf(
-	TabItem(
-		title = "Charts",
-		hasNews = false
-	),
-	TabItem(
-		title = "Tour Passes",
-		hasNews = false,
-		badgeCount = 3
-	),
-	TabItem(
-		title = "Themes",
-		hasNews = false
+@Composable
+fun getWorkshopTabsItems(): List<TabItem> {
+	return listOf(
+		TabItem(
+			title = stringResource(R.string.charts),
+			hasNews = false
+		),
+		TabItem(
+			title = stringResource(R.string.tour_passes),
+			hasNews = false,
+			badgeCount = 3
+		),
+		TabItem(
+			title = stringResource(R.string.themes),
+			hasNews = false
+		)
 	)
-)
+}
 
 @Composable
 fun WorkshopTopBar(
@@ -44,6 +49,8 @@ fun WorkshopTopBar(
 ) {
 	val (collapsibleHeight, fixedHeight, statusBarHeight) = appBarHeights
 
+	val workshopTabsItems = getWorkshopTabsItems()
+	
 	Column(
 		modifier = Modifier
 			.offset { IntOffset(0, connection.appBarOffset) }
@@ -54,11 +61,14 @@ fun WorkshopTopBar(
 		horizontalAlignment = Alignment.CenterHorizontally
 	) {
 		Box(
-			modifier = Modifier.weight(1f).zIndex(2f).fillMaxWidth(),
+			modifier = Modifier
+				.weight(1f)
+				.zIndex(2f)
+				.fillMaxWidth(),
 			contentAlignment = Alignment.Center
 		) {
             content()
 		}
-		TabsUI(pagerState = pagerState, tabs = WorkshopTabsItems, modifier = Modifier.zIndex(-1f))
+		TabsUI(pagerState = pagerState, tabs = workshopTabsItems, modifier = Modifier.zIndex(-1f))
 	}
 }

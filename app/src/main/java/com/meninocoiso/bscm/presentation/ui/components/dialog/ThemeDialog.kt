@@ -9,17 +9,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.ThemePreference
 import com.meninocoiso.bscm.presentation.ui.components.RadioGroupUI
 
-val ThemeStrings = mapOf<ThemePreference, String>(
-	ThemePreference.SYSTEM to "System",
-	ThemePreference.LIGHT to "Light",
-	ThemePreference.DARK to "Dark"
-)
-
+@Composable
+private fun getThemeStrings(): Map<ThemePreference, String> {
+	return mapOf(
+		ThemePreference.SYSTEM to stringResource(R.string.system),
+		ThemePreference.LIGHT to stringResource(R.string.light),
+		ThemePreference.DARK to stringResource(R.string.dark)
+	)
+}
 
 @Preview
 @Composable
@@ -39,10 +42,12 @@ fun ThemeDialog(
 	val (isOpened, setIsOpened) = remember { mutableStateOf(false) }
 	val lastSelected = remember { mutableStateOf(option) }
 	
+	val themeStrings = getThemeStrings()
+	
 	Button(onClick = {
 		setIsOpened(true)
 	}) {
-		ThemeStrings[option]?.let {
+		themeStrings[option]?.let {
 			Text(
 				text = it
 			)
@@ -53,19 +58,19 @@ fun ThemeDialog(
 			AlertDialog(
 				onDismissRequest = { setIsOpened(false) },
 				title = {
-					Text(text = "App theme")
+					Text(text = stringResource(R.string.app_theme))
 				},
 				icon = {
 					Icon(
 						painter = painterResource(id = R.drawable.baseline_palette_24),
-						contentDescription = "Palette icon"
+						contentDescription = null
 					)
 				},
 				text = {
 					RadioGroupUI(
-						initialSelected = ThemeStrings[option]!!,
+						initialSelected = themeStrings[option]!!,
 						radioOptions = ThemePreference.entries.map {
-							ThemeStrings[it]!!
+							themeStrings[it]!!
 						},
 						onOptionSelected = { index, _ ->
 							onThemeSelected(ThemePreference.entries[index])
@@ -79,14 +84,14 @@ fun ThemeDialog(
 							onCancel(option)
 						}
 					}) {
-						Text(text = "Cancel")
+						Text(text = stringResource(R.string.cancel))
 					}
 				},
 				confirmButton = {
 					Button(onClick = {
 						setIsOpened(false)
 					}) {
-						Text(text = "Confirm")
+						Text(text = stringResource(R.string.confirm))
 					}
 				}
 			)
