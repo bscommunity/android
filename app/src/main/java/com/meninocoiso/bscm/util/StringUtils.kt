@@ -1,12 +1,15 @@
 package com.meninocoiso.bscm.util
 
+import android.icu.text.MeasureFormat
+import android.icu.util.Measure
+import android.icu.util.MeasureUnit
+import android.text.format.DateUtils
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
-import com.meninocoiso.bscm.R
+import androidx.compose.ui.platform.LocalContext
 import com.meninocoiso.bscm.domain.enums.OperationType
 import com.meninocoiso.bscm.domain.model.internal.ContentMessage
 import java.time.LocalDate
+import java.time.ZoneId
 
 object StringUtils {
     // Download state messages
@@ -74,50 +77,33 @@ object StringUtils {
         }
     }
     
-    @Composable
     fun toRelativeString(date: LocalDate): String {
         val now = LocalDate.now()
-        val diff = now.toEpochDay() - date.toEpochDay() // days
-
-        if (diff < 1) { // today
-            return stringResource(R.string.today)
-        }
-
-        if (diff < 2) { // yesterday
-            return stringResource(R.string.yesterday)
-        }
-
-        // days
-        if (diff < 7) {
-            return pluralStringResource(R.plurals.days_ago, diff.toInt(), diff.toInt())
-        }
-
-        // weeks
-        if (diff < 30) {
-            val weeks = (diff / 7).toInt()
-            return pluralStringResource(R.plurals.weeks_ago, weeks, weeks)
-        }
-
-        // months
-        if (diff < 365) {
-            val months = (diff / 30).toInt()
-            return pluralStringResource(R.plurals.months_ago, months, months)
-        }
-
-        // years
-        val years = (diff / 365).toInt()
-        return pluralStringResource(R.plurals.years_ago, years, years)
+        val dateMillis = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val nowMillis = now.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        
+        val relative = DateUtils.getRelativeTimeSpanString(
+            dateMillis,
+            nowMillis,
+            DateUtils.DAY_IN_MILLIS,
+            DateUtils.FORMAT_SHOW_DATE
+        ).toString()
+        return relative.replaceFirstChar { it.lowercase() }
     }
 
     @Composable
-    fun toDurationString( seconds: Float): String {
-        val minutes = (seconds % 3600) / 60
-        val formattedSeconds = seconds % 60
-
-        return stringResource(
-            R.string.minutes_seconds,
-            minutes.toInt(),
-            formattedSeconds.toInt()
+    fun toDurationString(seconds: Float): String {
+        val minutes = (seconds / 60).toInt()
+        val secs = (seconds % 60).toInt()
+        val context = LocalContext.current
+        val measureFormat = MeasureFormat.getInstance(
+            context.resources.configuration.locales[0],
+            MeasureFormat.FormatWidth.SHORT
         )
+        val measures = listOf(
+            Measure(minutes, MeasureUnit.MINUTE),
+            Measure(secs, MeasureUnit.SECOND)
+        )
+        return measureFormat.formatMeasures(*measures.toTypedArray())
     }
 }

@@ -335,7 +335,7 @@ fun ChartDetailsScreen(
             Section(title = stringResource(R.string.stats)) {
                 Column(modifier = Modifier.padding(bottom = 8.dp)) {
                     StatListItem(
-                        title = "~${StringUtils.toDurationString(chart.latestVersion.duration)}",
+                        title = StringUtils.toDurationString(chart.latestVersion.duration),
                         icon = R.drawable.outline_access_time_24
                     )
                     StatListItem(
