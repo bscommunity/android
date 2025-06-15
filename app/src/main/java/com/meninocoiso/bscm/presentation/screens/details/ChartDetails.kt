@@ -347,7 +347,11 @@ fun ChartDetailsScreen(
                         icon = R.drawable.rounded_music_note_24
                     )
                     /*StatListItem(
-                        title = "${chart.latestVersion.effectsAmount} effects",
+                        title = pluralStringResource(
+                            R.plurals.effects_amount,
+                            chart.latestVersion.effectsAmount,
+                            chart.latestVersion.effectsAmount
+                        ),
                         icon = R.drawable.rounded_blur_medium_24
                     )*/
                     StatListItem(

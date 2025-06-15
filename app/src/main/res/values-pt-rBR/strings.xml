@@ -34,6 +34,11 @@
         <item quantity="many">%1$d notas</item>
         <item quantity="other">%1$d notas</item>
     </plurals>
+    <plurals name="effects_amount">
+        <item quantity="one">%1$d efeito</item>
+        <item quantity="many">%1$d efeitos</item>
+        <item quantity="other">%1$d efeitos</item>
+    </plurals>
     <plurals name="downloads_amount">
         <item quantity="one">+%1$d download</item>
         <item quantity="many">+%1$d downloads</item>
@@ -219,4 +224,8 @@
     <string name="effects_role">Efeitos</string>
     <string name="sync_role">Sincronização</string>
     <string name="gameplay_role">Gameplay</string>
+    <string name="language_description">Escolha o idioma de exibição do app</string>
+    <string name="language">Idioma</string>
+    <string name="app_language">Idioma do app</string>
+    <string name="system_default_language">Padrão do sistema</string>
 </resources>
