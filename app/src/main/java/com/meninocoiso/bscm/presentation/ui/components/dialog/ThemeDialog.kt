@@ -16,7 +16,7 @@ import com.meninocoiso.bscm.domain.enums.ThemePreference
 import com.meninocoiso.bscm.presentation.ui.components.RadioGroupUI
 
 @Composable
-private fun getThemeStrings(): Map<ThemePreference, String> {
+private fun getLanguageStrings(): Map<ThemePreference, String> {
 	return mapOf(
 		ThemePreference.SYSTEM to stringResource(R.string.system),
 		ThemePreference.LIGHT to stringResource(R.string.light),
@@ -42,7 +42,7 @@ fun ThemeDialog(
 	val (isOpened, setIsOpened) = remember { mutableStateOf(false) }
 	val lastSelected = remember { mutableStateOf(option) }
 	
-	val themeStrings = getThemeStrings()
+	val themeStrings = getLanguageStrings()
 	
 	Button(onClick = {
 		setIsOpened(true)

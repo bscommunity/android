@@ -12,6 +12,10 @@ android {
 	namespace = "com.meninocoiso.bscm"
 	compileSdk = 35
 
+	androidResources {
+		generateLocaleConfig = true
+	}
+
 	defaultConfig {
 		applicationId = "com.meninocoiso.bscm"
 		// minSdk was previously 24, but was needed to be changed to 26

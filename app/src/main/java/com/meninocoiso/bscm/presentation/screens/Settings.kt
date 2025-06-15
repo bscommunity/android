@@ -45,6 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.BuildConfig
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.ui.components.SwitchUI
+import com.meninocoiso.bscm.presentation.ui.components.dialog.LanguageDialog
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ThemeDialog
 import com.meninocoiso.bscm.presentation.ui.modifiers.fabScrollObserver
 import com.meninocoiso.bscm.presentation.ui.modifiers.rememberFabNestedScrollConnection
@@ -70,7 +71,7 @@ fun SettingsScreen(
     val shrunkLatestVersion = if (updateState is AppUpdateState.UpdateAvailable) 
         (updateState as AppUpdateState.UpdateAvailable).version.substringBeforeLast("-")
     else ""
-
+    
     LaunchedEffect(updateState) {
         when (updateState) {
             is AppUpdateState.UpToDate -> {
@@ -176,27 +177,6 @@ fun SettingsScreen(
                     )
                 }
             )
-            /*ListDivider()
-            ListItem(
-                modifier = Modifier.settingsCard(),
-                headlineContent = {
-                    HeadlineText("Displayed info")
-                },
-                supportingContent = {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        SupportingText(
-                            "Choose the main information displayed on charts previews "
-                        )
-                        ExposedDropdownMenuBoxUI(
-                            options = listOf(
-                                "Option 1",
-                                "Option 2",
-                                "Option 3",
-                            )
-                        )
-                    }
-                }
-            )*/
         }
 
         SettingsCard(title = stringResource(R.string.customization)) {
@@ -240,6 +220,45 @@ fun SettingsScreen(
                             viewModel.updateAppTheme(it)
                         }
                     )
+                }
+            )
+            ListDivider()
+            ListItem(
+                modifier = Modifier.settingsCard(),
+                headlineContent = {
+                    HeadlineText(stringResource(R.string.language))
+                },
+                supportingContent = {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        SupportingText(
+                            stringResource(R.string.language_description)
+                        )
+                        /*ExposedDropdownMenuBoxUI(
+                            options = listOf(
+                                "Option 1",
+                                "Option 2",
+                                "Option 3",
+                                "Option 1",
+                                "Option 2",
+                                "Option 3",
+                                "Option 1",
+                                "Option 2",
+                                "Option 3",
+                                "Option 1",
+                                "Option 2",
+                                "Option 3",
+                                "Option 1",
+                                "Option 2",
+                                "Option 3",
+                                "Option 1",
+                                "Option 2",
+                                "Option 3",
+                            )
+                        )*/
+                    }
+                },
+                trailingContent = {
+                    LanguageDialog()
                 }
             )
         }
