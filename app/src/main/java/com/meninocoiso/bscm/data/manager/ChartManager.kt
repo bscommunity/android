@@ -231,14 +231,12 @@ class ChartManager @Inject constructor(
             onSuccess = { remoteCharts ->
                 Log.d(TAG, "Fetched \\${remoteCharts.size} feed charts from remote")
 
-                // Check if any cached charts have been deleted
-                /*if (offset == 0) {
-                    handleDeletedCharts(remoteCharts)
-                }*/
-
+                // Initial load or refresh (update if cached charts have been updated/deleted)
                 if (offset == 0) {
                     updateCharts(remoteCharts)
+                    handleDeletedCharts(remoteCharts)
                 } else {
+                    // For pagination, append new charts to existing cache
                     val current = _memoryCharts.value.toMutableList()
                     val newCharts = remoteCharts.filter { rc -> current.none { it.id == rc.id } }
                     updateCharts(current + newCharts)
