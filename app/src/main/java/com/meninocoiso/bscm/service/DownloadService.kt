@@ -3,7 +3,6 @@ package com.meninocoiso.bscm.service
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.content.res.Resources.NotFoundException
 import android.os.IBinder
@@ -41,7 +40,7 @@ class DownloadService : Service() {
     lateinit var downloadServiceConnection: DownloadServiceConnection
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val notificationManager by lazy { getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager }
+    private val notificationManager by lazy { getSystemService(NOTIFICATION_SERVICE) as NotificationManager }
     private val notificationId = 1001
     private val channelId = "download_channel"
 

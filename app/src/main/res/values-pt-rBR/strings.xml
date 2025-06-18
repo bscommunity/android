@@ -229,4 +229,7 @@
     <string name="language">Idioma</string>
     <string name="app_language">Idioma do app</string>
     <string name="system_default_language">Padrão do sistema</string>
+    <string name="language_dialog_info">
+        Confira as pessoas incríveis que ajudaram a traduzir o aplicativo para o seu idioma
+    </string>
 </resources>
