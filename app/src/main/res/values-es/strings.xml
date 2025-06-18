@@ -194,6 +194,7 @@
     <string name="language">Idioma</string>
     <string name="app_language">Idioma de la aplicación</string>
     <string name="system_default_language">Sistema</string>
+    <string name="language_dialog_info">¡Mira quiénes ayudaron a traducir la app a tu idioma!</string>
     <plurals name="notes_amount">
         <item quantity="one">%1$d nota</item>
         <item quantity="other">%1$d notas</item>
