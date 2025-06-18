@@ -46,7 +46,7 @@ fun LanguageDialog() {
             title = { Text(text = stringResource(R.string.app_language)) },
             icon = {
                 Icon(
-                    painter = painterResource(id = R.drawable.baseline_palette_24),
+                    painter = painterResource(id = R.drawable.round_translate_24),
                     contentDescription = null
                 )
             },
