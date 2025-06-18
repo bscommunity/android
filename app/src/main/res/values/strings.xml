@@ -223,5 +223,5 @@
     <string name="language">Language</string>
     <string name="app_language">App language</string>
     <string name="system_default_language">System default</string>
-    <string name="language_dialog_info">Check out the incredible people who helped translate the app into your language!</string>
+    <string name="language_dialog_info">Check out the incredible people who helped translate the app into your language</string>
 </resources>

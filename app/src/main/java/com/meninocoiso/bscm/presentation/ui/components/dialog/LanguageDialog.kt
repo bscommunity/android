@@ -1,12 +1,10 @@
 package com.meninocoiso.bscm.presentation.ui.components.dialog
 
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.InlineTextContent
-import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -22,15 +20,17 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.os.LocaleListCompat
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.ui.components.RadioGroupUI
-import com.meninocoiso.bscm.util.LinkingUtils
 
-data class SupportedLanguage(val tag: String?, val displayName: String)
+data class SupportedLanguage(
+    val tag: String?,
+    val displayName: String,
+    val contributor: String? = null
+)
 
 private const val CONTRIBUTORS_LINK =
     "https://docs.google.com/spreadsheets/d/1pPn-XXC_2ivgPXWlPcgxU2jun8Kq9u3nKlpBFSoljmM/edit?usp=sharing"
@@ -45,8 +45,8 @@ fun LanguageDialog() {
         systemDefault,
         SupportedLanguage("en-US", "English"),
         SupportedLanguage("pt-BR", "Português (Brasil)"),
-        SupportedLanguage("es-ES", "Español (by Farfu)"),
-        SupportedLanguage("ru-RU", "Русский (by MusicCat)")
+        SupportedLanguage("es-ES", "Español", contributor = "Farfu"),
+        SupportedLanguage("ru-RU", "Русский", contributor = "MusicCat")
     )
 
     val currentLocaleTag = AppCompatDelegate.getApplicationLocales()[0]?.toLanguageTag()
@@ -74,6 +74,17 @@ fun LanguageDialog() {
                     RadioGroupUI(
                         initialSelected = selectedLanguage.value.displayName,
                         radioOptions = supportedLanguages.map { it.displayName },
+                        trailingElements = supportedLanguages.map { lang ->
+                            lang.contributor?.let { contributor ->
+                                @Composable {
+                                    Text(
+                                        text = "by $contributor",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.secondary
+                                    )
+                                }
+                            } ?: @Composable {}
+                        },
                         onOptionSelected = { index, _ ->
                             val lang = supportedLanguages[index]
                             if (lang.tag == null) {
@@ -96,13 +107,13 @@ fun LanguageDialog() {
                             contentDescription = null,
                         )
                     }*/
-                    Text(
+                    /*Text(
                         text = buildAnnotatedString {
                             append(stringResource(R.string.language_dialog_info))
                             appendInlineContent(inlineContentId, "[icon]")
                         },
                         modifier = Modifier
-                            .padding(top = 12.dp)
+                            .padding(top = 16.dp)
                             .clickable(onClick = {
                                 LinkingUtils.openLink(context, CONTRIBUTORS_LINK)
                             }),
@@ -110,7 +121,7 @@ fun LanguageDialog() {
                         color = MaterialTheme.colorScheme.primary,
                         lineHeight = 20.sp,
                         inlineContent = inlineContent
-                    )
+                    )*/
                 }
             },
             dismissButton = {
