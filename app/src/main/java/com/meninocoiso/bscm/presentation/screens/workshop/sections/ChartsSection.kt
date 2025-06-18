@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -157,19 +158,19 @@ internal fun ChartsSection(
                                 CircularProgressIndicator(modifier = Modifier.size(24.dp))
                             }
                         }
-                    } /*else {
+                    } else {
                         item {
                             Box(
                                 modifier = Modifier.fillMaxWidth(),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "End of charts",
+                                    text = stringResource(R.string.workshop_feed_end),
                                     modifier = Modifier.padding(16.dp)
                                 )
                             }
                         }
-                    }*/
+                    }
                 }
             }
         }
