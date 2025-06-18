@@ -103,7 +103,7 @@
     <string name="installed">Installed</string>
     <string name="try_again">Try again</string>
     <string name="extracting_progress_title">Extracting %1$s</string>
-    <string name="extracting_progress_description">Extracting files… %1$s%</string>
+    <string name="extracting_progress_description">Extracting files… %1$d%%</string>
     <string name="unknown_error">Unknown error</string>
     <string name="work_in_progress">Work in progress!</string>
     <string name="work_in_progress_description">This feature still needs some work\nPlease, check back later</string>
@@ -223,4 +223,5 @@
     <string name="language">Language</string>
     <string name="app_language">App language</string>
     <string name="system_default_language">System default</string>
+    <string name="language_dialog_info">Check out the incredible people who helped translate the app into your language!</string>
 </resources>

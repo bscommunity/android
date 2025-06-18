@@ -122,10 +122,7 @@ class DownloadService : Service() {
                             val progressInt = (progress * 100).toInt()
                             updateNotification(
                                 title = getString(R.string.extracting_progress_title, chartName),
-                                message = getString(
-                                    R.string.extracting_progress_description,
-                                    progressInt
-                                ),
+                                message = getString(R.string.extracting_progress_description, progressInt),
                                 progress = progressInt
                             )
                         }

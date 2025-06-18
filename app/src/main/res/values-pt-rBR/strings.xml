@@ -111,7 +111,7 @@
     <string name="installed">Instalado</string>
     <string name="try_again">Tentar de novo</string>
     <string name="extracting_progress_title">Extraindo %1$s</string>
-    <string name="extracting_progress_description">Extraindo arquivos… %1$s%%</string>
+    <string name="extracting_progress_description">Extraindo arquivos… %1$d%%</string>
     <string name="unknown_error">Erro desconhecido</string>
     <string name="work_in_progress">Em desenvolvimento!</string>
     <string name="work_in_progress_description">Essa função ainda está sendo desenvolvida\nPor favor, volte aqui futuramente</string>

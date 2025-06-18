@@ -66,7 +66,7 @@
     <string name="explicit_content_description">Разрешить чарты с песнями 18+</string>
     <string name="explicit_content_disabled">Контент 18+ выключен в настройках</string>
     <string name="extracting">Извлечение...</string>
-    <string name="extracting_progress_description">Извлечение файлов… %1$s%</string>
+    <string name="extracting_progress_description">Извлечение файлов… %1$d%%</string>
     <string name="extracting_progress_title">Извлечение %1$s</string>
     <string name="extreme">Безумно</string>
     <string name="failed_to_check_for_updates">Не удалось проверить обновления</string>
