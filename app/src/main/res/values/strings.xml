@@ -54,7 +54,7 @@
     <string name="chart_not_found">Chart not found</string>
     <string name="failed_to_update">Failed to update chart</string>
     <string name="no_available_version">No available version to update</string>
-    <string name="and_others">"and others"</string>
+    <string name="and_others">and others</string>
     <string name="explicit">Explicit</string>
     <string name="deluxe">Deluxe</string>
     <string name="something_went_wrong">Looks like something went wrong…</string>

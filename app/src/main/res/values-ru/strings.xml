@@ -2,7 +2,7 @@
 <resources>
     <string name="account">Аккаунт</string>
     <string name="alternative">Альтернатива</string>
-    <string name="and_others">\"\"и другие\"\"</string>
+    <string name="and_others">и другие</string>
     <string name="app_name">bscm</string>
     <string name="app_theme">Тема приложения</string>
     <string name="audio_role">Аудио</string>
@@ -48,7 +48,7 @@
     <string name="download_complete">Загрузка завершена</string>
     <string name="download_failed">Ошибка загрузки</string>
     <string name="downloaded">Загружено (%1$s)</string>
-    <string name="downloading">Загрузка...</string>
+    <string name="downloading">Загрузка…</string>
     <string name="downloading_update">Загрузка обновления</string>
     <string name="downloading_version">Загружается версия %1$s… %2$d%%</string>
     <string name="editors_choice">Выбор редакции</string>
