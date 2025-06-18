@@ -193,6 +193,8 @@
     <string name="language_description">Выберите язык приложения</string>
     <string name="language">Язык</string>
     <string name="app_language">Язык приложения</string>
+    <string name="system_default_language">Язык системы</string>
+    <string name="language_dialog_info">Посмотри, какие классные ребята помогли перевести приложение на твой язык!</string>
     <plurals name="days_ago">
         <item quantity="one">%1$d день назад</item>
         <item quantity="few">%1$d дня назад</item>
@@ -235,5 +237,4 @@
         <item quantity="many">%1$d ноты</item>
         <item quantity="other">%1$d нот</item>
     </plurals>
-    <string name="system_default_language">Язык системы</string>
 </resources>
