@@ -137,18 +137,22 @@ fun Avatar(
     url: String? = null,
     alt: String
 ) {
-    if (url != null) {
-        AsyncImage(
-            model = url,
-            contentDescription = null,
-            modifier = modifier
-                .size(size)
-                .clip(CircleShape),
-            contentScale = ContentScale.Fit,
-            alignment = Alignment.Center,
-        )
-    } else {
+    Box(
+        modifier = modifier.size(size),
+        contentAlignment = Alignment.Center
+    ) {
         AvatarPlaceholder(size = size, alt = alt)
+        if (url != null) {
+            AsyncImage(
+                model = url,
+                contentDescription = null,
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(CircleShape),
+                contentScale = ContentScale.Fit,
+                alignment = Alignment.Center,
+            )
+        }
     }
 }
 
