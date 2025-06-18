@@ -9,9 +9,11 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -160,7 +162,7 @@ fun GameplayPreview(
         // Loading indicator
         if (isLoading) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerLowest),
             ) {
                 /*ShimmerContainer(
                     modifier = Modifier.fillMaxSize(),
@@ -173,7 +175,7 @@ fun GameplayPreview(
                     modifier = Modifier.fillMaxSize().zIndex(2f),
                     shimmer = Shimmer.Resonate(
                         baseColor = Color.Transparent,
-                        highlightColor = Color(0xFF1A1C15)
+                        highlightColor = MaterialTheme.colorScheme.surfaceContainerHighest
                     )
                 )
                 GameplayPreviewThumbnail(videoId = videoId)
