@@ -14,37 +14,31 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.os.LocaleListCompat
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.ui.components.RadioGroupUI
-import java.util.Locale
+
+data class SupportedLanguage(val tag: String?, val displayName: String)
 
 @Composable
 fun LanguageDialog() {
     val (isOpened, setIsOpened) = remember { mutableStateOf(false) }
 
-    val localeList = LocaleListCompat.getAdjustedDefault()
-    
-    println("Current Locale: ${localeList[0]}")
-    println("All Locales: ${localeList.toLanguageTags()}")
-    println("Available Locales: ${Locale.getAvailableLocales().joinToString { it.toLanguageTag() }}")
-    println("Default Locale: ${Locale.getDefault().toLanguageTag()}")
-    
-    val supportedLocales = listOf(Locale.getDefault(), Locale("en", "US"), Locale("ru", "RU"), Locale("pt", "BR"))
-        .distinctBy { it.toLanguageTag() }
-    val languageTags = supportedLocales.map { it.toLanguageTag() }
-
-    val currentLocaleTag =
-        AppCompatDelegate.getApplicationLocales()[0]?.toLanguageTag() ?: Locale.getDefault()
-            .toLanguageTag()
-    val selectedLocaleTag = remember { mutableStateOf(currentLocaleTag) }
-
-    val languageStrings = mapOf(
-        Locale.getDefault().toLanguageTag() to stringResource(R.string.system_default_language),
-        "en-US" to "English",
-        "pt-BR" to "Português (Brasil)",
-        "ru-RU" to "Русский",
+    val systemDefault = SupportedLanguage(null, stringResource(R.string.system_default_language))
+    val supportedLanguages = listOf(
+        systemDefault,
+        SupportedLanguage("en-US", "English"),
+        SupportedLanguage("pt-BR", "Português (Brasil)"),
+        SupportedLanguage("es-ES", "Español"),
+        SupportedLanguage("ru-RU", "Русский")
     )
 
+    val currentLocaleTag = AppCompatDelegate.getApplicationLocales()[0]?.toLanguageTag()
+    val selectedLanguage = remember {
+        mutableStateOf(
+            supportedLanguages.find { it.tag == currentLocaleTag } ?: systemDefault
+        )
+    }
+
     Button(onClick = { setIsOpened(true) }) {
-        Text(text = languageStrings[selectedLocaleTag.value] ?: selectedLocaleTag.value)
+        Text(text = selectedLanguage.value.displayName)
     }
     if (isOpened) {
         AlertDialog(
@@ -58,13 +52,16 @@ fun LanguageDialog() {
             },
             text = {
                 RadioGroupUI(
-                    initialSelected = languageStrings[selectedLocaleTag.value]
-                        ?: selectedLocaleTag.value,
-                    radioOptions = languageTags.map { languageStrings[it] ?: it },
+                    initialSelected = selectedLanguage.value.displayName,
+                    radioOptions = supportedLanguages.map { it.displayName },
                     onOptionSelected = { index, _ ->
-                        val tag = languageTags[index]
-                        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
-                        selectedLocaleTag.value = tag
+                        val lang = supportedLanguages[index]
+                        if (lang.tag == null) {
+                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
+                        } else {
+                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang.tag))
+                        }
+                        selectedLanguage.value = lang
                     }
                 )
             },

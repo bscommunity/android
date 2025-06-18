@@ -172,6 +172,7 @@
     <string name="trending">В тренде</string>
     <string name="try_again">Попытаться снова</string>
     <string name="unchecked">Не проверено</string>
+    <string name="workshop_feed_end">Конец списка чартов</string>
     <string name="unknown_error">Неизвестная ошибка</string>
     <string name="up_to_date">Обновление приложения не требуется</string>
     <string name="update">Обновление</string>
