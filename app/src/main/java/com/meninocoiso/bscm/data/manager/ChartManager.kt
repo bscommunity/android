@@ -233,7 +233,14 @@ class ChartManager @Inject constructor(
 
                 // Initial load or refresh (update if cached charts have been updated/deleted)
                 if (offset == 0) {
-                    updateCharts(remoteCharts)
+                    val chartsToCache = updateCharts(remoteCharts)
+
+                    CoroutineScope(Dispatchers.IO).launch {
+                        // Update local repository with the new charts
+                        localChartRepository.updateCharts(chartsToCache).first()
+                        Log.d(TAG, "Feed charts updated in local storage")
+                    }
+                    
                     handleDeletedCharts(remoteCharts)
                 } else {
                     // For pagination, append new charts to existing cache
