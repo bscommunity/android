@@ -56,7 +56,7 @@
     <string name="open_dialog">Abrir dialogo</string>
     <string name="confirmation_title">¿Estas seguro?</string>
     <string name="confirmation_description">Esta acción no puede deshacerse</string>
-    <string name="cancel">Error</string>
+    <string name="cancel">Cancelar</string>
     <string name="confirm">Confirmar</string>
     <string name="failed_to_start_download">Error al iniciar descarga</string>
     <string name="today">Hoy</string>
