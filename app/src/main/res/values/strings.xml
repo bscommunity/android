@@ -172,6 +172,7 @@
     <string name="most_liked">Most liked</string>
     <string name="checked">Checked</string>
     <string name="unchecked">Unchecked</string>
+    <string name="workshop_feed_end">End of charts</string>
     <string name="search_in_workshop">Search in workshop</string>
     <string name="back">Back</string>
     <string name="search">Search</string>

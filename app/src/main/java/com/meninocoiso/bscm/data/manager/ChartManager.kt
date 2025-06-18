@@ -70,10 +70,10 @@ class ChartManager @Inject constructor(
             _remoteCharts.value = emptyList()
         }
 
-    private val _cachedCharts = MutableStateFlow<List<Chart>>(emptyList())
-    val cachedCharts: StateFlow<List<Chart>> = _cachedCharts.asStateFlow()
+    private val _memoryCharts = MutableStateFlow<List<Chart>>(emptyList())
+    val memoryCharts: StateFlow<List<Chart>> = _memoryCharts.asStateFlow()
 
-    val searchCharts = remoteCharts.combine(cachedCharts) { remote, cached ->
+    val searchCharts = remoteCharts.combine(memoryCharts) { remote, cached ->
         val result = mutableListOf<Chart>()
 
         // Add all remote charts from the search
@@ -92,13 +92,13 @@ class ChartManager @Inject constructor(
     }
 
     // Filtered chart collections
-    val workshopCharts: Flow<List<Chart>> = cachedCharts
+    val workshopCharts: Flow<List<Chart>> = memoryCharts
 
-    val installedCharts: Flow<List<Chart>> = cachedCharts.map { charts ->
+    val installedCharts: Flow<List<Chart>> = memoryCharts.map { charts ->
         charts.filter { it.isInstalled == true }
     }
 
-    val chartsWithUpdates: Flow<List<Chart>> = cachedCharts.map { charts ->
+    val chartsWithUpdates: Flow<List<Chart>> = memoryCharts.map { charts ->
         charts.filter {
             it.isInstalled == true && it.availableVersion != null
         }
@@ -116,53 +116,30 @@ class ChartManager @Inject constructor(
      * This method uses the current value of the StateFlow to provide an immediate count
      */
     fun getChartsLength(): Int {
-        return _cachedCharts.value.size
+        return _memoryCharts.value.size
     }
 
     fun verifyInstalledCharts(chartsToVerify: List<Chart>, rootUri: Uri): List<Chart> {
-        val installedCharts = chartsToVerify.filter { it.isInstalled == true }
-        val chartsToUpdate = mutableListOf<Chart>()
+        var installedCharts = chartsToVerify.filter { it.isInstalled == true }
 
         for (chart in installedCharts) {
             val destination = StorageUtils.getFolder(rootUri, listOf("songs"), context)
             val folderName = StorageUtils.getChartFolderName(chart.id)
 
-            // Verify if the chart file exists physically
+            // Verify if the chart file exists in the device storage
             val chartFolder = destination.findFile(folderName)
 
             if (chartFolder == null && chart.isInstalled == true) {
                 // The file doesn't exist anymore, but is marked as installed
                 chart.isInstalled = false
-                chartsToUpdate.add(chart)
             }
         }
 
-        return chartsToUpdate
-    }
-    
-    fun verifyNotInstalledCharts(chartsToVerify: List<Chart>, rootUri: Uri): List<Chart> {
-        val notInstalledCharts = chartsToVerify.filter { it.isInstalled == false }
-        val chartsToUpdate = mutableListOf<Chart>()
-
-        for (chart in notInstalledCharts) {
-            val destination = StorageUtils.getFolder(rootUri, listOf("songs"), context)
-            val folderName = StorageUtils.getChartFolderName(chart.id)
-
-            // Verify if the chart file exists physically
-            val chartFolder = destination.findFile(folderName)
-
-            if (chartFolder != null && chart.isInstalled == false) {
-                // The file exists, but is marked as not installed
-                chart.isInstalled = true
-                chartsToUpdate.add(chart)
-            }
-        }
-
-        return chartsToUpdate
+        return installedCharts
     }
 
     /**
-     * Loads charts from local cache
+     * Loads charts from local cache into memory
      * @return FetchResult containing the cached charts
      */
     suspend fun loadCachedCharts(sortBy: SortOption, rootUri: Uri? = null) {
@@ -174,34 +151,26 @@ class ChartManager @Inject constructor(
                     var charts = allCharts
                     // Log.d(TAG, "Charts order: ${charts.joinToString { it.track }}")
 
-                    // Verify if the charts are still installed
-                    val chartsToUpdate = if (rootUri != null) verifyInstalledCharts(
+                    // Update isInstalled status based on the user local storage
+                    val updatedCharts = if (rootUri != null) verifyInstalledCharts(
                         allCharts,
                         rootUri
-                    ) else emptyList()
+                    ) else charts
 
-                    // If some charts were deleted externally, we update them
-                    if (chartsToUpdate.isNotEmpty()) {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            // Log.d(TAG, "Updating ${chartsToUpdate.size} charts in local storage")
-                            localChartRepository.updateCharts(chartsToUpdate).first()
-                            Log.d(TAG, "Charts updated in local storage")
-                        }
-                        
-                        // Update the charts in memory (bellow)
-                        charts = allCharts.filter {
-                            // Filter out charts on chartsToUpdate
-                            !chartsToUpdate.any { chart -> chart.id == it.id }
-                        }
-                    }
-                    
-                    Log.d(TAG, "Loaded ${charts.size} charts from cache with sortBy: $sortBy")
-                    updateCharts(charts)
+                    updateCharts(updatedCharts)
                     updateState(ChartState.Success)
+
+                    Log.d(
+                        TAG,
+                        "Loaded ${updatedCharts.size} charts from cache with sortBy: $sortBy"
+                    )
                 },
                 onFailure = { error ->
                     Log.e(TAG, "Failed to load cached charts", error)
-                    FetchResult.Error(context.getString(R.string.failed_to_load_cached_charts), error)
+                    FetchResult.Error(
+                        context.getString(R.string.failed_to_load_cached_charts),
+                        error
+                    )
                     updateState(ChartState.Error)
                 }
             )
@@ -238,7 +207,9 @@ class ChartManager @Inject constructor(
                 onSuccess = { charts ->
                     if (charts.isNotEmpty()) {
                         Log.d(TAG, "Using ${charts.size} cached charts for feed")
+                        
                         updateCharts(charts)
+                        
                         emit(FetchResult.Success(charts))
                         return@flow
                     }
@@ -247,7 +218,7 @@ class ChartManager @Inject constructor(
             )
         }
 
-        Log.d(TAG, "Cache miss or forced refresh, fetching from remote")
+        // Log.d(TAG, "Cache miss or forced refresh, fetching from remote")
 
         // Fetch from remote
         val remoteResult = remoteChartRepository.getChartsSortedBy(
@@ -258,29 +229,31 @@ class ChartManager @Inject constructor(
 
         remoteResult.fold(
             onSuccess = { remoteCharts ->
-                Log.d(TAG, "Fetched ${remoteCharts.size} feed charts from remote")
+                Log.d(TAG, "Fetched \\${remoteCharts.size} feed charts from remote")
 
-                // Update the in-memory cache with the new charts
-                val updatedCharts = updateCharts(remoteCharts)
-
-                // For initial load
-                if (offset == 0) {
-                    // Check and remove charts that are no longer on remote
+                // Check if any cached charts have been deleted
+                /*if (offset == 0) {
                     handleDeletedCharts(remoteCharts)
+                }*/
 
-                    // Insert or update charts (processed by updateCharts) in local repository
-                    CoroutineScope(Dispatchers.IO).launch {
-                        // Log.d(TAG, "Inserting/updating ${remoteCharts.size} charts into local storage")
-                        localChartRepository.updateCharts(updatedCharts).first()
-                        // Log.d(TAG, "Charts updated in local storage")
-                    }
+                if (offset == 0) {
+                    updateCharts(remoteCharts)
+                } else {
+                    val current = _memoryCharts.value.toMutableList()
+                    val newCharts = remoteCharts.filter { rc -> current.none { it.id == rc.id } }
+                    updateCharts(current + newCharts)
                 }
-                
-                emit(FetchResult.Success(remoteCharts))
+
+                emit(FetchResult.Success(_memoryCharts.value))
             },
             onFailure = { error ->
                 Log.e(TAG, "Failed to fetch feed charts", error)
-                emit(FetchResult.Error(error.message ?: context.getString(R.string.failed_to_fetch_feed_charts), error))
+                emit(
+                    FetchResult.Error(
+                        error.message ?: context.getString(R.string.failed_to_fetch_feed_charts),
+                        error
+                    )
+                )
             }
         )
     }.catch { e ->
@@ -291,10 +264,9 @@ class ChartManager @Inject constructor(
     /**
      * Handle charts that have been deleted from the remote server
      * @param remoteCharts The charts fetched from remote
-     * @return List of charts to be cached
      */
     private fun handleDeletedCharts(remoteCharts: List<Chart>) {
-        val cachedMap = _cachedCharts.value.toMutableList()
+        val cachedMap = _memoryCharts.value.toMutableList()
         val remoteIds = remoteCharts.map { it.id }.toSet()
 
         // Find charts of the same type in cache that aren't in the remote result
@@ -320,7 +292,7 @@ class ChartManager @Inject constructor(
             }
 
             // Update the in-memory cache
-            _cachedCharts.value = cachedMap
+            _memoryCharts.value = cachedMap
 
             // Also remove from local repository
             if (potentiallyDeleted.isNotEmpty()) {
@@ -410,7 +382,7 @@ class ChartManager @Inject constructor(
     fun checkForUpdates(): Flow<FetchResult<List<Chart>>> = flow {
         emit(FetchResult.Loading)
 
-        val installedCharts = _cachedCharts.value
+        val installedCharts = _memoryCharts.value
             .filter { it.isInstalled == true }
 
         if (installedCharts.isEmpty()) {
@@ -464,7 +436,12 @@ class ChartManager @Inject constructor(
                     }
                 },
                 onFailure = { error ->
-                    emit(FetchResult.Error(context.getString(R.string.failed_to_check_for_updates), error))
+                    emit(
+                        FetchResult.Error(
+                            context.getString(R.string.failed_to_check_for_updates),
+                            error
+                        )
+                    )
                 }
             )
         } catch (e: Exception) {
@@ -478,7 +455,7 @@ class ChartManager @Inject constructor(
     * Add a single chart to cache
     */
     fun addChart(chart: Chart) {
-        _cachedCharts.value = _cachedCharts.value.toMutableList().apply {
+        _memoryCharts.value = _memoryCharts.value.toMutableList().apply {
             add(chart)
         }
     }
@@ -487,7 +464,7 @@ class ChartManager @Inject constructor(
      * Update a single chart in memory
      */
     private fun updateChart(chart: Chart) {
-        _cachedCharts.value = _cachedCharts.value.toMutableList().apply {
+        _memoryCharts.value = _memoryCharts.value.toMutableList().apply {
             val index = indexOfFirst { it.id == chart.id }
             if (index != -1) {
                 set(index, chart)
@@ -503,7 +480,7 @@ class ChartManager @Inject constructor(
     fun updateChart(chartId: String, operation: OperationType): Flow<FetchResult<List<Chart>>> =
         flow {
             // Find the chart in our in-memory cache
-            val existingChart = _cachedCharts.value.find { it.id == chartId } ?: run {
+            val existingChart = _memoryCharts.value.find { it.id == chartId } ?: run {
                 // If chart was not found on cache, check in remote and cache it
                 val remoteChart = remoteCharts.value.find { it.id == chartId }
                 if (remoteChart != null) {
@@ -566,7 +543,7 @@ class ChartManager @Inject constructor(
             Log.d(TAG, "Updated chart with id: $chartId in memory")
 
             // Only emit a single success result
-            emit(FetchResult.Success(_cachedCharts.value))
+            emit(FetchResult.Success(_memoryCharts.value))
         }.catch { e ->
             emit(FetchResult.Error(context.getString(R.string.failed_to_update), e))
         }
@@ -577,12 +554,17 @@ class ChartManager @Inject constructor(
      * Installed charts are always preserved regardless of the limit.
      *
      * @param charts The list of charts to update.
-     * @param limitCache If true, applies the MAX_CACHED_CHARTS limit to non-installed charts.
+     * @param limitCache If true, applies the MAX_CACHED_CHARTS limit to non-installed local charts.
      * @return The final list of charts in cache.
      */
     private fun updateCharts(charts: List<Chart>, limitCache: Boolean = true): List<Chart> {
-        val currentCache = _cachedCharts.value
-        val installedCharts = currentCache.filter { it.isInstalled == true }
+        if (charts.isEmpty()) {
+            Log.d(TAG, "No charts to update")
+            return emptyList()
+        }
+        
+        val currentMemory = _memoryCharts.value
+        val installedCharts = currentMemory.filter { it.isInstalled == true }
             .associateBy { it.id }
 
         // Update charts with installed status and available version from cache
@@ -598,21 +580,25 @@ class ChartManager @Inject constructor(
             }
         }
 
+        _memoryCharts.value = updatedCharts.toMutableList()
+        Log.d(TAG, "Updated ${updatedCharts.size} charts in memory")
+
         val finalList = if (limitCache) {
             val nonInstalled = updatedCharts.filter { it.isInstalled != true }
+
             // Limit the number of non-installed charts to MAX_CACHED_CHARTS
             val limitedNonInstalled = if (nonInstalled.size > MAX_CACHED_CHARTS) {
                 nonInstalled.takeLast(MAX_CACHED_CHARTS)
             } else {
                 nonInstalled
             }
+            
             // Keep original order, but only with the limited non-installed charts
             updatedCharts.filter { it.isInstalled == true || it in limitedNonInstalled }
         } else {
             updatedCharts.toMutableList()
         }
 
-        _cachedCharts.value = finalList
         return finalList
     }
 
@@ -663,6 +649,3 @@ class ChartManager @Inject constructor(
         }
     }
 }
-
-
-

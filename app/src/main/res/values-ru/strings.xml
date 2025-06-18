@@ -234,4 +234,5 @@
         <item quantity="many">%1$d ноты</item>
         <item quantity="other">%1$d нот</item>
     </plurals>
+    <string name="system_default_language">Язык системы</string>
 </resources>
