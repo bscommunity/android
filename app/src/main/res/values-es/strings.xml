@@ -76,7 +76,7 @@
     <string name="installed">Instalados</string>
     <string name="try_again">Intenta de nuevo</string>
     <string name="extracting_progress_title">Extrayendo %1$s</string>
-    <string name="extracting_progress_description">Extrayendo archivos... %1$s%</string>
+    <string name="extracting_progress_description">Extrayendo archivos... %1$d%%</string>
     <string name="unknown_error">Error desconocido</string>
     <string name="work_in_progress">Trabajo en progreso!</string>
     <string name="work_in_progress_description">Esta característica aún necesita algo de trabajo/nPor favor, revisa más tarde.</string>
