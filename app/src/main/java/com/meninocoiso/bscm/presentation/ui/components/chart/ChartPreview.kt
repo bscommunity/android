@@ -207,7 +207,7 @@ fun ChartPreview(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             CoverArt(
-                difficulty = chart.difficulty,
+                difficulty = chart.latestVersion.difficulty,
                 url = chart.coverUrl,
                 isInstalled = chart.isInstalled
             )
@@ -230,13 +230,13 @@ fun ChartPreview(
                                 lineHeight = 20.sp,
                                 text = TrackTitle(
                                     track = chart.track,
-                                    isExplicit = chart.isExplicit,
-                                    isDeluxe = chart.isDeluxe
+                                    isExplicit = chart.latestVersion.isExplicit,
+                                    isDeluxe = chart.latestVersion.isDeluxe
                                 ),
                                 inlineContent = TrackTitleInlineContent(
                                     track = chart.track,
-                                    isExplicit = chart.isExplicit,
-                                    isDeluxe = chart.isDeluxe
+                                    isExplicit = chart.latestVersion.isExplicit,
+                                    isDeluxe = chart.latestVersion.isDeluxe
                                 ),
                             )
 
@@ -281,7 +281,7 @@ fun LocalChartPreview(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             CoverArt(
-                difficulty = chart.difficulty,
+                difficulty = chart.latestVersion.difficulty,
                 url = chart.coverUrl,
                 borderRadius = 8.dp
             )
@@ -298,18 +298,18 @@ fun LocalChartPreview(
                             modifier = Modifier.weight(1f),
                             text = TrackTitle(
                                 track = chart.track,
-                                isExplicit = chart.isExplicit,
-                                isDeluxe = chart.isDeluxe
+                                isExplicit = chart.latestVersion.isExplicit,
+                                isDeluxe = chart.latestVersion.isDeluxe
                             ),
                             inlineContent = TrackTitleInlineContent(
                                 track = chart.track,
-                                isExplicit = chart.isExplicit,
-                                isDeluxe = chart.isDeluxe
+                                isExplicit = chart.latestVersion.isExplicit,
+                                isDeluxe = chart.latestVersion.isDeluxe
                             )
                         )
                         Text(
                             style = MaterialTheme.typography.labelLarge,
-                            text = "v${chart.latestVersion.index + 1}"
+                            text = "v${chart.latestVersion.index}"
                         )
                     }
                     Text(style = MaterialTheme.typography.labelMedium, text = chart.artist)

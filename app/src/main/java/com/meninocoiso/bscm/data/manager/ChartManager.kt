@@ -412,6 +412,7 @@ class ChartManager @Inject constructor(
 
                         if (remoteVersion != null) {
                             // Chart exists on remote, check for updates
+                            println("remoteVersion: ${remoteVersion.index} | latestVersion: ${chart.latestVersion.index}")
                             if (remoteVersion.index > chart.latestVersion.index) {
                                 val updatedChart = chart.copy(availableVersion = remoteVersion)
                                 updateChart(updatedChart)
@@ -550,6 +551,7 @@ class ChartManager @Inject constructor(
             // Only emit a single success result
             emit(FetchResult.Success(_memoryCharts.value))
         }.catch { e ->
+            println("Exception in updateChart flow: ${e.message}")
             emit(FetchResult.Error(context.getString(R.string.failed_to_update), e))
         }
 

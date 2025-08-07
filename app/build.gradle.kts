@@ -15,6 +15,8 @@ android {
 	androidResources {
 		generateLocaleConfig = true
 	}
+	
+	ndkVersion = "28.2.13676358"
 
 	defaultConfig {
 		applicationId = "com.meninocoiso.bscm"
@@ -69,10 +71,6 @@ android {
 		isCoreLibraryDesugaringEnabled = false
 	}
 
-	kotlinOptions {
-		jvmTarget = "11"
-	}
-
 	buildFeatures {
 		compose = true
 		buildConfig = true
@@ -92,7 +90,7 @@ android {
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
+            version = "4.0.3"
         }
     }
 }

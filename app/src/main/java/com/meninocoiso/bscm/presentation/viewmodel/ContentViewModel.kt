@@ -143,7 +143,7 @@ class ContentViewModel @Inject constructor(
             try {
                 downloadServiceConnection.startDownload(
                     chartId = chartId,
-                    chartUrl = (chart.availableVersion ?: chart.latestVersion).chartUrl,
+                    bundleUrl = (chart.availableVersion ?: chart.latestVersion).bundleUrl,
                     chartName = "${chart.track} - ${chart.artist}",
                     isUpdate = chart.availableVersion != null
                 )

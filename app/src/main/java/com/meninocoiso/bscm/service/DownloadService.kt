@@ -46,7 +46,7 @@ class DownloadService : Service() {
 
     companion object {
         const val EXTRA_CHART_ID = "extra_chart_id"
-        const val EXTRA_CHART_URL = "extra_chart_url"
+        const val EXTRA_BUNDLE_URL = "extra_bundle_url"
         const val EXTRA_CHART_NAME = "extra_chart_name"
         const val EXTRA_IS_UPDATE = "extra_is_update"
     }
@@ -58,12 +58,12 @@ class DownloadService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val chartId = intent?.getStringExtra(EXTRA_CHART_ID)
-        val chartUrl = intent?.getStringExtra(EXTRA_CHART_URL)
+        val bundleUrl = intent?.getStringExtra(EXTRA_BUNDLE_URL)
         val chartName = intent?.getStringExtra(EXTRA_CHART_NAME)
         val operation = if (intent?.getBooleanExtra(EXTRA_IS_UPDATE, false) == true)
             OperationType.UPDATE else OperationType.INSTALL
 
-        if (chartId != null && chartUrl != null && chartName != null) {
+        if (chartId != null && bundleUrl != null && chartName != null) {
             val initialString = getInitialMessage(chartName, operation)
             val finalString = getFinalMessage(chartName, operation)
 
@@ -84,7 +84,7 @@ class DownloadService : Service() {
                 try {
                     // Perform the download
                     downloadRepository.downloadChart(
-                        chartUrl,
+                        bundleUrl,
                         chartId,
                         operation,
                         onDownloadProgress = { progress ->

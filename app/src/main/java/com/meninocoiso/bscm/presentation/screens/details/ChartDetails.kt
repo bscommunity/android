@@ -322,7 +322,7 @@ fun ChartDetailsScreen(
                         imageUrl = chart.coverUrl,
                     ),
                     CarouselItem.VideoItem(
-                        videoId = chart.latestVersion.chartPreviewUrl
+                        videoId = chart.latestVersion.previewUrl
                     )
                 ),
                 isVideoEnabled = isGameplayVideoPreviewEnabled.value

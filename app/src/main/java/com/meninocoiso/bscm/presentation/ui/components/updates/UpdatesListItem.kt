@@ -57,8 +57,8 @@ internal fun UpdateListItem(
             Text(
                 text = stringResource(
                     R.string.update_from_to,
-                    chart.latestVersion.index + 1,
-                    chart.availableVersion?.index?.plus(1) ?: 0
+                    chart.latestVersion.index,
+                    chart.availableVersion?.index ?: 0
                 ),
                 style = MaterialTheme.typography.bodyMedium,
                 lineHeight = TextUnit(1f, TextUnitType.Em)

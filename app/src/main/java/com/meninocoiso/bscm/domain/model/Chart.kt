@@ -5,7 +5,6 @@ import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
@@ -16,16 +15,14 @@ import java.time.LocalDate
 @Parcelize
 data class Chart(
     @PrimaryKey @ColumnInfo(name = "id") val id: String,
+    val shareId: String,
     val artist: String,
     val track: String,
     val album: String?,
+    val genre: Genre,
     @ColumnInfo(name = "cover_url") val coverUrl: String,
     @ColumnInfo(name = "track_urls") val trackUrls: List<StreamingLink>,
     @ColumnInfo(name = "track_preview_url") val trackPreviewUrl: String,
-    val difficulty: Difficulty,
-    val genre: Genre,
-    @ColumnInfo(name = "is_deluxe") val isDeluxe: Boolean,
-    @ColumnInfo(name = "is_explicit") val isExplicit: Boolean,
     @ColumnInfo(name = "is_featured") val isFeatured: Boolean,
     @ColumnInfo(name = "is_installed") var isInstalled: Boolean? = false,
     @ColumnInfo(name = "downloads_sum") var downloadsSum: Int = 0,

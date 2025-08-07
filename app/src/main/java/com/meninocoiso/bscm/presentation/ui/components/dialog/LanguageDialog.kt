@@ -99,14 +99,6 @@ fun LanguageDialog() {
                             selectedLanguage.value = lang
                         },
                     )
-                    /*Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.BottomEnd) {
-                        Text(text = stringResource(R.string.language_dialog_info))
-                        Icon(
-                            painter = painterResource(R.drawable.open_in_new_24px),
-                            modifier = Modifier.size(12.dp),
-                            contentDescription = null,
-                        )
-                    }*/
                     /*Text(
                         text = buildAnnotatedString {
                             append(stringResource(R.string.language_dialog_info))

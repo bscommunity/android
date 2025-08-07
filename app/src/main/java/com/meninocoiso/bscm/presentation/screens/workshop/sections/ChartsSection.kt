@@ -137,7 +137,7 @@ internal fun ChartsSection(
                     itemsIndexed(charts) { index, chart ->
                         ChartPreview(
                             chart = chart,
-                            isBlocked = chart.isExplicit && !isExplicitAllowed.value,
+                            isBlocked = chart.latestVersion.isExplicit && !isExplicitAllowed.value,
                             onBlocked = {
                                 onSnackbar(context.getString(R.string.explicit_content_disabled))
                             },

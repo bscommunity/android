@@ -15,10 +15,10 @@ class DownloadServiceConnection @Inject constructor(
 ) {
     private val _downloadEvents = MutableSharedFlow<DownloadEvent>(extraBufferCapacity = 64)
 
-    fun startDownload(chartId: String, chartUrl: String, chartName: String, isUpdate: Boolean? = false) {
+    fun startDownload(chartId: String, bundleUrl: String, chartName: String, isUpdate: Boolean? = false) {
         val intent = Intent(context, DownloadService::class.java).apply {
             putExtra(DownloadService.EXTRA_CHART_ID, chartId)
-            putExtra(DownloadService.EXTRA_CHART_URL, chartUrl)
+            putExtra(DownloadService.EXTRA_BUNDLE_URL, bundleUrl)
             putExtra(DownloadService.EXTRA_CHART_NAME, chartName)
             putExtra(DownloadService.EXTRA_IS_UPDATE, isUpdate)
         }
