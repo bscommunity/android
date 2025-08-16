@@ -11,7 +11,7 @@ This repository contains the official bscm Android app, allowing players to expl
 The app is built with Kotlin, Java, and C++, focused on performance, usability, and integration with the bscm ecosystem.
 
 > [!WARNING]
-> This project is **_actively in development_**! New features and improvements are released frequently.
+> This project is a **_work in progress_**! We’re actively developing features and improving the experience. Check back often for updates.
 
 ## 🚀 Features
 

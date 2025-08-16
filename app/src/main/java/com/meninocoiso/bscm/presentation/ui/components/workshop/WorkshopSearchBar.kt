@@ -1,5 +1,6 @@
 package com.meninocoiso.bscm.presentation.ui.components.workshop
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -93,6 +94,12 @@ fun WorkshopSearchBar(
         if (searchBarState.currentValue == SearchBarValue.Expanded) {
             textFieldState.setTextAndSelectAll(textFieldState.text.toString())
         }
+    }
+
+    BackHandler(enabled = textFieldState.text.isNotEmpty()) {
+        scope.launch { searchBarState.animateToCollapsed() }
+        textFieldState.setTextAndPlaceCursorAtEnd("")
+        onSearch("")
     }
 
     val onQueryFinish: (String) -> Unit = { query ->
