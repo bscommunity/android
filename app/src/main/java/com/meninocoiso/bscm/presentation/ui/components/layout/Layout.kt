@@ -2,7 +2,6 @@ package com.meninocoiso.bscm.presentation.ui.components.layout
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -27,7 +26,7 @@ fun Section(
 	Column(
 		verticalArrangement = verticalArrangement,
 		horizontalAlignment = horizontalAlignment,
-		modifier = modifier.fillMaxWidth()
+		modifier = modifier
 	) {
 		if (thickness != 0.dp) {
 			HorizontalDivider(thickness = thickness)
