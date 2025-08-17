@@ -124,7 +124,7 @@ class ChartRepositoryLocal(
     override suspend fun updateCharts(charts: List<Chart>): Flow<Result<Boolean>> = flow {
         // Log.d(TAG, "Updating charts: $charts")
         chartDao.update(charts)
-        Log.d(TAG, "Updated charts locally: ${chartDao.getAll()}")
+        // Log.d(TAG, "Updated charts locally: ${chartDao.getAll()}")
         emit(Result.success(true))
     }.catch { e->
         emit(Result.failure(e))

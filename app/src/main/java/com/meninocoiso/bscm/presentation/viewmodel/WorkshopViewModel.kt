@@ -41,8 +41,6 @@ private const val TAG = "WorkshopViewModel"
 private const val BATCH_SIZE = 10
 private const val MAX_HISTORY_SIZE = 5
 private const val SUGGESTION_DEBOUNCE_MILLIS = 600L
-// 600L works as a value to prevent calling the API again after fast-deleting, since Android
-// has an initial delay, after deleting the first char, to start fast-deleting the remaining
 
 @HiltViewModel
 class WorkshopViewModel @Inject constructor(
@@ -52,35 +50,36 @@ class WorkshopViewModel @Inject constructor(
 ) : ViewModel() {
     val isExplicitAllowed: Flow<Boolean> = settingsRepository.settingsFlow
         .map { it.allowExplicitContent }
-    
-    val feedCharts: Flow<List<Chart>> = chartManager.workshopCharts
+
+    // Updated to use the new ChartManager flows
+    val feedCharts: Flow<List<Chart>> = chartManager.memoryCharts
     val searchCharts: Flow<List<Chart>> = chartManager.searchCharts
-    
+
     private val _workshopState = MutableStateFlow<ChartState>(ChartState.Loading)
     val workshopState: SharedFlow<ChartState> = _workshopState.asStateFlow()
-    
+
     private val _events = MutableSharedFlow<FetchEvent>()
     val events: SharedFlow<FetchEvent> = _events.asSharedFlow()
-    
+
     // Pagination
     val listState = LazyListState()
-    
+
     private var currentFeedPage = 0
     private var currentSearchPage = 0
     private var hasMoreData = true
-    
+
     var isLoadingMore by mutableStateOf(false)
         private set
-    
+
     // Search bar history and suggestions
     val searchFieldState = TextFieldState()
 
     var searchHistory: List<String> by mutableStateOf(emptyList())
         private set
-    
-    var suggestions by mutableStateOf<List<String>?>(null)         
+
+    var suggestions by mutableStateOf<List<String>?>(null)
         private set
-    
+
     // Sorting and filtering
     var currentSortOption by mutableStateOf<SortOption>(SortOption.LAST_UPDATED)
         private set
@@ -90,15 +89,25 @@ class WorkshopViewModel @Inject constructor(
 
     var genres by mutableStateOf<List<Genre>?>(null)
         private set
-    
+
+    // Track current search query to know when we're in search mode
+    private var currentSearchQuery by mutableStateOf("")
+
     init {
         // Load search history
         getSearchHistory()
-        
+
+        // Observe ChartManager state
+        viewModelScope.launch {
+            chartManager.cacheState.collect { state ->
+                _workshopState.value = state
+            }
+        }
+
         // Initialize by loading cached charts, then fetch fresh data
         viewModelScope.launch {
             currentSortOption = cacheRepository.getLatestWorkshopSort() ?: SortOption.LAST_UPDATED
-            
+
             // Load cached charts first
             val rootUri = cacheRepository.getFolderUri()
             chartManager.loadCachedCharts(currentSortOption, rootUri)
@@ -107,10 +116,9 @@ class WorkshopViewModel @Inject constructor(
             fetchFeedCharts(false)
 
             // Observe scroll state for pagination
-            // Must be done sequentially after loading cached charts
             observeScrollState()
         }
-        
+
         // Observe suggestions
         viewModelScope.launch {
             observeSuggestions()
@@ -119,8 +127,6 @@ class WorkshopViewModel @Inject constructor(
 
     /**
      * Fetches the feed charts from the remote source.
-     *
-     * @param showLoading Whether to show loading indicators (either full screen or in PullToRefresh).
      */
     fun fetchFeedCharts(showLoading: Boolean = true) {
         viewModelScope.launch {
@@ -128,9 +134,9 @@ class WorkshopViewModel @Inject constructor(
             currentFeedPage = 0
             isLoadingMore = false
             hasMoreData = true
-            
+
             if (showLoading) {
-                _workshopState.value = ChartState.Loading
+                chartManager.updateState(ChartState.Loading)
             }
 
             chartManager.fetchFeedCharts(
@@ -142,13 +148,13 @@ class WorkshopViewModel @Inject constructor(
                 when (result) {
                     is FetchResult.Success -> {
                         hasMoreData = result.data.size >= BATCH_SIZE
-                        _workshopState.value = ChartState.Success
+                        chartManager.updateState(ChartState.Success)
                     }
                     is FetchResult.Error -> {
                         if (showLoading && chartManager.getChartsLength() > 0) {
                             _events.emit(FetchEvent.Error(result.message))
                         }
-                        _workshopState.value = ChartState.Error
+                        chartManager.updateState(ChartState.Error)
                     }
                     FetchResult.Loading -> {
                         // Already handled above
@@ -160,13 +166,12 @@ class WorkshopViewModel @Inject constructor(
 
     /**
      * Searches for charts based on the provided query.
-     *
-     * @param query The search query string.
      */
     fun searchCharts(query: String) {
-        // val query = searchFieldState.text.toString()
         viewModelScope.launch {
-            // If the query is empty, clear the charts and reset state to show the feed
+            currentSearchQuery = query
+
+            // If the query is empty, clear the search and show feed
             if (query.isEmpty()) {
                 Log.d(TAG, "Clearing search results")
                 clearSearch()
@@ -174,18 +179,15 @@ class WorkshopViewModel @Inject constructor(
             }
 
             Log.d(TAG, "Searching for charts with query: $query")
-            
-            // Update the current search query to prevent data racing
-            chartManager.searchQuery = query
-            
+
             // Show loading indicator
-            _workshopState.value = ChartState.Loading
+            chartManager.updateState(ChartState.Loading)
 
             // Reset pagination
             currentSearchPage = 0
             isLoadingMore = false
             hasMoreData = true
-            
+
             // Scroll to top
             viewModelScope.launch {
                 listState.scrollToItem(0)
@@ -204,10 +206,11 @@ class WorkshopViewModel @Inject constructor(
                 when (result) {
                     is FetchResult.Success -> {
                         hasMoreData = result.data.size >= BATCH_SIZE
-                        _workshopState.value = ChartState.Success
+                        chartManager.updateState(ChartState.Success)
                     }
                     is FetchResult.Error -> {
-                        _workshopState.value = ChartState.Error
+                        chartManager.updateState(ChartState.Error)
+                        _events.emit(FetchEvent.Error(result.message))
                     }
                     FetchResult.Loading -> {
                         // No-op
@@ -219,43 +222,24 @@ class WorkshopViewModel @Inject constructor(
 
     /**
      * Changes the current sort option for the charts.
-     *
-     * @param sortOption The new sort option to be applied.
      */
     fun changeSortOption(sortOption: SortOption) {
         if (currentSortOption != sortOption) {
             currentSortOption = sortOption
             fetchFeedCharts(true)
-            viewModelScope.launch { 
+            viewModelScope.launch {
                 cacheRepository.setLatestWorkshopSort(sortOption.name)
             }
         }
     }
 
-    /**
-     * Sets the list of difficulties to be used for filtering charts.
-     *
-     * @param newDifficulties The new list of difficulties to be set.
-     */
-    /*fun setDifficulties(newDifficulties: List<Difficulty>?) {
-        difficulties = newDifficulties
-    }*/
-
-    /*fun setGenres(newGenres: List<String>?) {
-        genres = newGenres
-    }*/
-
     @OptIn(FlowPreview::class)
     suspend fun observeSuggestions() {
         Log.d(TAG, "Observing suggestions for search field")
 
-        snapshotFlow { searchFieldState.text.toString() } // Emit string directly
-            // We only process the text if it has changed
+        snapshotFlow { searchFieldState.text.toString() }
             .distinctUntilChanged()
-            // Let fast typers get multiple keystrokes in before kicking off a search
             .debounce(SUGGESTION_DEBOUNCE_MILLIS)
-            // collectLatest cancels the previous search if it's still running 
-            // when there's a new change.   
             .collectLatest { query ->
                 suggestions = when {
                     query.length > 1 -> {
@@ -277,15 +261,15 @@ class WorkshopViewModel @Inject constructor(
                 }
             }
     }
-    
+
     suspend fun observeScrollState() {
         Log.d(TAG, "Observing scroll state for list")
-        
+
         snapshotFlow {
             val layoutInfo = listState.layoutInfo
             val totalItems = layoutInfo.totalItemsCount
             val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index
-            
+
             // Ignore if no items are visible
             if (lastVisibleItem == null) {
                 return@snapshotFlow false
@@ -297,18 +281,18 @@ class WorkshopViewModel @Inject constructor(
             .collect { isAtEnd ->
                 // Check if we are at the end of the list 
                 // and if there's data already loaded
-                if (isAtEnd && _workshopState.value is ChartState.Success) {
+                if (isAtEnd && chartManager.cacheState.value is ChartState.Success) {
                     loadMoreCharts()
                 }
             }
     }
-    
+
     /**
      * Load the next batch of charts when user scrolls to the bottom
      */
     fun loadMoreCharts() {
         if (isLoadingMore || !hasMoreData) {
-            Log.d(TAG, "Skipping load more: already loading isLoadingMore=$isLoadingMore or no more data hasMoreData=$hasMoreData")
+            Log.d(TAG, "Skipping load more: isLoadingMore=$isLoadingMore, hasMoreData=$hasMoreData")
             return
         }
 
@@ -316,22 +300,23 @@ class WorkshopViewModel @Inject constructor(
             Log.d(TAG, "Loading more charts...")
             isLoadingMore = true
 
-            // Determine which loading function to use based on context
-            val flowToCollect = if (searchFieldState.text.isEmpty()) {
+            // Determine which loading function to use based on current search state
+            val flowToCollect = if (currentSearchQuery.isEmpty()) {
                 currentFeedPage++
-                
+
                 // We're in feed mode
                 chartManager.fetchFeedCharts(
                     sortBy = currentSortOption,
+                    forceRefresh = false, // Don't force refresh for pagination
                     limit = BATCH_SIZE,
                     offset = currentFeedPage * BATCH_SIZE
                 )
             } else {
                 currentSearchPage++
-                
-                // We're on query mode
+
+                // We're in search mode
                 chartManager.searchCharts(
-                    query = searchFieldState.text.toString(),
+                    query = currentSearchQuery,
                     difficulties = difficulties,
                     genres = genres,
                     limit = BATCH_SIZE,
@@ -358,26 +343,29 @@ class WorkshopViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun clearSearch() {
-        // Clear search
+        // Clear search state
         searchFieldState.setTextAndPlaceCursorAtEnd("")
-        chartManager.searchQuery = ""
-        
+        currentSearchQuery = ""
+
         // Reset pagination
         currentSearchPage = 0
         isLoadingMore = false
         hasMoreData = true
-        
+
         // Reset suggestions
         suggestions = null
-        
+
         // Scroll to top
         viewModelScope.launch {
             listState.scrollToItem(0)
         }
+
+        // Note: No need to manually clear charts since the UI will switch
+        // to showing feedCharts flow instead of searchCharts flow
     }
-    
+
     // Search history management
     private fun getSearchHistory() {
         viewModelScope.launch {
@@ -392,22 +380,20 @@ class WorkshopViewModel @Inject constructor(
             }
 
             // Add search to history if below max size, otherwise replace oldest item
-            if (searchHistory.size < MAX_HISTORY_SIZE) {
-                searchHistory = searchHistory.toMutableList().apply { add(search) }
-                cacheRepository.setSearchHistory(searchHistory)
+            val updatedHistory = if (searchHistory.size < MAX_HISTORY_SIZE) {
+                searchHistory + search
             } else {
-                searchHistory = searchHistory.toMutableList().apply {
-                    removeAt(0)
-                    add(search)
-                }
-                cacheRepository.setSearchHistory(searchHistory)
+                searchHistory.drop(1) + search
             }
+
+            searchHistory = updatedHistory
+            cacheRepository.setSearchHistory(searchHistory)
         }
     }
-    
+
     fun removeSearchHistory(search: String) {
         viewModelScope.launch {
-            searchHistory = searchHistory.toMutableList().apply { remove(search) }
+            searchHistory = searchHistory.filter { it != search }
             cacheRepository.setSearchHistory(searchHistory)
         }
     }
