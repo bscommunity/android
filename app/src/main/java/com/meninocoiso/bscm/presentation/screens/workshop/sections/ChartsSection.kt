@@ -152,46 +152,6 @@ internal fun ChartsSection(
                                 onNavigateToDetails(chart)
                             },
                         )
-                        ChartPreview(
-                            chart = chart,
-                            isBlocked = chart.latestVersion.isExplicit && !isExplicitAllowed.value,
-                            onBlocked = {
-                                onSnackbar(context.getString(R.string.explicit_content_disabled))
-                            },
-                            onNavigateToDetails = {
-                                onNavigateToDetails(chart)
-                            },
-                        )
-                        ChartPreview(
-                            chart = chart,
-                            isBlocked = chart.latestVersion.isExplicit && !isExplicitAllowed.value,
-                            onBlocked = {
-                                onSnackbar(context.getString(R.string.explicit_content_disabled))
-                            },
-                            onNavigateToDetails = {
-                                onNavigateToDetails(chart)
-                            },
-                        )
-                        ChartPreview(
-                            chart = chart,
-                            isBlocked = chart.latestVersion.isExplicit && !isExplicitAllowed.value,
-                            onBlocked = {
-                                onSnackbar(context.getString(R.string.explicit_content_disabled))
-                            },
-                            onNavigateToDetails = {
-                                onNavigateToDetails(chart)
-                            },
-                        )
-                        ChartPreview(
-                            chart = chart,
-                            isBlocked = chart.latestVersion.isExplicit && !isExplicitAllowed.value,
-                            onBlocked = {
-                                onSnackbar(context.getString(R.string.explicit_content_disabled))
-                            },
-                            onNavigateToDetails = {
-                                onNavigateToDetails(chart)
-                            },
-                        )
                     }
 
                     if (viewModel.isLoadingMore) {
