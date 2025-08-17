@@ -32,9 +32,6 @@ data class SupportedLanguage(
     val contributor: String? = null
 )
 
-private const val CONTRIBUTORS_LINK =
-    "https://docs.google.com/spreadsheets/d/1pPn-XXC_2ivgPXWlPcgxU2jun8Kq9u3nKlpBFSoljmM/edit?usp=sharing"
-
 @Composable
 fun LanguageDialog() {
     val context = LocalContext.current
@@ -45,8 +42,8 @@ fun LanguageDialog() {
         systemDefault,
         SupportedLanguage("en-US", "English"),
         SupportedLanguage("pt-BR", "Português (Brasil)"),
-        SupportedLanguage("es-ES", "Español", contributor = "Farfu"),
-        SupportedLanguage("ru-RU", "Русский", contributor = "MusicCat")
+        SupportedLanguage("es-ES", "Español", contributor = "@farlixx03"),
+        SupportedLanguage("ru-RU", "Русский", contributor = "@MusicCat")
     )
 
     val currentLocaleTag = AppCompatDelegate.getApplicationLocales()[0]?.toLanguageTag()
@@ -78,6 +75,11 @@ fun LanguageDialog() {
                             lang.contributor?.let { contributor ->
                                 @Composable {
                                     Text(
+                                        /*modifier = Modifier
+                                            .zIndex(10f)
+                                            .clickable {
+                                            LinkingUtils.openLink(context, CONTRIBUTORS_LINK)
+                                        },*/
                                         text = "by $contributor",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.secondary

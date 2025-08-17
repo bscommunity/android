@@ -81,30 +81,6 @@ fun LazyListScope.localContentSection(
                 modifier = Modifier
                     .padding(start = 16.dp, end = 16.dp, top = 8.dp)
             )
-            LocalChartPreview(
-                chart = chart,
-                onNavigateToDetails = { onNavigateToDetails(chart) },
-                modifier = Modifier
-                    .padding(start = 16.dp, end = 16.dp, top = 8.dp)
-            )
-            LocalChartPreview(
-                chart = chart,
-                onNavigateToDetails = { onNavigateToDetails(chart) },
-                modifier = Modifier
-                    .padding(start = 16.dp, end = 16.dp, top = 8.dp)
-            )
-            LocalChartPreview(
-                chart = chart,
-                onNavigateToDetails = { onNavigateToDetails(chart) },
-                modifier = Modifier
-                    .padding(start = 16.dp, end = 16.dp, top = 8.dp)
-            )
-            LocalChartPreview(
-                chart = chart,
-                onNavigateToDetails = { onNavigateToDetails(chart) },
-                modifier = Modifier
-                    .padding(start = 16.dp, end = 16.dp, top = 8.dp)
-            )
         }
 
         item {

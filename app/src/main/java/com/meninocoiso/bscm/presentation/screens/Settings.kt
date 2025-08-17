@@ -39,6 +39,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -66,12 +67,12 @@ fun SettingsScreen(
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    
+
     val shrunkVersionName = BuildConfig.VERSION_NAME.substringBeforeLast("-")
-    val shrunkLatestVersion = if (updateState is AppUpdateState.UpdateAvailable) 
+    val shrunkLatestVersion = if (updateState is AppUpdateState.UpdateAvailable)
         (updateState as AppUpdateState.UpdateAvailable).version.substringBeforeLast("-")
     else ""
-    
+
     LaunchedEffect(updateState) {
         when (updateState) {
             is AppUpdateState.UpToDate -> {
@@ -84,7 +85,7 @@ fun SettingsScreen(
             else -> {}
         }
     }
-    
+
     val featureNotImplementedString = stringResource(R.string.feature_not_implemented)
 
     Column(
@@ -103,7 +104,10 @@ fun SettingsScreen(
                 .fillMaxWidth()
                 .padding(top = 64.dp)
         ) {
-            Text(text = stringResource(R.string.settings), style = MaterialTheme.typography.displayMedium)
+            Text(
+                text = stringResource(R.string.settings),
+                style = MaterialTheme.typography.displayMedium
+            )
         }
 
         SettingsCard(title = stringResource(R.string.account)) {
@@ -119,7 +123,7 @@ fun SettingsScreen(
                 },
                 trailingContent = {
                     Button(onClick = {
-                        onSnackbar(featureNotImplementedString) 
+                        onSnackbar(featureNotImplementedString)
                     }) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(ButtonDefaults.IconSpacing),
@@ -265,11 +269,12 @@ fun SettingsScreen(
 
         SettingsCard(
             title = stringResource(R.string.version),
-            supportingText = when(updateState) {
+            supportingText = when (updateState) {
                 is AppUpdateState.Downloading -> stringResource(
                     R.string.concluded_progress,
                     ((updateState as AppUpdateState.Downloading).progress * 100).toInt()
                 )
+
                 is AppUpdateState.UpdateAvailable -> stringResource(R.string.client_outdated)
                 else -> null
             }
@@ -487,7 +492,11 @@ private fun ListDivider() {
 
 @Composable
 private fun HeadlineText(title: String) {
-    Text(text = title, style = MaterialTheme.typography.titleMedium)
+    Text(
+        text = title,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium
+    )
 }
 
 @Composable
