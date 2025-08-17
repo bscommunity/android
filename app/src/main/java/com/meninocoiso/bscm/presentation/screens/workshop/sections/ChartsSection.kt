@@ -24,6 +24,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.manager.ChartState
@@ -32,6 +33,7 @@ import com.meninocoiso.bscm.presentation.screens.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.chart.ChartPreview
 import com.meninocoiso.bscm.presentation.ui.components.layout.SectionWrapper
+import com.meninocoiso.bscm.presentation.ui.components.workshop.WorkshopChips
 import com.meninocoiso.bscm.presentation.ui.modifiers.fabScrollObserver
 import com.meninocoiso.bscm.presentation.viewmodel.WorkshopViewModel
 
@@ -46,7 +48,7 @@ internal fun ChartsSection(
     viewModel: WorkshopViewModel
 ) {
     val context = LocalContext.current
-    
+
     val searchCharts by viewModel.searchCharts.collectAsStateWithLifecycle(initialValue = emptyList())
     val feedCharts by viewModel.feedCharts.collectAsStateWithLifecycle(initialValue = emptyList())
 
@@ -72,13 +74,6 @@ internal fun ChartsSection(
             }
         }
     }
-
-    // Print all conditions to check
-    // println("WorkshopState: $workshopState")
-    // println("SearchCharts: $searchCharts")
-    // println("FeedCharts: $feedCharts")
-    // println("HasActiveQuery: $hasActiveQuery")
-    // println("Charts: $charts")
 
     val isExplicitAllowed =
         viewModel.isExplicitAllowed.collectAsStateWithLifecycle(initialValue = false)
@@ -129,12 +124,64 @@ internal fun ChartsSection(
                         .fillMaxSize()
                         .nestedScroll(nestedScrollConnection)
                         .fabScrollObserver { shouldExtend ->
-                            // Update FAB cacheState based on scroll delta
+                            // Update FAB state based on scroll delta
                             onFabStateChange(shouldExtend)
                         },
                     listState = listState,
                 ) {
+                    // Add WorkshopChips as the first item in the list
+                    item {
+                        WorkshopChips(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp)
+                                .zIndex(1f), // Lower z-index since it's now part of the scrollable content
+                            currentSortOption = viewModel.currentSortOption,
+                            onSortOptionChange = viewModel::changeSortOption
+                        )
+                    }
+
                     itemsIndexed(charts) { index, chart ->
+                        ChartPreview(
+                            chart = chart,
+                            isBlocked = chart.latestVersion.isExplicit && !isExplicitAllowed.value,
+                            onBlocked = {
+                                onSnackbar(context.getString(R.string.explicit_content_disabled))
+                            },
+                            onNavigateToDetails = {
+                                onNavigateToDetails(chart)
+                            },
+                        )
+                        ChartPreview(
+                            chart = chart,
+                            isBlocked = chart.latestVersion.isExplicit && !isExplicitAllowed.value,
+                            onBlocked = {
+                                onSnackbar(context.getString(R.string.explicit_content_disabled))
+                            },
+                            onNavigateToDetails = {
+                                onNavigateToDetails(chart)
+                            },
+                        )
+                        ChartPreview(
+                            chart = chart,
+                            isBlocked = chart.latestVersion.isExplicit && !isExplicitAllowed.value,
+                            onBlocked = {
+                                onSnackbar(context.getString(R.string.explicit_content_disabled))
+                            },
+                            onNavigateToDetails = {
+                                onNavigateToDetails(chart)
+                            },
+                        )
+                        ChartPreview(
+                            chart = chart,
+                            isBlocked = chart.latestVersion.isExplicit && !isExplicitAllowed.value,
+                            onBlocked = {
+                                onSnackbar(context.getString(R.string.explicit_content_disabled))
+                            },
+                            onNavigateToDetails = {
+                                onNavigateToDetails(chart)
+                            },
+                        )
                         ChartPreview(
                             chart = chart,
                             isBlocked = chart.latestVersion.isExplicit && !isExplicitAllowed.value,
