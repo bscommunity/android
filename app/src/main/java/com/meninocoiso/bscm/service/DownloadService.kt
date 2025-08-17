@@ -13,6 +13,7 @@ import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.repository.DownloadRepository
 import com.meninocoiso.bscm.domain.enums.ErrorType
 import com.meninocoiso.bscm.domain.enums.OperationType
+import com.meninocoiso.bscm.domain.model.internal.DownloadEvent
 import com.meninocoiso.bscm.util.StringUtils.getFinalMessage
 import com.meninocoiso.bscm.util.StringUtils.getInitialMessage
 import com.meninocoiso.bscm.util.StringUtils.getProgressMessage
@@ -146,9 +147,9 @@ class DownloadService : Service() {
                         is NotFoundException -> ErrorType.FILE_NOT_FOUND
                         else -> ErrorType.UNKNOWN
                     }
-                    
+
                     Log.e(TAG, "Error: ${e.message}", e)
-                    
+
                     // Send error event
                     serviceScope.launch {
                         downloadServiceConnection.sendEvent(

@@ -2,6 +2,7 @@ package com.meninocoiso.bscm.service
 
 import android.content.Context
 import android.content.Intent
+import com.meninocoiso.bscm.domain.model.internal.DownloadEvent
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow

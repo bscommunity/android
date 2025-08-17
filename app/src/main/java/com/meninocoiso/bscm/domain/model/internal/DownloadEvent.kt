@@ -1,4 +1,4 @@
-package com.meninocoiso.bscm.service
+package com.meninocoiso.bscm.domain.model.internal
 
 import com.meninocoiso.bscm.domain.enums.ErrorType
 

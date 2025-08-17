@@ -13,8 +13,8 @@ import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.ErrorType
 import com.meninocoiso.bscm.domain.enums.OperationType
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.internal.DownloadEvent
 import com.meninocoiso.bscm.domain.model.internal.Settings
-import com.meninocoiso.bscm.service.DownloadEvent
 import com.meninocoiso.bscm.service.DownloadServiceConnection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -207,10 +207,5 @@ class ContentViewModel @Inject constructor(
     suspend fun setFolderUri(uri: Uri) {
         cachedFolderUri = uri
         cacheRepository.setFolderUri(uri.toString())
-    }
-
-    // Helper method to get the current cacheState of a chart synchronously
-    fun getCurrentState(chartId: String): ContentState {
-        return _contentStates.value[chartId] ?: ContentState.Idle
     }
 }
