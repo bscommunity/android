@@ -1,10 +1,16 @@
-package com.meninocoiso.bscm.domain.model.internal
-
 import com.meninocoiso.bscm.domain.enums.ErrorType
 
-sealed class DownloadEvent(val chartId: String) {
-    class Progress(chartId: String, val progress: Float) : DownloadEvent(chartId)
-    class Extracting(chartId: String, val progress: Float) : DownloadEvent(chartId)
-    class Complete(chartId: String) : DownloadEvent(chartId)
-    class Error(chartId: String, val message: String, val type: ErrorType? = null) : DownloadEvent(chartId)
+sealed class DownloadEvent {
+    abstract val chartId: String
+
+    data class Started(override val chartId: String) : DownloadEvent()
+    data class Progress(override val chartId: String, val progress: Float) : DownloadEvent()
+    data class Extracting(override val chartId: String, val progress: Float) : DownloadEvent()
+    data class Complete(override val chartId: String) : DownloadEvent()
+    data class Error(
+        override val chartId: String,
+        val message: String,
+        val type: ErrorType? = null
+    ) : DownloadEvent()
+    data class Cancelled(override val chartId: String) : DownloadEvent()
 }

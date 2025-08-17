@@ -95,7 +95,6 @@
     <string name="expert">Expert</string>
     <string name="download_chart">Download chart</string>
     <string name="update_chart">Update chart</string>
-    <string name="download_failed">Download failed</string>
     <string name="download">Download</string>
     <string name="downloading">Downloading…</string>
     <string name="extracting">Extracting…</string>
@@ -104,7 +103,6 @@
     <string name="try_again">Try again</string>
     <string name="extracting_progress_title">Extracting %1$s</string>
     <string name="extracting_progress_description">Extracting files… %1$d%%</string>
-    <string name="unknown_error">Unknown error</string>
     <string name="work_in_progress">Work in progress!</string>
     <string name="work_in_progress_description">This feature still needs some work\nPlease, check back later</string>
     <string name="launch_app">Launch app</string>
@@ -226,4 +224,27 @@
     <string name="language_dialog_info">Check out the incredible people who helped translate the app into your language</string>
     <string name="incorrect_storage_permission">Invalid Folder Selected</string>
     <string name="incorrect_storage_permission_description">The selected folder is not valid.\nPlease select or create a \'beatstar\' folder in the root directory of your phone and try again.</string>
+    
+    <!-- 🔔 Notifications -->
+    <string name="download_failed">Download failed</string>
+    <string name="download_failed_for_chart">Couldn’t download chart: %1$s</string>
+    <string name="notification_channel_downloads_name">Downloads</string>
+    <string name="notification_channel_downloads_description">Shows progress and results of your downloads</string>
+
+    <!-- ⚠️ Error Messages -->
+    <string name="error_network_connection">No internet connection. Please check your network.</string>
+    <string name="error_file_not_found">The required file wasn’t found.</string>
+    <string name="error_server_problem">The server isn’t responding. Try again later.</string>
+    <string name="error_permission_denied">Permission denied. Please allow access in settings.</string>
+    <string name="error_storage_full">Not enough space. Free up storage and try again.</string>
+    <string name="error_storage_problem">There was a problem accessing storage.</string>
+    <string name="error_extraction_failed">Couldn’t extract downloaded files.</string>
+    <string name="error_download_failed">Download couldn’t be completed.</string>
+    <string name="unknown_error">Something went wrong.</string>
+
+    <!-- ⚙️ Operation States -->
+    <string name="operation_in_progress">This action is already in progress.</string>
+    <string name="cannot_delete_during_download">You can’t delete a chart while it’s downloading or extracting.</string>
+    <string name="permission_denied_delete">Permission denied. Unable to delete chart.</string>
+    <string name="storage_error_delete">Couldn’t delete chart due to a storage issue.</string>
 </resources>

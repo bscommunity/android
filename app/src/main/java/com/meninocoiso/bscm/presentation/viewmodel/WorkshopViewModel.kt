@@ -295,6 +295,12 @@ class WorkshopViewModel @Inject constructor(
             Log.d(TAG, "Skipping load more: isLoadingMore=$isLoadingMore, hasMoreData=$hasMoreData")
             return
         }
+        
+        if (currentSearchQuery.isEmpty() && currentFeedPage == 0) {
+            // If we're in feed mode and haven't loaded any pages yet, just return
+            Log.d(TAG, "No feed charts to load on initial page")
+            return
+        }
 
         viewModelScope.launch {
             Log.d(TAG, "Loading more charts...")

@@ -35,7 +35,6 @@ import com.meninocoiso.bscm.presentation.ui.components.layout.SectionWrapper
 import com.meninocoiso.bscm.presentation.ui.modifiers.fabScrollObserver
 import com.meninocoiso.bscm.presentation.ui.modifiers.shimmerLoading
 import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
-import com.meninocoiso.bscm.domain.model.internal.DownloadEvent
 
 private object SectionWrapperDefaults {
     val contentPadding = PaddingValues(horizontal = 16.dp)

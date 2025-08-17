@@ -56,7 +56,12 @@ class CacheRepository @Inject constructor(
 		dataStore.edit { it[FOLDER_URI] = uri }
 
 	suspend fun getFolderUri(): Uri? {
-		return dataStore.data.first()[FOLDER_URI]?.toUri()
+		val folderUri = dataStore.data.first()[FOLDER_URI]
+		return if (folderUri != null && folderUri.isNotEmpty()) {
+			folderUri.toUri()
+		} else {
+			null
+		}
 	}
 	
 	suspend fun getLatestWorkshopSort(): SortOption? {

@@ -15,6 +15,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.meninocoiso.bscm.util.AppBarUtils
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.UpdatesSection
 import com.meninocoiso.bscm.presentation.screens.details.OnNavigateToDetails
@@ -23,7 +24,6 @@ import com.meninocoiso.bscm.presentation.screens.updates.sections.WorkshopSectio
 import com.meninocoiso.bscm.presentation.ui.components.TabItem
 import com.meninocoiso.bscm.presentation.ui.components.TabsUI
 import com.meninocoiso.bscm.presentation.viewmodel.UpdatesViewModel
-import com.meninocoiso.bscm.util.AppBarUtils
 
 @Composable
 private fun getUpdatesTabsItems(): List<TabItem> {

@@ -50,7 +50,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
-import com.meninocoiso.bscm.domain.model.internal.DownloadEvent
 import com.meninocoiso.bscm.presentation.ui.components.CarouselItem
 import com.meninocoiso.bscm.presentation.ui.components.MediaCarousel
 import com.meninocoiso.bscm.presentation.ui.components.chart.ChartContributors

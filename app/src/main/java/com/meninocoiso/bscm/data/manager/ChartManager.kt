@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.data.repository.ChartRepository
 import com.meninocoiso.bscm.di.ApplicationScope
 import com.meninocoiso.bscm.domain.enums.Difficulty
@@ -58,6 +59,7 @@ class ChartManager @Inject constructor(
     @ApplicationContext private val context: Context,
     @Named("Remote") private val remoteChartRepository: ChartRepository,
     @Named("Local") private val localChartRepository: ChartRepository,
+    private val cacheRepository: CacheRepository,
     @ApplicationScope private val coroutineScope: CoroutineScope) 
 {
 
@@ -97,19 +99,33 @@ class ChartManager @Inject constructor(
     fun getChartsLength(): Int = _charts.value.size
 
     fun verifyInstalledCharts(chartsToVerify: List<Chart>, rootUri: Uri): List<Chart> {
-        val destination = StorageUtils.getFolder(rootUri, listOf("songs"), context)
-
-        return chartsToVerify.map { chart ->
-            val folderName = StorageUtils.getChartFolderName(chart.id)
-            val chartFolder = destination.findFile(folderName)
-            val fileExists = chartFolder != null
-
-            chart.copy(isInstalled = fileExists).also { updatedChart ->
-                // Update in-memory state if verification changed the status
-                if (chart.isInstalled != fileExists) {
-                    updateChartInMemory(updatedChart)
+        try {
+            val destination = StorageUtils.getFolder(rootUri, listOf("songs"), context)
+            
+            return chartsToVerify.map { chart ->
+                val folderName = StorageUtils.getChartFolderName(chart.id)
+                val chartFolder = destination.findFile(folderName)
+                val fileExists = chartFolder != null
+    
+                chart.copy(isInstalled = fileExists).also { updatedChart ->
+                    // Update in-memory state if verification changed the status
+                    if (chart.isInstalled != fileExists) {
+                        updateChartInMemory(updatedChart)
+                    }
                 }
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error verifying installed charts", e)
+
+            // If we can't access the root folder, clear the cache
+            // This edge case is very specific but can happen if the user changes storage permissions
+            // We could simply allow the error in background, but clearing the cache ensures it won't
+            // error again while the user don't re-selects the folder
+            coroutineScope.launch {
+                cacheRepository.setFolderUri("")
+            }
+            
+            return chartsToVerify
         }
     }
 
@@ -119,6 +135,8 @@ class ChartManager @Inject constructor(
     suspend fun loadCachedCharts(sortBy: SortOption, rootUri: Uri? = null) {
         _cacheState.value = ChartState.Loading
 
+        Log.d(TAG, "RootUri$rootUri")
+        
         try {
             val cachedCharts = localChartRepository.getChartsSortedBy(sortBy).first()
 
