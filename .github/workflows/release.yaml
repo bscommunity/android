@@ -67,7 +67,7 @@ jobs:
       - name: Install CMake
         uses: jwlawson/actions-setup-cmake@v2
         with:
-          version: 4.0.3
+          version: 4.1.0
 
       - name: Decode and Restore Keystore
         run: |
