@@ -19,7 +19,7 @@
     <!-- Theme used in the manifest for Splash -->
     <style name="Theme.bscm.Splash" parent="NightAdjusted.Theme.Splash">
         <!-- Instead of using the icon with background, use only the foreground -->
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_splash</item>
         <item name="postSplashScreenTheme">@style/Theme.bscm</item>
     </style>
 </resources>

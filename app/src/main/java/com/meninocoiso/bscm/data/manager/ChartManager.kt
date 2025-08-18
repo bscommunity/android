@@ -93,6 +93,7 @@ class ChartManager @Inject constructor(
     }
 
     fun updateState(newState: ChartState) {
+        // Log.d(TAG, "Updating cache state to $newState")
         _cacheState.value = newState
     }
 
@@ -134,8 +135,6 @@ class ChartManager @Inject constructor(
      */
     suspend fun loadCachedCharts(sortBy: SortOption, rootUri: Uri? = null) {
         _cacheState.value = ChartState.Loading
-
-        Log.d(TAG, "RootUri$rootUri")
         
         try {
             val cachedCharts = localChartRepository.getChartsSortedBy(sortBy).first()
@@ -180,7 +179,7 @@ class ChartManager @Inject constructor(
 
         Log.d(TAG, "Fetching feed charts: sortBy=$sortBy, limit=$limit, offset=$offset")
 
-        // Check cache for initial load
+        /*// Check cache for initial load
         if (offset == 0 && !forceRefresh) {
             val cachedResult = localChartRepository.getChartsSortedBy(sortBy, limit).first()
 
@@ -193,9 +192,9 @@ class ChartManager @Inject constructor(
                         return@flow
                     }
                 },
-                onFailure = { /* Continue to remote fetch */ }
+                onFailure = { *//* Continue to remote fetch *//* }
             )
-        }
+        }*/
 
         // Fetch from remote
         val remoteResult = remoteChartRepository.getChartsSortedBy(

@@ -113,7 +113,7 @@ class WorkshopViewModel @Inject constructor(
             chartManager.loadCachedCharts(currentSortOption, rootUri)
 
             // Then fetch fresh data
-            fetchFeedCharts(false)
+            fetchFeedCharts(true)
 
             // Observe scroll state for pagination
             observeScrollState()
