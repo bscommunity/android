@@ -59,8 +59,6 @@ class DownloadManager @Inject constructor(
             // Create the request with proper headers
             val request = Request.Builder()
                 .url(url)
-                .addHeader("User-Agent", "ChartDownloader/1.0")
-                .addHeader("Accept", "application/octet-stream, */*")
                 .build()
 
             // Execute the request with proper resource management
@@ -212,7 +210,6 @@ class DownloadManager @Inject constructor(
 
             val sanitizedFolderName = sanitizeFileName(folderName)
             val destination = StorageUtils.getFolder(rootUri, subFolders, context)
-                ?: throw ExtractionException("Failed to access destination folder")
 
             // Create (or recreate) the chart folder with better error handling
             val existingFolder = destination.findFile(sanitizedFolderName)

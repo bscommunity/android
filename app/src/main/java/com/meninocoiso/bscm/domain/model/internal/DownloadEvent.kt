@@ -12,5 +12,4 @@ sealed class DownloadEvent {
         val message: String,
         val type: ErrorType? = null
     ) : DownloadEvent()
-    data class Cancelled(override val chartId: String) : DownloadEvent()
 }

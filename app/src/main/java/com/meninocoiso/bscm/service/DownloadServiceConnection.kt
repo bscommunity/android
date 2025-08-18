@@ -3,8 +3,6 @@ package com.meninocoiso.bscm.service
 import DownloadEvent
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import android.util.Log
 import com.meninocoiso.bscm.domain.enums.ErrorType
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -15,10 +13,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -125,37 +119,6 @@ class DownloadServiceConnection @Inject constructor(
         throw lastException ?: Exception("Failed to start download service after $MAX_RETRY_ATTEMPTS attempts")
     }
 
-    /**
-     * Cancels an active download
-     */
-    suspend fun cancelDownload(chartId: String) {
-        activeDownloadsLock.withLock {
-            if (!activeDownloads.contains(chartId)) {
-                Log.w(TAG, "No active download found for chart: $chartId")
-                return
-            }
-        }
-
-        try {
-            // Send cancel intent to service
-            val intent = Intent(context, DownloadService::class.java).apply {
-                action = "CANCEL_DOWNLOAD"
-                putExtra(DownloadService.EXTRA_CHART_ID, chartId)
-            }
-            context.startService(intent)
-
-            sendEvent(DownloadEvent.Cancelled(chartId))
-            Log.d(TAG, "Download cancelled for chart: $chartId")
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to cancel download for chart: $chartId", e)
-            sendEvent(DownloadEvent.Error(
-                chartId,
-                "Failed to cancel download: ${e.message}",
-                ErrorType.UNKNOWN
-            ))
-        }
-    }
 
     /**
      * Checks if a download is currently active for the given chart ID
@@ -188,8 +151,7 @@ class DownloadServiceConnection @Inject constructor(
             // Handle completion or error events by removing from active downloads
             when (event) {
                 is DownloadEvent.Complete,
-                is DownloadEvent.Error,
-                is DownloadEvent.Cancelled -> {
+                is DownloadEvent.Error -> {
                     // Use a coroutine scope to handle the suspend function
                     CoroutineScope(Dispatchers.IO).launch {
                         activeDownloadsLock.withLock {
@@ -210,63 +172,4 @@ class DownloadServiceConnection @Inject constructor(
      * Returns a cold Flow that can be collected safely
      */
     fun observeDownload(): Flow<DownloadEvent> = _downloadEvents.asSharedFlow()
-
-    /**
-     * Observes download events for a specific chart ID only
-     */
-    fun observeDownload(chartId: String): Flow<DownloadEvent> =
-        _downloadEvents.asSharedFlow().filter { it.chartId == chartId }
-
-    /**
-     * Gets the current status of a specific chart download
-     * Returns null if no active download is found
-     */
-    fun getCurrentDownloadStatus(chartId: String): Flow<DownloadEvent?> =
-        _downloadEvents.asSharedFlow()
-            .filter { it.chartId == chartId }
-            .map { event ->
-                when (event) {
-                    is DownloadEvent.Complete,
-                    is DownloadEvent.Error,
-                    is DownloadEvent.Cancelled -> null // Download finished
-                    else -> event
-                }
-            }
-            .startWith(null) // Start with null status
-
-    /**
-     * Clears all active downloads (useful for cleanup or reset scenarios)
-     */
-    suspend fun clearActiveDownloads() {
-        activeDownloadsLock.withLock {
-            activeDownloads.clear()
-        }
-        Log.d(TAG, "Cleared all active downloads")
-    }
-
-    /**
-     * Validates that the Android system can handle foreground services
-     */
-    private fun validateServiceCapability(): Boolean {
-        return try {
-            // Check if we have permission to start foreground services
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                val permission = context.checkSelfPermission(android.Manifest.permission.FOREGROUND_SERVICE)
-                permission == PackageManager.PERMISSION_GRANTED
-            } else {
-                true // No special permission needed for older versions
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Error checking service capability", e)
-            false
-        }
-    }
-}
-
-/**
- * Extension function to add a starting value to a Flow
- */
-private fun <T> Flow<T>.startWith(value: T): Flow<T> = flow {
-    emit(value)
-    emitAll(this@startWith)
 }

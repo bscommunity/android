@@ -157,13 +157,6 @@ class ContentViewModel @Inject constructor(
                     // Clear any pending operations
                     clearChartOperation(chartId)
                 }
-
-                is DownloadEvent.Cancelled -> {
-                    updateState(chartId, ContentState.Idle)
-                    emitEvent(event)
-                    // Clear any pending operations
-                    clearChartOperation(chartId)
-                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error handling download event: $event", e)
@@ -258,24 +251,6 @@ class ContentViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Cancels an active download
-     */
-    fun cancelDownload(chartId: String) {
-        viewModelScope.launch {
-            try {
-                downloadServiceConnection.cancelDownload(chartId)
-                Log.d(TAG, "Download cancellation requested for chart: $chartId")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to cancel download for chart: $chartId", e)
-                updateState(chartId, ContentState.Error(
-                    chartId,
-                    "Failed to cancel download",
-                    ErrorType.UNKNOWN
-                ))
-            }
-        }
-    }
 
     /**
      * Deletes a chart with improved error handling and validation

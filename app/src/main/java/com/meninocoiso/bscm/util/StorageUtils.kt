@@ -10,7 +10,8 @@ private const val TAG = "StorageUtils"
 
 object StorageUtils {
     fun getChartFolderName(chartId: String): String {
-        return "bscm_" + chartId.split("-").first()
+        // Last 4 numbers from the chart ID
+        return "bscm_" + chartId.takeLast(4)
     }
 
     fun checkIfExists(uri: Uri, context: Context): Boolean {

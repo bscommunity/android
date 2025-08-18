@@ -4,7 +4,6 @@ import DownloadEvent
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
@@ -251,8 +250,8 @@ class DownloadService : Service() {
     }
 
     private fun categorizeError(error: Exception): ErrorType {
-        return when {
-            error is DownloadException -> {
+        return when (error) {
+            is DownloadException -> {
                 when {
                     error.message?.contains("HTTP 4") == true -> ErrorType.FILE_NOT_FOUND
                     error.message?.contains("HTTP 5") == true -> ErrorType.SERVER_ERROR
@@ -261,15 +260,17 @@ class DownloadService : Service() {
                     else -> ErrorType.DOWNLOAD_ERROR
                 }
             }
-            error is ExtractionException -> ErrorType.EXTRACTION_ERROR
-            error is IOException -> {
+
+            is ExtractionException -> ErrorType.EXTRACTION_ERROR
+            is IOException -> {
                 when {
                     error.message?.contains("Permission", ignoreCase = true) == true -> ErrorType.PERMISSION_DENIED
                     error.message?.contains("No space", ignoreCase = true) == true -> ErrorType.STORAGE_FULL
                     else -> ErrorType.STORAGE_ERROR
                 }
             }
-            error is SecurityException -> ErrorType.PERMISSION_DENIED
+
+            is SecurityException -> ErrorType.PERMISSION_DENIED
             else -> ErrorType.UNKNOWN
         }
     }
@@ -330,21 +331,6 @@ class DownloadService : Service() {
             builder.setProgress(100, progress.coerceIn(0, 100), progress == 0)
         }
 
-        // Add action to cancel download (for ongoing downloads)
-        if (isOngoing && !isError) {
-            val cancelIntent = Intent(this, DownloadService::class.java).apply {
-                action = "CANCEL_DOWNLOAD"
-            }
-            val cancelPendingIntent = PendingIntent.getService(
-                this, 0, cancelIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            builder.addAction(
-                R.drawable.rounded_close_24,
-                getString(R.string.cancel),
-                cancelPendingIntent
-            )
-        }
 
         return builder.build()
     }
