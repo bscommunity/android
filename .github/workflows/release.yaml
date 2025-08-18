@@ -63,6 +63,12 @@ jobs:
           git tag "${{ env.FINAL_VERSION }}"
           git push origin "${{ env.FINAL_VERSION }}"
 
+      # Install CMake
+      - name: Install CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          version: 4.0.3
+
       - name: Decode and Restore Keystore
         run: |
           echo "${{ secrets.SIGNING_KEYSTORE_BASE64 }}" | base64 -d > app/keystore.jks
