@@ -82,6 +82,11 @@ class OAuthRedirectActivity : ComponentActivity() {
             }
         }
 
+        // Navigate back to the main activity
+        startActivity(Intent(this, com.meninocoiso.bscm.MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        })
+
         // Always finish this activity to return to the main app
         finish()
     }

@@ -1,12 +1,9 @@
 package com.meninocoiso.bscm.data.security
 
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.net.toUri
-import com.meninocoiso.bscm.presentation.activity.OAuthRedirectActivity
 import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.inject.Inject
@@ -49,6 +46,7 @@ class DiscordOAuth @Inject constructor(
         val codeChallenge = generateCodeChallenge(codeVerifier)
 
         // Persist code verifier for later use
+        println("Generated code verifier: ${codeVerifier.take(10)}...")
         tokenManager.saveCodeVerifier(codeVerifier)
 
         // Build authorization URL with PKCE parameters
@@ -62,23 +60,14 @@ class DiscordOAuth @Inject constructor(
             .appendQueryParameter("code_challenge_method", "S256")
             .build()
 
-        // Create a PendingIntent for the callback
-        val intent = Intent(context, OAuthRedirectActivity::class.java)
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
         val customTabsIntent = CustomTabsIntent.Builder()
             .setShowTitle(true)
             .build()
 
-        // Add the pending intent to ensure proper handling
-        customTabsIntent.intent.putExtra("android.support.customtabs.extra.EXIT_INTENT", pendingIntent)
+        // Ensure the OAuth activity is not kept in history
+        customTabsIntent.intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NO_HISTORY)
+        customTabsIntent.intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
+
         customTabsIntent.launchUrl(context, authUrl)
     }
 }

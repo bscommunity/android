@@ -9,6 +9,7 @@ import com.meninocoiso.bscm.data.security.DiscordOAuth
 import com.meninocoiso.bscm.domain.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -60,10 +61,8 @@ class AuthViewModel @Inject constructor(
                     if (logged != previous) {
                         _uiState.value = _uiState.value.copy(isLoggedIn = logged)
                         if (logged) {
-                            // Ao mudar para logado, buscar usuário
                             getCurrentUser()
                         } else {
-                            // Ao deslogar, resetar estado (mantendo possíveis mensagens?)
                             _uiState.value = AuthUiState()
                         }
                     }
@@ -84,15 +83,15 @@ class AuthViewModel @Inject constructor(
 
     fun startDiscordOAuth(context: Context) {
         viewModelScope.launch {
-            // Se já havia um fluxo pendente, cancelar
+            // If there was already a pending flow, cancel it
             if (waitingForCallback) {
-                cancelPendingOAuth("Reiniciando fluxo de autenticação")
+                cancelPendingOAuth("Restarting authentication flow")
             }
             waitingForCallback = true
             oauthStartTime = System.currentTimeMillis()
 
             // Set loading and clear previous error before starting OAuth
-                _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             // Use runCatching so we do not accidentally swallow CancellationException
             runCatching {
                 discordOAuth.startDiscordOAuth(context) // may throw if intent/custom tab cannot be launched
@@ -104,6 +103,7 @@ class AuthViewModel @Inject constructor(
                 oauthTimeoutJob?.cancel()
                 if (e is CancellationException) {
                     // Propagate cancellation and update state accordingly
+                    Log.d(TAG, "startDiscordOAuth: Authentication cancelled")
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         error = "Authentication cancelled"
@@ -115,8 +115,6 @@ class AuthViewModel @Inject constructor(
                     isLoading = false,
                     error = "Error starting authentication: ${e.message}"
                 )
-                // Limpa verifier se falhou ao iniciar
-                viewModelScope.launch { authRepository.clearPkceVerifier() }
             }
         }
     }
@@ -124,7 +122,7 @@ class AuthViewModel @Inject constructor(
     private fun scheduleOAuthTimeout() {
         oauthTimeoutJob?.cancel()
         oauthTimeoutJob = viewModelScope.launch {
-            kotlinx.coroutines.delay(OAUTH_MAX_WAIT_MS)
+            delay(OAUTH_MAX_WAIT_MS)
             if (waitingForCallback) {
                 cancelPendingOAuth("Timeout de autenticação")
             }
@@ -133,20 +131,21 @@ class AuthViewModel @Inject constructor(
 
     fun onAppResumed() {
         if (waitingForCallback) {
-            // Sem período de tolerância: qualquer retorno enquanto aguardando significa cancelamento
-            cancelPendingOAuth("Custom Tab fechado ou usuário retornou sem concluir")
+            // No grace period: any return while waiting means cancellation
+            cancelPendingOAuth("Custom Tab closed or user returned without completing")
         }
     }
 
     private fun cancelPendingOAuth(reason: String) {
         waitingForCallback = false
         oauthTimeoutJob?.cancel()
-        viewModelScope.launch { authRepository.clearPkceVerifier() }
+        // Removed: Do not clear code_verifier on cancellation
+        // viewModelScope.launch { authRepository.clearPkceVerifier() }
         _uiState.value = _uiState.value.copy(
             isLoading = false,
             error = "Authentication cancelled"
         )
-        Log.d(TAG, "OAuth cancelado: $reason")
+        Log.d(TAG, "OAuth cancelled: $reason")
     }
 
     fun handleAuthCallback(code: String) {
@@ -168,6 +167,7 @@ class AuthViewModel @Inject constructor(
                 }
                 .catch { e ->
                     if (e is CancellationException) {
+                        Log.d(TAG, "handleAuthCallback: Authentication cancelled")
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             error = "Authentication cancelled"

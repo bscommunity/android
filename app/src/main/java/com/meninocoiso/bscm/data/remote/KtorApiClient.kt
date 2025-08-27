@@ -184,13 +184,13 @@ class KtorApiClient @Inject constructor(
     // Authentication methods
     override suspend fun authenticateWithDiscord(authRequest: AuthRequest): AuthResponse {
         Log.d(TAG, "authenticateWithDiscord: Sending request with code=${authRequest.code.take(10)}..., redirectUri=${authRequest.redirectUri}")
-        
+
         val response = client.post("auth/discord") {
             setBody(authRequest)
         }
-        
+
         Log.d(TAG, "authenticateWithDiscord: Response status=${response.status}")
-        
+
         when (response.status) {
             HttpStatusCode.OK -> {
                 Log.d(TAG, "authenticateWithDiscord: Success")
@@ -214,7 +214,7 @@ class KtorApiClient @Inject constructor(
         val response = client.post("auth/refresh") {
             setBody(refreshRequest)
         }
-        
+
         when (response.status) {
             HttpStatusCode.OK -> {
                 return response.body<AuthResponse>()
@@ -232,7 +232,7 @@ class KtorApiClient @Inject constructor(
 
     override suspend fun getCurrentUser(): User {
         val response = client.get("auth/me")
-        
+
         when (response.status) {
             HttpStatusCode.OK -> {
                 return response.body<User>()

@@ -8,7 +8,7 @@ import java.time.LocalDateTime
 data class User(
     val id: String,
     val username: String,
-    val email: String,
+    val email: String?,
     val imageUrl: String?,
     val discordId: String?,
     @Serializable(with = LocalDateTimeSerializer::class)

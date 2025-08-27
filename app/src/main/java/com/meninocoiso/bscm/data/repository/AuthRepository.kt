@@ -20,7 +20,6 @@ class AuthRepository @Inject constructor(
     private val apiClient: ApiClient,
     private val tokenManager: SecureTokenManager
 ) {
-    
     suspend fun isLoggedIn(): Boolean = tokenManager.isLoggedIn()
     fun isLoggedInFlow(): Flow<Boolean> = tokenManager.isLoggedInFlow()
 
@@ -29,28 +28,28 @@ class AuthRepository @Inject constructor(
             
             // Retrieve the stored code_verifier for PKCE
             val codeVerifier = tokenManager.getCodeVerifier()
-            if (codeVerifier == null) {
+            if (codeVerifier.isNullOrBlank()) {
                 Log.e(TAG, "authenticateWithDiscord: Code verifier not found")
-                emit(Result.failure(Exception("Code verifier não encontrado. Reinicie o fluxo de autenticação.")))
+                emit(Result.failure(Exception("Code verifier not found. Please restart the authentication flow.")))
                 return@flow
             }
-            
+
         try {
             Log.d(TAG, "authenticateWithDiscord: Code verifier found, creating auth request")
             val authRequest = AuthRequest(code, redirectUri, codeVerifier)
-            
+
             Log.d(TAG, "authenticateWithDiscord: Calling API client")
             val result = apiClient.authenticateWithDiscord(authRequest)
-            
+
             Log.d(TAG, "authenticateWithDiscord: API call successful, saving tokens")
             tokenManager.saveTokens(result.accessToken, result.refreshToken)
-            
+
             if (result.user == null) {
                 Log.e(TAG, "authenticateWithDiscord: User data is null in the response")
                 emit(Result.failure(Exception("User data is null in the response")))
                 return@flow
             }
-            
+
             Log.d(TAG, "authenticateWithDiscord: Authentication completed successfully")
             emit(Result.success(result.user))
         } catch (t: Throwable) {

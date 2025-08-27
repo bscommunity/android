@@ -6,7 +6,6 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -17,7 +16,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 
 @Singleton
 class SecureTokenManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    private val context: Context
 ) {
     private val ACCESS_TOKEN_KEY = stringPreferencesKey("access_token")
     private val REFRESH_TOKEN_KEY = stringPreferencesKey("refresh_token")
@@ -43,18 +42,21 @@ class SecureTokenManager @Inject constructor(
     }
 
     suspend fun saveCodeVerifier(codeVerifier: String) {
+        println("Saving code verifier: ${codeVerifier.take(10)}...")
         context.dataStore.edit { preferences ->
             preferences[CODE_VERIFIER_KEY] = codeVerifier
         }
     }
 
     suspend fun getCodeVerifier(): String? {
+        println("Retrieving code verifier...")
         return context.dataStore.data
             .map { preferences -> preferences[CODE_VERIFIER_KEY] }
             .first()
     }
 
     suspend fun clearCodeVerifier() {
+        println("Clearing code verifier...")
         context.dataStore.edit { preferences ->
             preferences.remove(CODE_VERIFIER_KEY)
         }
@@ -73,8 +75,6 @@ class SecureTokenManager @Inject constructor(
     }
 
     // --- Reactive flows ----------------------------------------------------
-    // Fluxo contínuo do access token (null quando não logado)
     fun accessTokenFlow(): Flow<String?> = context.dataStore.data.map { it[ACCESS_TOKEN_KEY] }
-    // Fluxo booleano de estado de login
     fun isLoggedInFlow(): Flow<Boolean> = accessTokenFlow().map { it != null }
 }
