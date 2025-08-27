@@ -1,6 +1,6 @@
 package com.meninocoiso.bscm.domain.model
 
-import LocalDateSerializer
+import LocalDateTimeSerializer
 import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
-import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Entity(tableName = "versions")
 @Serializable
@@ -28,6 +28,6 @@ data class Version(
     @ColumnInfo(name = "preview_url") val previewUrl: String? = null,
     @ColumnInfo(name = "downloads_amount") val downloadsAmount: Int = 0,
     @ColumnInfo(name = "known_issues") val knownIssues: List<KnownIssue> = emptyList(),
-    @Serializable(with = LocalDateSerializer::class)
-    @ColumnInfo(name = "published_at") val publishedAt: LocalDate,
+    @Serializable(with = LocalDateTimeSerializer::class)
+    @ColumnInfo(name = "published_at") val publishedAt: LocalDateTime,
 ) : Parcelable

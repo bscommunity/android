@@ -1,11 +1,11 @@
 package com.meninocoiso.bscm.domain.model
 
-import LocalDateSerializer
+import LocalDateTimeSerializer
 import android.os.Parcelable
 import androidx.room.Entity
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
-import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Entity(tableName = "known_issues")
 @Serializable
@@ -13,6 +13,6 @@ import java.time.LocalDate
 data class KnownIssue(
     val id: String,
     val description: String,
-    @Serializable(with = LocalDateSerializer::class)
-    val createdAt: LocalDate
+    @Serializable(with = LocalDateTimeSerializer::class)
+    val createdAt: LocalDateTime
 ) : Parcelable

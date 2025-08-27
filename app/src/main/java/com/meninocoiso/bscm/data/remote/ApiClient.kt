@@ -7,6 +7,9 @@ import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.Version
+import com.meninocoiso.bscm.domain.model.auth.AuthRequest
+import com.meninocoiso.bscm.domain.model.auth.AuthResponse
+import com.meninocoiso.bscm.domain.model.auth.RefreshTokenRequest
 
 interface ApiClient {
     suspend fun getUsers(): List<User>
@@ -27,4 +30,9 @@ interface ApiClient {
         id: String,
         operationType: OperationType
     ): Boolean
+
+    // Authentication methods
+    suspend fun authenticateWithDiscord(authRequest: AuthRequest): AuthResponse
+    suspend fun refreshToken(refreshRequest: RefreshTokenRequest): AuthResponse
+    suspend fun getCurrentUser(): User
 }

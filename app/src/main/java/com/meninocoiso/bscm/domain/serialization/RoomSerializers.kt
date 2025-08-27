@@ -7,17 +7,23 @@ import com.meninocoiso.bscm.domain.model.KnownIssue
 import com.meninocoiso.bscm.domain.model.StreamingLink
 import com.meninocoiso.bscm.domain.model.Version
 import kotlinx.serialization.json.Json
-import java.time.LocalDate
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 class Converters {
     @TypeConverter
-    fun fromTimestamp(value: Long?): LocalDate? {
-        return value?.let { LocalDate.ofEpochDay(it) }
+    fun fromTimestamp(value: Long?): LocalDateTime? {
+        return value?.let {
+            Instant.ofEpochMilli(it)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime()
+        }
     }
 
     @TypeConverter
-    fun dateToTimestamp(date: LocalDate?): Long? {
-        return date?.toEpochDay()
+    fun dateToTimestamp(date: LocalDateTime?): Long? {
+        return date?.atZone(ZoneId.systemDefault())?.toInstant()?.toEpochMilli()
     }
 
     // Chart

@@ -20,6 +20,7 @@ import com.meninocoiso.bscm.domain.enums.ThemePreference
 import com.meninocoiso.bscm.presentation.navigation.MainNav
 import com.meninocoiso.bscm.presentation.ui.components.dialog.NotificationsPermissionDialog
 import com.meninocoiso.bscm.presentation.ui.theme.BeatstarCommunityTheme
+import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.MainActivityUiState
 import com.meninocoiso.bscm.presentation.viewmodel.MainActivityUiState.Loading
 import com.meninocoiso.bscm.presentation.viewmodel.MainActivityUiState.Success
@@ -31,6 +32,7 @@ import kotlinx.coroutines.launch
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private val viewModel: MainActivityViewModel by viewModels()
+    private val authViewModel: AuthViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -107,6 +109,11 @@ class MainActivity : AppCompatActivity() {
                 NotificationsPermissionDialog()
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        authViewModel.onAppResumed()
     }
 }
 

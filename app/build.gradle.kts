@@ -10,7 +10,7 @@ plugins {
 
 android {
 	namespace = "com.meninocoiso.bscm"
-	compileSdk = 35
+	compileSdk = 36
 
 	androidResources {
 		generateLocaleConfig = true
@@ -19,7 +19,7 @@ android {
 	ndkVersion = "28.2.13676358"
 
 	defaultConfig {
-		applicationId = "com.meninocoiso.bscm"
+		applicationId = "com.meninocoiso.bscm.debug"
 		// minSdk was previously 24, but was needed to be changed to 26
 		// to use the new Date API, since desugar is not working
 		minSdk = 26
@@ -101,6 +101,7 @@ dependencies {
 	implementation(libs.androidx.lifecycle.runtime.ktx)
 	implementation(libs.androidx.activity.compose)
 	implementation(libs.androidx.core.splashscreen)
+	implementation(libs.androidx.documentfile)
 
 	// Compose UI
 	implementation(platform(libs.androidx.compose.bom))
@@ -139,6 +140,10 @@ dependencies {
 	implementation(libs.androidx.room.ktx)
 	ksp(libs.androidx.room.compiler)
 
+	// Security and Authentication
+	implementation(libs.androidx.biometric)
+	implementation(libs.tink.android)
+
 	// Utility
 	// implementation(libs.desugar.jdk.libs)
 
@@ -150,6 +155,8 @@ dependencies {
 	androidTestImplementation(libs.androidx.ui.test.junit4)
 	debugImplementation(libs.androidx.ui.tooling)
 	debugImplementation(libs.androidx.ui.test.manifest)
+
+	implementation(libs.androidxBrowser)
 }
 
 // Java Toolchain Configuration

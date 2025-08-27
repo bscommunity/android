@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -51,6 +52,7 @@ import com.meninocoiso.bscm.presentation.ui.components.dialog.ThemeDialog
 import com.meninocoiso.bscm.presentation.ui.modifiers.fabScrollObserver
 import com.meninocoiso.bscm.presentation.ui.modifiers.rememberFabNestedScrollConnection
 import com.meninocoiso.bscm.presentation.viewmodel.AppUpdateState
+import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.SettingsViewModel
 import com.meninocoiso.bscm.util.LinkingUtils
 import kotlinx.coroutines.launch
@@ -60,10 +62,12 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     onFabStateChange: (Boolean) -> Unit,
     onSnackbar: (String) -> Unit,
-    viewModel: SettingsViewModel = hiltViewModel()
+    viewModel: SettingsViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
+    val authState by authViewModel.uiState.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -86,7 +90,13 @@ fun SettingsScreen(
         }
     }
 
-    val featureNotImplementedString = stringResource(R.string.feature_not_implemented)
+    LaunchedEffect(authState.error) {
+        println("AuthState changed: $authState")
+        authState.error?.let { error ->
+            onSnackbar(error)
+            authViewModel.clearError()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -110,35 +120,80 @@ fun SettingsScreen(
             )
         }
 
-        SettingsCard(title = stringResource(R.string.account)) {
-            ListItem(
-                modifier = Modifier.settingsCard(),
-                headlineContent = {
-                    HeadlineText(stringResource(R.string.link_account))
-                },
-                supportingContent = {
-                    SupportingText(
-                        stringResource(R.string.link_account_description)
-                    )
-                },
-                trailingContent = {
-                    Button(onClick = {
-                        onSnackbar(featureNotImplementedString)
-                    }) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(ButtonDefaults.IconSpacing),
-                            verticalAlignment = Alignment.CenterVertically
+        // Account Section with Authentication
+        SettingsCard(title = "teste" /*stringResource(R.string.account)*/) {
+            val currentUser = authState.user
+            if (authState.isLoggedIn && currentUser != null) {
+                // User is logged in - show user info and logout option
+                ListItem(
+                    modifier = Modifier.settingsCard(),
+                    headlineContent = {
+                        HeadlineText(currentUser.username)
+                    },
+                    supportingContent = {
+                        SupportingText(
+                            currentUser.email ?: stringResource(R.string.no_email_provided)
+                        )
+                    },
+                    leadingContent = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.discord),
+                            contentDescription = stringResource(R.string.discord_icon),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    trailingContent = {
+                        OutlinedButton(
+                            onClick = {
+                                authViewModel.logout()
+                                onSnackbar(context.getString(R.string.logged_out_successfully))
+                            }
                         ) {
-                            Icon(
-                                modifier = Modifier.size(ButtonDefaults.IconSize),
-                                painter = painterResource(id = R.drawable.discord),
-                                contentDescription = stringResource(R.string.discord_icon)
-                            )
-                            Text(text = stringResource(R.string.connect))
+                            Text(text = stringResource(R.string.logout))
                         }
                     }
-                }
-            )
+                )
+            } else {
+                // User is not logged in - show login option
+                ListItem(
+                    modifier = Modifier.settingsCard(),
+                    headlineContent = {
+                        HeadlineText(stringResource(R.string.link_account))
+                    },
+                    supportingContent = {
+                        SupportingText(
+                            stringResource(R.string.link_account_description)
+                        )
+                    },
+                    trailingContent = {
+                        Button(
+                            onClick = {
+                                authViewModel.startDiscordOAuth(context)
+                            },
+                            enabled = !authState.isLoading
+                        ) {
+                            if (authState.isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(ButtonDefaults.IconSize),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(ButtonDefaults.IconSpacing),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        modifier = Modifier.size(ButtonDefaults.IconSize),
+                                        painter = painterResource(id = R.drawable.discord),
+                                        contentDescription = stringResource(R.string.discord_icon)
+                                    )
+                                    Text(text = stringResource(R.string.connect))
+                                }
+                            }
+                        }
+                    }
+                )
+            }
         }
 
         SettingsCard(title = stringResource(R.string.preferences)) {

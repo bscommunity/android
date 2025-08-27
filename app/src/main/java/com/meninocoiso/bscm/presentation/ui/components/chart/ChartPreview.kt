@@ -46,7 +46,7 @@ import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.bscm.presentation.ui.modifiers.debouncedClickable
 import com.meninocoiso.bscm.util.StringUtils
-import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Composable
 fun ChartAuthors(
@@ -107,11 +107,11 @@ fun ChartAuthorsPreview() {
                     id = "1",
                     username = "user1",
                     imageUrl = "https://example.com/image1.jpg",
-                    createdAt = LocalDate.now(),
+                    createdAt = LocalDateTime.now(),
                 ),
                 chartId = "1",
                 roles = emptyList(),
-                joinedAt = LocalDate.now()
+                joinedAt = LocalDateTime.now()
             ),
         )
     )

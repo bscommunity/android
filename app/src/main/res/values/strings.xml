@@ -164,7 +164,6 @@
     <string name="cancel">Cancel</string>
     <string name="confirm">Confirm</string>
     <string name="dismiss">Dismiss</string>
-    <string name="connect">Connect</string>
     
     <!-- 📋 Menu & Interface Elements -->
     <string name="more_options_menu">More options menu</string>
@@ -212,11 +211,18 @@
     <string name="gameplay_preview">Gameplay preview</string>
     <string name="gameplay_preview_description">Enable gameplay video previews\nThis may affect performance</string>
     
-    <!-- 👤 Account & Profile -->
-    <string name="account">Account</string>
-    <string name="link_account">Link account</string>
-    <string name="link_account_description">Save your favorite content and keep it with yourself</string>
-    <string name="discord_icon" translatable="false">Discord</string>
+    <!-- 🔐 Authentication & Account -->
+    <string name="link_account">Link Account</string>
+    <string name="link_account_description">Connect your Discord account to sync your preferences</string>
+    <string name="connect">Connect</string>
+    <string name="logout">Logout</string>
+    <string name="logged_out_successfully">Logged out successfully</string>
+    <string name="discord_icon">Discord Icon</string>
+    <string name="no_email_provided">No email provided</string>
+    <string name="welcome_title">Welcome to BSCM</string>
+    <string name="login_description">Connect your Discord account to access personalized features</string>
+    <string name="login_with_discord">Login with Discord</string>
+    <string name="login_terms">By continuing, you agree to our Terms of Service and Privacy Policy</string>
     
     <!-- 📄 Legal & Documentation -->
     <string name="legal">Legal</string>
@@ -254,7 +260,7 @@
     <string name="enable_notifications">Enable Notifications</string>
     <string name="enable_notifications_description">To enable notifications, please open app settings and grant notification permission.</string>
     <string name="download_failed">Download failed</string>
-    <string name="download_failed_for_chart">Couldn't download chart: %1$s</string>
+    <string name="download_failed_for_chart">Couldn\'t download chart: %1$s</string>
     <string name="notification_channel_downloads_name">Downloads</string>
     <string name="notification_channel_downloads_description">Shows progress and results of your downloads</string>
     

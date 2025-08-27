@@ -6,6 +6,7 @@ import com.meninocoiso.bscm.data.repository.ChartRepository
 import com.meninocoiso.bscm.data.repository.ChartRepositoryRemote
 import com.meninocoiso.bscm.data.repository.UserRepository
 import com.meninocoiso.bscm.data.repository.UserRepositoryRemote
+import com.meninocoiso.bscm.data.security.AuthInterceptor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -20,7 +21,9 @@ import javax.inject.Singleton
 object NetworkModule {
     @Provides
     @Singleton
-    fun provideApiClient(): ApiClient = KtorApiClient()
+    fun provideApiClient(
+        interceptor: AuthInterceptor
+    ): ApiClient = KtorApiClient(interceptor)
 
     @Provides
     @Singleton

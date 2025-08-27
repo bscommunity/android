@@ -6,7 +6,8 @@ import androidx.compose.ui.res.stringResource
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.OperationType
 import com.meninocoiso.bscm.domain.model.internal.ContentMessage
-import java.time.LocalDate
+import java.time.Duration
+import java.time.LocalDateTime
 
 object StringUtils {
     // Download state messages
@@ -75,9 +76,9 @@ object StringUtils {
     }
     
     @Composable
-    fun toRelativeString(date: LocalDate): String {
-        val now = LocalDate.now()
-        val diff = now.toEpochDay() - date.toEpochDay() // days
+    fun toRelativeString(date: LocalDateTime): String {
+        val now = LocalDateTime.now()
+        val diff = Duration.between(date, now).toDays()
 
         if (diff < 1) { // today
             return stringResource(R.string.today)

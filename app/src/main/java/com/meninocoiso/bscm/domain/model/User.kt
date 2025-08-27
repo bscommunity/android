@@ -1,8 +1,8 @@
 package com.meninocoiso.bscm.domain.model
 
-import LocalDateSerializer
+import LocalDateTimeSerializer
 import kotlinx.serialization.Serializable
-import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Serializable
 data class User(
@@ -11,6 +11,6 @@ data class User(
     val email: String,
     val imageUrl: String?,
     val discordId: String?,
-    @Serializable(with = LocalDateSerializer::class)
-    val createdAt: LocalDate
+    @Serializable(with = LocalDateTimeSerializer::class)
+    val createdAt: LocalDateTime
 )
