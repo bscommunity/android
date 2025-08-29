@@ -1,7 +1,6 @@
 package com.meninocoiso.bscm.presentation.navigation
 
-import android.content.Intent
-import androidx.activity.result.ActivityResultLauncher
+import android.net.Uri
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -75,7 +74,7 @@ fun BottomNav(
     bottomNavController: NavHostController,
     navController: NavHostController,
     hasUpdate: Boolean = false,
-    authTabLauncher: ActivityResultLauncher<Intent>
+    startOAuth: (Uri) -> Unit
 ) {
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
 
@@ -181,7 +180,7 @@ fun BottomNav(
                 )
             }
             composableWithFade<Route.Settings> {
-                SettingsScreen(authTabLauncher, onFabStateChange, onSnackbar)
+                SettingsScreen(startOAuth, onFabStateChange, onSnackbar)
             }
         }
     }

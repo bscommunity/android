@@ -1,6 +1,7 @@
 package com.meninocoiso.bscm.presentation.navigation
 
 import android.content.Intent
+import android.net.Uri
 import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
@@ -20,7 +21,7 @@ import kotlin.reflect.typeOf
 object MainRoute
 
 @Composable
-fun MainNav(hasUpdate: Boolean, authTabLauncher: ActivityResultLauncher<Intent>) {
+fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean) {
     val navController = rememberNavController()
     val bottomNavController = rememberNavController()
 
@@ -56,7 +57,7 @@ fun MainNav(hasUpdate: Boolean, authTabLauncher: ActivityResultLauncher<Intent>)
         }
 
         composableWithoutTransitions<MainRoute> {
-            BottomNav(bottomNavController, navController, hasUpdate, authTabLauncher)
+            BottomNav(bottomNavController, navController, hasUpdate, startOAuth)
         }
     }
 }

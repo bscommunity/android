@@ -71,16 +71,25 @@ class AuthViewModel @Inject constructor(
     }
 
     /**
+     * Call this when starting an OAuth flow to set state accordingly.
+     */
+    fun startPendingOAuth() {
+        _uiState.update { it.copy(isLoading = true, error = null) }
+    }
+
+    /**
+     * Call this when an OAuth flow is handled already (e.g. deep link succeeded).
+     */
+    fun completePendingOAuthHandled() {
+        // no-op for now, but provided as a hook if you want to set an explicit flag or do cleanup
+        _uiState.update { it.copy(isLoading = false) }
+    }
+    
+    /**
      * Starts the Discord OAuth flow
      */
     suspend fun startDiscordOAuth(): Uri {
         Log.d(TAG, "startDiscordOAuth: Starting OAuth process")
-        _uiState.update {
-            it.copy(
-                error = null,
-                isLoading = true
-            )
-        }
         return discordOAuth.getDiscordOAuthUri()
     }
     

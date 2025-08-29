@@ -1,11 +1,9 @@
 package com.meninocoiso.bscm.presentation.screens
 
 import android.annotation.SuppressLint
-import android.content.Intent
+import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
-import androidx.activity.result.ActivityResultLauncher
-import androidx.browser.auth.AuthTabIntent
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -65,7 +63,7 @@ import kotlinx.coroutines.launch
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun SettingsScreen(
-    authTabLauncher: ActivityResultLauncher<Intent>,
+    startOAuth: (Uri) -> Unit,
     onFabStateChange: (Boolean) -> Unit,
     onSnackbar: (String) -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
@@ -179,12 +177,8 @@ fun SettingsScreen(
                             onClick = {
                                 scope.launch {
                                     val uri = authViewModel.startDiscordOAuth()
-                                    val authIntent = AuthTabIntent.Builder().build()
-                                    authIntent.launch(
-                                        authTabLauncher,
-                                        uri,
-                                        "bscm",
-                                    )
+                                    // call the Activity-level lambda to start OAuth flow
+                                    startOAuth(uri)
                                 }
                             },
                             enabled = !authState.isLoading
