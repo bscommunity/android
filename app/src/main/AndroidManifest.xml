@@ -67,6 +67,7 @@
 
         <activity
             android:name=".MainActivity"
+            android:launchMode="singleTask"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -92,6 +93,16 @@
                     android:host="chart"
                     android:pathPattern="/.*"
                 />
+            </intent-filter>
+
+            <intent-filter android:label="oauth_redirect">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="bscm"
+                    android:host="auth" />
             </intent-filter>
         </activity>
     </application>

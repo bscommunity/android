@@ -1,6 +1,7 @@
 package com.meninocoiso.bscm
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -45,28 +46,19 @@ class MainActivity : AppCompatActivity() {
 
         // Handle OAuth intent if the activity was launched with one
         authTabLauncher = AuthTabIntent.registerActivityResultLauncher(this) { authResult ->
-            println("Auth tab closed: ${authResult.resultCode}")
-            if (authResult != null) {
-                val code = authResult.resultUri?.getQueryParameter("code")
-                
-                if (code == null) {
-                    authViewModel.cancelPendingOAuth()
-                    val error = authResult.resultUri?.getQueryParameter("error")
-                    if (error != null) {
-                        println("OAuth error: $error")
-                        authViewModel.setError(error)
-                    }
-                    return@registerActivityResultLauncher
-                }
+            println("AuthTab result: code=${authResult?.resultCode}, uri=${authResult?.resultUri}")
 
-                println("OAuth completed with code: $code")
-                
-                authViewModel.handleAuthCallback(code)
-            } else {
-                println("OAuth failed or was cancelled")
-                authViewModel.cancelPendingOAuth()
+            // If no URI: treat as cancellation
+            if (authResult?.resultUri == null) {
+                println("AuthTab closed without URI -> treat as cancellation")
+                processOAuthResult(null)
+                return@registerActivityResultLauncher
             }
+
+            // If URI present: process it
+            processOAuthResult(authResult.resultUri)
         }
+
 
         var uiState: MainActivityUiState by mutableStateOf(Loading)
 
@@ -144,19 +136,34 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        handleOAuthIntent(intent)
+
+        println("Deep link received, handling via deep link: ${intent.data}")
+        processOAuthResult(intent.data)
     }
-    
-    private fun handleOAuthIntent(intent: Intent?) {
-        // Check if this intent contains the OAuth callback data
-        intent?.getStringExtra("code")?.let { code ->
-            println("Received OAuth code: $code")
-            authViewModel.handleAuthCallback(code)
+
+    private fun processOAuthResult(uri: Uri?) {
+        if (uri == null) {
+            println("OAuth cancelled or closed without URI")
+            authViewModel.cancelPendingOAuth()
+            return
         }
 
-        intent?.getStringExtra("error")?.let { error ->
-            println("Received OAuth error: $error")
-            authViewModel.setError(error)
+        val code = uri.getQueryParameter("code")
+        val error = uri.getQueryParameter("error")
+
+        when {
+            code != null -> {
+                println("OAuth completed with code: $code")
+                authViewModel.handleAuthCallback(code)
+            }
+            error != null -> {
+                println("OAuth error: $error")
+                authViewModel.setError(error)
+            }
+            else -> {
+                println("OAuth cancelled (no code/error in URI)")
+                authViewModel.cancelPendingOAuth()
+            }
         }
     }
 }
