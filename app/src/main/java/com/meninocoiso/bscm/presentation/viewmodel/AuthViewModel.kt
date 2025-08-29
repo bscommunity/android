@@ -9,7 +9,6 @@ import com.meninocoiso.bscm.data.security.DiscordOAuth
 import com.meninocoiso.bscm.domain.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,18 +19,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * Represents the different states of the OAuth authentication process
- * Think of this like a traffic light system - each state tells us exactly where we are
- */
-enum class OAuthState {
-    IDLE,           // No OAuth process running
-    IN_PROGRESS,    // OAuth browser tab is open, waiting for user action
-    PROCESSING,     // User completed OAuth, we're processing the callback (red light - busy)
-}
-
 data class AuthUiState(
-    val oAuthState: OAuthState = OAuthState.IDLE,
+    val isLoading: Boolean = false,
     val isLoggedIn: Boolean = false,
     val user: User? = null,
     val error: String? = null,
@@ -89,17 +78,17 @@ class AuthViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 error = null,
-                oAuthState = OAuthState.IN_PROGRESS
+                isLoading = true
             )
         }
-        return discordOAuth.discordOAuthIntent()
+        return discordOAuth.getDiscordOAuthUri()
     }
     
     fun setError(message: String) {
         _uiState.update {
             it.copy(
                 error = message,
-                oAuthState = OAuthState.IDLE
+                isLoading = false
             )
         }
     }
@@ -108,20 +97,12 @@ class AuthViewModel @Inject constructor(
      * Cancels OAuth only if we're actually in the middle of one
      */
     fun cancelPendingOAuth() {
-        viewModelScope.launch {
-            delay(500)
-            val currentState = _uiState.value
-            
-            Log.d(TAG, "cancelPendingOAuth: Current OAuth state = ${currentState.oAuthState}")
-            
-            if (currentState.oAuthState == OAuthState.IN_PROGRESS) {
-                _uiState.update {
-                    it.copy(
-                        error = "Authentication cancelled",
-                        oAuthState = OAuthState.IDLE
-                    )
-                }
-            }
+        Log.d(TAG, "cancelPendingOAuth: Cancelling pending OAuth")
+        _uiState.update {
+            it.copy(
+                error = "Authentication cancelled",
+                isLoading = false
+            )
         }
     }
 
@@ -136,22 +117,11 @@ class AuthViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     error = "Invalid authorization code",
-                    oAuthState = OAuthState.IDLE
+                    isLoading = false
                 )
             }
             return
         }
-        
-        // Update state to processing
-        _uiState.update {
-            it.copy(
-                error = null,
-                oAuthState = OAuthState.PROCESSING
-            )
-        }
-
-
-        Log.d(TAG, "handleAuthCallback: Received callback, current state: ${_uiState.value.oAuthState}")
         
         viewModelScope.launch {
             authRepository.authenticateWithDiscord(code, "bscm://auth")
@@ -160,7 +130,7 @@ class AuthViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             error = "Error during authentication: ${e.message}",
-                            oAuthState = OAuthState.IDLE
+                            isLoading = false
                         )
                     }
                 }
@@ -173,7 +143,7 @@ class AuthViewModel @Inject constructor(
                                     isLoggedIn = true,
                                     user = user,
                                     error = null,
-                                    oAuthState = OAuthState.IDLE
+                                    isLoading = false
                                 )
                             }
                         },
@@ -182,7 +152,7 @@ class AuthViewModel @Inject constructor(
                             _uiState.update {
                                 it.copy(
                                     error = "Authentication failed: ${ex.message}",
-                                    oAuthState = OAuthState.IDLE
+                                    isLoading = false
                                 )
                             }
                         }
@@ -237,7 +207,7 @@ class AuthViewModel @Inject constructor(
             Log.d(TAG, "logout: Logging out")
 
             // Show loading state during logout
-            _uiState.update { it.copy(oAuthState = OAuthState.PROCESSING, error = null) }
+            _uiState.update { it.copy(isLoading = true, error = null) }
 
             runCatching {
                 authRepository.logout()

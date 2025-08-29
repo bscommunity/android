@@ -34,7 +34,7 @@ class DiscordOAuth @Inject constructor(
     }
 
     // Obtains the OAuth2 flow url with PKCE
-    suspend fun discordOAuthIntent(): Uri {
+    suspend fun getDiscordOAuthUri(): Uri {
         val clientId = "1329849906868912259"
         val redirectUri = "bscm://auth"
         val scope = "identify email"
@@ -57,15 +57,6 @@ class DiscordOAuth @Inject constructor(
             .appendQueryParameter("code_challenge", codeChallenge)
             .appendQueryParameter("code_challenge_method", "S256")
             .build()
-
-        /*val customTabsIntent = AuthTabIntent.Builder()
-            .build()
-
-        // Ensure the OAuth activity is not kept in history
-        customTabsIntent.intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NO_HISTORY)
-        customTabsIntent.intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
-
-        customTabsIntent.intent.data = authUrl*/
         
         return authUrl
     }

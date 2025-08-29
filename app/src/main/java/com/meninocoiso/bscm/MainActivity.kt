@@ -47,10 +47,24 @@ class MainActivity : AppCompatActivity() {
         authTabLauncher = AuthTabIntent.registerActivityResultLauncher(this) { authResult ->
             println("Auth tab closed: ${authResult.resultCode}")
             if (authResult != null) {
-                val code = authResult.resultUri?.getQueryParameter("code").orEmpty()
+                val code = authResult.resultUri?.getQueryParameter("code")
+                
+                if (code == null) {
+                    authViewModel.cancelPendingOAuth()
+                    val error = authResult.resultUri?.getQueryParameter("error")
+                    if (error != null) {
+                        println("OAuth error: $error")
+                        authViewModel.setError(error)
+                    }
+                    return@registerActivityResultLauncher
+                }
+
                 println("OAuth completed with code: $code")
+                
+                authViewModel.handleAuthCallback(code)
             } else {
                 println("OAuth failed or was cancelled")
+                authViewModel.cancelPendingOAuth()
             }
         }
 

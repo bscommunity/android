@@ -94,21 +94,6 @@
                 />
             </intent-filter>
         </activity>
-
-        <!-- OAuth redirect handler for Custom Chrome Tabs -->
-        <activity
-            android:name=".presentation.activity.OAuthRedirectActivity"
-            android:exported="true"
-            android:launchMode="singleTask"
-            android:noHistory="true"
-            android:theme="@style/Theme.bscm">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="bscm" android:host="auth" />
-            </intent-filter>
-        </activity>
     </application>
 
 </manifest>

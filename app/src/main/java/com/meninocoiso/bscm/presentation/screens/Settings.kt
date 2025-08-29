@@ -2,6 +2,8 @@ package com.meninocoiso.bscm.presentation.screens
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.browser.auth.AuthTabIntent
 import androidx.compose.foundation.border
@@ -56,7 +58,6 @@ import com.meninocoiso.bscm.presentation.ui.modifiers.fabScrollObserver
 import com.meninocoiso.bscm.presentation.ui.modifiers.rememberFabNestedScrollConnection
 import com.meninocoiso.bscm.presentation.viewmodel.AppUpdateState
 import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
-import com.meninocoiso.bscm.presentation.viewmodel.OAuthState
 import com.meninocoiso.bscm.presentation.viewmodel.SettingsViewModel
 import com.meninocoiso.bscm.util.LinkingUtils
 import kotlinx.coroutines.launch
@@ -68,10 +69,13 @@ fun SettingsScreen(
     onFabStateChange: (Boolean) -> Unit,
     onSnackbar: (String) -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
+
+    val activity = LocalActivity.current as ComponentActivity
+    val authViewModel: AuthViewModel = hiltViewModel(activity)
+
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
@@ -81,9 +85,7 @@ fun SettingsScreen(
     val shrunkLatestVersion = if (updateState is AppUpdateState.UpdateAvailable)
         (updateState as AppUpdateState.UpdateAvailable).version.substringBeforeLast("-")
     else ""
-
-    val isOAuthLoading = authState.oAuthState != OAuthState.IDLE
-
+    
     LaunchedEffect(updateState) {
         when (updateState) {
             is AppUpdateState.UpToDate -> {
@@ -182,13 +184,12 @@ fun SettingsScreen(
                                         authTabLauncher,
                                         uri,
                                         "bscm",
-                                        "auth"
                                     )
                                 }
                             },
-                            enabled = !isOAuthLoading
+                            enabled = !authState.isLoading
                         ) {
-                            if (isOAuthLoading) {
+                            if (authState.isLoading) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(ButtonDefaults.IconSize),
                                     strokeWidth = 2.dp
