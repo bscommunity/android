@@ -1,11 +1,14 @@
 package com.meninocoiso.bscm
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.browser.auth.AuthTabIntent
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -31,12 +34,25 @@ import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
+    private lateinit var authTabLauncher: ActivityResultLauncher<Intent>
+    
     private val viewModel: MainActivityViewModel by viewModels()
     private val authViewModel: AuthViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        // Handle OAuth intent if the activity was launched with one
+        authTabLauncher = AuthTabIntent.registerActivityResultLauncher(this) { authResult ->
+            println("Auth tab closed: ${authResult.resultCode}")
+            if (authResult != null) {
+                val code = authResult.resultUri?.getQueryParameter("code").orEmpty()
+                println("OAuth completed with code: $code")
+            } else {
+                println("OAuth failed or was cancelled")
+            }
+        }
 
         var uiState: MainActivityUiState by mutableStateOf(Loading)
 
@@ -103,7 +119,8 @@ class MainActivity : AppCompatActivity() {
                     hasUpdate = when (uiState) {
                         Loading -> false
                         is Success -> viewModel.hasUpdate((uiState as Success).latestUpdateVersion)
-                    }
+                    },
+                    authTabLauncher = authTabLauncher,
                 )
 
                 NotificationsPermissionDialog()
@@ -111,9 +128,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        authViewModel.onAppResumed()
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleOAuthIntent(intent)
+    }
+    
+    private fun handleOAuthIntent(intent: Intent?) {
+        // Check if this intent contains the OAuth callback data
+        intent?.getStringExtra("code")?.let { code ->
+            println("Received OAuth code: $code")
+            authViewModel.handleAuthCallback(code)
+        }
+
+        intent?.getStringExtra("error")?.let { error ->
+            println("Received OAuth error: $error")
+            authViewModel.setError(error)
+        }
     }
 }
 

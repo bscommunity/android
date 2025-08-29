@@ -1,6 +1,9 @@
 package com.meninocoiso.bscm.presentation.screens
 
 import android.annotation.SuppressLint
+import android.content.Intent
+import androidx.activity.result.ActivityResultLauncher
+import androidx.browser.auth.AuthTabIntent
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,6 +56,7 @@ import com.meninocoiso.bscm.presentation.ui.modifiers.fabScrollObserver
 import com.meninocoiso.bscm.presentation.ui.modifiers.rememberFabNestedScrollConnection
 import com.meninocoiso.bscm.presentation.viewmodel.AppUpdateState
 import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
+import com.meninocoiso.bscm.presentation.viewmodel.OAuthState
 import com.meninocoiso.bscm.presentation.viewmodel.SettingsViewModel
 import com.meninocoiso.bscm.util.LinkingUtils
 import kotlinx.coroutines.launch
@@ -60,6 +64,7 @@ import kotlinx.coroutines.launch
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun SettingsScreen(
+    authTabLauncher: ActivityResultLauncher<Intent>,
     onFabStateChange: (Boolean) -> Unit,
     onSnackbar: (String) -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
@@ -77,6 +82,8 @@ fun SettingsScreen(
         (updateState as AppUpdateState.UpdateAvailable).version.substringBeforeLast("-")
     else ""
 
+    val isOAuthLoading = authState.oAuthState != OAuthState.IDLE
+
     LaunchedEffect(updateState) {
         when (updateState) {
             is AppUpdateState.UpToDate -> {
@@ -90,11 +97,11 @@ fun SettingsScreen(
         }
     }
 
-    LaunchedEffect(authState.error) {
+    LaunchedEffect(authState) {
         println("AuthState changed: $authState")
         authState.error?.let { error ->
             onSnackbar(error)
-            authViewModel.clearError()
+            // authViewModel.clearError()
         }
     }
 
@@ -168,11 +175,20 @@ fun SettingsScreen(
                     trailingContent = {
                         Button(
                             onClick = {
-                                authViewModel.startDiscordOAuth(context)
+                                scope.launch {
+                                    val uri = authViewModel.startDiscordOAuth()
+                                    val authIntent = AuthTabIntent.Builder().build()
+                                    authIntent.launch(
+                                        authTabLauncher,
+                                        uri,
+                                        "bscm",
+                                        "auth"
+                                    )
+                                }
                             },
-                            enabled = !authState.isLoading
+                            enabled = !isOAuthLoading
                         ) {
-                            if (authState.isLoading) {
+                            if (isOAuthLoading) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(ButtonDefaults.IconSize),
                                     strokeWidth = 2.dp

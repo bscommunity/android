@@ -1,8 +1,6 @@
 package com.meninocoiso.bscm.data.security
 
-import android.content.Context
 import android.net.Uri
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.net.toUri
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -35,8 +33,8 @@ class DiscordOAuth @Inject constructor(
         return Base64.UrlSafe.encode(hash).trimEnd('=')
     }
 
-    // Starts the OAuth2 flow with PKCE
-    suspend fun startDiscordOAuth(context: Context) {
+    // Obtains the OAuth2 flow url with PKCE
+    suspend fun discordOAuthIntent(): Uri {
         val clientId = "1329849906868912259"
         val redirectUri = "bscm://auth"
         val scope = "identify email"
@@ -60,14 +58,15 @@ class DiscordOAuth @Inject constructor(
             .appendQueryParameter("code_challenge_method", "S256")
             .build()
 
-        val customTabsIntent = CustomTabsIntent.Builder()
-            .setShowTitle(true)
+        /*val customTabsIntent = AuthTabIntent.Builder()
             .build()
 
         // Ensure the OAuth activity is not kept in history
         customTabsIntent.intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NO_HISTORY)
         customTabsIntent.intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
 
-        customTabsIntent.launchUrl(context, authUrl)
+        customTabsIntent.intent.data = authUrl*/
+        
+        return authUrl
     }
 }

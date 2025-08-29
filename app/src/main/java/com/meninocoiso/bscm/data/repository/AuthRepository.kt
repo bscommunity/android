@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.coroutines.cancellation.CancellationException
 
 private const val TAG = "AuthRepository"
 
@@ -53,10 +52,6 @@ class AuthRepository @Inject constructor(
             Log.d(TAG, "authenticateWithDiscord: Authentication completed successfully")
             emit(Result.success(result.user))
         } catch (t: Throwable) {
-            if (t is CancellationException) {
-                Log.d(TAG, "authenticateWithDiscord: Flow cancelled")
-                throw t // do not convert cancellation into failure
-            }
             Log.e(TAG, "authenticateWithDiscord: Error occurred - ${t.message}", t)
             emit(Result.failure(t))
         } finally {
@@ -108,6 +103,4 @@ class AuthRepository @Inject constructor(
     suspend fun logout() {
         tokenManager.clearTokens()
     }
-
-    suspend fun clearPkceVerifier() { tokenManager.clearCodeVerifier() }
 }

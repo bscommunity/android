@@ -36,7 +36,7 @@ import kotlinx.serialization.json.Json
 private const val TAG = "KtorApiClient"
 
 @Serializable
-data class ApiError(val message: String)
+data class ApiError(val error: String)
 
 class KtorApiClient @Inject constructor(
     private val interceptor: AuthInterceptor
@@ -115,7 +115,7 @@ class KtorApiClient @Inject constructor(
             HttpStatusCode.TooManyRequests -> {
                 val errorResponse = response.body<ApiError>()
                 // throw Exception("Rate limited: ${errorResponse.message}")
-                throw Exception(errorResponse.message)
+                throw Exception(errorResponse.error)
             }
             else -> {
                 // Handle other error cases
@@ -124,7 +124,7 @@ class KtorApiClient @Inject constructor(
                 } catch (e: Exception) {
                     ApiError("Unknown error occurred")
                 }
-                throw Exception("API Error (${response.status.value}): ${errorResponse.message}")
+                throw Exception("API Error (${response.status.value}): ${errorResponse.error}")
             }
         }
     }
@@ -199,13 +199,13 @@ class KtorApiClient @Inject constructor(
             else -> {
                 val errorResponse = try {
                     val error = response.body<ApiError>()
-                    Log.e(TAG, "authenticateWithDiscord: Server error response: ${error.message}")
+                    Log.e(TAG, "authenticateWithDiscord: Server error response: ${error.error}")
                     error
                 } catch (e: Exception) {
                     Log.e(TAG, "authenticateWithDiscord: Failed to parse error response", e)
                     ApiError("Authentication failed - unable to parse server response")
                 }
-                throw Exception("Auth Error (${response.status.value}): ${errorResponse.message}")
+                throw Exception("Auth Error (${response.status.value}): ${errorResponse.error}")
             }
         }
     }
@@ -225,7 +225,7 @@ class KtorApiClient @Inject constructor(
                 } catch (e: Exception) {
                     ApiError("Token refresh failed")
                 }
-                throw Exception("Refresh Error (${response.status.value}): ${errorResponse.message}")
+                throw Exception("Refresh Error (${response.status.value}): ${errorResponse.error}")
             }
         }
     }
@@ -243,7 +243,7 @@ class KtorApiClient @Inject constructor(
                 } catch (e: Exception) {
                     ApiError("Failed to get user info")
                 }
-                throw Exception("User Error (${response.status.value}): ${errorResponse.message}")
+                throw Exception("User Error (${response.status.value}): ${errorResponse.error}")
             }
         }
     }
