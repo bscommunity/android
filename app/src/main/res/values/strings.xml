@@ -223,7 +223,8 @@
     <string name="login_description">Connect your Discord account to access personalized features</string>
     <string name="login_with_discord">Login with Discord</string>
     <string name="login_terms">By continuing, you agree to our Terms of Service and Privacy Policy</string>
-    
+    <string name="logged_in_successfully">Welcome, %1$s! You have successfully logged in.</string>
+
     <!-- 📄 Legal & Documentation -->
     <string name="legal">Legal</string>
     <string name="terms_of_use">Terms of Use</string>

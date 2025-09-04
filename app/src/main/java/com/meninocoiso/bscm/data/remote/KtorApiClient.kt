@@ -71,7 +71,7 @@ class KtorApiClient @Inject constructor(
             // url("https://api-cyb1.onrender.com")
             url {
                 protocol = URLProtocol.HTTP
-                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.5"
+                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.151.18"
                 port = 8080
             }
 
@@ -190,6 +190,7 @@ class KtorApiClient @Inject constructor(
         }
 
         Log.d(TAG, "authenticateWithDiscord: Response status=${response.status}")
+        Log.d(TAG, "authenticateWithDiscord: Response =${response.body<String>()}")
 
         when (response.status) {
             HttpStatusCode.OK -> {

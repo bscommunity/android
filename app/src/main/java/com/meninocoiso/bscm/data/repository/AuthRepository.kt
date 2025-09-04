@@ -17,10 +17,13 @@ private const val TAG = "AuthRepository"
 @Singleton
 class AuthRepository @Inject constructor(
     private val apiClient: ApiClient,
-    private val tokenManager: SecureTokenManager
+    private val tokenManager: SecureTokenManager,
+    private val cacheRepository: CacheRepository,
 ) {
     suspend fun isLoggedIn(): Boolean = tokenManager.isLoggedIn()
     fun isLoggedInFlow(): Flow<Boolean> = tokenManager.isLoggedInFlow()
+
+    suspend fun getCachedUser(): User? = cacheRepository.getUser()
 
     fun authenticateWithDiscord(code: String, redirectUri: String): Flow<Result<User>> = flow {
             Log.d(TAG, "authenticateWithDiscord: Starting authentication with code=${code.take(10)}..., redirectUri=$redirectUri")
@@ -43,14 +46,16 @@ class AuthRepository @Inject constructor(
             Log.d(TAG, "authenticateWithDiscord: API call successful, saving tokens")
             tokenManager.saveTokens(result.accessToken, result.refreshToken)
 
-            if (result.user == null) {
+            val user = result.user
+            if (user == null) {
                 Log.e(TAG, "authenticateWithDiscord: User data is null in the response")
                 emit(Result.failure(Exception("User data is null in the response")))
                 return@flow
             }
-
+            // Cache user
+            cacheRepository.setUser(user)
             Log.d(TAG, "authenticateWithDiscord: Authentication completed successfully")
-            emit(Result.success(result.user))
+            emit(Result.success(user))
         } catch (t: Throwable) {
             Log.e(TAG, "authenticateWithDiscord: Error occurred - ${t.message}", t)
             emit(Result.failure(t))
@@ -82,14 +87,23 @@ class AuthRepository @Inject constructor(
                 t.message?.contains("expired", ignoreCase = true) == true
             ) {
                 tokenManager.clearTokens()
+                cacheRepository.clearUser()
             }
             emit(Result.failure(t))
         }
     }
 
-    fun getCurrentUser(): Flow<Result<User>> = flow {
+    fun getCurrentUser(useCache: Boolean = true): Flow<Result<User>> = flow {
         try {
+            if (useCache) {
+                val cached = cacheRepository.getUser()
+                if (cached != null) {
+                    emit(Result.success(cached))
+                    return@flow
+                }
+            }
             val user = apiClient.getCurrentUser()
+            cacheRepository.setUser(user)
             emit(Result.success(user))
         } catch (t: Throwable) {
             if (t is kotlinx.coroutines.CancellationException) {
@@ -102,5 +116,6 @@ class AuthRepository @Inject constructor(
 
     suspend fun logout() {
         tokenManager.clearTokens()
+        cacheRepository.clearUser()
     }
 }

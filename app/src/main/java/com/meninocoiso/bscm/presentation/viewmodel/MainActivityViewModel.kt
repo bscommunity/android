@@ -6,7 +6,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.BuildConfig
 import com.meninocoiso.bscm.data.repository.AppUpdateRepository
+import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
+import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.internal.Settings
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -24,26 +26,38 @@ sealed interface MainActivityUiState {
 	data object Loading : MainActivityUiState
 	data class Success(
 		val settings: Settings,
-		val latestUpdateVersion: String,	
+		val latestUpdateVersion: String,
+		val cacheUser: User? = null,
 	) : MainActivityUiState
 }
 
 @HiltViewModel
 class MainActivityViewModel @Inject constructor(
-	@ApplicationContext private val context: Context,
+	@param:ApplicationContext private val context: Context,
 	private val appUpdateRepository: AppUpdateRepository,
 	private val settingsRepository: SettingsRepository,
+	private val cacheRepository: CacheRepository
 ) : ViewModel() {
-	val uiState: StateFlow<MainActivityUiState> =
-    settingsRepository.settingsFlow
-        .combine(appUpdateRepository.appUpdateFlow.map { it.latestUpdateVersion }) { settings, latestUpdateVersion ->
-            MainActivityUiState.Success(settings, latestUpdateVersion)
-        }
-        .stateIn(
-            scope = viewModelScope,
-            initialValue = MainActivityUiState.Loading,
-            started = SharingStarted.WhileSubscribed(5_000),
-        )
+	
+	// Combine important information into a single state flow
+	// 1. Settings
+	// 2. Latest fetched update version
+	// 3. Cached user data
+	val uiState: StateFlow<MainActivityUiState> = combine(
+		settingsRepository.settingsFlow,
+		appUpdateRepository.appUpdateFlow.map { it.latestUpdateVersion },
+		cacheRepository.cacheFlow.map { it.user }
+	) { settings, latestUpdateVersion, user ->
+		MainActivityUiState.Success(
+			settings = settings,
+			latestUpdateVersion = latestUpdateVersion,
+			cacheUser = user
+		)
+	}.stateIn(
+		scope = viewModelScope,
+		initialValue = MainActivityUiState.Loading,
+		started = SharingStarted.WhileSubscribed(5_000),
+	)
 
 	init {
 		viewModelScope.launch {

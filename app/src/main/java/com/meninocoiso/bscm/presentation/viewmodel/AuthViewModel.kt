@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -24,6 +23,7 @@ data class AuthUiState(
     val isLoggedIn: Boolean = false,
     val user: User? = null,
     val error: String? = null,
+    val isRestoring: Boolean = true, // novo flag para indicar restauração inicial
 )
 
 private const val TAG = "AuthViewModel"
@@ -38,34 +38,41 @@ class AuthViewModel @Inject constructor(
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
     init {
-        checkAuthState()
-        observeLoginState()
+        restoreSession()
     }
 
-    private fun observeLoginState() {
+    /**
+     * Sem expor publicamente o token, tenta restaurar sessão e usuário cacheado.
+     */
+    private fun restoreSession() {
         viewModelScope.launch {
-            authRepository.isLoggedInFlow()
-                .distinctUntilChanged()
-                .collect { logged ->
-                    val previous = _uiState.value.isLoggedIn
-                    if (logged != previous) {
-                        _uiState.update { it.copy(isLoggedIn = logged) }
-                        if (logged) {
-                            getCurrentUser()
-                        } else {
-                            clearUserData()
-                        }
-                    }
+            val isLogged = runCatching { authRepository.isLoggedIn() }.getOrElse { false }
+            if (isLogged) {
+                _uiState.update { it.copy(isLoggedIn = true) }
+                val cached = authRepository.getCachedUser()
+                if (cached != null) {
+                    _uiState.update { it.copy(user = cached) }
+                } else {
+                    getCurrentUser()
                 }
+            } else {
+                _uiState.update { it.copy(isLoggedIn = false) }
+            }
+            // marca fim da restauração
+            _uiState.update { it.copy(isRestoring = false) }
         }
     }
 
-    private fun checkAuthState() {
-        viewModelScope.launch {
-            val isLoggedIn = authRepository.isLoggedIn()
-            _uiState.update { it.copy(isLoggedIn = isLoggedIn) }
-            if (isLoggedIn) {
-                getCurrentUser()
+    /**
+     * Permite semear um usuário pré-carregado (cacheUser) enquanto a restauração não terminou,
+     * evitando layout shift. Não altera isLoggedIn para não causar estado incorreto caso o token
+     * tenha expirado; apenas fornece dado visual temporário.
+     */
+    fun seedCachedUser(user: User?) {
+        if (user != null) {
+            val current = _uiState.value
+            if (current.isRestoring && current.user == null) {
+                _uiState.update { it.copy(user = user) }
             }
         }
     }
@@ -81,7 +88,6 @@ class AuthViewModel @Inject constructor(
      * Call this when an OAuth flow is handled already (e.g. deep link succeeded).
      */
     fun completePendingOAuthHandled() {
-        // no-op for now, but provided as a hook if you want to set an explicit flag or do cleanup
         _uiState.update { it.copy(isLoading = false) }
     }
     
@@ -115,11 +121,6 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Handles the OAuth callback from Discord
-     * Think of this like receiving a package - we first check if we were expecting it,
-     * then process it, then update our records
-     */
     fun handleAuthCallback(code: String) {
         if (code.isBlank()) {
             Log.e(TAG, "handleAuthCallback: Invalid authorization code")
@@ -174,7 +175,7 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             authRepository.getCurrentUser()
                 .onStart {
-                    Log.d(TAG, "getCurrentUser: Fetching current user")
+                    Log.d(TAG, "getCurrentUser: Fetching current user from API")
                 }
                 .catch { e ->
                     Log.e(TAG, "getCurrentUser: Flow exception, logging out - ${e.message}", e)
@@ -197,10 +198,6 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Clears all user-related data from the UI state
-     * Think of this like cleaning a slate - we keep the structure but remove the content
-     */
     private fun clearUserData() {
         _uiState.update {
             it.copy(
@@ -214,27 +211,20 @@ class AuthViewModel @Inject constructor(
     fun logout() {
         viewModelScope.launch {
             Log.d(TAG, "logout: Logging out")
-
-            // Show loading state during logout
             _uiState.update { it.copy(isLoading = true, error = null) }
-
-            runCatching {
-                authRepository.logout()
-            }.onSuccess {
-                Log.d(TAG, "logout: Logout successful")
-                _uiState.update {
-                    AuthUiState() // Reset to clean initial state
+            runCatching { authRepository.logout() }
+                .onSuccess {
+                    Log.d(TAG, "logout: Logout successful")
+                    _uiState.update { AuthUiState(isRestoring = false) }
                 }
-            }.onFailure { e ->
-                if (e is CancellationException) {
-                    Log.d(TAG, "logout: Cancelled")
-                    throw e
+                .onFailure { e ->
+                    if (e is CancellationException) {
+                        Log.d(TAG, "logout: Cancelled")
+                        throw e
+                    }
+                    Log.e(TAG, "logout: Error during logout - ${e.message}", e)
+                    _uiState.update { it.copy(error = "Error during logout: ${e.message}") }
                 }
-                Log.e(TAG, "logout: Error during logout - ${e.message}", e)
-                _uiState.update {
-                    it.copy(error = "Error during logout: ${e.message}")
-                }
-            }
         }
     }
 }

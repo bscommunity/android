@@ -3,6 +3,7 @@ package com.meninocoiso.bscm.di
 import android.content.Context
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.repository.AuthRepository
+import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.data.security.CryptoManager
 import com.meninocoiso.bscm.data.security.DiscordOAuth
 import com.meninocoiso.bscm.data.security.SecureTokenManager
@@ -45,8 +46,9 @@ object AuthModule {
     @Singleton
     fun provideAuthRepository(
         apiClient: ApiClient,
-        tokenManager: SecureTokenManager
+        tokenManager: SecureTokenManager,
+        cacheRepository: CacheRepository
     ): AuthRepository {
-        return AuthRepository(apiClient, tokenManager)
+        return AuthRepository(apiClient, tokenManager, cacheRepository)
     }
 }

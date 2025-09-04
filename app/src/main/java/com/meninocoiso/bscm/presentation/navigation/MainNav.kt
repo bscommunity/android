@@ -1,14 +1,13 @@
 package com.meninocoiso.bscm.presentation.navigation
 
-import android.content.Intent
 import android.net.Uri
-import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.serialization.ChartParameterType
 import com.meninocoiso.bscm.presentation.screens.details.ChartDetails
 import com.meninocoiso.bscm.presentation.screens.details.ChartDetailsRoute
@@ -21,7 +20,7 @@ import kotlin.reflect.typeOf
 object MainRoute
 
 @Composable
-fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean) {
+fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean, cacheUser: User?) {
     val navController = rememberNavController()
     val bottomNavController = rememberNavController()
 
@@ -57,7 +56,7 @@ fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean) {
         }
 
         composableWithoutTransitions<MainRoute> {
-            BottomNav(bottomNavController, navController, hasUpdate, startOAuth)
+            BottomNav(bottomNavController, navController, hasUpdate, startOAuth, cacheUser)
         }
     }
 }

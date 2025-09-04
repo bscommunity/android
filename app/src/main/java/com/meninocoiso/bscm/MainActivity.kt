@@ -159,7 +159,11 @@ class MainActivity : AppCompatActivity() {
                         Loading -> false
                         is Success -> viewModel.hasUpdate((uiState as Success).latestUpdateVersion)
                     },
-                    // pass a lambda to start OAuth so Composables don't need to know launchers
+                    cacheUser = when (uiState) {
+                        Loading -> null
+                        is Success -> (uiState as Success).cacheUser
+                    },
+                    // Pass a lambda to start OAuth so Composables don't need to know launchers
                     startOAuth = { uri -> startOAuth(uri) }
                 )
 

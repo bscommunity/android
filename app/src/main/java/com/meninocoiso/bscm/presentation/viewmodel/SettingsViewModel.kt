@@ -40,7 +40,7 @@ private const val TAG = "SettingsViewModel"
  */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val settingsRepository: SettingsRepository,
     private val appUpdateRepository: AppUpdateRepository
 ) : ViewModel() {

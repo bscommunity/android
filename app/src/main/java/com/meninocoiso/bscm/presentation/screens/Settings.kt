@@ -49,6 +49,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.BuildConfig
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.presentation.ui.components.SwitchUI
 import com.meninocoiso.bscm.presentation.ui.components.dialog.LanguageDialog
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ThemeDialog
@@ -64,17 +65,30 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     startOAuth: (Uri) -> Unit,
+    cacheUser: User?,
     onFabStateChange: (Boolean) -> Unit,
     onSnackbar: (String) -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle() 
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
 
     val activity = LocalActivity.current as ComponentActivity
     val authViewModel: AuthViewModel = hiltViewModel(activity)
 
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
+
+    // Seed cached user only once while restoring
+    LaunchedEffect(cacheUser) {
+        authViewModel.seedCachedUser(cacheUser)
+    }
+
+    // Defines which user to display (fallback to cacheUser if still restoring and no real user)
+    val displayUser = when {
+        authState.user != null -> authState.user
+        authState.isRestoring && cacheUser != null -> cacheUser
+        else -> null
+    }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -97,11 +111,17 @@ fun SettingsScreen(
         }
     }
 
-    LaunchedEffect(authState) {
-        println("AuthState changed: $authState")
+    LaunchedEffect(authState.error) {
+        // Show error message if login fails
         authState.error?.let { error ->
             onSnackbar(error)
-            // authViewModel.clearError()
+        }
+    }
+    
+    // Show message on login success (but only if not restoring and no cacheUser)
+    LaunchedEffect(authState.user) {
+        if (authState.isLoggedIn && cacheUser == null) {
+            onSnackbar(context.getString(R.string.logged_in_successfully, authState.user!!.username))
         }
     }
 
@@ -129,7 +149,7 @@ fun SettingsScreen(
 
         // Account Section with Authentication
         SettingsCard(title = "teste" /*stringResource(R.string.account)*/) {
-            val currentUser = authState.user
+            val currentUser = displayUser
             if (authState.isLoggedIn && currentUser != null) {
                 // User is logged in - show user info and logout option
                 ListItem(
@@ -158,6 +178,23 @@ fun SettingsScreen(
                         ) {
                             Text(text = stringResource(R.string.logout))
                         }
+                    }
+                )
+            } else if (currentUser != null && authState.isRestoring) {
+                // Estado intermediário: mostrar dados cacheados mas sem ações sensíveis
+                ListItem(
+                    modifier = Modifier.settingsCard(),
+                    headlineContent = { HeadlineText(currentUser.username) },
+                    supportingContent = { SupportingText(currentUser.email ?: stringResource(R.string.no_email_provided)) },
+                    leadingContent = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.discord),
+                            contentDescription = stringResource(R.string.discord_icon),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    trailingContent = {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                     }
                 )
             } else {

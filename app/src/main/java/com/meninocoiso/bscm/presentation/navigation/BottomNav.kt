@@ -20,6 +20,7 @@ import androidx.navigation.toRoute
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.UpdatesSection
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.presentation.screens.SettingsScreen
 import com.meninocoiso.bscm.presentation.screens.details.ChartDetails
 import com.meninocoiso.bscm.presentation.screens.updates.UpdatesScreen
@@ -74,7 +75,8 @@ fun BottomNav(
     bottomNavController: NavHostController,
     navController: NavHostController,
     hasUpdate: Boolean = false,
-    startOAuth: (Uri) -> Unit
+    startOAuth: (Uri) -> Unit,
+    cacheUser: User? = null,
 ) {
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
 
@@ -180,7 +182,7 @@ fun BottomNav(
                 )
             }
             composableWithFade<Route.Settings> {
-                SettingsScreen(startOAuth, onFabStateChange, onSnackbar)
+                SettingsScreen(startOAuth, cacheUser, onFabStateChange, onSnackbar)
             }
         }
     }
