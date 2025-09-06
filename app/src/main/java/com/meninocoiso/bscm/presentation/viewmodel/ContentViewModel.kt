@@ -42,12 +42,12 @@ private const val TAG = "ContentViewModel"
 
 @HiltViewModel
 class ContentViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val downloadServiceConnection: DownloadServiceConnection,
     private val downloadRepository: DownloadRepository,
     private val cacheRepository: CacheRepository,
     private val settingsRepository: SettingsRepository,
-    @Named("Local") private val localChartRepository: ChartRepository,
+    @param:Named("Local") private val localChartRepository: ChartRepository,
 ) : ViewModel() {
 
     private val _contentStates = MutableStateFlow<Map<String, ContentState>>(emptyMap())

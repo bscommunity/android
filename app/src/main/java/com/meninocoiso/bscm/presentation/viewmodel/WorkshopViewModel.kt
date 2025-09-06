@@ -281,7 +281,7 @@ class WorkshopViewModel @Inject constructor(
             .collect { isAtEnd ->
                 // Check if we are at the end of the list 
                 // and if there's data already loaded
-                if (isAtEnd && chartManager.cacheState.value is ChartState.Success) {
+                if (isAtEnd && chartManager.getChartsLength() > 0) {
                     loadMoreCharts()
                 }
             }
@@ -296,11 +296,8 @@ class WorkshopViewModel @Inject constructor(
             return
         }
         
-        if (currentSearchQuery.isEmpty() && currentFeedPage == 0) {
-            // If we're in feed mode and haven't loaded any pages yet, just return
-            Log.d(TAG, "No feed charts to load on initial page")
-            return
-        }
+        // If this is the first load and there's no data, skip loading more
+        // This verification is already done in observeScrollState
 
         viewModelScope.launch {
             Log.d(TAG, "Loading more charts...")

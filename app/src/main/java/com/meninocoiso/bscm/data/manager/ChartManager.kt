@@ -92,6 +92,8 @@ class ChartManager @Inject constructor(
         searchIds.mapNotNull { chartMap[it] }
     }
 
+    private val feedChartsList = mutableListOf<Chart>()
+
     fun updateState(newState: ChartState) {
         // Log.d(TAG, "Updating cache state to $newState")
         _cacheState.value = newState
@@ -176,25 +178,12 @@ class ChartManager @Inject constructor(
         offset: Int = 0
     ): Flow<FetchResult<List<Chart>>> = flow {
         emit(FetchResult.Loading)
-
         Log.d(TAG, "Fetching feed charts: sortBy=$sortBy, limit=$limit, offset=$offset")
 
-        /*// Check cache for initial load
-        if (offset == 0 && !forceRefresh) {
-            val cachedResult = localChartRepository.getChartsSortedBy(sortBy, limit).first()
-
-            cachedResult.fold(
-                onSuccess = { cached ->
-                    if (cached.isNotEmpty()) {
-                        Log.d(TAG, "Using ${cached.size} cached charts for feed")
-                        updateChartsInMemory(cached)
-                        emit(FetchResult.Success(cached))
-                        return@flow
-                    }
-                },
-                onFailure = { *//* Continue to remote fetch *//* }
-            )
-        }*/
+        // Reset lista acumulada se for uma nova busca/feed
+        if (offset == 0 || forceRefresh) {
+            feedChartsList.clear()
+        }
 
         // Fetch from remote
         val remoteResult = remoteChartRepository.getChartsSortedBy(
@@ -205,26 +194,12 @@ class ChartManager @Inject constructor(
 
         remoteResult.fold(
             onSuccess = { remoteCharts ->
-                Log.d(TAG, "Fetched ${remoteCharts.size} charts from remote")
-
-                if (offset == 0) {
-                    // Initial load - update cache and handle deletions
-                    updateChartsInMemory(remoteCharts)
-                    handleDeletedCharts(remoteCharts)
-
-                    // Update local storage in background
-                    coroutineScope.launch {
-                        localChartRepository.updateCharts(remoteCharts).first()
-                        Log.d(TAG, "Updated ${remoteCharts.size} charts in local storage")
-                    }
-                } else {
-                    // Pagination - merge with existing
-                    val currentCharts = _charts.value
-                    val newCharts = remoteCharts.filter { it.id !in currentCharts }
-                    updateChartsInMemory(newCharts)
-                }
-
-                emit(FetchResult.Success(getCurrentChartsList()))
+                // Acumula os charts
+                feedChartsList.addAll(remoteCharts.filter { new ->
+                    feedChartsList.none { it.id == new.id }
+                })
+                updateChartsInMemory(feedChartsList)
+                emit(FetchResult.Success(feedChartsList))
             },
             onFailure = { error ->
                 Log.e(TAG, "Failed to fetch feed charts", error)
