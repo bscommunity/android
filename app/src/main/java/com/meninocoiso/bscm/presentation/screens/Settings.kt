@@ -70,7 +70,7 @@ fun SettingsScreen(
     onSnackbar: (String) -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle() 
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
 
     val activity = LocalActivity.current as ComponentActivity
@@ -83,12 +83,8 @@ fun SettingsScreen(
         authViewModel.seedCachedUser(cacheUser)
     }
 
-    // Defines which user to display (fallback to cacheUser if still restoring and no real user)
-    val displayUser = when {
-        authState.user != null -> authState.user
-        authState.isRestoring && cacheUser != null -> cacheUser
-        else -> null
-    }
+    // Defines which user to display 
+    val displayUser = authState.user ?: cacheUser
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -97,7 +93,7 @@ fun SettingsScreen(
     val shrunkLatestVersion = if (updateState is AppUpdateState.UpdateAvailable)
         (updateState as AppUpdateState.UpdateAvailable).version.substringBeforeLast("-")
     else ""
-    
+
     LaunchedEffect(updateState) {
         when (updateState) {
             is AppUpdateState.UpToDate -> {
@@ -117,11 +113,16 @@ fun SettingsScreen(
             onSnackbar(error)
         }
     }
-    
-    // Show message on login success (but only if not restoring and no cacheUser)
+
+    // Show message on login success
     LaunchedEffect(authState.user) {
         if (authState.isLoggedIn && cacheUser == null) {
-            onSnackbar(context.getString(R.string.logged_in_successfully, authState.user!!.username))
+            onSnackbar(
+                context.getString(
+                    R.string.logged_in_successfully,
+                    authState.user!!.username
+                )
+            )
         }
     }
 
@@ -148,18 +149,18 @@ fun SettingsScreen(
         }
 
         // Account Section with Authentication
-        SettingsCard(title = "teste" /*stringResource(R.string.account)*/) {
-            val currentUser = displayUser
-            if (authState.isLoggedIn && currentUser != null) {
+        SettingsCard(title = stringResource(R.string.account)) {
+            if (authState.isLoggedIn && displayUser != null) {
                 // User is logged in - show user info and logout option
                 ListItem(
                     modifier = Modifier.settingsCard(),
                     headlineContent = {
-                        HeadlineText(currentUser.username)
+                        HeadlineText(displayUser.username)
                     },
                     supportingContent = {
                         SupportingText(
-                            currentUser.email ?: stringResource(R.string.no_email_provided)
+                            displayUser.email?.replace(Regex("(?<=.{2}).(?=[^@]*?@)"), "*")
+                                ?: stringResource(R.string.no_email_provided)
                         )
                     },
                     leadingContent = {
@@ -178,23 +179,6 @@ fun SettingsScreen(
                         ) {
                             Text(text = stringResource(R.string.logout))
                         }
-                    }
-                )
-            } else if (currentUser != null && authState.isRestoring) {
-                // Estado intermediário: mostrar dados cacheados mas sem ações sensíveis
-                ListItem(
-                    modifier = Modifier.settingsCard(),
-                    headlineContent = { HeadlineText(currentUser.username) },
-                    supportingContent = { SupportingText(currentUser.email ?: stringResource(R.string.no_email_provided)) },
-                    leadingContent = {
-                        Icon(
-                            painter = painterResource(id = R.drawable.discord),
-                            contentDescription = stringResource(R.string.discord_icon),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    },
-                    trailingContent = {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                     }
                 )
             } else {

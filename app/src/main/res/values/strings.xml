@@ -212,6 +212,7 @@
     <string name="gameplay_preview_description">Enable gameplay video previews\nThis may affect performance</string>
     
     <!-- 🔐 Authentication & Account -->
+    <string name="account">Account</string>
     <string name="link_account">Link Account</string>
     <string name="link_account_description">Connect your Discord account to sync your preferences</string>
     <string name="connect">Connect</string>

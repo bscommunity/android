@@ -23,7 +23,6 @@ data class AuthUiState(
     val isLoggedIn: Boolean = false,
     val user: User? = null,
     val error: String? = null,
-    val isRestoring: Boolean = true, // novo flag para indicar restauração inicial
 )
 
 private const val TAG = "AuthViewModel"
@@ -37,42 +36,15 @@ class AuthViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
-    init {
-        restoreSession()
-    }
-
     /**
-     * Sem expor publicamente o token, tenta restaurar sessão e usuário cacheado.
-     */
-    private fun restoreSession() {
-        viewModelScope.launch {
-            val isLogged = runCatching { authRepository.isLoggedIn() }.getOrElse { false }
-            if (isLogged) {
-                _uiState.update { it.copy(isLoggedIn = true) }
-                val cached = authRepository.getCachedUser()
-                if (cached != null) {
-                    _uiState.update { it.copy(user = cached) }
-                } else {
-                    getCurrentUser()
-                }
-            } else {
-                _uiState.update { it.copy(isLoggedIn = false) }
-            }
-            // marca fim da restauração
-            _uiState.update { it.copy(isRestoring = false) }
-        }
-    }
-
-    /**
-     * Permite semear um usuário pré-carregado (cacheUser) enquanto a restauração não terminou,
-     * evitando layout shift. Não altera isLoggedIn para não causar estado incorreto caso o token
-     * tenha expirado; apenas fornece dado visual temporário.
+     * Restores the user session if possible.
      */
     fun seedCachedUser(user: User?) {
         if (user != null) {
             val current = _uiState.value
-            if (current.isRestoring && current.user == null) {
-                _uiState.update { it.copy(user = user) }
+            if (current.user == null) {
+                Log.d(TAG, "seedCachedUser: Seeding cached user: $user")
+                _uiState.update { it.copy(user = user, isLoggedIn = true) }
             }
         }
     }
@@ -215,7 +187,7 @@ class AuthViewModel @Inject constructor(
             runCatching { authRepository.logout() }
                 .onSuccess {
                     Log.d(TAG, "logout: Logout successful")
-                    _uiState.update { AuthUiState(isRestoring = false) }
+                    _uiState.update { AuthUiState(isLoading = false) }
                 }
                 .onFailure { e ->
                     if (e is CancellationException) {
