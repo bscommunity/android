@@ -19,7 +19,7 @@ data class Chart(
     val artist: String,
     val track: String,
     val album: String?,
-    val genre: Genre,
+    val genre: Genre?,
     @ColumnInfo(name = "cover_url") val coverUrl: String,
     @ColumnInfo(name = "track_urls") val trackUrls: List<StreamingLink>,
     @ColumnInfo(name = "track_preview_url") val trackPreviewUrl: String,

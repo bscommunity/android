@@ -20,6 +20,7 @@
     <!-- Allow opening the modded app -->
     <queries>
         <package android:name="com.spaceapegames.beatclon" />
+        <package android:name="com.spaceapegames.beatstas" />
     </queries>
 
     <!-- Allow querying for browsers that handle Custom Tabs -->

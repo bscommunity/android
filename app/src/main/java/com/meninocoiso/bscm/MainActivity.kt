@@ -276,6 +276,7 @@ class MainActivity : AppCompatActivity() {
             // If still not handled -> this was a real cancel
             if (!oauthHandled) {
                 oauthInProgress = false
+                println("OAuth flow cancelled by user")
                 authViewModel.cancelPendingOAuth()
             }
         }

@@ -29,18 +29,19 @@ object LinkingUtils {
         context: Context,
         openAlertDialog: (Boolean) -> Unit,
     ) {
-        val packageName = "com.spaceapegames.beatclon"
+        val packageNames = listOf("com.spaceapegames.beatstas", "com.spaceapegames.beatclon")
+        var launchIntent: Intent? = null
 
-        // Create an Intent to launch the app
-        val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
+        for (packageName in packageNames) {
+            launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
+            if (launchIntent != null) break
+        }
 
         println("launchIntent: $launchIntent")
 
         if (launchIntent != null) {
-            // If the intent is not null, start the activity
             context.startActivity(launchIntent)
         } else {
-            // If the app is not installed,
             openAlertDialog(true)
         }
     }
