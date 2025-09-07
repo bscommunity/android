@@ -56,11 +56,11 @@ sealed class FetchEvent {
  */
 @Singleton
 class ChartManager @Inject constructor(
-    @ApplicationContext private val context: Context,
-    @Named("Remote") private val remoteChartRepository: ChartRepository,
-    @Named("Local") private val localChartRepository: ChartRepository,
+    @param:ApplicationContext private val context: Context,
+    @param:Named("Remote") private val remoteChartRepository: ChartRepository,
+    @param:Named("Local") private val localChartRepository: ChartRepository,
     private val cacheRepository: CacheRepository,
-    @ApplicationScope private val coroutineScope: CoroutineScope) 
+    @param:ApplicationScope private val coroutineScope: CoroutineScope)
 {
 
     // Single source of truth for all charts in memory
@@ -92,8 +92,6 @@ class ChartManager @Inject constructor(
         searchIds.mapNotNull { chartMap[it] }
     }
 
-    private val feedChartsList = mutableListOf<Chart>()
-
     fun updateState(newState: ChartState) {
         // Log.d(TAG, "Updating cache state to $newState")
         _cacheState.value = newState
@@ -104,12 +102,12 @@ class ChartManager @Inject constructor(
     fun verifyInstalledCharts(chartsToVerify: List<Chart>, rootUri: Uri): List<Chart> {
         try {
             val destination = StorageUtils.getFolder(rootUri, listOf("songs"), context)
-            
+
             return chartsToVerify.map { chart ->
                 val folderName = StorageUtils.getChartFolderName(chart.id)
                 val chartFolder = destination.findFile(folderName)
                 val fileExists = chartFolder != null
-    
+
                 chart.copy(isInstalled = fileExists).also { updatedChart ->
                     // Update in-memory state if verification changed the status
                     if (chart.isInstalled != fileExists) {
@@ -127,7 +125,7 @@ class ChartManager @Inject constructor(
             coroutineScope.launch {
                 cacheRepository.setFolderUri("")
             }
-            
+
             return chartsToVerify
         }
     }
@@ -137,7 +135,7 @@ class ChartManager @Inject constructor(
      */
     suspend fun loadCachedCharts(sortBy: SortOption, rootUri: Uri? = null) {
         _cacheState.value = ChartState.Loading
-        
+
         try {
             val cachedCharts = localChartRepository.getChartsSortedBy(sortBy).first()
 
@@ -178,12 +176,25 @@ class ChartManager @Inject constructor(
         offset: Int = 0
     ): Flow<FetchResult<List<Chart>>> = flow {
         emit(FetchResult.Loading)
+
         Log.d(TAG, "Fetching feed charts: sortBy=$sortBy, limit=$limit, offset=$offset")
 
-        // Reset lista acumulada se for uma nova busca/feed
-        if (offset == 0 || forceRefresh) {
-            feedChartsList.clear()
-        }
+        /*// Check cache for initial load
+        if (offset == 0 && !forceRefresh) {
+            val cachedResult = localChartRepository.getChartsSortedBy(sortBy, limit).first()
+
+            cachedResult.fold(
+                onSuccess = { cached ->
+                    if (cached.isNotEmpty()) {
+                        Log.d(TAG, "Using ${cached.size} cached charts for feed")
+                        updateChartsInMemory(cached)
+                        emit(FetchResult.Success(cached))
+                        return@flow
+                    }
+                },
+                onFailure = { *//* Continue to remote fetch *//* }
+            )
+        }*/
 
         // Fetch from remote
         val remoteResult = remoteChartRepository.getChartsSortedBy(
@@ -194,12 +205,26 @@ class ChartManager @Inject constructor(
 
         remoteResult.fold(
             onSuccess = { remoteCharts ->
-                // Acumula os charts
-                feedChartsList.addAll(remoteCharts.filter { new ->
-                    feedChartsList.none { it.id == new.id }
-                })
-                updateChartsInMemory(feedChartsList)
-                emit(FetchResult.Success(feedChartsList))
+                Log.d(TAG, "Fetched ${remoteCharts.size} charts from remote")
+
+                if (offset == 0) {
+                    // Initial load - update cache and handle deletions
+                    updateChartsInMemory(remoteCharts)
+                    handleDeletedCharts(remoteCharts)
+
+                    // Update local storage in background
+                    coroutineScope.launch {
+                        localChartRepository.updateCharts(remoteCharts).first()
+                        Log.d(TAG, "Updated ${remoteCharts.size} charts in local storage")
+                    }
+                } else {
+                    // Pagination - merge with existing
+                    val currentCharts = _charts.value
+                    val newCharts = remoteCharts.filter { it.id !in currentCharts }
+                    updateChartsInMemory(newCharts)
+                }
+
+                emit(FetchResult.Success(getCurrentChartsList()))
             },
             onFailure = { error ->
                 Log.e(TAG, "Failed to fetch feed charts", error)
