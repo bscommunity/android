@@ -64,7 +64,7 @@ android {
 
 			applicationIdSuffix = ".debug"
 			versionNameSuffix = "-debug"
-			resValue("string", "app_name", "bscm Debug")
+			resValue("string", "app_name", "bscm debug")
 		}
 	}
 

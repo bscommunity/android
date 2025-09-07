@@ -9,13 +9,13 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.meninocoiso.bscm.util.AppBarUtils
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.UpdatesSection
 import com.meninocoiso.bscm.presentation.screens.details.OnNavigateToDetails
@@ -24,6 +24,8 @@ import com.meninocoiso.bscm.presentation.screens.updates.sections.WorkshopSectio
 import com.meninocoiso.bscm.presentation.ui.components.TabItem
 import com.meninocoiso.bscm.presentation.ui.components.TabsUI
 import com.meninocoiso.bscm.presentation.viewmodel.UpdatesViewModel
+import com.meninocoiso.bscm.util.AppBarUtils
+import kotlinx.coroutines.launch
 
 @Composable
 private fun getUpdatesTabsItems(): List<TabItem> {
@@ -49,6 +51,7 @@ fun UpdatesScreen(
 	onFabStateChange: (Boolean) -> Unit,
 	viewModel: UpdatesViewModel = hiltViewModel(),
 ) {
+	val coroutineScope = rememberCoroutineScope()
 	
 	val updatesTabsItems = getUpdatesTabsItems()
 
@@ -63,7 +66,9 @@ fun UpdatesScreen(
 			UpdatesSection.Workshop -> 0
 			UpdatesSection.Installations -> 1
 		}
-		horizontalPagerState.requestScrollToPage(pageIndex)
+		coroutineScope.launch {
+			horizontalPagerState.scrollToPage(pageIndex)
+		}
 	}
 	
 	val (connection, spaceHeight, statusBarHeight) = AppBarUtils.getConnection(

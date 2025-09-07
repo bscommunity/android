@@ -32,12 +32,12 @@ object LinkingUtils {
         val packageNames = listOf("com.spaceapegames.beatstas", "com.spaceapegames.beatclon")
         var launchIntent: Intent? = null
 
-        for (packageName in packageNames) {
+        /*for (packageName in packageNames) {
             launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
             if (launchIntent != null) break
         }
 
-        println("launchIntent: $launchIntent")
+        println("launchIntent: $launchIntent")*/
 
         if (launchIntent != null) {
             context.startActivity(launchIntent)
