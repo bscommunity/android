@@ -19,7 +19,7 @@ android {
 	ndkVersion = "28.2.13676358"
 
 	defaultConfig {
-		applicationId = "com.meninocoiso.bscm.debug"
+		applicationId = "com.meninocoiso.bscm"
 		// minSdk was previously 24, but was needed to be changed to 26
 		// to use the new Date API, since desugar is not working
 		minSdk = 26
@@ -56,10 +56,15 @@ android {
 				"proguard-rules.pro"
 			)
 			signingConfig = signingConfigs.getByName("release")
+			resValue("string", "app_name", "bscm")
 		}
 		debug {
 			// Enable easier debugging
 			isDebuggable = true
+
+			applicationIdSuffix = ".debug"
+			versionNameSuffix = "-debug"
+			resValue("string", "app_name", "bscm Debug")
 		}
 	}
 
