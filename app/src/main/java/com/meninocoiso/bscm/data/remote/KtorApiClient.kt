@@ -68,12 +68,12 @@ class KtorApiClient @Inject constructor(
         }
         
         defaultRequest {
-            // url("https://api-cyb1.onrender.com")
-            url {
+            url("https://api-cyb1.onrender.com")
+            /*url {
                 protocol = URLProtocol.HTTP
                 host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.10"
                 port = 8080
-            }
+            }*/
 
             val timestamp = System.currentTimeMillis().toString()
             val payload = "$timestamp:"
