@@ -48,7 +48,7 @@ class SettingsViewModel @Inject constructor(
      * Expose settings as a StateFlow for reactive UI updates
      */
     val uiState: StateFlow<Settings> = settingsRepository.settingsFlow
-        .map { it }  // Simplified - removed unnecessary mapping if Settings object structure matches
+        .map { it }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),

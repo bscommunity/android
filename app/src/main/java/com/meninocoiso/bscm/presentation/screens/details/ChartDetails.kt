@@ -14,11 +14,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -52,6 +50,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.presentation.ui.components.CarouselItem
+import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
 import com.meninocoiso.bscm.presentation.ui.components.MediaCarousel
 import com.meninocoiso.bscm.presentation.ui.components.chart.ChartContributors
 import com.meninocoiso.bscm.presentation.ui.components.details.DownloadButton
@@ -73,7 +72,7 @@ data class ChartDetails(val chart: Chart)
 @Serializable
 data class DeepLinkChartDetails(val chartId: String)
 
-private val DropdownItemPadding = PaddingValues(
+val DropdownItemPadding = PaddingValues(
     start = 16.dp,
     end = 24.dp,
     top = 8.dp,
@@ -107,7 +106,6 @@ fun ChartDetailsScreen(
     // UI State
     val isGameplayVideoPreviewEnabled = contentViewModel.isGameplayVideoPreviewEnabled
         .collectAsStateWithLifecycle(initialValue = true)
-    var isMoreOptionsExpanded by remember { mutableStateOf(false) }
     val dialogs = remember { DialogState() }
 
     // Manage download events
@@ -218,22 +216,13 @@ fun ChartDetailsScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { isMoreOptionsExpanded = !isMoreOptionsExpanded }) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = stringResource(R.string.more_options_menu)
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = isMoreOptionsExpanded,
-                        onDismissRequest = { isMoreOptionsExpanded = false },
-                    ) {
+                    // Dropdown menu for more options
+                    DropdownMenuUI {
                         DropdownMenuItem(
                             contentPadding = DropdownItemPadding,
                             text = { Text(stringResource(R.string.share)) },
                             leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
                             onClick = {
-                                isMoreOptionsExpanded = false
                                 shareChartLink(context, chart.id)
                             }
                         )
@@ -247,7 +236,6 @@ fun ChartDetailsScreen(
                                 )
                             },
                             onClick = {
-                                isMoreOptionsExpanded = false
                                 dialogs.showReportDialog = true
                             }
                         )
@@ -262,7 +250,6 @@ fun ChartDetailsScreen(
                                     )
                                 },
                                 onClick = {
-                                    isMoreOptionsExpanded = false
                                     dialogs.showDeleteConfirmation = true
                                 }
                             )

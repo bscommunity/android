@@ -1,10 +1,11 @@
-package com.meninocoiso.bscm.presentation.screens
+package com.meninocoiso.bscm.presentation.screens.settings
 
 import android.annotation.SuppressLint
 import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,11 +41,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.BuildConfig
@@ -55,10 +58,13 @@ import com.meninocoiso.bscm.presentation.ui.components.dialog.LanguageDialog
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ThemeDialog
 import com.meninocoiso.bscm.presentation.ui.modifiers.fabScrollObserver
 import com.meninocoiso.bscm.presentation.ui.modifiers.rememberFabNestedScrollConnection
+import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonClip
 import com.meninocoiso.bscm.presentation.viewmodel.AppUpdateState
 import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.SettingsViewModel
 import com.meninocoiso.bscm.util.LinkingUtils
+import com.skydoves.landscapist.ImageOptions
+import com.skydoves.landscapist.coil3.CoilImage
 import kotlinx.coroutines.launch
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -68,6 +74,7 @@ fun SettingsScreen(
     cacheUser: User?,
     onFabStateChange: (Boolean) -> Unit,
     onSnackbar: (String) -> Unit,
+    onNavigateToProfile: (id: String) -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -152,7 +159,7 @@ fun SettingsScreen(
         SettingsCard(title = stringResource(R.string.account)) {
             if (authState.isLoggedIn && displayUser != null) {
                 // User is logged in - show user info and logout option
-                ListItem(
+                /*ListItem(
                     modifier = Modifier.settingsCard(),
                     headlineContent = {
                         HeadlineText(displayUser.username)
@@ -180,7 +187,57 @@ fun SettingsScreen(
                             Text(text = stringResource(R.string.logout))
                         }
                     }
-                )
+                )*/
+                Column {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp)
+                            .clickable(onClick = { onNavigateToProfile("@me") })
+                    ) {
+                        CoilImage(
+                            imageModel = { displayUser.imageUrl },
+                            modifier = Modifier
+                                .roundedPolygonClip()
+                                .zIndex(1f)
+                                .size(128.dp),
+                            imageOptions = ImageOptions(
+                                contentScale = ContentScale.Crop,
+                                alignment = Alignment.Center,
+                            ),
+                        )
+                    }
+                    ListItem(
+                        modifier = Modifier.settingsCard(),
+                        headlineContent = {
+                            HeadlineText("Public profile")
+                        },
+                        supportingContent = {
+                            SupportingText("Other users can see your liked content")
+                        },
+                        trailingContent = {
+                            SwitchUI(
+                                checked = uiState.enableGameplayPreviewVideo,
+                                onCheckedChange = {
+                                    viewModel.enableGameplayPreviewVideo(it)
+                                }
+                            )
+                        }
+                    )
+                    ListDivider()
+                    ListItem(
+                        modifier = Modifier.settingsCard(),
+                        headlineContent = {
+                            Text(text = "Linked to @meninocoiso")
+                        },
+                        trailingContent = {
+                            Button(onClick = { }) {
+                                Text("Unlink account")
+                            }
+                        }
+                    )
+                }
             } else {
                 // User is not logged in - show login option
                 ListItem(

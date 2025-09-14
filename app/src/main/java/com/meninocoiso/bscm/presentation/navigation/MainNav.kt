@@ -13,6 +13,8 @@ import com.meninocoiso.bscm.presentation.screens.details.ChartDetails
 import com.meninocoiso.bscm.presentation.screens.details.ChartDetailsRoute
 import com.meninocoiso.bscm.presentation.screens.details.ChartDetailsScreen
 import com.meninocoiso.bscm.presentation.screens.details.DeepLinkChartDetails
+import com.meninocoiso.bscm.presentation.screens.settings.Profile
+import com.meninocoiso.bscm.presentation.screens.settings.ProfileScreen
 import kotlinx.serialization.Serializable
 import kotlin.reflect.typeOf
 
@@ -49,6 +51,17 @@ fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean, cacheUser: User?) {
             val chartDetails: ChartDetails = backStackEntry.toRoute()
             ChartDetailsScreen(
                 chart = chartDetails.chart,
+                onReturn = {
+                    navController.navigateUp()
+                }
+            )
+        }
+
+        // Chart details
+        composableWithTransitions<Profile> { backStackEntry ->
+            val profile: Profile = backStackEntry.toRoute()
+            ProfileScreen(
+                id = profile.id,
                 onReturn = {
                     navController.navigateUp()
                 }

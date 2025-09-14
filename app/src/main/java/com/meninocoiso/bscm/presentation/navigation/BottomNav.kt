@@ -21,8 +21,9 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.UpdatesSection
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.User
-import com.meninocoiso.bscm.presentation.screens.SettingsScreen
 import com.meninocoiso.bscm.presentation.screens.details.ChartDetails
+import com.meninocoiso.bscm.presentation.screens.settings.Profile
+import com.meninocoiso.bscm.presentation.screens.settings.SettingsScreen
 import com.meninocoiso.bscm.presentation.screens.updates.UpdatesScreen
 import com.meninocoiso.bscm.presentation.screens.workshop.WorkshopScreen
 import com.meninocoiso.bscm.presentation.ui.components.layout.LaunchAppButton
@@ -110,6 +111,10 @@ fun BottomNav(
             launchSingleTop = true
         }
     }
+    
+    val onNavigateToProfile = { id: String ->
+        navController.navigate(route = Profile(id))
+    }
 
     val onFabStateChange: (Boolean) -> Unit = { shouldExtend ->
         if (shouldExtend != fabExtended) {
@@ -182,7 +187,7 @@ fun BottomNav(
                 )
             }
             composableWithFade<Route.Settings> {
-                SettingsScreen(startOAuth, cacheUser, onFabStateChange, onSnackbar)
+                SettingsScreen(startOAuth, cacheUser, onFabStateChange, onSnackbar, onNavigateToProfile)
             }
         }
     }

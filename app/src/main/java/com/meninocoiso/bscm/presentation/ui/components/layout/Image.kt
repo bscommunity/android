@@ -157,7 +157,7 @@ fun Avatar(
 }
 
 @Composable
-fun AvatarPlaceholder(size: Dp = 18.dp, alt: String) {
+private fun AvatarPlaceholder(size: Dp = 18.dp, alt: String) {
     Box(
         modifier = Modifier
             .size(size)
