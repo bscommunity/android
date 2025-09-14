@@ -4,8 +4,10 @@ import android.annotation.SuppressLint
 import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -33,9 +36,11 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +51,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -158,48 +164,24 @@ fun SettingsScreen(
         // Account Section with Authentication
         SettingsCard(title = stringResource(R.string.account)) {
             if (authState.isLoggedIn && displayUser != null) {
-                // User is logged in - show user info and logout option
-                /*ListItem(
-                    modifier = Modifier.settingsCard(),
-                    headlineContent = {
-                        HeadlineText(displayUser.username)
-                    },
-                    supportingContent = {
-                        SupportingText(
-                            displayUser.email?.replace(Regex("(?<=.{2}).(?=[^@]*?@)"), "*")
-                                ?: stringResource(R.string.no_email_provided)
-                        )
-                    },
-                    leadingContent = {
-                        Icon(
-                            painter = painterResource(id = R.drawable.discord),
-                            contentDescription = stringResource(R.string.discord_icon),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    },
-                    trailingContent = {
-                        OutlinedButton(
-                            onClick = {
-                                authViewModel.logout()
-                                onSnackbar(context.getString(R.string.logged_out_successfully))
-                            }
-                        ) {
-                            Text(text = stringResource(R.string.logout))
-                        }
-                    }
-                )*/
-                Column {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
                         contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp)
-                            .clickable(onClick = { onNavigateToProfile("@me") })
+                        modifier = Modifier.padding(vertical = 28.dp)
                     ) {
                         CoilImage(
                             imageModel = { displayUser.imageUrl },
                             modifier = Modifier
                                 .roundedPolygonClip()
+                                .clickable(
+                                    onClick = { onNavigateToProfile("@me") },
+                                    indication = ripple(
+                                        bounded = true,
+                                        color = MaterialTheme.colorScheme.primary,  // ou outro que você quiser
+                                        radius = Dp.Unspecified
+                                    ),
+                                    interactionSource = remember { MutableInteractionSource() }
+                                )
                                 .zIndex(1f)
                                 .size(128.dp),
                             imageOptions = ImageOptions(
@@ -207,6 +189,27 @@ fun SettingsScreen(
                                 alignment = Alignment.Center,
                             ),
                         )
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .align(Alignment.BottomCenter)
+                                .zIndex(2f)
+                                .offset(y = 8.dp)
+                                .border(
+                                    width = 2.dp,
+                                    color = MaterialTheme.colorScheme.outline,
+                                    shape = RoundedCornerShape(100)
+                                )
+                                .clip(RoundedCornerShape(100))
+                                .background(MaterialTheme.colorScheme.surfaceContainerLowest),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                modifier = Modifier.size(22.dp),
+                                painter = painterResource(R.drawable.rounded_person_24px),
+                                contentDescription = null
+                            )
+                        }
                     }
                     ListItem(
                         modifier = Modifier.settingsCard(),
@@ -229,10 +232,18 @@ fun SettingsScreen(
                     ListItem(
                         modifier = Modifier.settingsCard(),
                         headlineContent = {
-                            Text(text = "Linked to @meninocoiso")
+                            Text(
+                                text = "Linked to @meninocoiso",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                         },
                         trailingContent = {
-                            Button(onClick = { }) {
+                            OutlinedButton(
+                                onClick = { },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
                                 Text("Unlink account")
                             }
                         }
