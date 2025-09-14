@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">bscm</string>
+    <string name="updates">Actualizări</string>
+    <string name="settings">Setări</string>
+    <string name="installations">Instalări</string>
+    <string name="download">Descarcă</string>
+    <string name="downloading">Se descarcă…</string>
+    <string name="extracting">Se extrage…</string>
+    <string name="extracting_progress_title">Se extrage %1$s</string>
+    <string name="credits">Credite</string>
+    <string name="stats">Statistici</string>
+    <string name="hard">Greu</string>
+    <string name="extreme">Extrem</string>
+    <string name="expert">Expert</string>
+    <string name="difficulty">Dificultate</string>
+    <string name="hip_hop">Hip-hop</string>
+    <string name="pop">Pop</string>
+    <string name="r_b"><![CDATA[R&B]]></string>
+    <string name="rock">Rock</string>
+    <string name="dance">Dans</string>
+    <string name="alternative">Alternativ</string>
+    <string name="classical">Clasic</string>
+    <string name="genre">Gen</string>
+    <string name="author_role">Autor</string>
+    <string name="effects_role">Efecte</string>
+    <string name="today">astăzi</string>
+    <string name="yesterday">ieri</string>
+    <string name="search">Caută</string>
+    <string name="recent_searches">Căutări recente</string>
+    <string name="history">Istoric</string>
+    <string name="search_failed">Căutarea a eşuat</string>
+    <string name="filters">Filtre</string>
+    <string name="share">Distribuie</string>
+    <string name="share_via">Distribuie prin</string>
+    <string name="report">Raportează</string>
+    <string name="retry">Reîncearcă</string>
+    <string name="try_again">Încearcă din nou</string>
+    <string name="cancel">Anulează</string>
+    <string name="confirm">Confirmă</string>
+    <string name="confirmation_title">Sunteți sigur?</string>
+    <string name="preferences">Perferințe</string>
+    <string name="customization">Personalizare</string>
+    <string name="version">Versiune</string>
+    <string name="launch_app">Lansează aplicația</string>
+    <string name="open_settings">Deschide setările</string>
+    <string name="theme">Temă</string>
+    <string name="app_theme">Tema aplicației</string>
+    <string name="theme_description">Alege între preferințele sistemului tău, modul deschis și modul întunecat</string>
+    <string name="system">Sistem</string>
+    <string name="light">Deschisă</string>
+    <string name="dark">Întunecată</string>
+    <string name="themes">Teme</string>
+    <string name="language">Limbă</string>
+    <string name="app_language">Limba aplicației</string>
+    <string name="language_description">Alege limba de afișare a aplicației</string>
+    <string name="system_default_language">Implicit de sistem</string>
+    <string name="language_dialog_info">Verifică persoanele incredibile care au ajutat la traducerea aplicației în limba ta</string>
+    <string name="account">Cont</string>
+    <string name="not_now">Nu acum</string>
+    <string name="notification_channel_downloads_name">Descărcări</string>
+    <string name="unknown_error">Ceva nu a mers bine</string>
+    <plurals name="notes_amount">
+        <item quantity="one">%1$d notă</item>
+        <item quantity="few">%1$d note</item>
+        <item quantity="other">%1$d note</item>
+    </plurals>
+    <plurals name="effects_amount">
+        <item quantity="one">%1$d efect</item>
+        <item quantity="few">%1$d efecte</item>
+        <item quantity="other">%1$d efecte</item>
+    </plurals>
+    <plurals name="downloads_amount">
+        <item quantity="one">+%1$d descărcare</item>
+        <item quantity="few">+%1$d descărcări</item>
+        <item quantity="other">+%1$d descărcări</item>
+    </plurals>
+    <plurals name="days_ago">
+        <item quantity="one">acum %1$d zi</item>
+        <item quantity="few">acum %1$d zile</item>
+        <item quantity="other">acum %1$d zile</item>
+    </plurals>
+    <plurals name="weeks_ago">
+        <item quantity="one">acum %1$d săptămână</item>
+        <item quantity="few">acum %1$d săptămâni</item>
+        <item quantity="other">acum %1$d săptămâni</item>
+    </plurals>
+    <plurals name="months_ago">
+        <item quantity="one">acum %1$d lună</item>
+        <item quantity="few">acum %1$d luni</item>
+        <item quantity="other">acum %1$d luni</item>
+    </plurals>
+    <plurals name="years_ago">
+        <item quantity="one">acum %1$d an</item>
+        <item quantity="few">acum %1$d ani</item>
+        <item quantity="other">acum %1$d ani</item>
+    </plurals>
+</resources>

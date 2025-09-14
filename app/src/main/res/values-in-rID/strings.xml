@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">bscm</string>
+    <string name="workshop">Lokakarya</string>
+    <string name="updates">Pemutahiran</string>
+    <string name="settings">Setelan</string>
+    <string name="charts">Chart</string>
+    <string name="installations">Instalasi</string>
+    <string name="back">Kembali</string>
+    <string name="return_screen">Kembali</string>
+    <string name="download">Unduh</string>
+    <string name="downloading">Mengunduh…</string>
+    <string name="downloading_update">Mengunduh Pemutakhiran</string>
+    <string name="starting_download_for_version">Memulai unduhan untuk versi %1$s…</string>
+    <string name="downloading_version">Mengunduh versi %1$s… %2$d%%</string>
+    <string name="extracting">Mengekstrak…</string>
+    <string name="extracting_progress_title">Mengekstrak %1$s</string>
+    <string name="extracting_progress_description">Mengekstrak berkas… %1$d%%</string>
+    <string name="download_complete">Unduhan selesai</string>
+    <string name="download_chart">Unduh chart</string>
+    <string name="downloaded">Terunduh (%1$s)</string>
+    <string name="update">Mutakhirkan</string>
+    <string name="update_chart">Mutakhirkan chart</string>
+    <string name="update_ready">Siap Dimutakhirkan</string>
+    <string name="tap_to_install_version">Ketuk untuk menginstal versi %1$s</string>
+    <string name="update_failed">Pemutakhiran Gagal</string>
+    <string name="update_now">Mutakhirkan sekarang</string>
+    <string name="install_update">Instal pemutakhiran</string>
+    <string name="update_from_to">Mutakhirkan dari v%1$d → v%2$d</string>
+    <string name="update_complete">Pemutakhiran selesai</string>
+    <string name="updates_available">Pemutahiran tersedia (%1$s)</string>
+    <string name="no_updates_available">Tidak ada pemutakhiran yang tersedia</string>
+    <string name="checking_for_updates">Memeriksa pemutakhiran…</string>
+    <string name="check_for_updates">Periksa pemutakhiran</string>
+    <string name="failed_to_check_for_updates">Gagal memeriksa pemutakhiran</string>
+    <string name="fetch_updates_error">Kami tidak dapat mengambil pemutakhiran…</string>
+    <string name="up_to_date">Aplikasi sudah mutakhir</string>
+    <string name="client_outdated">Klien kedaluwarsa</string>
+    <string name="concluded_progress">%1$d% selesai</string>
+    <string name="installed">Terinstal</string>
+    <string name="chart_by">Chart oleh %1$s</string>
+    <string name="contributors_list_title">Para pengguna berikut berkontribusi pada chart ini:</string>
+    <string name="credits">Ucapan Terima Kasih</string>
+    <string name="stats">Statistik</string>
+    <string name="updated_at">Dimutakhirkan %1$s</string>
+    <string name="known_issues">Isu yang Diketahui</string>
+    <string name="no_known_issues">Tidak ada isu yang diketahui</string>
+    <string name="explicit">Eksplisit</string>
+    <string name="deluxe">Deluxe</string>
+    <string name="no_deluxe">Standar</string>
+    <string name="and_others">dan lainnya</string>
+    <string name="no_gameplay_available">Tidak ada gameplay yang tersedia</string>
+    <string name="normal">Normal</string>
+    <string name="hard">Sulit</string>
+    <string name="extreme">Ekstrem</string>
+    <string name="expert">Pakar</string>
+    <string name="difficulty">Tingkat Kesulitan</string>
+    <string name="listen">Dengarkan</string>
+    <string name="listen_to_track">Dengarkan lagunya</string>
+    <string name="support_the_artist">Dukung artisnya</string>
+    <string name="support_the_artist_description">Simak lagu lengkap dari chart ini di layanan streaming favorit Anda dan dukung karya artisnya</string>
+    <string name="empty_streaming_links">Tidak ada tautan streaming yang tersedia</string>
+    <string name="minutes_seconds">%1$d menit %2$d detik</string>
+    <string name="hip_hop">Hip-hop</string>
+    <string name="pop">Pop</string>
+    <string name="r_b"><![CDATA[R&B]]></string>
+    <string name="rock">Rock</string>
+    <string name="dance">Dansa</string>
+    <string name="alternative">Alternatif</string>
+    <string name="classical">Klasik</string>
+    <string name="genre">Genre</string>
+    <string name="editors_choice">Pilihan Pengedit</string>
+    <string name="featured">Unggulan</string>
+    <string name="trending">Sedang tren</string>
+    <string name="weekly_rank">Peringkat Mingguan</string>
+    <string name="most_downloaded">Paling banyak diunduh</string>
+    <string name="most_liked">Paling disukai</string>
+    <string name="last_updated">Terakhir dimutakhirkan</string>
+    <string name="author_role">Penggubah</string>
+    <string name="chart_role">Chart</string>
+    <string name="audio_role">Audio</string>
+    <string name="revision_role">Revisi</string>
+    <string name="effects_role">Efek</string>
+    <string name="sync_role">Sinkronisasi</string>
+    <string name="gameplay_role">Gameplay</string>
+    <string name="today">hari ini</string>
+    <string name="yesterday">kemarin</string>
+    <string name="search">Telusuri</string>
+    <string name="search_in_workshop">Telusuri di lokakarya</string>
+    <string name="search_description">Cobalah telusuri lagu, artis, atau album</string>
+    <string name="clear_search">Kosongkan penelusuran</string>
+    <plurals name="notes_amount">
+        <item quantity="other">%1$d nada</item>
+    </plurals>
+    <plurals name="effects_amount">
+        <item quantity="other">%1$d efek</item>
+    </plurals>
+    <plurals name="downloads_amount">
+        <item quantity="other">%1$d unduhan</item>
+    </plurals>
+    <plurals name="days_ago">
+        <item quantity="other">%1$d hari yang lalu</item>
+    </plurals>
+    <plurals name="weeks_ago">
+        <item quantity="other">%1$d minggu yang lalu</item>
+    </plurals>
+    <plurals name="months_ago">
+        <item quantity="other">%1$d bulan yang lalu</item>
+    </plurals>
+    <plurals name="years_ago">
+        <item quantity="other">%1$d tahun yang lalu</item>
+    </plurals>
+</resources>

@@ -4,6 +4,8 @@
     <img alt="bscm Android" src="/.github/cover_light.png">
 </picture>
 
+[![Crowdin](https://badges.crowdin.net/bscm/localized.svg)](https://crowdin.com/project/bscm)
+
 ## 📱 About
 
 This repository contains the official bscm Android app, allowing players to explore, download, and manage charts directly from their mobile device.
