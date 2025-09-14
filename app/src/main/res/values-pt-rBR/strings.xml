@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">bscm</string>
     <string name="workshop">Oficina</string>
     <string name="updates">Atualizações</string>
     <string name="settings">Configurações</string>

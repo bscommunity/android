@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">bscm</string>
     <string name="updates">Actualizări</string>
     <string name="settings">Setări</string>
     <string name="installations">Instalări</string>

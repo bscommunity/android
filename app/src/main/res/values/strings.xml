@@ -1,6 +1,6 @@
 <resources>
     <!-- 📱 App Basic Information -->
-    <string name="app_name">bscm</string>
+    <string name="app_name" translatable="false">bscm</string>
     
     <!-- 🧭 Navigation & Main Sections -->
     <string name="workshop">Workshop</string>

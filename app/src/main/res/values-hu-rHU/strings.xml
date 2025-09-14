@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">bscm</string>
     <string name="workshop">Műhely</string>
     <string name="updates">Frissítések</string>
     <string name="settings">Beállítások</string>
