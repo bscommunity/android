@@ -46,6 +46,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -190,58 +192,26 @@ fun SettingsScreen(
                                         onClick = { onNavigateToProfile(displayUser) },
                                         indication = ripple(
                                             bounded = true,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            radius = Dp.Unspecified
+                                            radius = Dp.Unspecified,
+                                            color = Color.Black
                                         ),
                                         interactionSource = remember { MutableInteractionSource() }
                                     )
                             )
-                            /*CoilImage(
-                                imageModel = { displayUser.imageUrl },
+                            ProfileIndicator(
                                 modifier = Modifier
                                     .sharedElement(
-                                        sharedTransitionScope.rememberSharedContentState(key = "profile_image"),
+                                        sharedTransitionScope.rememberSharedContentState(key = "profile_icon"),
                                         animatedVisibilityScope = animatedContentScope
                                     )
-                                    .roundedPolygonClip()
-                                    .clickable(
-                                        onClick = { onNavigateToProfile(displayUser) },
-                                        indication = ripple(
-                                            bounded = true,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            radius = Dp.Unspecified
-                                        ),
-                                        interactionSource = remember { MutableInteractionSource() }
+                                    .graphicsLayer(
+                                        alpha = 1f,
+                                        scaleX = 1f,
+                                        scaleY = 1f
                                     )
-                                    .zIndex(1f)
-                                    .size(128.dp),
-                                imageOptions = ImageOptions(
-                                    contentScale = ContentScale.Crop,
-                                    alignment = Alignment.Center,
-                                )
-                            )*/
-                        }
-                        /*Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .align(Alignment.BottomCenter)
-                                .zIndex(2f)
-                                .offset(y = 8.dp)
-                                .border(
-                                    width = 2.dp,
-                                    color = MaterialTheme.colorScheme.outline,
-                                    shape = RoundedCornerShape(100)
-                                )
-                                .clip(RoundedCornerShape(100))
-                                .background(MaterialTheme.colorScheme.surfaceContainerLowest),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                modifier = Modifier.size(22.dp),
-                                painter = painterResource(R.drawable.rounded_person_24px),
-                                contentDescription = null
                             )
-                        }*/
+                        }
+
                     }
                     ListItem(
                         modifier = Modifier.settingsCard(

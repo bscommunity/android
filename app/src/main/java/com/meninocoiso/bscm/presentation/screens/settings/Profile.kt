@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,7 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -45,13 +46,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.domain.enums.Difficulty
-import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.User
-import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.presentation.screens.details.DropdownItemPadding
 import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
-import com.meninocoiso.bscm.presentation.ui.components.chart.ChartPreview
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonClip
 import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonShape
@@ -59,7 +56,6 @@ import com.meninocoiso.bscm.presentation.viewmodel.ProfileViewModel
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
 import kotlinx.serialization.Serializable
-import java.time.LocalDateTime
 
 @Serializable
 data class Profile(val user: User)
@@ -168,53 +164,36 @@ fun ProfileScreen(
                     }
 
                     with(sharedTransitionScope) {
-                        if (user.imageUrl != null) {
-                            Avatar(
-                                url = user.imageUrl,
-                                size = 96.dp,
-                                modifier = Modifier
-                                    .sharedElement(
-                                        sharedTransitionScope.rememberSharedContentState(key = "profile_image"),
-                                        animatedVisibilityScope = animatedContentScope
-                                    )
-                                    .align(Alignment.BottomStart)
-                                    .zIndex(2f)
-                                    .offset(x = 16.dp, y = (-16).dp)
-                                    .border(
-                                        width = 2.dp,
-                                        color = MaterialTheme.colorScheme.outline,
-                                        shape = roundedPolygonShape()
-                                    )
-                                    .roundedPolygonClip()
-                                    .zIndex(1f),
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .sharedElement(
-                                        sharedTransitionScope.rememberSharedContentState(key = "profile_image"),
-                                        animatedVisibilityScope = animatedContentScope
-                                    )
-                                    .align(Alignment.BottomStart)
-                                    .zIndex(2f)
-                                    .offset(x = 16.dp, y = (-16).dp)
-                                    .border(
-                                        width = 2.dp,
-                                        color = MaterialTheme.colorScheme.outline,
-                                        shape = roundedPolygonShape()
-                                    )
-                                    .roundedPolygonClip()
-                                    .zIndex(1f)
-                                    .size(96.dp)
-                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    text = user.username.first().uppercase(),
-                                    style = MaterialTheme.typography.titleMedium,
+                        Avatar(
+                            url = user.imageUrl,
+                            size = 96.dp,
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .offset(x = 16.dp, y = (-16).dp)
+                                .zIndex(1f)
+                                .sharedElement(
+                                    sharedTransitionScope.rememberSharedContentState(key = "profile_image"),
+                                    animatedVisibilityScope = animatedContentScope
                                 )
-                            }
-                        }
+                                .border(
+                                    width = 2.dp,
+                                    color = MaterialTheme.colorScheme.outline,
+                                    shape = roundedPolygonShape()
+                                )
+                                .roundedPolygonClip(),
+                        )
+                        ProfileIndicator(
+                            modifier = Modifier
+                                .sharedElement(
+                                    sharedTransitionScope.rememberSharedContentState(key = "profile_icon"),
+                                    animatedVisibilityScope = animatedContentScope
+                                )
+                                .graphicsLayer(
+                                    alpha = 0f,
+                                    scaleX = 0f,
+                                    scaleY = 0f
+                                )
+                        )
                     }
                 }
             }
@@ -272,7 +251,7 @@ fun ProfileScreen(
             }
 
             // List of recent activity
-            items(10) {
+            /*items(10) {
                 ChartPreview(
                     Chart(
                         id = "placeholder_id",
@@ -308,9 +287,9 @@ fun ProfileScreen(
                         availableVersion = null,
                         contributors = emptyList(),
                     ),
-                    onNavigateToDetails = { /* Navigate to chart details */ }
+                    onNavigateToDetails = { *//* Navigate to chart details *//* }
                 )
-            }
+            }*/
         }
     }
 }
@@ -350,4 +329,29 @@ fun ProfileStatDivider() {
             .clip(RoundedCornerShape(50))
             .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
     )
+}
+
+@Composable
+fun BoxScope.ProfileIndicator(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(36.dp)
+            .align(Alignment.BottomCenter)
+            .zIndex(2f)
+            .offset(y = 8.dp)
+            .border(
+                width = 2.dp,
+                color = MaterialTheme.colorScheme.outline,
+                shape = RoundedCornerShape(100)
+            )
+            .clip(RoundedCornerShape(100))
+            .background(MaterialTheme.colorScheme.surfaceContainerLowest),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            modifier = Modifier.size(22.dp),
+            painter = painterResource(R.drawable.rounded_person_24px),
+            contentDescription = null
+        )
+    }
 }
