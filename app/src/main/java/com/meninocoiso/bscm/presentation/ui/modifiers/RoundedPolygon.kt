@@ -19,10 +19,10 @@ import androidx.graphics.shapes.toPath
 import kotlin.math.max
 
 @Composable
-fun Modifier.roundedPolygonClip(
+fun roundedPolygonShape(
     edgesAmount: Int = 8,
     rounding: Float = 0.6f
-): Modifier {
+): Shape {
     val shape = remember {
         RoundedPolygon(
             edgesAmount,
@@ -30,10 +30,17 @@ fun Modifier.roundedPolygonClip(
         )
     }
     
-    val clip = remember(shape) {
+    return remember(shape) {
         RoundedPolygonShape(shape)
     }
+}
 
+@Composable
+fun Modifier.roundedPolygonClip(
+    edgesAmount: Int = 8,
+    rounding: Float = 0.6f
+): Modifier {
+    val clip = roundedPolygonShape(edgesAmount, rounding)
     return clip(clip)
 }
 

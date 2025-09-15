@@ -22,6 +22,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.Difficulty
@@ -135,7 +136,7 @@ fun Avatar(
     modifier: Modifier = Modifier,
     size: Dp = 18.dp,
     url: String? = null,
-    alt: String
+    alt: String? = null,
 ) {
     Box(
         modifier = modifier.size(size),
@@ -147,8 +148,7 @@ fun Avatar(
                 model = url,
                 contentDescription = null,
                 modifier = Modifier
-                    .matchParentSize()
-                    .clip(CircleShape),
+                    .matchParentSize(),
                 contentScale = ContentScale.Fit,
                 alignment = Alignment.Center,
             )
@@ -157,7 +157,7 @@ fun Avatar(
 }
 
 @Composable
-private fun AvatarPlaceholder(size: Dp = 18.dp, alt: String) {
+fun AvatarPlaceholder(size: Dp = 18.dp, alt: String?) {
     Box(
         modifier = Modifier
             .size(size)
@@ -165,12 +165,25 @@ private fun AvatarPlaceholder(size: Dp = 18.dp, alt: String) {
             .background(MaterialTheme.colorScheme.surfaceContainerHigh),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = alt.uppercase(Locale.getDefault()),
-            style = (size > 24.dp).let {
-                if (it) MaterialTheme.typography.titleMedium
-                else MaterialTheme.typography.labelSmall
-            },
-        )
+        if (alt != null) {
+            Text(
+                text = alt.uppercase(Locale.getDefault()),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = when {
+                        size > 40.dp -> 24.sp
+                        size > 24.dp -> 16.sp
+                        else -> 12.sp
+                    }
+                ),
+            )
+        } else {
+            Icon(    
+                painter = painterResource(id = R.drawable.rounded_person_24px),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .size(size * 0.4f)
+            )
+        }
     }
 }

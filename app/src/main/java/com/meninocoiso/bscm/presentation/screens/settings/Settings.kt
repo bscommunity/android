@@ -4,7 +4,9 @@ import android.annotation.SuppressLint
 import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
-import androidx.compose.foundation.background
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -16,7 +18,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -46,14 +47,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.BuildConfig
@@ -62,25 +61,28 @@ import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.presentation.ui.components.SwitchUI
 import com.meninocoiso.bscm.presentation.ui.components.dialog.LanguageDialog
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ThemeDialog
+import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 import com.meninocoiso.bscm.presentation.ui.modifiers.fabScrollObserver
 import com.meninocoiso.bscm.presentation.ui.modifiers.rememberFabNestedScrollConnection
 import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonClip
+import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonShape
 import com.meninocoiso.bscm.presentation.viewmodel.AppUpdateState
 import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.SettingsViewModel
 import com.meninocoiso.bscm.util.LinkingUtils
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil3.CoilImage
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun SettingsScreen(
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope,
     startOAuth: (Uri) -> Unit,
     cacheUser: User?,
     onFabStateChange: (Boolean) -> Unit,
     onSnackbar: (String) -> Unit,
-    onNavigateToProfile: (id: String) -> Unit,
+    onNavigateToProfile: (user: User) -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -167,29 +169,59 @@ fun SettingsScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
                         contentAlignment = Alignment.Center,
-                        modifier = Modifier.padding(vertical = 28.dp)
+                        modifier = Modifier.padding(vertical = 24.dp)
                     ) {
-                        CoilImage(
-                            imageModel = { displayUser.imageUrl },
-                            modifier = Modifier
-                                .roundedPolygonClip()
-                                .clickable(
-                                    onClick = { onNavigateToProfile("@me") },
-                                    indication = ripple(
-                                        bounded = true,
-                                        color = MaterialTheme.colorScheme.primary,  // ou outro que você quiser
-                                        radius = Dp.Unspecified
-                                    ),
-                                    interactionSource = remember { MutableInteractionSource() }
+                        with(sharedTransitionScope) {
+                            Avatar(
+                                url = displayUser.imageUrl,
+                                size = 128.dp,
+                                modifier = Modifier
+                                    .sharedElement(
+                                        sharedTransitionScope.rememberSharedContentState(key = "profile_image"),
+                                        animatedVisibilityScope = animatedContentScope
+                                    )
+                                    .border(
+                                        width = 0.dp,
+                                        color = MaterialTheme.colorScheme.outline,
+                                        shape = roundedPolygonShape()
+                                    )
+                                    .roundedPolygonClip()
+                                    .clickable(
+                                        onClick = { onNavigateToProfile(displayUser) },
+                                        indication = ripple(
+                                            bounded = true,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            radius = Dp.Unspecified
+                                        ),
+                                        interactionSource = remember { MutableInteractionSource() }
+                                    )
+                            )
+                            /*CoilImage(
+                                imageModel = { displayUser.imageUrl },
+                                modifier = Modifier
+                                    .sharedElement(
+                                        sharedTransitionScope.rememberSharedContentState(key = "profile_image"),
+                                        animatedVisibilityScope = animatedContentScope
+                                    )
+                                    .roundedPolygonClip()
+                                    .clickable(
+                                        onClick = { onNavigateToProfile(displayUser) },
+                                        indication = ripple(
+                                            bounded = true,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            radius = Dp.Unspecified
+                                        ),
+                                        interactionSource = remember { MutableInteractionSource() }
+                                    )
+                                    .zIndex(1f)
+                                    .size(128.dp),
+                                imageOptions = ImageOptions(
+                                    contentScale = ContentScale.Crop,
+                                    alignment = Alignment.Center,
                                 )
-                                .zIndex(1f)
-                                .size(128.dp),
-                            imageOptions = ImageOptions(
-                                contentScale = ContentScale.Crop,
-                                alignment = Alignment.Center,
-                            ),
-                        )
-                        Box(
+                            )*/
+                        }
+                        /*Box(
                             modifier = Modifier
                                 .size(36.dp)
                                 .align(Alignment.BottomCenter)
@@ -209,10 +241,15 @@ fun SettingsScreen(
                                 painter = painterResource(R.drawable.rounded_person_24px),
                                 contentDescription = null
                             )
-                        }
+                        }*/
                     }
                     ListItem(
-                        modifier = Modifier.settingsCard(),
+                        modifier = Modifier.settingsCard(
+                            padding = PaddingValues(
+                                horizontal = 8.dp,
+                                vertical = 2.dp
+                            )
+                        ),
                         headlineContent = {
                             HeadlineText("Public profile")
                         },
@@ -224,7 +261,8 @@ fun SettingsScreen(
                                 checked = uiState.enableGameplayPreviewVideo,
                                 onCheckedChange = {
                                     viewModel.enableGameplayPreviewVideo(it)
-                                }
+                                },
+                                enabled = false
                             )
                         }
                     )

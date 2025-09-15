@@ -1,6 +1,10 @@
 package com.meninocoiso.bscm.presentation.screens.settings
 
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -39,16 +44,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.presentation.screens.details.DropdownItemPadding
 import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
 import com.meninocoiso.bscm.presentation.ui.components.chart.ChartPreview
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonClip
+import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonShape
 import com.meninocoiso.bscm.presentation.viewmodel.ProfileViewModel
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
@@ -56,19 +62,19 @@ import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
 
 @Serializable
-data class Profile(val id: String)
+data class Profile(val user: User)
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun ProfileScreen(
-    id: String,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope,
+    user: User,
     onReturn: () -> Unit,
     profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     val scrollBehavior =
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
-
-    val user = profileViewModel.cacheUser.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = Modifier
@@ -102,7 +108,12 @@ fun ProfileScreen(
                         DropdownMenuItem(
                             contentPadding = DropdownItemPadding,
                             text = { Text(stringResource(R.string.report)) },
-                            leadingIcon = { Icon(painter = painterResource(R.drawable.rounded_flag_24), contentDescription = null) },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(R.drawable.rounded_flag_24),
+                                    contentDescription = null
+                                )
+                            },
                             onClick = {
                                 // Handle report action
                             }
@@ -115,6 +126,7 @@ fun ProfileScreen(
                 scrollBehavior = scrollBehavior
             )
         },
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -142,7 +154,7 @@ fun ProfileScreen(
                         )
 
                         else -> CoilImage(
-                            imageModel = { user.value?.imageUrl },
+                            imageModel = { user.imageUrl },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .size(180.dp)
@@ -155,16 +167,55 @@ fun ProfileScreen(
                         )
                     }
 
-                    Avatar(
-                        url = user.value?.imageUrl,
-                        alt = "M",
-                        size = 96.dp,
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .zIndex(2f)
-                            .offset(x = 16.dp, y = (-16).dp)
-                            .roundedPolygonClip()
-                    )
+                    with(sharedTransitionScope) {
+                        if (user.imageUrl != null) {
+                            Avatar(
+                                url = user.imageUrl,
+                                size = 96.dp,
+                                modifier = Modifier
+                                    .sharedElement(
+                                        sharedTransitionScope.rememberSharedContentState(key = "profile_image"),
+                                        animatedVisibilityScope = animatedContentScope
+                                    )
+                                    .align(Alignment.BottomStart)
+                                    .zIndex(2f)
+                                    .offset(x = 16.dp, y = (-16).dp)
+                                    .border(
+                                        width = 2.dp,
+                                        color = MaterialTheme.colorScheme.outline,
+                                        shape = roundedPolygonShape()
+                                    )
+                                    .roundedPolygonClip()
+                                    .zIndex(1f),
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .sharedElement(
+                                        sharedTransitionScope.rememberSharedContentState(key = "profile_image"),
+                                        animatedVisibilityScope = animatedContentScope
+                                    )
+                                    .align(Alignment.BottomStart)
+                                    .zIndex(2f)
+                                    .offset(x = 16.dp, y = (-16).dp)
+                                    .border(
+                                        width = 2.dp,
+                                        color = MaterialTheme.colorScheme.outline,
+                                        shape = roundedPolygonShape()
+                                    )
+                                    .roundedPolygonClip()
+                                    .zIndex(1f)
+                                    .size(96.dp)
+                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = user.username.first().uppercase(),
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -219,7 +270,7 @@ fun ProfileScreen(
                     )
                 }
             }
-            
+
             // List of recent activity
             items(10) {
                 ChartPreview(

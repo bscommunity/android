@@ -1,7 +1,11 @@
 package com.meninocoiso.bscm.presentation.navigation
 
 import android.net.Uri
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -71,8 +75,11 @@ fun getBottomNavigationItems(): List<BottomNavigationItem> {
     )
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun BottomNav(
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope,
     bottomNavController: NavHostController,
     navController: NavHostController,
     hasUpdate: Boolean = false,
@@ -112,8 +119,8 @@ fun BottomNav(
         }
     }
     
-    val onNavigateToProfile = { id: String ->
-        navController.navigate(route = Profile(id))
+    val onNavigateToProfile = { user: User ->
+        navController.navigate(route = Profile(user))
     }
 
     val onFabStateChange: (Boolean) -> Unit = { shouldExtend ->
@@ -163,7 +170,8 @@ fun BottomNav(
                     translationY = fabOffset
                 }*/
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         NavHost(
             modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
@@ -187,7 +195,14 @@ fun BottomNav(
                 )
             }
             composableWithFade<Route.Settings> {
-                SettingsScreen(startOAuth, cacheUser, onFabStateChange, onSnackbar, onNavigateToProfile)
+                SettingsScreen(
+                    sharedTransitionScope,
+                    animatedContentScope,
+                    startOAuth, 
+                    cacheUser, 
+                    onFabStateChange, 
+                    onSnackbar, 
+                    onNavigateToProfile)
             }
         }
     }
