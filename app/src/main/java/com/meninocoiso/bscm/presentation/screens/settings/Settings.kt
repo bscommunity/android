@@ -568,7 +568,7 @@ fun SettingsScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
+                                    .padding(vertical = 16.dp, horizontal = 24.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(text = "Socials", style = MaterialTheme.typography.titleMedium)
@@ -580,21 +580,21 @@ fun SettingsScreen(
                             .background(MaterialTheme.colorScheme.surfaceContainerLow),
                         initExpanded = false
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
                             SocialsRow(
-                                icon = R.drawable.github,
-                                title = "GitHub",
-                                url = "https://github.com/bscommunity"
+                                icon = R.drawable.rounded_web_24,
+                                title = "Website",
+                                url = "https://bscm.netlify.app"
                             )
                             SocialsRow(
                                 icon = R.drawable.discord,
                                 title = "Discord",
                                 url = "https://discord.gg/bscm"
+                            )
+                            SocialsRow(
+                                icon = R.drawable.github,
+                                title = "GitHub",
+                                url = "https://github.com/bscommunity"
                             )
                         }
                     }
@@ -696,7 +696,10 @@ private fun SocialsRow(
                     color = Color.Black
                 ),
                 interactionSource = remember { MutableInteractionSource() }
-            ),
+            )
+            .padding(horizontal = 24.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(12.dp))
+        ,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
