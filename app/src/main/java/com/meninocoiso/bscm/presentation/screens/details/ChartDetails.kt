@@ -37,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,12 +80,8 @@ val DropdownItemPadding = PaddingValues(
     bottom = 8.dp
 )
 
-// Extracted helper class for dialog cacheState management
-private class DialogState {
-    var showReportDialog by mutableStateOf(false)
-    var showDeleteConfirmation by mutableStateOf(false)
-    var showListenTrackDialog by mutableStateOf(false)
-}
+// Remove DialogState in favor of a single enum controlling which dialog is open
+private enum class CurrentDialog { None, Report, DeleteConfirmation, ListenTrack }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,7 +103,9 @@ fun ChartDetailsScreen(
     // UI State
     val isGameplayVideoPreviewEnabled = contentViewModel.isGameplayVideoPreviewEnabled
         .collectAsStateWithLifecycle(initialValue = true)
-    val dialogs = remember { DialogState() }
+
+    // Single source of truth for dialogs, saved across config changes
+    var currentDialog by rememberSaveable { mutableStateOf(CurrentDialog.None) }
 
     // Manage download events
     LaunchedEffect(Unit) {
@@ -121,17 +120,16 @@ fun ChartDetailsScreen(
                 is DownloadEvent.Error ->
                     snackbarHostState.showSnackbar(context.getString(R.string.error, event.message))
 
-                else -> { /* Other events don't need UI feedback */
-                }
+                else -> { /* Other events don't need UI feedback */ }
             }
         }
     }
 
-    if (dialogs.showDeleteConfirmation) {
+    if (currentDialog == CurrentDialog.DeleteConfirmation) {
         ConfirmationDialog(
             title = stringResource(R.string.delete_chart),
             message = stringResource(R.string.delete_chart_description),
-            onDismiss = { dialogs.showDeleteConfirmation = false },
+            onDismiss = { currentDialog = CurrentDialog.None },
             onConfirm = {
                 contentViewModel.deleteChart(
                     chart,
@@ -150,19 +148,19 @@ fun ChartDetailsScreen(
         )
     }
 
-    if (dialogs.showReportDialog) {
+    if (currentDialog == CurrentDialog.Report) {
         ReportDialog(
             onSubmit = {
                 // Implement report functionality
             },
-            onDismiss = { dialogs.showReportDialog = false },
+            onDismiss = { currentDialog = CurrentDialog.None },
         )
     }
 
-    if (dialogs.showListenTrackDialog) {
+    if (currentDialog == CurrentDialog.ListenTrack) {
         ListenTrackDialog(
             streamingLinks = chart.trackUrls,
-            onDismiss = { dialogs.showListenTrackDialog = false }
+            onDismiss = { currentDialog = CurrentDialog.None }
         )
     }
 
@@ -236,7 +234,7 @@ fun ChartDetailsScreen(
                                 )
                             },
                             onClick = {
-                                dialogs.showReportDialog = true
+                                currentDialog = CurrentDialog.Report
                             }
                         )
                         if (chartState == ContentState.Installed(chart.id)) {
@@ -250,7 +248,7 @@ fun ChartDetailsScreen(
                                     )
                                 },
                                 onClick = {
-                                    dialogs.showDeleteConfirmation = true
+                                    currentDialog = CurrentDialog.DeleteConfirmation
                                 }
                             )
                         }
@@ -277,7 +275,7 @@ fun ChartDetailsScreen(
                             contentDescription = stringResource(R.string.like_chart),
                         )
                     }
-                    IconButton(onClick = { dialogs.showListenTrackDialog = true }) {
+                    IconButton(onClick = { currentDialog = CurrentDialog.ListenTrack }) {
                         Icon(
                             painter = painterResource(id = R.drawable.baseline_artist_24),
                             contentDescription = stringResource(R.string.listen_to_track),

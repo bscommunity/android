@@ -31,6 +31,12 @@ private val CategoryIcons = mapOf(
     "localization" to R.drawable.round_translate_24,
 )
 
+private val CategoryNames = mapOf(
+    "programming" to "Programming",
+    "design" to "Design",
+    "localization" to "Localization",
+)
+
 @Composable
 fun ContributorsDialog(
     isLoading: Boolean,
@@ -77,7 +83,8 @@ fun ContributorsDialog(
                                     )
                                 }
                                 Text(
-                                    text = category.name,
+                                    text = CategoryNames[category.name.lowercase()]
+                                        ?: category.name.replaceFirstChar { it.uppercase() },
                                     style = MaterialTheme.typography.titleMedium,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis

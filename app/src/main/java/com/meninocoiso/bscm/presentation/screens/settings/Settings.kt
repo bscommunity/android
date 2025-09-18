@@ -45,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -101,7 +102,7 @@ fun SettingsScreen(
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
 
     // Dialog state
-    var showContributorsDialog by remember { mutableStateOf(false) }
+    var showContributorsDialog by rememberSaveable { mutableStateOf(false) }
 
     // Seed cached user only once while restoring
     LaunchedEffect(cacheUser) {
