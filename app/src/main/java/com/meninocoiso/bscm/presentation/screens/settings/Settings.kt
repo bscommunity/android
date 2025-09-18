@@ -7,6 +7,7 @@ import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -25,7 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -64,6 +64,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.BuildConfig
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.User
+import com.meninocoiso.bscm.presentation.ui.components.CollapsableSection
 import com.meninocoiso.bscm.presentation.ui.components.SwitchUI
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ContributorsDialog
 import com.meninocoiso.bscm.presentation.ui.components.dialog.LanguageDialog
@@ -543,7 +544,10 @@ fun SettingsScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(text = "Contributors")
-                                Text(text = "Check out the amazing people we have contributing to bscm", style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    text = "Check out the amazing people we have contributing to bscm",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
                             }
                             Icon(
                                 modifier = Modifier.size(ButtonDefaults.IconSize),
@@ -559,29 +563,38 @@ fun SettingsScreen(
                     padding = PaddingValues(top = 0.dp, bottom = 8.dp, start = 8.dp, end = 8.dp)
                 ),
                 headlineContent = {
-                    FilledTonalButton(
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                        ),
-                        shape = RoundedCornerShape(16.dp),
+                    CollapsableSection(
+                        header = { trigger ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(text = "Socials", style = MaterialTheme.typography.titleMedium)
+                                trigger()
+                            }
+                        },
                         modifier = Modifier
-                            .fillMaxWidth(),
-                        onClick = {
-                            
-                        }
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerLow),
+                        initExpanded = false
                     ) {
-                        Row(
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            Text(text = "Socials")
-                            Icon(
-                                modifier = Modifier.size(ButtonDefaults.IconSize),
-                                imageVector = Icons.Default.KeyboardArrowDown,
-                                contentDescription = null
+                            SocialsRow(
+                                icon = R.drawable.github,
+                                title = "GitHub",
+                                url = "https://github.com/bscommunity"
+                            )
+                            SocialsRow(
+                                icon = R.drawable.discord,
+                                title = "Discord",
+                                url = "https://discord.gg/bscm"
                             )
                         }
                     }
@@ -660,4 +673,41 @@ private fun HeadlineText(title: String) {
 @Composable
 private fun SupportingText(title: String) {
     Text(text = title, style = MaterialTheme.typography.bodyMedium)
+}
+
+@Composable
+private fun SocialsRow(
+    modifier: Modifier = Modifier,
+    icon: Int,
+    title: String,
+    url: String,
+) {
+    val context = LocalContext.current
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(
+                onClick = {
+                    LinkingUtils.openLink(context, url)
+                },
+                indication = ripple(
+                    bounded = true,
+                    radius = Dp.Unspecified,
+                    color = Color.Black
+                ),
+                interactionSource = remember { MutableInteractionSource() }
+            ),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(modifier = Modifier.size(32.dp), contentAlignment = Alignment.Center) {
+            Icon(
+                painter = painterResource(id = icon),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        Text(text = title, style = MaterialTheme.typography.bodyLarge)
+    }
 }
