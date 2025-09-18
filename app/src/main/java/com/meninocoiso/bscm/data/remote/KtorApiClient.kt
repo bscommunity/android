@@ -13,7 +13,7 @@ import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.domain.model.auth.AuthRequest
 import com.meninocoiso.bscm.domain.model.auth.AuthResponse
 import com.meninocoiso.bscm.domain.model.auth.RefreshTokenRequest
-import com.meninocoiso.bscm.util.DevelopmentUtils
+import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
 import com.meninocoiso.bscm.util.KeystoreUtils
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -26,7 +26,6 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import jakarta.inject.Inject
@@ -246,6 +245,19 @@ class KtorApiClient @Inject constructor(
                 }
                 throw Exception("User Error (${response.status.value}): ${errorResponse.error}")
             }
+        }
+    }
+
+    /**
+     * Fetches the list of contributors from the remote server.
+     * @return A list of ContributionCategory objects.
+     */
+    override suspend fun getContributors(): List<ContributionCategory> {
+        return try {
+            client.get("https://bscm.netlify.app/contributors.json").body()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to fetch contributors", e)
+            emptyList()
         }
     }
 }

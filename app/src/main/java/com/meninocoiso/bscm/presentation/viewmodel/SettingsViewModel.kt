@@ -5,9 +5,11 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.repository.AppUpdateRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.ThemePreference
+import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
 import com.meninocoiso.bscm.domain.model.internal.Settings
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -42,7 +44,8 @@ private const val TAG = "SettingsViewModel"
 class SettingsViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val settingsRepository: SettingsRepository,
-    private val appUpdateRepository: AppUpdateRepository
+    private val appUpdateRepository: AppUpdateRepository,
+    private val apiClient: ApiClient,
 ) : ViewModel() {
     /**
      * Expose settings as a StateFlow for reactive UI updates
@@ -58,6 +61,14 @@ class SettingsViewModel @Inject constructor(
     private val _updateState = MutableStateFlow<AppUpdateState>(AppUpdateState.Idle)
     val updateState: StateFlow<AppUpdateState> = _updateState.asStateFlow()
 
+    // Contributors state (not persisted)
+    data class ContributorsState(
+        val isLoading: Boolean = false,
+        val items: List<ContributionCategory> = emptyList()
+    )
+    private val _contributorsState = MutableStateFlow(ContributorsState())
+    val contributorsState: StateFlow<ContributorsState> = _contributorsState.asStateFlow()
+
     init {
         // Initialize the update state with the current version
         viewModelScope.launch {
@@ -71,6 +82,25 @@ class SettingsViewModel @Inject constructor(
                 } else {
                     newState
                 }
+            }
+        }
+    }
+
+    /**
+     * Trigger loading contributors only once (first open)
+     */
+    fun loadContributorsIfNeeded() {
+        val current = _contributorsState.value
+        if (current.isLoading || current.items.isNotEmpty()) return
+
+        viewModelScope.launch {
+            _contributorsState.value = current.copy(isLoading = true)
+            try {
+                val result = apiClient.getContributors()
+                _contributorsState.value = ContributorsState(isLoading = false, items = result)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load contributors", e)
+                _contributorsState.value = current.copy(isLoading = false)
             }
         }
     }

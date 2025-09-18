@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -41,8 +42,10 @@ import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,6 +64,7 @@ import com.meninocoiso.bscm.BuildConfig
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.presentation.ui.components.SwitchUI
+import com.meninocoiso.bscm.presentation.ui.components.dialog.ContributorsDialog
 import com.meninocoiso.bscm.presentation.ui.components.dialog.LanguageDialog
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ThemeDialog
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
@@ -89,11 +93,15 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
+    val contributorsState by viewModel.contributorsState.collectAsStateWithLifecycle()
 
     val activity = LocalActivity.current as ComponentActivity
     val authViewModel: AuthViewModel = hiltViewModel(activity)
 
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
+
+    // Dialog state
+    var showContributorsDialog by remember { mutableStateOf(false) }
 
     // Seed cached user only once while restoring
     LaunchedEffect(cacheUser) {
@@ -400,28 +408,6 @@ fun SettingsScreen(
                         SupportingText(
                             stringResource(R.string.language_description)
                         )
-                        /*ExposedDropdownMenuBoxUI(
-                            options = listOf(
-                                "Option 1",
-                                "Option 2",
-                                "Option 3",
-                                "Option 1",
-                                "Option 2",
-                                "Option 3",
-                                "Option 1",
-                                "Option 2",
-                                "Option 3",
-                                "Option 1",
-                                "Option 2",
-                                "Option 3",
-                                "Option 1",
-                                "Option 2",
-                                "Option 3",
-                                "Option 1",
-                                "Option 2",
-                                "Option 3",
-                            )
-                        )*/
                     }
                 },
                 trailingContent = {
@@ -529,7 +515,7 @@ fun SettingsScreen(
             )
         }
 
-        SettingsCard(title = stringResource(R.string.legal)) {
+        SettingsCard(title = "About") {
             ListItem(
                 modifier = Modifier.settingsCard(
                     padding = PaddingValues(top = 8.dp, bottom = 0.dp, start = 8.dp, end = 8.dp)
@@ -539,13 +525,12 @@ fun SettingsScreen(
                         colors = ButtonDefaults.filledTonalButtonColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                         ),
+                        shape = RoundedCornerShape(16.dp),
                         modifier = Modifier
                             .fillMaxWidth(),
                         onClick = {
-                            LinkingUtils.openLink(
-                                context,
-                                "https://bscm.netlify.app/terms-of-service"
-                            )
+                            showContributorsDialog = true
+                            viewModel.loadContributorsIfNeeded()
                         }
                     ) {
                         Row(
@@ -555,7 +540,10 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = stringResource(R.string.terms_of_use))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(text = "Contributors")
+                                Text(text = "Check out the amazing people we have contributing to bscm", style = MaterialTheme.typography.bodyMedium)
+                            }
                             Icon(
                                 modifier = Modifier.size(ButtonDefaults.IconSize),
                                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
@@ -574,13 +562,11 @@ fun SettingsScreen(
                         colors = ButtonDefaults.filledTonalButtonColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                         ),
+                        shape = RoundedCornerShape(16.dp),
                         modifier = Modifier
                             .fillMaxWidth(),
                         onClick = {
-                            LinkingUtils.openLink(
-                                context,
-                                "https://bscm.netlify.app/privacy-policy"
-                            )
+                            
                         }
                     ) {
                         Row(
@@ -590,10 +576,10 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = stringResource(R.string.privacy_police))
+                            Text(text = "Socials")
                             Icon(
                                 modifier = Modifier.size(ButtonDefaults.IconSize),
-                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                imageVector = Icons.Default.KeyboardArrowDown,
                                 contentDescription = null
                             )
                         }
@@ -601,6 +587,14 @@ fun SettingsScreen(
                 },
             )
         }
+    }
+
+    if (showContributorsDialog) {
+        ContributorsDialog(
+            isLoading = contributorsState.isLoading,
+            items = contributorsState.items,
+            onDismiss = { showContributorsDialog = false }
+        )
     }
 }
 
