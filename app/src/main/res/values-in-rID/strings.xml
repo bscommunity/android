@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- 📱 App Basic Information -->
+    <!-- 🧭 Navigation & Main Sections -->
     <string name="workshop">Lokakarya</string>
     <string name="updates">Pemutahiran</string>
     <string name="settings">Setelan</string>
@@ -7,6 +9,7 @@
     <string name="installations">Instalasi</string>
     <string name="back">Kembali</string>
     <string name="return_screen">Kembali</string>
+    <!-- 📥 Download & Update States -->
     <string name="download">Unduh</string>
     <string name="downloading">Mengunduh…</string>
     <string name="downloading_update">Mengunduh Pemutakhiran</string>
@@ -37,6 +40,7 @@
     <string name="client_outdated">Klien kedaluwarsa</string>
     <string name="concluded_progress">%1$d% selesai</string>
     <string name="installed">Terinstal</string>
+    <!-- 📊 Chart Information & Statistics -->
     <string name="chart_by">Chart oleh %1$s</string>
     <string name="contributors_list_title">Para pengguna berikut berkontribusi pada chart ini:</string>
     <string name="credits">Ucapan Terima Kasih</string>
@@ -48,18 +52,21 @@
     <string name="deluxe">Deluxe</string>
     <string name="no_deluxe">Standar</string>
     <string name="and_others">dan lainnya</string>
+    <!-- 🎮 Gameplay & Difficulty -->
     <string name="no_gameplay_available">Tidak ada gameplay yang tersedia</string>
     <string name="normal">Normal</string>
     <string name="hard">Sulit</string>
     <string name="extreme">Ekstrem</string>
     <string name="expert">Pakar</string>
     <string name="difficulty">Tingkat Kesulitan</string>
+    <!-- 🎵 Music & Audio -->
     <string name="listen">Dengarkan</string>
     <string name="listen_to_track">Dengarkan lagunya</string>
     <string name="support_the_artist">Dukung artisnya</string>
     <string name="support_the_artist_description">Simak lagu lengkap dari chart ini di layanan streaming favorit Anda dan dukung karya artisnya</string>
     <string name="empty_streaming_links">Tidak ada tautan streaming yang tersedia</string>
     <string name="minutes_seconds">%1$d menit %2$d detik</string>
+    <!-- 🎨 Music Genres -->
     <string name="hip_hop">Hip-hop</string>
     <string name="pop">Pop</string>
     <string name="r_b"><![CDATA[R&B]]></string>
@@ -68,6 +75,8 @@
     <string name="alternative">Alternatif</string>
     <string name="classical">Klasik</string>
     <string name="genre">Genre</string>
+    <!-- 🏆 Features & Categories -->
+    <string name="awarded">Awarded</string>
     <string name="editors_choice">Pilihan Pengedit</string>
     <string name="featured">Unggulan</string>
     <string name="trending">Sedang tren</string>
@@ -75,6 +84,7 @@
     <string name="most_downloaded">Paling banyak diunduh</string>
     <string name="most_liked">Paling disukai</string>
     <string name="last_updated">Terakhir dimutakhirkan</string>
+    <!-- 👥 User Roles & Contributions -->
     <string name="author_role">Penggubah</string>
     <string name="chart_role">Chart</string>
     <string name="audio_role">Audio</string>
@@ -82,12 +92,7 @@
     <string name="effects_role">Efek</string>
     <string name="sync_role">Sinkronisasi</string>
     <string name="gameplay_role">Gameplay</string>
-    <string name="today">hari ini</string>
-    <string name="yesterday">kemarin</string>
-    <string name="search">Telusuri</string>
-    <string name="search_in_workshop">Telusuri di lokakarya</string>
-    <string name="search_description">Cobalah telusuri lagu, artis, atau album</string>
-    <string name="clear_search">Kosongkan penelusuran</string>
+    <!-- 🔢 Plurals - Quantities -->
     <plurals name="notes_amount">
         <item quantity="other">%1$d nada</item>
     </plurals>
@@ -97,6 +102,9 @@
     <plurals name="downloads_amount">
         <item quantity="other">%1$d unduhan</item>
     </plurals>
+    <!-- ⏰ Time Expressions -->
+    <string name="today">hari ini</string>
+    <string name="yesterday">kemarin</string>
     <plurals name="days_ago">
         <item quantity="other">%1$d hari yang lalu</item>
     </plurals>
@@ -109,4 +117,158 @@
     <plurals name="years_ago">
         <item quantity="other">%1$d tahun yang lalu</item>
     </plurals>
+    <!-- 🔍 Search & Filtering -->
+    <string name="search">Telusuri</string>
+    <string name="search_in_workshop">Telusuri di lokakarya</string>
+    <string name="search_description">Cobalah telusuri lagu, artis, atau album</string>
+    <string name="clear_search">Kosongkan penelusuran</string>
+    <string name="recent_searches">Recent searches</string>
+    <string name="history">History</string>
+    <string name="delete_history_item">Delete history item</string>
+    <string name="remove_history_item">Remove %1$s</string>
+    <string name="remove_history_item_description">Are you sure you want to remove this item from your search history?</string>
+    <string name="search_failed">Search failed</string>
+    <string name="filters">Filters</string>
+    <!-- ❌ Delete & Remove Actions -->
+    <string name="delete_chart">Delete chart</string>
+    <string name="delete_chart_description">Are you sure you want to delete this chart?\nYou\'ll be able to download it again later.</string>
+    <string name="chart_deleted">Chart deleted</string>
+    <string name="failed_to_delete_chart">Failed to delete chart</string>
+    <!-- 🔄 Common Actions -->
+    <string name="share">Share</string>
+    <string name="share_via">Share via</string>
+    <string name="report">Report</string>
+    <string name="like_chart">Like chart</string>
+    <string name="retry">Retry</string>
+    <string name="try_again">Try again</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="dismiss">Dismiss</string>
+    <!-- 📋 Menu & Interface Elements -->
+    <string name="more_options_menu">More options menu</string>
+    <string name="collapse_expand_chart_contributors">Collapse/expand chart contributors</string>
+    <string name="expand_collapse">Expand/Collapse</string>
+    <string name="open_dialog">Open dialog</string>
+    <string name="close_bottomsheet">Close sheet</string>
+    <string name="checked">Checked</string>
+    <string name="unchecked">Unchecked</string>
+    <!-- ⚠️ Confirmations & Dialogs -->
+    <string name="confirmation_title">Are you sure?</string>
+    <string name="confirmation_description">This action cannot be undone</string>
+    <!-- 📱 App & System Settings -->
+    <string name="preferences">Preferences</string>
+    <string name="customization">Customization</string>
+    <string name="version">Version</string>
+    <string name="launch_app">Launch app</string>
+    <string name="reopen_app">Please reopen the app and try again</string>
+    <string name="open_settings">Open Settings</string>
+    <!-- 🎨 Theme & Appearance -->
+    <string name="material_you_description">Toggle use of your system accent color</string>
+    <string name="theme">Theme</string>
+    <string name="app_theme">App theme</string>
+    <string name="theme_description">Choose between your system preference, light and dark mode</string>
+    <string name="system">System</string>
+    <string name="light">Light</string>
+    <string name="dark">Dark</string>
+    <string name="themes">Themes</string>
+    <!-- 🌐 Language Settings -->
+    <string name="language">Language</string>
+    <string name="app_language">App language</string>
+    <string name="language_description">Choose the app display language</string>
+    <string name="system_default_language">System default</string>
+    <string name="language_dialog_info">Check out the incredible people who helped translate the app into your language</string>
+    <!-- 🔞 Content Settings -->
+    <string name="explicit_content">Explicit content</string>
+    <string name="explicit_content_description">Allow the display of charts with explicit songs</string>
+    <string name="explicit_content_disabled">Explicit content disabled in settings</string>
+    <string name="gameplay_preview">Gameplay preview</string>
+    <string name="gameplay_preview_description">Enable gameplay video previews\nThis may affect performance</string>
+    <!-- 🔐 Authentication & Account -->
+    <string name="account">Account</string>
+    <string name="link_account">Link Account</string>
+    <string name="link_account_description">Connect your Discord account to sync your preferences</string>
+    <string name="connect">Connect</string>
+    <string name="logout">Logout</string>
+    <string name="logged_out_successfully">Logged out successfully</string>
+    <string name="discord_icon">Discord Icon</string>
+    <string name="no_email_provided">No email provided</string>
+    <string name="welcome_title">Welcome to BSCM</string>
+    <string name="login_description">Connect your Discord account to access personalized features</string>
+    <string name="login_with_discord">Login with Discord</string>
+    <string name="login_terms">By continuing, you agree to our Terms of Service and Privacy Policy</string>
+    <string name="logged_in_successfully">Welcome, %1$s! You have successfully logged in.</string>
+    <!-- 📄 Legal & Documentation -->
+    <string name="legal">Legal</string>
+    <string name="terms_of_use">Terms of Use</string>
+    <string name="privacy_police">Privacy Police</string>
+    <string name="read_changelog">Read changelog</string>
+    <!-- 📝 Feedback & Reporting -->
+    <string name="feedback">Feedback</string>
+    <string name="feedback_description">Help the chart contributors to improve by reporting bugs or suggesting new features.</string>
+    <string name="bug">Bug</string>
+    <string name="suggestion">Suggestion</string>
+    <string name="report_description">Help the community by flagging inappropriate content\nYour report is anonymous</string>
+    <string name="violent_content">Violent content</string>
+    <string name="spam">Spam</string>
+    <string name="intellectual_property">Intellectual property</string>
+    <!-- 🎫 Game Features -->
+    <string name="tour_passes">Tour Passes</string>
+    <string name="feature_not_implemented">Feature not implemented yet</string>
+    <string name="work_in_progress">Work in progress!</string>
+    <string name="work_in_progress_description">This feature still needs some work\nPlease, check back later</string>
+    <!-- 📂 Storage & Permissions -->
+    <string name="storage_permission_required">Storage Permission Required</string>
+    <string name="storage_permission_required_description">To download charts, please select or create a folder named \'beatstar\' on the root folder of your device.</string>
+    <string name="select_folder">Select folder</string>
+    <string name="incorrect_storage_permission">Invalid Folder Selected</string>
+    <string name="incorrect_storage_permission_description">The selected folder is not valid.\nPlease select or create a \'beatstar\' folder in the root directory of your device and try again.</string>
+    <!-- 🔔 Notifications -->
+    <string name="notifications_required">Notifications Required</string>
+    <string name="notifications_required_description">Notifications are important to show you the status of your downloads.\nWould you like to enable them?</string>
+    <string name="not_now">Not Now</string>
+    <string name="enable_notifications">Enable Notifications</string>
+    <string name="enable_notifications_description">To enable notifications, please open app settings and grant notification permission.</string>
+    <string name="download_failed">Download failed</string>
+    <string name="download_failed_for_chart">Couldn\'t download chart: %1$s</string>
+    <string name="notification_channel_downloads_name">Downloads</string>
+    <string name="notification_channel_downloads_description">Shows progress and results of your downloads</string>
+    <!-- 🏪 App Installation & Updates -->
+    <string name="mod_not_installed">Modded app not installed</string>
+    <string name="mod_not_installed_description">We couldn\'t find the modded app on your device. Visit the \'Installations\' section on the Updates page to download the latest version.</string>
+    <string name="go_to_updates">Go to Updates</string>
+    <!-- 📭 Empty States -->
+    <string name="empty_downloads">No downloads yet</string>
+    <string name="empty_downloads_description">Download some charts to get started</string>
+    <string name="no_charts_found">No charts found</string>
+    <string name="no_charts_found_description">Try searching for something else</string>
+    <string name="workshop_feed_end">End of charts</string>
+    <!-- ⚠️ Error Messages -->
+    <string name="error">Error: %1$s</string>
+    <string name="something_went_wrong">Looks like something went wrong…</string>
+    <string name="check_connection">Please check your connection and try again</string>
+    <string name="failed_to_load_chart_details">Failed to load chart details</string>
+    <string name="failed_to_load_chart_details_description">An error occurred while loading the chart details</string>
+    <string name="invalid_chart_id">Invalid chart ID</string>
+    <string name="failed_to_load_cached_charts">Failed to load cached charts</string>
+    <string name="failed_to_fetch_feed_charts">Failed to fetch feed charts</string>
+    <string name="chart_not_found">Chart not found</string>
+    <string name="failed_to_update">Failed to update chart</string>
+    <string name="no_available_version">No available version to update</string>
+    <string name="failed_to_start_download">Failed to start download</string>
+    <string name="no_internet_connection">No internet connection</string>
+    <string name="no_internet_connection_description">Please check your connection and try again</string>
+    <string name="error_network_connection">No internet connection. Please check your network.</string>
+    <string name="error_file_not_found">The required file wasn\'t found.</string>
+    <string name="error_server_problem">The server isn\'t responding. Try again later.</string>
+    <string name="error_permission_denied">Permission denied. Please allow access in settings.</string>
+    <string name="error_storage_full">Not enough space. Free up storage and try again.</string>
+    <string name="error_storage_problem">There was a problem accessing storage.</string>
+    <string name="error_extraction_failed">Couldn\'t extract downloaded files.</string>
+    <string name="error_download_failed">Download couldn\'t be completed.</string>
+    <string name="unknown_error">Something went wrong.</string>
+    <!-- ⚙️ Operation States -->
+    <string name="operation_in_progress">This action is already in progress.</string>
+    <string name="cannot_delete_during_download">You can\'t delete a chart while it\'s downloading or extracting.</string>
+    <string name="permission_denied_delete">Permission denied. Unable to delete chart.</string>
+    <string name="storage_error_delete">Couldn\'t delete chart due to a storage issue.</string>
 </resources>

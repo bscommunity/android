@@ -24,13 +24,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,6 +46,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.presentation.components.SwipeableSnackbarHost
 import com.meninocoiso.bscm.presentation.ui.components.CarouselItem
 import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
 import com.meninocoiso.bscm.presentation.ui.components.MediaCarousel
@@ -164,37 +161,14 @@ fun ChartDetailsScreen(
         )
     }
 
-    // Dismiss snackbar on swipe
-    val dismissSnackbarState = rememberSwipeToDismissBoxState(confirmValueChange = { value ->
-        if (value != SwipeToDismissBoxValue.Settled) {
-            snackbarHostState.currentSnackbarData?.dismiss()
-            true
-        } else {
-            false
-        }
-    })
-
-    // Reset dismiss cacheState when snackbar is dismissed
-    LaunchedEffect(dismissSnackbarState.currentValue) {
-        if (dismissSnackbarState.currentValue != SwipeToDismissBoxValue.Settled) {
-            dismissSnackbarState.reset()
-        }
-    }
-    
     val lastUpdated = StringUtils.toRelativeString(chart.latestVersion.publishedAt)
     println("Chart last updated: $lastUpdated")
 
     Scaffold(
         snackbarHost = {
-            SwipeToDismissBox(
-                state = dismissSnackbarState,
-                backgroundContent = {},
-                content = {
-                    SnackbarHost(
-                        hostState = snackbarHostState,
-                        modifier = Modifier.imePadding()
-                    )
-                },
+            SwipeableSnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.imePadding()
             )
         },
         topBar = {

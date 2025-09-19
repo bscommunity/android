@@ -8,7 +8,9 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -36,7 +38,10 @@ const val EXPANSION_ANIMATION_DURATION = 300
 fun CollapsableSection(
     modifier: Modifier = Modifier,
     initExpanded: Boolean? = true,
-    header: @Composable (trigger: @Composable () -> Unit) -> Unit,
+    header: @Composable (
+        trigger: @Composable () -> Unit,
+        interactionSource: MutableInteractionSource
+    ) -> Unit,
     content: @Composable () -> Unit
 ) {
     var isExpanded by remember {
@@ -48,12 +53,18 @@ fun CollapsableSection(
         if (it) 180f else 0f
     }
 
+    val interactionSource = remember { MutableInteractionSource() }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clickable {
-                isExpanded = !isExpanded
-            }
+            .clickable(
+                onClick = {
+                    isExpanded = !isExpanded
+                },
+                indication = LocalIndication.current,
+                interactionSource = interactionSource
+            )
     ) {
         header({
             Icon(
@@ -62,7 +73,7 @@ fun CollapsableSection(
                 modifier = Modifier
                     .rotate(iconRotationDeg)
             )
-        })
+        }, interactionSource)
         CollapsableSectionContent(content = content, isExpanded = isExpanded)
     }
 }

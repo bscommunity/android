@@ -13,7 +13,9 @@ import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
 import com.meninocoiso.bscm.domain.model.internal.Settings
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -61,6 +63,10 @@ class SettingsViewModel @Inject constructor(
     private val _updateState = MutableStateFlow<AppUpdateState>(AppUpdateState.Idle)
     val updateState: StateFlow<AppUpdateState> = _updateState.asStateFlow()
 
+    // New: update events for one-off notifications (snackbar, etc.)
+    private val _updateEvents = MutableSharedFlow<String>()
+    val updateEvents: SharedFlow<String> = _updateEvents
+
     // Contributors state (not persisted)
     data class ContributorsState(
         val isLoading: Boolean = false,
@@ -82,6 +88,10 @@ class SettingsViewModel @Inject constructor(
                 } else {
                     newState
                 }
+                // Emit event if update is available
+                if (newState is AppUpdateState.UpdateAvailable) {
+                    _updateEvents.emit("Update available: ${newState.version}")
+                }
             }
         }
     }
@@ -95,12 +105,20 @@ class SettingsViewModel @Inject constructor(
 
         viewModelScope.launch {
             _contributorsState.value = current.copy(isLoading = true)
-            try {
-                val result = apiClient.getContributors()
+
+            val result = apiClient.getContributors()
+            
+            if (result.isNotEmpty()) {
                 _contributorsState.value = ContributorsState(isLoading = false, items = result)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to load contributors", e)
-                _contributorsState.value = current.copy(isLoading = false)
+            } else {
+                // Try again one more time if the result is empty
+                try {
+                    val retryResult = apiClient.getContributors()
+                    _contributorsState.value = ContributorsState(isLoading = false, items = retryResult)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to load contributors on retry", e)
+                    _contributorsState.value = current.copy(isLoading = false)
+                }
             }
         }
     }
@@ -189,7 +207,8 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    
+    /** Helper to extract shrunk version name (removes suffix after last '-') */
+    fun shrunkVersion(version: String): String = version.substringBeforeLast("-")
 
     fun downloadUpdate(version: String) {
         Log.d(TAG, "Downloading update for version: $version")

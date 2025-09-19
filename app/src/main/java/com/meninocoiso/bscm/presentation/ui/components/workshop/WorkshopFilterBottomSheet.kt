@@ -102,7 +102,7 @@ fun WorkshopFilterBottomSheet(
         ) {
             CollapsableSection(
                 modifier = Modifier.collapsableSection(),
-                header = { trigger ->
+                header = { trigger, _ ->
                     CollapsableSectionHeader(stringResource(R.string.awarded), trigger)
                 }
             ) {
@@ -151,7 +151,7 @@ fun WorkshopFilterBottomSheet(
             }
             CollapsableSection(
                 modifier = Modifier.collapsableSection(),
-                header = { trigger ->
+                header = { trigger, _ ->
                     CollapsableSectionHeader(stringResource(R.string.difficulty), trigger)
                 }
             ) {
@@ -167,7 +167,7 @@ fun WorkshopFilterBottomSheet(
             }
             CollapsableSection(
                 modifier = Modifier.collapsableSection(),
-                header = { trigger ->
+                header = { trigger, _ ->
                     CollapsableSectionHeader(stringResource(R.string.genre), trigger)
                 }
             ) {
@@ -191,7 +191,7 @@ fun WorkshopFilterBottomSheet(
             }
             CollapsableSection(
                 modifier = Modifier.collapsableSection(),
-                header = { trigger ->
+                header = { trigger, _ ->
                     CollapsableSectionHeader(stringResource(R.string.version), trigger)
                 }
             ) {

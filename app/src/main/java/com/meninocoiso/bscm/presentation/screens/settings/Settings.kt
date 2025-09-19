@@ -10,6 +10,7 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -116,42 +117,25 @@ fun SettingsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    val shrunkVersionName = BuildConfig.VERSION_NAME.substringBeforeLast("-")
+    val shrunkVersionName = viewModel.shrunkVersion(BuildConfig.VERSION_NAME)
     val shrunkLatestVersion = if (updateState is AppUpdateState.UpdateAvailable)
-        (updateState as AppUpdateState.UpdateAvailable).version.substringBeforeLast("-")
+        viewModel.shrunkVersion((updateState as AppUpdateState.UpdateAvailable).version)
     else ""
 
-    LaunchedEffect(updateState) {
-        when (updateState) {
-            is AppUpdateState.UpToDate -> {
-                onSnackbar(context.getString(R.string.up_to_date))
-            }
-
-            is AppUpdateState.Error ->
-                onSnackbar((updateState as AppUpdateState.Error).message)
-
-            else -> {}
+    // Collects Snackbar events from AuthViewModel
+    LaunchedEffect(Unit) {
+        authViewModel.snackbarEvents.collect { message ->
+            onSnackbar(message)
         }
     }
 
-    LaunchedEffect(authState.error) {
-        // Show error message if login fails
-        authState.error?.let { error ->
-            onSnackbar(error)
+    // Collects update events from SettingsViewModel
+    LaunchedEffect(Unit) {
+        viewModel.updateEvents.collect { message ->
+            onSnackbar(message)
         }
     }
 
-    // Show message on login success
-    LaunchedEffect(authState.user) {
-        if (authState.isLoggedIn && cacheUser == null) {
-            onSnackbar(
-                context.getString(
-                    R.string.logged_in_successfully,
-                    authState.user!!.username
-                )
-            )
-        }
-    }
 
     Column(
         modifier = Modifier
@@ -257,7 +241,9 @@ fun SettingsScreen(
                         },
                         trailingContent = {
                             OutlinedButton(
-                                onClick = { },
+                                onClick = {
+                                    authViewModel.logout()
+                                },
                                 colors = ButtonDefaults.textButtonColors(
                                     contentColor = MaterialTheme.colorScheme.error
                                 )
@@ -284,7 +270,6 @@ fun SettingsScreen(
                             onClick = {
                                 scope.launch {
                                     val uri = authViewModel.startDiscordOAuth()
-                                    // call the Activity-level lambda to start OAuth flow
                                     startOAuth(uri)
                                 }
                             },
@@ -564,11 +549,13 @@ fun SettingsScreen(
                 ),
                 headlineContent = {
                     CollapsableSection(
-                        header = { trigger ->
+                        header = { trigger, interactionSource ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 16.dp, horizontal = 24.dp),
+                                    .indication(interactionSource, null)
+                                    .padding(vertical = 16.dp, horizontal = 24.dp)
+                                ,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(text = "Socials", style = MaterialTheme.typography.titleMedium)
@@ -697,9 +684,7 @@ private fun SocialsRow(
                 ),
                 interactionSource = remember { MutableInteractionSource() }
             )
-            .padding(horizontal = 24.dp, vertical = 8.dp)
-            .clip(RoundedCornerShape(12.dp))
-        ,
+            .padding(horizontal = 24.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

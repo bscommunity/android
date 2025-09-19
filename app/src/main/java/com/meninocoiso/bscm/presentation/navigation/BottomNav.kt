@@ -7,7 +7,6 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,6 +24,7 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.UpdatesSection
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.User
+import com.meninocoiso.bscm.presentation.components.SwipeableSnackbarHost
 import com.meninocoiso.bscm.presentation.screens.details.ChartDetails
 import com.meninocoiso.bscm.presentation.screens.settings.Profile
 import com.meninocoiso.bscm.presentation.screens.settings.SettingsScreen
@@ -108,6 +108,7 @@ fun BottomNav(
 
     val onSnackbar: (String) -> Unit = { message ->
         coroutineScope.launch {
+            println("BottomNav: Showing snackbar with message: $message")
             snackbarHostState.showSnackbar(message)
         }
     }
@@ -130,7 +131,7 @@ fun BottomNav(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SwipeableSnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             BottomNavBar(
                 navBackStackEntry = navBackStackEntry,

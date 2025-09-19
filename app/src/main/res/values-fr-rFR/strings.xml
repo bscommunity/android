@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="workshop">Workshop</string>
+    <!-- 📱 App Basic Information -->
+    <!-- 🧭 Navigation & Main Sections -->
+    <string name="workshop">Atelier</string>
     <string name="updates">Mises à jour</string>
     <string name="settings">Options</string>
-    <string name="charts">Charts</string>
+    <string name="charts">Graphiques</string>
+    <string name="installations">Installations</string>
+    <string name="back">Précédent</string>
     <string name="return_screen">Retour</string>
+    <!-- 📥 Download & Update States -->
     <string name="download">Télécharger</string>
     <string name="downloading">Téléchargemment…</string>
     <string name="downloading_update">Téléchargemment de la mise à jour</string>
@@ -21,10 +26,21 @@
     <string name="update_ready">Mis à jour prête</string>
     <string name="tap_to_install_version">Cliquez pour installer la version %1$s…</string>
     <string name="update_failed">Echec de la mise à jour</string>
+    <string name="update_now">Mettre à jour maintenant</string>
+    <string name="install_update">Installer la mise à jour</string>
+    <string name="update_from_to">Mise à jour depuis%1$d → v%2$d</string>
+    <string name="update_complete">Mise à jour terminée</string>
+    <string name="updates_available">Mises à jour disponibles (%1$s)</string>
+    <string name="no_updates_available">Aucune mise à jour disponible</string>
     <string name="checking_for_updates">Recherche de mises à jour</string>
     <string name="check_for_updates">Recherche de mises à jour</string>
     <string name="failed_to_check_for_updates">Echec dans la recherche de mises à jour</string>
+    <string name="fetch_updates_error">Nous n\'avons pas pu récupérer les mises à jour…</string>
+    <string name="up_to_date">L\'application est à jour</string>
+    <string name="client_outdated">Client obsolète</string>
+    <string name="concluded_progress">%1$d% a terminé</string>
     <string name="installed">Installé</string>
+    <!-- 📊 Chart Information & Statistics -->
     <string name="chart_by">Chart par %1$s</string>
     <string name="contributors_list_title">Les personnes ayant contribuées à la création de la chart:</string>
     <string name="credits">Crédits</string>
@@ -34,71 +50,232 @@
     <string name="no_known_issues">Problèmes inconnus</string>
     <string name="explicit">Explicite</string>
     <string name="deluxe">Deluxe</string>
+    <string name="no_deluxe">Par défaut</string>
     <string name="and_others">et autre</string>
+    <!-- 🎮 Gameplay & Difficulty -->
     <string name="no_gameplay_available">Pas de gameplay disponible</string>
-    <string name="normal">Normal</string>
+    <string name="normal">Normale</string>
     <string name="hard">Difficile</string>
     <string name="extreme">Extrême</string>
+    <string name="expert">Expert</string>
     <string name="difficulty">Difficulté</string>
+    <!-- 🎵 Music & Audio -->
+    <string name="listen">Écouter</string>
     <string name="listen_to_track">Ecouter la musique</string>
+    <string name="support_the_artist">Soutenir l\'artiste</string>
+    <string name="support_the_artist_description">Découvrez la chanson complète de ce tableau sur votre service de streaming préféré et soutenez le travail de l\'artiste</string>
+    <string name="empty_streaming_links">Aucun lien de streaming disponible</string>
     <string name="minutes_seconds">%1$dmn%2$ds</string>
-    <string name="rock">Rock</string>
-    <string name="dance">Dance</string>
+    <!-- 🎨 Music Genres -->
+    <string name="hip_hop">Hip-hop</string>
+    <string name="pop">Pop</string>
+    <string name="r_b"><![CDATA[R&B]]></string>
+    <string name="rock">Roche</string>
+    <string name="dance">Danse</string>
     <string name="alternative">Alternatif</string>
     <string name="classical">Classique</string>
     <string name="genre">Genre</string>
+    <!-- 🏆 Features & Categories -->
     <string name="awarded">Récompensé(e)(s)</string>
     <string name="editors_choice">Choix de l\'éditeur</string>
     <string name="featured">En vedette</string>
+    <string name="trending">Tendance</string>
+    <string name="weekly_rank">Classement hebdomadaire</string>
+    <string name="most_downloaded">Les plus téléchargés</string>
+    <string name="most_liked">Les plus aimés</string>
+    <string name="last_updated">Dernière mise à jour</string>
+    <!-- 👥 User Roles & Contributions -->
     <string name="author_role">Auteur or Créateur depend on the context</string>
-    <string name="chart_role">Chart</string>
+    <string name="chart_role">Graphique</string>
     <string name="audio_role">Audio</string>
+    <string name="revision_role">Révision</string>
     <string name="effects_role">Effets</string>
+    <string name="sync_role">Synchroniser</string>
+    <string name="gameplay_role">Jeu de jeu</string>
+    <!-- 🔢 Plurals - Quantities -->
+    <plurals name="notes_amount">
+        <item quantity="one">%1$d note</item>
+        <item quantity="other">Notes %1$d</item>
+    </plurals>
+    <plurals name="effects_amount">
+        <item quantity="one">Effet %1$d</item>
+        <item quantity="other">Effets %1$d</item>
+    </plurals>
+    <plurals name="downloads_amount">
+        <item quantity="one">+ Téléchargement%1$d</item>
+        <item quantity="other">+ Téléchargements%1$d</item>
+    </plurals>
+    <!-- ⏰ Time Expressions -->
     <string name="today">Aujourd\'hui</string>
     <string name="yesterday">Hier</string>
+    <plurals name="days_ago">
+        <item quantity="one">%1$d day ago</item>
+        <item quantity="other">%1$d days ago</item>
+    </plurals>
+    <plurals name="weeks_ago">
+        <item quantity="one">%1$d week ago</item>
+        <item quantity="other">%1$d weeks ago</item>
+    </plurals>
+    <plurals name="months_ago">
+        <item quantity="one">%1$d month ago</item>
+        <item quantity="other">%1$d months ago</item>
+    </plurals>
+    <plurals name="years_ago">
+        <item quantity="one">%1$d year ago</item>
+        <item quantity="other">%1$d years ago</item>
+    </plurals>
+    <!-- 🔍 Search & Filtering -->
+    <string name="search">Chercher</string>
+    <string name="search_in_workshop">Rechercher dans l\'atelier</string>
+    <string name="search_description">Essayez de rechercher des pistes, artistes ou albums</string>
     <string name="clear_search">Effacer les recherches</string>
+    <string name="recent_searches">Recherches récentes</string>
+    <string name="history">Historique</string>
+    <string name="delete_history_item">Supprimer l\'élément de l\'historique</string>
+    <string name="remove_history_item">Supprimer %1$s</string>
+    <string name="remove_history_item_description">Êtes-vous sûr de vouloir supprimer cet élément de votre historique de recherche?</string>
     <string name="search_failed">Echec de la recherche</string>
+    <string name="filters">Filtres</string>
+    <!-- ❌ Delete & Remove Actions -->
     <string name="delete_chart">Supprimer la chart</string>
     <string name="delete_chart_description">Êtes vous sûr de vouloir supprimer cette chart ? Vous serez en capacité de la réinstaller plus tard</string>
     <string name="chart_deleted">Chart supprimée</string>
     <string name="failed_to_delete_chart">Echec de la suppression de la chart</string>
+    <!-- 🔄 Common Actions -->
     <string name="share">Partager</string>
+    <string name="share_via">Partager via</string>
     <string name="report">Signaler</string>
     <string name="like_chart">J\'aime</string>
     <string name="retry">Réessayer</string>
     <string name="try_again">Réessayez</string>
     <string name="cancel">Annuler</string>
     <string name="confirm">Confirmer</string>
+    <string name="dismiss">Refuser</string>
+    <!-- 📋 Menu & Interface Elements -->
     <string name="more_options_menu">Plus d\'options</string>
     <string name="collapse_expand_chart_contributors">Personnes ayant contribué a la création de la chart</string>
     <string name="expand_collapse">Etendre</string>
     <string name="open_dialog">Ouvrir un dialogue</string>
+    <string name="close_bottomsheet">Fermer la feuille</string>
+    <string name="checked">Coché</string>
+    <string name="unchecked">Non coché</string>
+    <!-- ⚠️ Confirmations & Dialogs -->
     <string name="confirmation_title">Êtes vous sûr ?</string>
     <string name="confirmation_description">Cette action ne peux pas être annulée</string>
+    <!-- 📱 App & System Settings -->
+    <string name="preferences">Préférences</string>
     <string name="customization">Customisation</string>
+    <string name="version">Version</string>
+    <string name="launch_app">Lancer l\'application</string>
+    <string name="reopen_app">Veuillez rouvrir l\'application et réessayer</string>
+    <string name="open_settings">Ouvrir les paramètres</string>
+    <!-- 🎨 Theme & Appearance -->
+    <string name="material_you_description">Activer/désactiver l\'utilisation de la couleur d\'accentuation du système</string>
+    <string name="theme">Thème</string>
     <string name="app_theme">Thème de l\'application</string>
+    <string name="theme_description">Choisissez entre votre système de préférence, mode clair et foncé</string>
+    <string name="system">Système</string>
+    <string name="light">Lumière</string>
     <string name="dark">Sombre</string>
+    <string name="themes">Thèmes</string>
+    <!-- 🌐 Language Settings -->
+    <string name="language">Langue</string>
+    <string name="app_language">Langue de l\'application</string>
+    <string name="language_description">Choisir la langue d\'affichage de l\'application</string>
+    <string name="system_default_language">Par défaut du système</string>
+    <string name="language_dialog_info">Découvrez les incroyables personnes qui ont aidé à traduire l\'application dans votre langue</string>
+    <!-- 🔞 Content Settings -->
+    <string name="explicit_content">Contenu explicite</string>
+    <string name="explicit_content_description">Autoriser l\'affichage des graphiques avec des chansons explicites</string>
     <string name="explicit_content_disabled">Contenu explicite désactivé dans les paramètres</string>
+    <string name="gameplay_preview">Aperçu du jeu</string>
+    <string name="gameplay_preview_description">Activer les aperçus vidéo de gameplay\nCela peut affecter les performances</string>
+    <!-- 🔐 Authentication & Account -->
     <string name="account">Compte</string>
+    <string name="link_account">Lier le compte</string>
+    <string name="link_account_description">Connectez votre compte Discord pour synchroniser vos préférences</string>
+    <string name="connect">Connecter</string>
+    <string name="logout">Déconnexion</string>
+    <string name="logged_out_successfully">Déconnexion réussie</string>
+    <string name="discord_icon">Icône Discord</string>
+    <string name="no_email_provided">Aucun e-mail fourni</string>
+    <string name="welcome_title">Bienvenue dans BSCM</string>
+    <string name="login_description">Connectez votre compte Discord pour accéder à des fonctionnalités personnalisées</string>
+    <string name="login_with_discord">Se connecter avec Discord</string>
+    <string name="login_terms">En continuant, vous acceptez nos conditions d\'utilisation et notre politique de confidentialité</string>
+    <string name="logged_in_successfully">Bienvenue, %1$s! Vous êtes bien connecté.</string>
+    <!-- 📄 Legal & Documentation -->
+    <string name="legal">Mentions légales</string>
+    <string name="terms_of_use">Conditions d\'utilisation</string>
+    <string name="privacy_police">Police de confidentialité</string>
+    <string name="read_changelog">Lire le changelog</string>
+    <!-- 📝 Feedback & Reporting -->
+    <string name="feedback">Vos commentaires</string>
+    <string name="feedback_description">Aidez les contributeurs du graphique à s\'améliorer en signalant des bugs ou en suggérant de nouvelles fonctionnalités.</string>
     <string name="bug">Bug</string>
+    <string name="suggestion">Suggestion</string>
+    <string name="report_description">Aidez la communauté en signalant le contenu inapproprié\nVotre rapport est anonyme</string>
     <string name="violent_content">Contenu violent</string>
     <string name="spam">Spam</string>
+    <string name="intellectual_property">Propriété intellectuelle</string>
+    <!-- 🎫 Game Features -->
+    <string name="tour_passes">Passes de la visite</string>
     <string name="feature_not_implemented">Fonctionalité non disponible pour le moment</string>
     <string name="work_in_progress">Bientôt</string>
+    <string name="work_in_progress_description">Cette fonctionnalité nécessite encore du travail\nVeuillez revenir plus tard</string>
+    <!-- 📂 Storage & Permissions -->
+    <string name="storage_permission_required">Autorisation de stockage requise</string>
+    <string name="storage_permission_required_description">Pour télécharger des cartes, veuillez sélectionner ou créer un dossier nommé \'beatstar\' à la racine de votre appareil.</string>
+    <string name="select_folder">Sélectionner un dossier</string>
+    <string name="incorrect_storage_permission">Dossier sélectionné invalide</string>
+    <string name="incorrect_storage_permission_description">Le dossier sélectionné n\'est pas valide.\nVeuillez sélectionner ou créer un dossier \'beatstar\' dans le répertoire racine de votre appareil et réessayez.</string>
+    <!-- 🔔 Notifications -->
+    <string name="notifications_required">Notifications requises</string>
+    <string name="notifications_required_description">Les notifications sont importantes pour vous montrer le statut de vos téléchargements.\nVoulez-vous les activer ?</string>
+    <string name="not_now">Pas maintenant</string>
+    <string name="enable_notifications">Activer les notifications</string>
+    <string name="enable_notifications_description">Pour activer les notifications, veuillez ouvrir les paramètres de l\'application et accorder l\'autorisation de notification.</string>
     <string name="download_failed">Echec du téléchargemment</string>
+    <string name="download_failed_for_chart">Impossible de télécharger la carte : %1$s</string>
+    <string name="notification_channel_downloads_name">Téléchargements</string>
+    <string name="notification_channel_downloads_description">Affiche la progression et les résultats de vos téléchargements</string>
+    <!-- 🏪 App Installation & Updates -->
+    <string name="mod_not_installed">Application modifiée non installée</string>
+    <string name="mod_not_installed_description">Nous n\'avons pas pu trouver l\'application moddée sur votre appareil. Visitez la section \'Installations\' sur la page Mises à jour pour télécharger la dernière version.</string>
+    <string name="go_to_updates">Aller aux mises à jour</string>
+    <!-- 📭 Empty States -->
     <string name="empty_downloads">Pas encore de téléchargemment</string>
     <string name="empty_downloads_description">Téléchargez quelques charts pour commencer</string>
     <string name="no_charts_found">Pas de chart trouvée</string>
     <string name="no_charts_found_description">Essayez de rechercher quelque chose d\'autre</string>
+    <string name="workshop_feed_end">Fin des graphiques</string>
+    <!-- ⚠️ Error Messages -->
     <string name="error">Erreur: %1$s…</string>
     <string name="something_went_wrong">Quelque chose a échoué</string>
     <string name="check_connection">Vérifiez votre connexion et réessayez</string>
     <string name="failed_to_load_chart_details">Les détails de la chart n\'ont pas pu être chargé</string>
     <string name="failed_to_load_chart_details_description">Une erreur est survenue lors du chargemment de la chart</string>
     <string name="invalid_chart_id">ID de chart invalide</string>
+    <string name="failed_to_load_cached_charts">Impossible de charger les cartes mises en cache</string>
+    <string name="failed_to_fetch_feed_charts">Impossible de récupérer les diagrammes de flux</string>
     <string name="chart_not_found">Chart non trouvée</string>
     <string name="failed_to_update">Echec de la mise à jour de la chart</string>
     <string name="no_available_version">Pas de version à mettre à jour disponible</string>
     <string name="failed_to_start_download">Echec du début du téléchargemment</string>
+    <string name="no_internet_connection">Aucune connexion internet</string>
+    <string name="no_internet_connection_description">Vérifiez votre connexion et réessayez</string>
+    <string name="error_network_connection">Aucune connexion internet. Veuillez vérifier votre réseau.</string>
+    <string name="error_file_not_found">Le fichier requis n\'a pas été trouvé.</string>
+    <string name="error_server_problem">Le serveur ne répond pas. Réessayez plus tard.</string>
+    <string name="error_permission_denied">Autorisation refusée. Veuillez autoriser l\'accès dans les paramètres.</string>
+    <string name="error_storage_full">Pas assez d’espace. Libérez du stockage et réessayez.</string>
+    <string name="error_storage_problem">Un problème est survenu lors de l\'accès au stockage.</string>
+    <string name="error_extraction_failed">Impossible d\'extraire les fichiers téléchargés.</string>
+    <string name="error_download_failed">Le téléchargement n\'a pas pu être terminé.</string>
     <string name="unknown_error">Erreur Inconnue</string>
+    <!-- ⚙️ Operation States -->
+    <string name="operation_in_progress">Cette action est déjà en cours.</string>
+    <string name="cannot_delete_during_download">Vous ne pouvez pas supprimer un graphique pendant qu\'il est en cours de téléchargement ou d\'extraction.</string>
+    <string name="permission_denied_delete">Autorisation refusée. Impossible de supprimer le graphique.</string>
+    <string name="storage_error_delete">Impossible de supprimer le graphique en raison d\'un problème de stockage.</string>
 </resources>

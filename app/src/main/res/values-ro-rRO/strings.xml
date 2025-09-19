@@ -1,64 +1,98 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- 📱 App Basic Information -->
+    <!-- 🧭 Navigation & Main Sections -->
+    <string name="workshop">Atelier</string>
     <string name="updates">Actualizări</string>
     <string name="settings">Setări</string>
+    <string name="charts">Grafice</string>
     <string name="installations">Instalări</string>
+    <string name="back">Înapoi</string>
+    <string name="return_screen">Întoarcere</string>
+    <!-- 📥 Download & Update States -->
     <string name="download">Descarcă</string>
     <string name="downloading">Se descarcă…</string>
+    <string name="downloading_update">Descărcare actualizare</string>
+    <string name="starting_download_for_version">Începe descărcarea pentru versiunea %1$s…</string>
+    <string name="downloading_version">Se descarcă versiunea %1$s… %2$d%%</string>
     <string name="extracting">Se extrage…</string>
     <string name="extracting_progress_title">Se extrage %1$s</string>
+    <string name="extracting_progress_description">Se extrag fișierele… %1$d%%</string>
+    <string name="download_complete">Descărcare completă</string>
+    <string name="download_chart">Descarca grafic</string>
+    <string name="downloaded">Descărcat (%1$s)</string>
+    <string name="update">Actualizare</string>
+    <string name="update_chart">Actualizați graficul</string>
+    <string name="update_ready">Actualizare Gata</string>
+    <string name="tap_to_install_version">Atingeți pentru a instala versiunea %1$s</string>
+    <string name="update_failed">Actualizare eșuată</string>
+    <string name="update_now">Actualizează acum</string>
+    <string name="install_update">Instalare actualizare</string>
+    <string name="update_from_to">Actualizare de la%1$d → v%2$d</string>
+    <string name="update_complete">Actualizare completă</string>
+    <string name="updates_available">Actualizări disponibile (%1$s)</string>
+    <string name="no_updates_available">Nu sunt disponibile actualizări</string>
+    <string name="checking_for_updates">Se caută actualizări…</string>
+    <string name="check_for_updates">Verifică pentru actualizări</string>
+    <string name="failed_to_check_for_updates">Verificarea actualizărilor a eșuat</string>
+    <string name="fetch_updates_error">Nu am putut prelua actualizări…</string>
+    <string name="up_to_date">Aplicația este actualizată</string>
+    <string name="client_outdated">Pasagerul a expirat</string>
+    <string name="concluded_progress">%1$d% încheiat</string>
+    <string name="installed">Instalat</string>
+    <!-- 📊 Chart Information & Statistics -->
+    <string name="chart_by">Grafic de %1$s</string>
+    <string name="contributors_list_title">Următorii utilizatori au contribuit la acest grafic:</string>
     <string name="credits">Credite</string>
     <string name="stats">Statistici</string>
+    <string name="updated_at">Actualizat %1$s</string>
+    <string name="known_issues">Probleme cunoscute</string>
+    <string name="no_known_issues">Nu există probleme cunoscute</string>
+    <string name="explicit">Explicit</string>
+    <string name="deluxe">Deluxe</string>
+    <string name="no_deluxe">Implicit</string>
+    <string name="and_others">și altele</string>
+    <!-- 🎮 Gameplay & Difficulty -->
+    <string name="no_gameplay_available">Nici un joc disponibil</string>
+    <string name="normal">Normală</string>
     <string name="hard">Greu</string>
     <string name="extreme">Extrem</string>
     <string name="expert">Expert</string>
     <string name="difficulty">Dificultate</string>
+    <!-- 🎵 Music & Audio -->
+    <string name="listen">Ascultă</string>
+    <string name="listen_to_track">Ascultă melodia</string>
+    <string name="support_the_artist">Sprijină artistul</string>
+    <string name="support_the_artist_description">Vezi melodia completă din acest grafic pe serviciul tău preferat de streaming și sprijină opera artistului</string>
+    <string name="empty_streaming_links">Nu sunt disponibile link-uri de streaming</string>
+    <string name="minutes_seconds">%1$dm%2$ds</string>
+    <!-- 🎨 Music Genres -->
     <string name="hip_hop">Hip-hop</string>
     <string name="pop">Pop</string>
-    <string name="r_b"><![CDATA[R&B]]></string>
-    <string name="rock">Rock</string>
+    <string name="r_b"><![CDATA[&O]]></string>
+    <string name="rock">Piatră</string>
     <string name="dance">Dans</string>
     <string name="alternative">Alternativ</string>
     <string name="classical">Clasic</string>
     <string name="genre">Gen</string>
+    <!-- 🏆 Features & Categories -->
+    <string name="awarded">Atribuit</string>
+    <string name="editors_choice">Alegerea editorului</string>
+    <string name="featured">Recomandate</string>
+    <string name="trending">Populare</string>
+    <string name="weekly_rank">Rang săptămânal</string>
+    <string name="most_downloaded">Cele mai descărcate</string>
+    <string name="most_liked">Cel mai apreciat</string>
+    <string name="last_updated">Ultima actualizare</string>
+    <!-- 👥 User Roles & Contributions -->
     <string name="author_role">Autor</string>
+    <string name="chart_role">Grafic</string>
+    <string name="audio_role">Audio</string>
+    <string name="revision_role">Revizuire</string>
     <string name="effects_role">Efecte</string>
-    <string name="today">astăzi</string>
-    <string name="yesterday">ieri</string>
-    <string name="search">Caută</string>
-    <string name="recent_searches">Căutări recente</string>
-    <string name="history">Istoric</string>
-    <string name="search_failed">Căutarea a eşuat</string>
-    <string name="filters">Filtre</string>
-    <string name="share">Distribuie</string>
-    <string name="share_via">Distribuie prin</string>
-    <string name="report">Raportează</string>
-    <string name="retry">Reîncearcă</string>
-    <string name="try_again">Încearcă din nou</string>
-    <string name="cancel">Anulează</string>
-    <string name="confirm">Confirmă</string>
-    <string name="confirmation_title">Sunteți sigur?</string>
-    <string name="preferences">Perferințe</string>
-    <string name="customization">Personalizare</string>
-    <string name="version">Versiune</string>
-    <string name="launch_app">Lansează aplicația</string>
-    <string name="open_settings">Deschide setările</string>
-    <string name="theme">Temă</string>
-    <string name="app_theme">Tema aplicației</string>
-    <string name="theme_description">Alege între preferințele sistemului tău, modul deschis și modul întunecat</string>
-    <string name="system">Sistem</string>
-    <string name="light">Deschisă</string>
-    <string name="dark">Întunecată</string>
-    <string name="themes">Teme</string>
-    <string name="language">Limbă</string>
-    <string name="app_language">Limba aplicației</string>
-    <string name="language_description">Alege limba de afișare a aplicației</string>
-    <string name="system_default_language">Implicit de sistem</string>
-    <string name="language_dialog_info">Verifică persoanele incredibile care au ajutat la traducerea aplicației în limba ta</string>
-    <string name="account">Cont</string>
-    <string name="not_now">Nu acum</string>
-    <string name="notification_channel_downloads_name">Descărcări</string>
-    <string name="unknown_error">Ceva nu a mers bine</string>
+    <string name="sync_role">Sincronizare</string>
+    <string name="gameplay_role">Joc</string>
+    <!-- 🔢 Plurals - Quantities -->
     <plurals name="notes_amount">
         <item quantity="one">%1$d notă</item>
         <item quantity="few">%1$d note</item>
@@ -74,6 +108,9 @@
         <item quantity="few">+%1$d descărcări</item>
         <item quantity="other">+%1$d descărcări</item>
     </plurals>
+    <!-- ⏰ Time Expressions -->
+    <string name="today">astăzi</string>
+    <string name="yesterday">ieri</string>
     <plurals name="days_ago">
         <item quantity="one">acum %1$d zi</item>
         <item quantity="few">acum %1$d zile</item>
@@ -94,4 +131,158 @@
         <item quantity="few">acum %1$d ani</item>
         <item quantity="other">acum %1$d ani</item>
     </plurals>
+    <!-- 🔍 Search & Filtering -->
+    <string name="search">Caută</string>
+    <string name="search_in_workshop">Caută în atelier</string>
+    <string name="search_description">Încearcă să cauți melodii, artiști sau albume</string>
+    <string name="clear_search">Ștergeți căutarea</string>
+    <string name="recent_searches">Căutări recente</string>
+    <string name="history">Istoric</string>
+    <string name="delete_history_item">Ștergere articol istoric</string>
+    <string name="remove_history_item">Elimină %1$s</string>
+    <string name="remove_history_item_description">Sunteţi sigur că doriţi să ştergeţi acest element din istoricul căutării?</string>
+    <string name="search_failed">Căutarea a eşuat</string>
+    <string name="filters">Filtre</string>
+    <!-- ❌ Delete & Remove Actions -->
+    <string name="delete_chart">Șterge grafic</string>
+    <string name="delete_chart_description">Sigur doriți să ștergeți acest grafic?\nO veți putea descărca din nou mai târziu.</string>
+    <string name="chart_deleted">Grafic şters</string>
+    <string name="failed_to_delete_chart">Ștergerea graficului a eșuat</string>
+    <!-- 🔄 Common Actions -->
+    <string name="share">Distribuie</string>
+    <string name="share_via">Distribuie prin</string>
+    <string name="report">Raportează</string>
+    <string name="like_chart">Grafic similar</string>
+    <string name="retry">Reîncearcă</string>
+    <string name="try_again">Încearcă din nou</string>
+    <string name="cancel">Anulează</string>
+    <string name="confirm">Confirmă</string>
+    <string name="dismiss">Renunţaţi</string>
+    <!-- 📋 Menu & Interface Elements -->
+    <string name="more_options_menu">Mai multe opțiuni meniu</string>
+    <string name="collapse_expand_chart_contributors">Colaps/Extinde contribuitorii graficului</string>
+    <string name="expand_collapse">Extindere/Restrânge</string>
+    <string name="open_dialog">Deschide dialogul</string>
+    <string name="close_bottomsheet">Închide foaia</string>
+    <string name="checked">Verificat</string>
+    <string name="unchecked">Nebifat</string>
+    <!-- ⚠️ Confirmations & Dialogs -->
+    <string name="confirmation_title">Sunteți sigur?</string>
+    <string name="confirmation_description">Această acțiune nu poate fi anulată</string>
+    <!-- 📱 App & System Settings -->
+    <string name="preferences">Perferințe</string>
+    <string name="customization">Personalizare</string>
+    <string name="version">Versiune</string>
+    <string name="launch_app">Lansează aplicația</string>
+    <string name="reopen_app">Vă rugăm să redeschideți aplicația și să încercați din nou</string>
+    <string name="open_settings">Deschide setările</string>
+    <!-- 🎨 Theme & Appearance -->
+    <string name="material_you_description">Comută utilizarea culorii de accent a sistemului</string>
+    <string name="theme">Temă</string>
+    <string name="app_theme">Tema aplicației</string>
+    <string name="theme_description">Alege între preferințele sistemului tău, modul deschis și modul întunecat</string>
+    <string name="system">Sistem</string>
+    <string name="light">Deschisă</string>
+    <string name="dark">Întunecată</string>
+    <string name="themes">Teme</string>
+    <!-- 🌐 Language Settings -->
+    <string name="language">Limbă</string>
+    <string name="app_language">Limba aplicației</string>
+    <string name="language_description">Alege limba de afișare a aplicației</string>
+    <string name="system_default_language">Implicit de sistem</string>
+    <string name="language_dialog_info">Verifică persoanele incredibile care au ajutat la traducerea aplicației în limba ta</string>
+    <!-- 🔞 Content Settings -->
+    <string name="explicit_content">Conținut explicit</string>
+    <string name="explicit_content_description">Permite afișarea graficelor cu melodii explicite</string>
+    <string name="explicit_content_disabled">Conținut explicit dezactivat în setări</string>
+    <string name="gameplay_preview">Previzualizare joc</string>
+    <string name="gameplay_preview_description">Activează previzualizările video ale gameplay\nAcest lucru poate afecta performanța</string>
+    <!-- 🔐 Authentication & Account -->
+    <string name="account">Cont</string>
+    <string name="link_account">Link cont</string>
+    <string name="link_account_description">Conectează-ți contul Discord pentru a-ți sincroniza preferințele</string>
+    <string name="connect">Conectează-te</string>
+    <string name="logout">Deconectare</string>
+    <string name="logged_out_successfully">Deconectat cu succes</string>
+    <string name="discord_icon">Iconiță Discord</string>
+    <string name="no_email_provided">Nici un e-mail furnizat</string>
+    <string name="welcome_title">Bun venit la BSCM</string>
+    <string name="login_description">Conectează-ți contul Discord pentru a accesa funcționalități personalizate</string>
+    <string name="login_with_discord">Autentifică-te cu Discord</string>
+    <string name="login_terms">Continuând, ești de acord cu Termenii de utilizare și Politica de confidențialitate</string>
+    <string name="logged_in_successfully">Bine ați venit, %1$s! V-ați conectat cu succes.</string>
+    <!-- 📄 Legal & Documentation -->
+    <string name="legal">Juridic</string>
+    <string name="terms_of_use">Termeni de utilizare</string>
+    <string name="privacy_police">Poliția de confidențialitate</string>
+    <string name="read_changelog">Citește jurnalul modificărilor</string>
+    <!-- 📝 Feedback & Reporting -->
+    <string name="feedback">Feedback</string>
+    <string name="feedback_description">Ajută graficul să contribuie la îmbunătățirea raportărilor de erori sau sugerând noi caracteristici.</string>
+    <string name="bug">Bug</string>
+    <string name="suggestion">Sugestie</string>
+    <string name="report_description">Ajută comunitatea prin marcarea conținutului nepotrivit\nRaportul tău este anonim</string>
+    <string name="violent_content">Conținut violent</string>
+    <string name="spam">Spam</string>
+    <string name="intellectual_property">Proprietatea intelectuală</string>
+    <!-- 🎫 Game Features -->
+    <string name="tour_passes">Parole tur</string>
+    <string name="feature_not_implemented">Funcția nu este încă implementată</string>
+    <string name="work_in_progress">Lucru în desfășurare!</string>
+    <string name="work_in_progress_description">Această caracteristică încă are nevoie de o lucrare\nVă rugăm să reveniți mai târziu</string>
+    <!-- 📂 Storage & Permissions -->
+    <string name="storage_permission_required">Permisiune stocare necesară</string>
+    <string name="storage_permission_required_description">Pentru a descărca grafice, vă rugăm să selectați sau să creați un folder numit \'beatstar\' în dosarul rădăcină al dispozitivului dvs.</string>
+    <string name="select_folder">Selectează dosar</string>
+    <string name="incorrect_storage_permission">Folder invalid selectat</string>
+    <string name="incorrect_storage_permission_description">Dosarul selectat nu este valid.\nSelectați sau creați un folder \'beatstar\' în directorul rădăcină al dispozitivului și încercați din nou.</string>
+    <!-- 🔔 Notifications -->
+    <string name="notifications_required">Notificări necesare</string>
+    <string name="notifications_required_description">Notificările sunt importante pentru a vă arăta starea descărcărilor dvs.\nDoriți să le activați?</string>
+    <string name="not_now">Nu acum</string>
+    <string name="enable_notifications">Activează notificările</string>
+    <string name="enable_notifications_description">Pentru a activa notificările, vă rugăm să deschideți setările aplicației și să acordați permisiunea de notificare.</string>
+    <string name="download_failed">Descărcare eșuată</string>
+    <string name="download_failed_for_chart">Nu s-a putut descărca graficul: %1$s</string>
+    <string name="notification_channel_downloads_name">Descărcări</string>
+    <string name="notification_channel_downloads_description">Arată progresul și rezultatele descărcărilor tale</string>
+    <!-- 🏪 App Installation & Updates -->
+    <string name="mod_not_installed">Aplicația modificată nu este instalată</string>
+    <string name="mod_not_installed_description">Nu am putut găsi aplicația modded pe dispozitivul dvs. Vizitați secțiunea \'Instalări\' de pe pagina Actualizări pentru a descărca cea mai recentă versiune.</string>
+    <string name="go_to_updates">Mergi la Actualizări</string>
+    <!-- 📭 Empty States -->
+    <string name="empty_downloads">Încă nu există descărcări</string>
+    <string name="empty_downloads_description">Descarcă câteva grafice pentru a începe</string>
+    <string name="no_charts_found">Nu au fost găsite diagrame</string>
+    <string name="no_charts_found_description">Încearcă să cauți altceva</string>
+    <string name="workshop_feed_end">Sfârșitul graficelor</string>
+    <!-- ⚠️ Error Messages -->
+    <string name="error">Eroare: %1$s</string>
+    <string name="something_went_wrong">Se pare că ceva a mers greșit…</string>
+    <string name="check_connection">Verificați conexiunea și încercați din nou</string>
+    <string name="failed_to_load_chart_details">Încărcarea detaliilor graficului a eșuat</string>
+    <string name="failed_to_load_chart_details_description">A apărut o eroare la încărcarea detaliilor graficului</string>
+    <string name="invalid_chart_id">Invalid chart ID</string>
+    <string name="failed_to_load_cached_charts">Încărcarea graficelor cache a eșuat</string>
+    <string name="failed_to_fetch_feed_charts">Nu s-a reușit preluarea graficelor de flux</string>
+    <string name="chart_not_found">Graficul nu a fost găsit</string>
+    <string name="failed_to_update">Actualizarea graficului a eșuat</string>
+    <string name="no_available_version">Nu există versiune disponibilă de actualizat</string>
+    <string name="failed_to_start_download">Deschiderea descărcării a eșuat</string>
+    <string name="no_internet_connection">Fără conexiune la internet</string>
+    <string name="no_internet_connection_description">Verificați conexiunea și încercați din nou</string>
+    <string name="error_network_connection">Fără conexiune la internet. Te rugăm să îți verifici rețeaua.</string>
+    <string name="error_file_not_found">Fișierul obligatoriu nu a fost găsit.</string>
+    <string name="error_server_problem">Serverul nu răspunde. Încercați din nou mai târziu.</string>
+    <string name="error_permission_denied">Permisiune refuzată. Vă rugăm să permiteți accesul în setări.</string>
+    <string name="error_storage_full">Spațiu insuficient. Eliberați spațiul de stocare și încercați din nou.</string>
+    <string name="error_storage_problem">A apărut o problemă la accesarea stocării.</string>
+    <string name="error_extraction_failed">Nu s-au putut extrage fișierele descărcate.</string>
+    <string name="error_download_failed">Descărcarea nu a putut fi finalizată.</string>
+    <string name="unknown_error">Ceva nu a mers bine</string>
+    <!-- ⚙️ Operation States -->
+    <string name="operation_in_progress">Această acțiune este deja în curs de desfășurare.</string>
+    <string name="cannot_delete_during_download">Nu puteți șterge un grafic în timp ce acesta descarcă sau extrage.</string>
+    <string name="permission_denied_delete">Permisiune refuzată. Nu se poate șterge graficul.</string>
+    <string name="storage_error_delete">Nu s-a putut șterge graficul din cauza unei probleme de stocare.</string>
 </resources>
