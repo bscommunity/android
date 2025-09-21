@@ -1,6 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
 <animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/baseline_favorite_24" >
+    android:drawable="@drawable/baseline_favorite_24">
+
+  <!-- circle scaling (group) -->
   <target
-      android:name="scaleGroup"
-      android:animation="@animator/animator_scale" />
+      android:name="circleGroup"
+      android:animation="@animator/circle_scale" />
+
+  <!-- circle fade (path's fillAlpha) -->
+  <target
+      android:name="circlePath"
+      android:animation="@animator/circle_fade" />
+
+  <!-- heart pop (group scale) -->
+  <target
+      android:name="heartGroup"
+      android:animation="@animator/heart_pop" />
 </animated-vector>
