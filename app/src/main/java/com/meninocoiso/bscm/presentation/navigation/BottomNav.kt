@@ -24,7 +24,7 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.UpdatesSection
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.User
-import com.meninocoiso.bscm.presentation.components.SwipeableSnackbarHost
+import com.meninocoiso.bscm.presentation.ui.components.layout.SwipeableSnackbarHost
 import com.meninocoiso.bscm.presentation.screens.details.ChartDetails
 import com.meninocoiso.bscm.presentation.screens.settings.Profile
 import com.meninocoiso.bscm.presentation.screens.settings.SettingsScreen

@@ -212,7 +212,7 @@ fun ProfileScreen(
                     )
                     ProfileStatDivider()
                     ProfileStatItem(
-                        icon = R.drawable.rounded_favorite_24px,
+                        icon = R.drawable.rounded_favorite_24,
                         label = "+500 liked charts",
                         modifier = Modifier
                             .weight(1f)

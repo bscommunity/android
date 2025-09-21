@@ -13,7 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.BottomAppBar
@@ -46,17 +45,18 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
-import com.meninocoiso.bscm.presentation.components.SwipeableSnackbarHost
 import com.meninocoiso.bscm.presentation.ui.components.CarouselItem
 import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
 import com.meninocoiso.bscm.presentation.ui.components.MediaCarousel
 import com.meninocoiso.bscm.presentation.ui.components.chart.ChartContributors
 import com.meninocoiso.bscm.presentation.ui.components.details.DownloadButton
+import com.meninocoiso.bscm.presentation.ui.components.details.LikeButton
 import com.meninocoiso.bscm.presentation.ui.components.details.StatListItem
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ConfirmationDialog
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ListenTrackDialog
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ReportDialog
 import com.meninocoiso.bscm.presentation.ui.components.layout.Section
+import com.meninocoiso.bscm.presentation.ui.components.layout.SwipeableSnackbarHost
 import com.meninocoiso.bscm.presentation.viewmodel.ContentState
 import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.bscm.util.LinkingUtils.shareChartLink
@@ -239,22 +239,13 @@ fun ChartDetailsScreen(
         bottomBar = {
             BottomAppBar(
                 actions = {
-                    IconButton(onClick = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar(context.getString(R.string.feature_not_implemented))
-                        }
-                    }) {
-                        Icon(
-                            Icons.Default.FavoriteBorder,
-                            contentDescription = stringResource(R.string.like_chart),
-                        )
-                    }
                     IconButton(onClick = { currentDialog = CurrentDialog.ListenTrack }) {
                         Icon(
                             painter = painterResource(id = R.drawable.baseline_artist_24),
                             contentDescription = stringResource(R.string.listen_to_track),
                         )
                     }
+                    LikeButton(chart.id, false)
                 },
                 floatingActionButton = {
                     DownloadButton(

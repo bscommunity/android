@@ -128,7 +128,8 @@ dependencies {
 	// Dependency Injection
 	implementation(libs.androidx.hilt.navigation.compose)
 	implementation(libs.hilt.android)
-	ksp(libs.hilt.compiler)
+    implementation(libs.androidx.compose.animation.graphics)
+    ksp(libs.hilt.compiler)
 
 	// Network and Serialization
 	implementation(libs.ktor.client.android)

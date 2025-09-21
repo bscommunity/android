@@ -1,4 +1,4 @@
-package com.meninocoiso.bscm.presentation.components
+package com.meninocoiso.bscm.presentation.ui.components.layout
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
