@@ -26,8 +26,6 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import kotlinx.coroutines.launch
 
-private enum class BoxState { Collapsed, Expanded }
-
 @Composable
 fun LikeButton(
     defaultValue: Boolean = false,
@@ -52,6 +50,7 @@ fun LikeButton(
     // Circular ring animation
     val ringRadius = remember { Animatable(0f) }
     val ringAlpha = remember { Animatable(0f) }
+    val ringMaxStrokeWidth = 16.dp
     val ringMaxRadius = 24.dp
     val ringColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
 
@@ -64,7 +63,7 @@ fun LikeButton(
                     color = ringColor.copy(alpha = ringAlpha.value),
                     radius = ringMaxRadius.toPx() * ringRadius.value,
                     center = androidx.compose.ui.geometry.Offset(center.width, center.height),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4.dp.toPx())
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = ringMaxStrokeWidth.toPx() * (1 - ringRadius.value))
                 )
             }
         }
