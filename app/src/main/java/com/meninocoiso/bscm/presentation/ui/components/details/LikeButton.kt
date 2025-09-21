@@ -1,6 +1,8 @@
 package com.meninocoiso.bscm.presentation.ui.components.details
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -16,6 +18,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
@@ -28,8 +32,9 @@ fun LikeButton(
     defaultValue: Boolean = false,
     onLikeChanged: (Boolean) -> Unit = {}
 ) {
+    val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
-    
+
     var isLiked by remember { mutableStateOf(defaultValue) }
 
     // Heart scale animation
@@ -42,9 +47,18 @@ fun LikeButton(
             onClick = {
                 isLiked = !isLiked
                 onLikeChanged(isLiked)
+                
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                
                 // Heart scale animation: scale up then down
                 scope.launch {
-                    heartScale.animateTo(1.3f, tween(120))
+                    heartScale.animateTo(
+                        1.3f,
+                        spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMedium
+                        )
+                    )
                     heartScale.animateTo(1f, tween(180))
                 }
             }
