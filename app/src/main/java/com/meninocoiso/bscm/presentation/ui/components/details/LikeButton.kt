@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
@@ -40,26 +41,75 @@ fun LikeButton(
     // Heart scale animation
     val heartScale = remember { Animatable(1f) }
 
+    // Dots burst animation
+    val burstProgress = remember { Animatable(0f) }
+    val burstAlpha = remember { Animatable(0f) }
+    val numDots = 8
+    val dotColor = MaterialTheme.colorScheme.primary
+    val dotSize = 2.dp
+    val burstRadius = 20.dp
+
     Box(contentAlignment = Alignment.Center) {
+        // Dots burst effect
+        if (burstAlpha.value > 0f) {
+            Canvas(modifier = Modifier.size(48.dp)) {
+                val center = size / 2f
+                val radiusPx = burstRadius.toPx() * burstProgress.value
+                for (i in 0 until numDots) {
+                    val angle = (2 * Math.PI * i) / numDots
+                    val x = center.width + radiusPx * kotlin.math.cos(angle).toFloat()
+                    val y = center.height + radiusPx * kotlin.math.sin(angle).toFloat()
+                    drawCircle(
+                        color = dotColor.copy(alpha = burstAlpha.value),
+                        // Dot radius is in sync with alpha: 0 when transparent, full size when fully visible
+                        radius = dotSize.toPx() * burstAlpha.value,
+                        center = androidx.compose.ui.geometry.Offset(x, y)
+                    )
+                }
+            }
+        }
 
         // ❤️ Heart button
         IconButton(
             onClick = {
-                isLiked = !isLiked
+                // Toggle like state
+                val newLiked = !isLiked
+                isLiked = newLiked
                 onLikeChanged(isLiked)
-                
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                
-                // Heart scale animation: scale up then down
+
                 scope.launch {
-                    heartScale.animateTo(
-                        1.3f,
-                        spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessMedium
-                        )
-                    )
-                    heartScale.animateTo(1f, tween(180))
+                    if (newLiked) {
+                        // Haptic feedback
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+
+                        // Animate heart and burst together only when liking
+                        burstProgress.snapTo(0f)
+                        burstAlpha.snapTo(1f)
+                        
+                        val burstJob = launch {
+                            burstProgress.animateTo(1f, tween(350))
+                        }
+                        
+                        val alphaJob = launch {
+                            kotlinx.coroutines.delay(200) // Start fading out a little after
+                            burstAlpha.animateTo(0f, tween(220))
+                        }
+                        
+                        val heartJob = launch {
+                            heartScale.animateTo(
+                                1.3f,
+                                spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessMedium
+                                )
+                            )
+                            heartScale.animateTo(1f, tween(180))
+                        }
+                        burstJob.join()
+                        alphaJob.join()
+                        heartJob.join()
+                    }
+                    // No animation when unliking
                 }
             }
         ) {
