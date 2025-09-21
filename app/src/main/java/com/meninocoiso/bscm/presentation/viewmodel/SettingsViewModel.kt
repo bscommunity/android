@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.repository.AppUpdateRepository
+import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.ThemePreference
 import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
@@ -48,6 +49,7 @@ class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val appUpdateRepository: AppUpdateRepository,
     private val apiClient: ApiClient,
+    private val cacheRepository: CacheRepository, // Inject CacheRepository
 ) : ViewModel() {
     /**
      * Expose settings as a StateFlow for reactive UI updates
@@ -106,15 +108,23 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _contributorsState.value = current.copy(isLoading = true)
 
+            // Load from CacheRepository first
+            val cached = cacheRepository.getContributors()
+            if (cached.isNotEmpty()) {
+                _contributorsState.value = ContributorsState(isLoading = false, items = cached)
+                return@launch
+            }
+
             val result = apiClient.getContributors()
-            
             if (result.isNotEmpty()) {
                 _contributorsState.value = ContributorsState(isLoading = false, items = result)
+                cacheRepository.setContributors(result)
             } else {
                 // Try again one more time if the result is empty
                 try {
                     val retryResult = apiClient.getContributors()
                     _contributorsState.value = ContributorsState(isLoading = false, items = retryResult)
+                    cacheRepository.setContributors(retryResult)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to load contributors on retry", e)
                     _contributorsState.value = current.copy(isLoading = false)

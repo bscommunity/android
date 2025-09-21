@@ -22,7 +22,6 @@ import com.meninocoiso.bscm.domain.model.collection.CollectionItem
 import com.meninocoiso.bscm.domain.model.collection.CreateCollectionRequest
 import com.meninocoiso.bscm.domain.model.collection.UpdateCollectionRequest
 import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
-import com.meninocoiso.bscm.util.DevelopmentUtils
 import com.meninocoiso.bscm.util.KeystoreUtils
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -36,7 +35,6 @@ import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import jakarta.inject.Inject
@@ -80,11 +78,11 @@ class KtorApiClient @Inject constructor(
         
         defaultRequest {
             url("https://api-cyb1.onrender.com")
-            url {
+            /*url {
                 protocol = URLProtocol.HTTP
                 host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.10"
                 port = 8080
-            }
+            }*/
 
             val timestamp = System.currentTimeMillis().toString()
             val payload = "$timestamp:"
