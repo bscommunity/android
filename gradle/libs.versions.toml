@@ -16,6 +16,7 @@ constraintlayoutCompose = "1.1.1"
 material = "1.13.0-rc01"
 material3 = "1.4.0-beta02"
 materialIcons = "1.7.8"
+# animationGraphics = "1.9.1"
 
 # Image Loading
 landscapist = "2.5.2"
@@ -43,7 +44,6 @@ desugar_jdk_libs = "2.1.5"
 kotlinParcelize = "2.2.10"
 tinkAndroid = "1.18.0"
 browser = "1.9.0"
-animationGraphics = "1.9.1"
 
 [libraries]
 # Core Android and Kotlin
@@ -67,6 +67,7 @@ androidx-constraintlayout-compose = { group = "androidx.constraintlayout", name 
 navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "composeNavigation" }
 material-icons = { group = "androidx.compose.material", name = "material-icons-core", version.ref = "materialIcons" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+# androidx-compose-animation-graphics = { group = "androidx.compose.animation", name = "animation-graphics", version.ref = "animationGraphics" }
 
 # Image Loading
 landscapist-coil = { group = "com.github.skydoves", name = "landscapist-coil3", version.ref = "landscapist" }
@@ -103,7 +104,6 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 desugar_jdk_libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugar_jdk_libs" }
 tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tinkAndroid" }
 androidxBrowser = { group = "androidx.browser", name = "browser", version.ref = "browser" }
-androidx-compose-animation-graphics = { group = "androidx.compose.animation", name = "animation-graphics", version.ref = "animationGraphics" }
 
 [plugins]
 # Core and Kotlin

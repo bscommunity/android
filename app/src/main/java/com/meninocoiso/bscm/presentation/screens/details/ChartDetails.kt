@@ -245,7 +245,7 @@ fun ChartDetailsScreen(
                             contentDescription = stringResource(R.string.listen_to_track),
                         )
                     }
-                    LikeButton(chart.id, false)
+                    LikeButton(false, onLikeChanged = { /* TODO */ })
                 },
                 floatingActionButton = {
                     DownloadButton(

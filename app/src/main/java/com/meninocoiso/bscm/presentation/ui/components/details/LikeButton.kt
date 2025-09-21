@@ -1,60 +1,69 @@
 package com.meninocoiso.bscm.presentation.ui.components.details
 
-import androidx.compose.animation.graphics.res.animatedVectorResource
-import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
-import androidx.compose.animation.graphics.vector.AnimatedImageVector
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+private enum class BoxState { Collapsed, Expanded }
 
 @Composable
 fun LikeButton(
-    chartId: String,
     defaultValue: Boolean = false,
+    onLikeChanged: (Boolean) -> Unit = {}
 ) {
+    val scope = rememberCoroutineScope()
+    
     var isLiked by remember { mutableStateOf(defaultValue) }
 
-    // transient trigger used to play the AVD once
-    var avdTrigger by remember { mutableStateOf(false) }
+    // Heart scale animation
+    val heartScale = remember { Animatable(1f) }
 
-    // load animated vector drawable
-    val image: AnimatedImageVector = AnimatedImageVector.animatedVectorResource(
-        id = R.drawable.baseline_animator_favorite_24
-    )
+    Box(contentAlignment = Alignment.Center) {
 
-    val painter = rememberAnimatedVectorPainter(animatedImageVector = image, atEnd = avdTrigger)
-
-    // reset transient trigger after animation duration (400ms pulse + short pop)
-    LaunchedEffect(avdTrigger) {
-        if (avdTrigger) {
-            // total duration should be >= the longest animator (400ms here)
-            delay(450)
-            avdTrigger = false
+        // ❤️ Heart button
+        IconButton(
+            onClick = {
+                isLiked = !isLiked
+                onLikeChanged(isLiked)
+                // Heart scale animation: scale up then down
+                scope.launch {
+                    heartScale.animateTo(1.3f, tween(120))
+                    heartScale.animateTo(1f, tween(180))
+                }
+            }
+        ) {
+            Icon(
+                painter = painterResource(
+                    if (isLiked) R.drawable.baseline_favorite_24
+                    else R.drawable.rounded_favorite_24
+                ),
+                contentDescription = null,
+                tint = if (isLiked) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .size(24.dp)
+                    .graphicsLayer(
+                        scaleX = heartScale.value,
+                        scaleY = heartScale.value
+                    )
+            )
         }
     }
-
-    Image(
-        painter = painter,
-        contentDescription = if (isLiked) "Liked" else "Not liked",
-        modifier = Modifier
-            .size(48.dp)
-            .clickable {
-                val newValue = !isLiked
-                if (newValue) {
-                    // only fire animation on like (not on unlike)
-                    avdTrigger = true
-                }
-                isLiked = newValue
-            }
-    )
 }

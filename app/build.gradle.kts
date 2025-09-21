@@ -118,6 +118,7 @@ dependencies {
 	implementation(libs.material)
 	implementation(libs.androidx.constraintlayout.compose)
 	implementation(libs.navigation.compose)
+    // implementation(libs.androidx.compose.animation.graphics)
 
 	// Image Loading
 	implementation(libs.coil.compose)
@@ -128,7 +129,6 @@ dependencies {
 	// Dependency Injection
 	implementation(libs.androidx.hilt.navigation.compose)
 	implementation(libs.hilt.android)
-    implementation(libs.androidx.compose.animation.graphics)
     ksp(libs.hilt.compiler)
 
 	// Network and Serialization
