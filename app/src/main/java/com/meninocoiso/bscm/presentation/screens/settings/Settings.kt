@@ -553,7 +553,7 @@ fun SettingsScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .indication(interactionSource, null)
+                                    .indication(interactionSource, ripple())
                                     .padding(vertical = 16.dp, horizontal = 24.dp)
                                 ,
                                 horizontalArrangement = Arrangement.SpaceBetween

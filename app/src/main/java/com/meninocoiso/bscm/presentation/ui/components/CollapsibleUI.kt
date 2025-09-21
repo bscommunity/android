@@ -8,7 +8,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -62,7 +61,7 @@ fun CollapsableSection(
                 onClick = {
                     isExpanded = !isExpanded
                 },
-                indication = LocalIndication.current,
+                indication = null /*LocalIndication.current*/,
                 interactionSource = interactionSource
             )
     ) {
