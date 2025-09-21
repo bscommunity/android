@@ -49,7 +49,26 @@ fun LikeButton(
     val dotSize = 2.dp
     val burstRadius = 20.dp
 
+    // Circular ring animation
+    val ringRadius = remember { Animatable(0f) }
+    val ringAlpha = remember { Animatable(0f) }
+    val ringMaxRadius = 24.dp
+    val ringColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+
     Box(contentAlignment = Alignment.Center) {
+        // Circular ring effect (behind burst dots)
+        if (ringAlpha.value > 0f && ringRadius.value > 0f) {
+            Canvas(modifier = Modifier.size(48.dp)) {
+                val center = size / 2f
+                drawCircle(
+                    color = ringColor.copy(alpha = ringAlpha.value),
+                    radius = ringMaxRadius.toPx() * ringRadius.value,
+                    center = androidx.compose.ui.geometry.Offset(center.width, center.height),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4.dp.toPx())
+                )
+            }
+        }
+
         // Dots burst effect
         if (burstAlpha.value > 0f) {
             Canvas(modifier = Modifier.size(48.dp)) {
@@ -82,9 +101,11 @@ fun LikeButton(
                         // Haptic feedback
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
 
-                        // Animate heart and burst together only when liking
+                        // Animate heart, burst, and ring together only when liking
                         burstProgress.snapTo(0f)
                         burstAlpha.snapTo(1f)
+                        ringRadius.snapTo(0f)
+                        ringAlpha.snapTo(0.5f)
                         
                         val burstJob = launch {
                             burstProgress.animateTo(1f, tween(350))
@@ -93,6 +114,11 @@ fun LikeButton(
                         val alphaJob = launch {
                             kotlinx.coroutines.delay(200) // Start fading out a little after
                             burstAlpha.animateTo(0f, tween(220))
+                        }
+                        
+                        val ringJob = launch {
+                            ringRadius.animateTo(1f, tween(400))
+                            ringAlpha.animateTo(0f, tween(200))
                         }
                         
                         val heartJob = launch {
@@ -107,6 +133,7 @@ fun LikeButton(
                         }
                         burstJob.join()
                         alphaJob.join()
+                        ringJob.join()
                         heartJob.join()
                     }
                     // No animation when unliking
