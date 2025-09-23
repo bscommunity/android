@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -190,69 +191,108 @@ fun createRingVisual(
 }
 
 @Composable
-fun BurstIconButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+fun AnimatedIcon(
+    isActive: Boolean,
     iconSize: Dp = 24.dp,
     activeIconResId: Int,
     inactiveIconResId: Int,
     activeColor: Color,
     inactiveColor: Color,
+    iconScale: Animatable<Float, *>
+) {
+    Icon(
+        painter = painterResource(id = if (isActive) activeIconResId else inactiveIconResId),
+        tint = if (isActive) activeColor else inactiveColor,
+        contentDescription = null,
+        modifier = Modifier
+            .size(iconSize)
+            .graphicsLayer(
+                scaleX = iconScale.value,
+                scaleY = iconScale.value
+            )
+    )
+}
+
+/**
+ * Simplified BurstIconButton with integrated icon scale animation
+ */
+@Composable
+fun BurstIconButton(
     isActive: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    animations: List<IconButtonAnimation> = listOf(),
+    visuals: List<IconButtonVisual> = listOf(),
     hapticFeedback: Boolean = true,
-    enableBurst: Boolean = true,
-    enableRing: Boolean = true,
-    enableIconScale: Boolean = true,
-    burstConfig: BurstDotsConfig = BurstDotsConfig(color = activeColor),
-    ringConfig: RingConfig = RingConfig(color = activeColor.copy(alpha = 0.5f)),
-    burstAnimationConfig: BurstAnimationConfig = BurstAnimationConfig(),
-    ringAnimationConfig: RingAnimationConfig = RingAnimationConfig(),
-    iconScaleConfig: IconScaleAnimationConfig = IconScaleAnimationConfig(),
+    icon: @Composable () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
+    
+    fun triggerAnimations() {
+        if (hapticFeedback) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        scope.launch {
+            animations.map { anim -> scope.launch { anim(scope) } }
+                .forEach { it.join() }
+        }
+    }
 
-    // Animation states
-    val iconScale = remember { Animatable(1f) }
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        visuals.forEach { visual -> visual() }
+        IconButton(onClick = {
+            onClick()
+            if (!isActive) triggerAnimations()
+        }) {
+            icon()
+        }
+    }
+}
+
+/**
+ * Remember burst dots animation and visual modules
+ */
+@Composable
+fun rememberBurstDotsModule(
+    config: BurstDotsConfig = BurstDotsConfig(color = MaterialTheme.colorScheme.primary),
+    animationConfig: BurstAnimationConfig = BurstAnimationConfig()
+): Pair<IconButtonAnimation, IconButtonVisual> {
     val burstProgress = remember { Animatable(0f) }
     val burstAlpha = remember { Animatable(0f) }
+
+    val animation = createBurstAnimation(burstProgress, burstAlpha, animationConfig)
+    val visual = createBurstDotsVisual(burstAlpha, burstProgress, config)
+
+    return animation to visual
+}
+
+/**
+ * Remember ring animation and visual modules
+ */
+@Composable
+fun rememberRingModule(
+    config: RingConfig = RingConfig(
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+    ),
+    animationConfig: RingAnimationConfig = RingAnimationConfig()
+): Pair<IconButtonAnimation, IconButtonVisual> {
     val ringRadius = remember { Animatable(0f) }
     val ringAlpha = remember { Animatable(0f) }
 
-    // Animation modules
-    val burstAnimation = if (enableBurst) createBurstAnimation(burstProgress, burstAlpha, burstAnimationConfig) else null
-    val ringAnimation = if (enableRing) createRingAnimation(ringRadius, ringAlpha, ringAnimationConfig) else null
-    val iconScaleAnimation = if (enableIconScale) createIconScaleAnimation(iconScale, iconScaleConfig) else null
-    
-    // Visual modules
-    val burstVisual = if (enableBurst) createBurstDotsVisual(burstAlpha, burstProgress, burstConfig) else null
-    val ringVisual = if (enableRing) createRingVisual(ringAlpha, ringRadius, ringConfig) else null
+    val animation = createRingAnimation(ringRadius, ringAlpha, animationConfig)
+    val visual = createRingVisual(ringAlpha, ringRadius, config)
 
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        burstVisual?.invoke()
-        ringVisual?.invoke()
-        IconButton(onClick = {
-            onClick()
-            if (!isActive) {
-                if (hapticFeedback) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                scope.launch {
-                    if (burstAnimation != null) burstAnimation(scope)
-                    if (ringAnimation != null) ringAnimation(scope)
-                    if (iconScaleAnimation != null) iconScaleAnimation(scope)
-                }
-            }
-        }) {
-            Icon(
-                painter = painterResource(id = if (isActive) activeIconResId else inactiveIconResId),
-                tint = if (isActive) activeColor else inactiveColor,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(iconSize)
-                    .graphicsLayer(
-                        scaleX = iconScale.value,
-                        scaleY = iconScale.value
-                    )
-            )
-        }
-    }
+    return animation to visual
+}
+
+/**
+ * Remember icon scale animation module
+ */
+@Composable
+fun rememberIconScaleModule(
+    config: IconScaleAnimationConfig = IconScaleAnimationConfig()
+): Pair<Animatable<Float, *>, IconButtonAnimation> {
+    val iconScale = remember { Animatable(1f) }
+    val animation = createIconScaleAnimation(iconScale, config)
+
+    return iconScale to animation
 }
