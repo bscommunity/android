@@ -220,7 +220,7 @@ fun ProfileScreen(
                     )
                     ProfileStatDivider()
                     ProfileStatItem(
-                        icon = R.drawable.rounded_bookmark_24px,
+                        icon = R.drawable.rounded_bookmark_24,
                         label = "+20 favorite charts",
                         modifier = Modifier
                             .weight(1f)
