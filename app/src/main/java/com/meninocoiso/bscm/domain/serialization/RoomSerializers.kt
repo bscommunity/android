@@ -1,8 +1,10 @@
 package com.meninocoiso.bscm.domain.serialization
 
 import androidx.room.TypeConverter
+import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.model.Contributor
+import com.meninocoiso.bscm.domain.model.InteractionType
 import com.meninocoiso.bscm.domain.model.KnownIssue
 import com.meninocoiso.bscm.domain.model.StreamingLink
 import com.meninocoiso.bscm.domain.model.Version
@@ -113,6 +115,36 @@ class Converters {
             emptyList()
         } else {
             json.decodeFromString(stringListString)
+        }
+    }
+
+    // InteractionType converters
+    @TypeConverter
+    fun fromInteractionType(interactionType: InteractionType): String {
+        return interactionType.name
+    }
+
+    @TypeConverter
+    fun toInteractionType(interactionTypeString: String): InteractionType {
+        return try {
+            InteractionType.valueOf(interactionTypeString)
+        } catch (e: IllegalArgumentException) {
+            InteractionType.LIKE // Default value if conversion fails
+        }
+    }
+
+    // ContentType converters
+    @TypeConverter
+    fun fromContentType(contentType: ContentType): String {
+        return contentType.name
+    }
+
+    @TypeConverter
+    fun toContentType(contentTypeString: String): ContentType {
+        return try {
+            ContentType.valueOf(contentTypeString)
+        } catch (e: IllegalArgumentException) {
+            ContentType.CHART // Default value if conversion fails
         }
     }
 }
