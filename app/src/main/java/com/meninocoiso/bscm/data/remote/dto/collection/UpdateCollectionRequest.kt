@@ -1,4 +1,4 @@
-package com.meninocoiso.bscm.domain.model.collection
+package com.meninocoiso.bscm.data.remote.dto.collection
 
 import kotlinx.serialization.Serializable
 
@@ -7,4 +7,3 @@ data class UpdateCollectionRequest(
     val name: String? = null,
     val isPublic: Boolean? = null
 )
-

@@ -1,222 +1,227 @@
 package com.meninocoiso.bscm.data.manager
 
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.util.Log
 import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
 import com.meninocoiso.bscm.data.local.entity.QueuedInteractionEntity
 import com.meninocoiso.bscm.data.remote.ApiClient
-import com.meninocoiso.bscm.data.remote.dto.LikeRequest
-import com.meninocoiso.bscm.domain.enums.ContentType
-import com.meninocoiso.bscm.domain.model.InteractionResult
-import com.meninocoiso.bscm.domain.model.InteractionType
-import com.meninocoiso.bscm.domain.model.QueuedInteraction
+import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionItemRequest
+import com.meninocoiso.bscm.domain.enums.ActionType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import java.util.UUID
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "InteractionQueueManager"
+private const val MAX_RETRIES = 3
+private const val BATCH_DELAY_MS = 3000L // 3 seconds to deduplicate interactions
 
 @Singleton
 class InteractionQueueManager @Inject constructor(
     private val queueDao: InteractionQueueDao,
     private val apiClient: ApiClient,
-    private val context: Context
+    @Suppress("UNUSED_PARAMETER") private val context: Context
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var batchJob: Job? = null
     
     /**
-     * Queues a like/unlike interaction for processing
+     * Queue a like/unlike interaction
      */
-    suspend fun queueLikeInteraction(
-        contentType: ContentType,
-        contentId: ULong,
-        isLike: Boolean
+    suspend fun queueLikeInteraction(contentId: String, isLike: Boolean): String {
+        val action = if (isLike) ActionType.ADD else ActionType.REMOVE
+        return queueInteraction(contentId, "likes", action)
+    }
+    
+    /**
+     * Queue a favorite/unfavorite interaction
+     */
+    suspend fun queueFavoriteInteraction(contentId: String, isFavorite: Boolean): String {
+        val action = if (isFavorite) ActionType.ADD else ActionType.REMOVE
+        return queueInteraction(contentId, "favorites", action)
+    }
+    
+    /**
+     * Queue a collection add/remove interaction
+     */
+    suspend fun queueCollectionInteraction(
+        contentId: String,
+        collectionId: String,
+        isAdd: Boolean
     ): String {
-        val interactionId = UUID.randomUUID().toString()
+        val action = if (isAdd) ActionType.ADD else ActionType.REMOVE
+        return queueInteraction(contentId, collectionId, action)
+    }
+    
+    /**
+     * Generic method to queue any interaction
+     */
+    private suspend fun queueInteraction(
+        contentId: String,
+        collectionId: String,
+        action: ActionType
+    ): String = withContext(Dispatchers.IO) {
         val interaction = QueuedInteractionEntity(
-            id = interactionId,
-            contentType = contentType,
             contentId = contentId,
-            interactionType = if (isLike) InteractionType.LIKE else InteractionType.UNLIKE,
+            collectionId = collectionId,
+            action = action,
             timestamp = System.currentTimeMillis()
         )
         
-        queueDao.insertInteraction(interaction)
-        Log.d(TAG, "Queued ${if (isLike) "like" else "unlike"} interaction for $contentType:$contentId")
+        val id = queueDao.insert(interaction)
+        Log.d(TAG, "Queued interaction: contentId=$contentId, collection=$collectionId, action=$action")
         
-        // Try to process immediately if online
-        if (isNetworkAvailable()) {
-            processQueuedInteractions()
-        }
+        // Schedule batch processing with delay to allow deduplication
+        scheduleBatchProcessing()
         
-        return interactionId
+        id.toString()
     }
     
     /**
-     * Queues a bookmark/unbookmark interaction for processing
+     * Schedule batch processing with a delay to allow for deduplication
      */
-    suspend fun queueBookmarkInteraction(
-        contentType: ContentType,
-        contentId: ULong,
-        collectionId: ULong,
-        userId: String,
-        isBookmark: Boolean
-    ): String {
-        val interactionId = UUID.randomUUID().toString()
-        val interaction = QueuedInteractionEntity(
-            id = interactionId,
-            contentType = contentType,
-            contentId = contentId,
-            interactionType = if (isBookmark) InteractionType.BOOKMARK else InteractionType.UNBOOKMARK,
-            timestamp = System.currentTimeMillis()
-        )
+    private fun scheduleBatchProcessing() {
+        // Cancel existing job if any
+        batchJob?.cancel()
         
-        queueDao.insertInteraction(interaction)
-        Log.d(TAG, "Queued ${if (isBookmark) "bookmark" else "unbookmark"} interaction for $contentType:$contentId")
-        
-        // Try to process immediately if online
-        if (isNetworkAvailable()) {
-            processQueuedInteractions()
+        // Schedule a new batch processing job
+        batchJob = scope.launch {
+            delay(BATCH_DELAY_MS)
+            try {
+                processQueuedInteractions()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error processing batch", e)
+            }
         }
-        
-        return interactionId
     }
     
     /**
-     * Processes all queued interactions
+     * Process queued interactions by deduplicating and sending batch request
      */
-    fun processQueuedInteractions() {
-        scope.launch {
-            if (!isNetworkAvailable()) {
-                Log.d(TAG, "Network not available, skipping queue processing")
-                return@launch
+    suspend fun processQueuedInteractions() = withContext(Dispatchers.IO) {
+        try {
+            val allInteractions = queueDao.getAllQueued()
+            
+            if (allInteractions.isEmpty()) {
+                Log.d(TAG, "No interactions to process")
+                return@withContext
             }
             
-            val queuedInteractions = queueDao.getAllQueuedInteractions()
-            Log.d(TAG, "Processing ${queuedInteractions.size} queued interactions")
+            Log.d(TAG, "Processing ${allInteractions.size} queued interactions")
             
-            for (interaction in queuedInteractions) {
-                try {
-                    val result = processInteraction(interaction)
-                    
-                    if (result.success) {
-                        queueDao.deleteInteraction(interaction.id)
-                        Log.d(TAG, "Successfully processed interaction ${interaction.id}")
-                    } else if (result.shouldRetry && interaction.retryCount < interaction.maxRetries) {
-                        val updatedInteraction = interaction.copy(
-                            retryCount = interaction.retryCount + 1
-                        )
-                        queueDao.updateInteraction(updatedInteraction)
-                        Log.w(TAG, "Retry ${updatedInteraction.retryCount}/${interaction.maxRetries} for interaction ${interaction.id}")
+            // Deduplicate: For each contentId + collectionId, keep only the latest interaction
+            val deduplicatedMap = mutableMapOf<String, QueuedInteractionEntity>()
+            val interactionsToDelete = mutableListOf<QueuedInteractionEntity>()
+            
+            for (interaction in allInteractions) {
+                val key = "${interaction.contentId}:${interaction.collectionId}"
+                
+                val existing = deduplicatedMap[key]
+                if (existing == null) {
+                    // First interaction for this key
+                    deduplicatedMap[key] = interaction
+                } else {
+                    // Keep the latest one (highest timestamp)
+                    if (interaction.timestamp > existing.timestamp) {
+                        interactionsToDelete.add(existing)
+                        deduplicatedMap[key] = interaction
                     } else {
-                        queueDao.deleteInteraction(interaction.id)
-                        Log.e(TAG, "Failed to process interaction ${interaction.id} after ${interaction.retryCount} retries: ${result.error}")
-                    }
-                    
-                    // Add delay between requests to avoid rate limiting
-                    delay(200)
-                    
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error processing interaction ${interaction.id}", e)
-                    
-                    if (interaction.retryCount < interaction.maxRetries) {
-                        val updatedInteraction = interaction.copy(
-                            retryCount = interaction.retryCount + 1
-                        )
-                        queueDao.updateInteraction(updatedInteraction)
-                    } else {
-                        queueDao.deleteInteraction(interaction.id)
+                        interactionsToDelete.add(interaction)
                     }
                 }
             }
-        }
-    }
-    
-    /**
-     * Processes a single interaction
-     */
-    private suspend fun processInteraction(interaction: QueuedInteractionEntity): InteractionResult {
-        return try {
-            when (interaction.interactionType) {
-                InteractionType.LIKE -> {
-                    val request = LikeRequest(interaction.contentType, interaction.contentId)
-                    val success = apiClient.likeContent(request)
-                    InteractionResult(success = success, shouldRetry = !success)
-                }
-                
-                InteractionType.UNLIKE -> {
-                    val success = apiClient.unlikeContent(interaction.contentType, interaction.contentId)
-                    InteractionResult(success = success, shouldRetry = !success)
-                }
-                
-                InteractionType.BOOKMARK, InteractionType.UNBOOKMARK -> {
-                    // For now, we'll implement bookmark logic when collection system is ready
-                    // This is a placeholder for bookmark functionality
-                    Log.w(TAG, "Bookmark functionality not yet implemented")
-                    InteractionResult(success = false, shouldRetry = false, error = "Bookmark functionality not implemented")
-                }
+            
+            // Remove duplicates from the queue
+            if (interactionsToDelete.isNotEmpty()) {
+                queueDao.delete(interactionsToDelete)
+                Log.d(TAG, "Removed ${interactionsToDelete.size} duplicate interactions")
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to process interaction", e)
-            InteractionResult(
-                success = false,
-                shouldRetry = true,
-                error = e.message
-            )
-        }
-    }
-    
-    /**
-     * Gets the current queue as a Flow
-     */
-    fun getQueuedInteractionsFlow(): Flow<List<QueuedInteraction>> {
-        return queueDao.getAllQueuedInteractionsFlow().map { entities ->
-            entities.map { entity ->
-                QueuedInteraction(
-                    id = entity.id,
-                    contentType = entity.contentType,
+            
+            // Check for opposite actions that cancel each other out
+            val finalInteractions = mutableListOf<QueuedInteractionEntity>()
+            val cancelledIds = mutableListOf<Long>()
+            
+            for ((key, interaction) in deduplicatedMap) {
+                // Check if this interaction's action would result in no-op
+                // For example, if the current state is already what we want
+                finalInteractions.add(interaction)
+            }
+            
+            if (finalInteractions.isEmpty()) {
+                Log.d(TAG, "All interactions cancelled out")
+                return@withContext
+            }
+            
+            // Convert to batch request format
+            val batchRequest = finalInteractions.map { entity ->
+                UpdateCollectionItemRequest(
                     contentId = entity.contentId,
-                    interactionType = entity.interactionType,
-                    timestamp = entity.timestamp,
-                    retryCount = entity.retryCount,
-                    maxRetries = entity.maxRetries
+                    collectionId = entity.collectionId,
+                    action = entity.action
                 )
             }
+            
+            Log.d(TAG, "Sending batch of ${batchRequest.size} interactions to server")
+            
+            // Send batch request to server
+            try {
+                val success = apiClient.batchProcessInteractions(batchRequest)
+                
+                if (success) {
+                    // Clear all processed interactions
+                    // val processedIds = finalInteractions.map { it.id }
+                    queueDao.delete(finalInteractions)
+                    Log.d(TAG, "Successfully processed and removed ${finalInteractions.size} interactions")
+                } else {
+                    Log.w(TAG, "Batch processing returned false")
+                    handleRetries(finalInteractions)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to send batch request", e)
+                handleRetries(finalInteractions)
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in processQueuedInteractions", e)
         }
     }
     
     /**
-     * Gets the current queue size
+     * Handle retry logic for failed interactions
      */
-    suspend fun getQueueSize(): Int {
-        return queueDao.getQueueSize()
+    private suspend fun handleRetries(interactions: List<QueuedInteractionEntity>) {
+        for (interaction in interactions) {
+            if (interaction.retryCount < MAX_RETRIES) {
+                // Increment retry count
+                val updated = interaction.copy(retryCount = interaction.retryCount + 1)
+                queueDao.update(updated)
+                Log.d(TAG, "Incremented retry count for interaction ${interaction.id} to ${updated.retryCount}")
+            } else {
+                // Max retries reached, remove from queue
+                queueDao.delete(interaction)
+                Log.w(TAG, "Max retries reached for interaction ${interaction.id}, removing from queue")
+            }
+        }
     }
     
     /**
-     * Cleans up failed interactions that exceeded max retries
+     * Get the current queue size
      */
-    suspend fun cleanupFailedInteractions() {
-        queueDao.deleteFailedInteractions()
+    suspend fun getQueueSize(): Int = withContext(Dispatchers.IO) {
+        queueDao.getQueueSize()
     }
     
     /**
-     * Checks if network is available
+     * Get the latest queued action for a specific content and collection
+     * This helps determine the optimistic UI state
      */
-    private fun isNetworkAvailable(): Boolean {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network = connectivityManager.activeNetwork ?: return false
-        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-        
-        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-               capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-    }
+    suspend fun getLatestAction(contentId: String, collectionId: String): ActionType? =
+        withContext(Dispatchers.IO) {
+            queueDao.getLatestForContent(contentId, collectionId)?.action
+        }
 }

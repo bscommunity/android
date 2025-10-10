@@ -1,179 +1,131 @@
 package com.meninocoiso.bscm.data.repository
 
-import android.util.Log
-import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.data.remote.ApiClient
-import com.meninocoiso.bscm.domain.enums.ContentType
-import com.meninocoiso.bscm.domain.model.InteractionResult
+import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionItemRequest
+import com.meninocoiso.bscm.domain.enums.ActionType
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "InteractionRepositoryImpl"
+private const val BATCH_DELAY_MS = 3000L // 3 seconds for deduplication
 
 @Singleton
 class InteractionRepositoryImpl @Inject constructor(
-    private val queueManager: InteractionQueueManager,
     private val apiClient: ApiClient,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : InteractionRepository {
-    
-    // Local state to track likes/bookmarks optimistically
-    private val localLikeState = mutableMapOf<String, Boolean>()
-    private val localBookmarkState = mutableMapOf<String, Boolean>()
-    
-    override suspend fun likeContent(
-        contentType: ContentType,
-        contentId: ULong
-    ): Flow<Result<InteractionResult>> = flow {
-        try {
-            // Update local state optimistically
-            val key = "${contentType.name}:$contentId"
-            localLikeState[key] = true
-            
-            // Queue the interaction
-            val interactionId = queueManager.queueLikeInteraction(contentType, contentId, true)
-            
-            Log.d(TAG, "Queued like interaction $interactionId for $contentType:$contentId")
-            
-            emit(Result.success(InteractionResult(
-                success = true,
-                shouldRetry = false
-            )))
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to queue like interaction", e)
-            emit(Result.failure(e))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-    
-    override suspend fun unlikeContent(
-        contentType: ContentType,
-        contentId: ULong
-    ): Flow<Result<InteractionResult>> = flow {
-        try {
-            // Update local state optimistically
-            val key = "${contentType.name}:$contentId"
-            localLikeState[key] = false
-            
-            // Queue the interaction
-            val interactionId = queueManager.queueLikeInteraction(contentType, contentId, false)
-            
-            Log.d(TAG, "Queued unlike interaction $interactionId for $contentType:$contentId")
-            
-            emit(Result.success(InteractionResult(
-                success = true,
-                shouldRetry = false
-            )))
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to queue unlike interaction", e)
-            emit(Result.failure(e))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-    
-    override suspend fun isContentLiked(
-        contentType: ContentType,
-        contentId: ULong
-    ): Flow<Result<Boolean>> = flow {
-        try {
-            val key = "${contentType.name}:$contentId"
-            
-            // Check local state first for immediate response
-            if (localLikeState.containsKey(key)) {
-                emit(Result.success(localLikeState[key] ?: false))
-                return@flow
+    private val pendingInteractions = mutableMapOf<Pair<String, String>, UpdateCollectionItemRequest>()
+    private val mutex = Mutex()
+    private var batchJob: Job? = null
+    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
+
+    private fun queueInteraction(contentId: String, collectionId: String, action: ActionType) {
+        scope.launch {
+            mutex.withLock {
+                pendingInteractions[Pair(contentId, collectionId)] = UpdateCollectionItemRequest(contentId, collectionId, action)
+                if (batchJob == null || batchJob?.isCompleted == true) {
+                    batchJob = scope.launch {
+                        delay(BATCH_DELAY_MS)
+                        sendBatch()
+                    }
+                }
             }
-            
-            // Fall back to server check if not in local state
-            try {
-                val isLiked = apiClient.isContentLiked(contentType, contentId)
-                localLikeState[key] = isLiked // Cache the result
-                emit(Result.success(isLiked))
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to check like status from server, assuming false", e)
-                emit(Result.success(false))
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to check like status", e)
-            emit(Result.failure(e))
         }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-    
-    override suspend fun bookmarkContent(
-        contentType: ContentType,
-        contentId: ULong,
-        collectionId: ULong,
-        userId: String
-    ): Flow<Result<InteractionResult>> = flow {
-        try {
-            // Update local state optimistically
-            val key = "${contentType.name}:$contentId:$collectionId"
-            localBookmarkState[key] = true
-            
-            // Queue the interaction
-            val interactionId = queueManager.queueBookmarkInteraction(
-                contentType, contentId, collectionId, userId, true
-            )
-            
-            Log.d(TAG, "Queued bookmark interaction $interactionId for $contentType:$contentId")
-            
-            emit(Result.success(InteractionResult(
-                success = true,
-                shouldRetry = false
-            )))
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to queue bookmark interaction", e)
-            emit(Result.failure(e))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-    
-    override suspend fun unbookmarkContent(
-        contentType: ContentType,
-        contentId: ULong,
-        collectionId: ULong,
-        userId: String
-    ): Flow<Result<InteractionResult>> = flow {
-        try {
-            // Update local state optimistically
-            val key = "${contentType.name}:$contentId:$collectionId"
-            localBookmarkState[key] = false
-            
-            // Queue the interaction
-            val interactionId = queueManager.queueBookmarkInteraction(
-                contentType, contentId, collectionId, userId, false
-            )
-            
-            Log.d(TAG, "Queued unbookmark interaction $interactionId for $contentType:$contentId")
-            
-            emit(Result.success(InteractionResult(
-                success = true,
-                shouldRetry = false
-            )))
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to queue unbookmark interaction", e)
-            emit(Result.failure(e))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-    
-    override suspend fun getQueueSize(): Int {
-        return queueManager.getQueueSize()
     }
-    
+
+    private suspend fun sendBatch() {
+        val batch: List<UpdateCollectionItemRequest>
+        mutex.withLock {
+            batch = pendingInteractions.values.toList()
+            pendingInteractions.clear()
+        }
+        if (batch.isNotEmpty()) {
+            try {
+                apiClient.batchProcessInteractions(batch)
+            } catch (e: Exception) {
+                // Optionally handle retry logic here
+            }
+        }
+    }
+
+    override suspend fun likeContent(contentId: String): Flow<Result<Unit>> = flow {
+        queueInteraction(contentId, "likes", ActionType.ADD)
+        emit(Result.success(Unit))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }.flowOn(dispatcher)
+
+    override suspend fun unlikeContent(contentId: String): Flow<Result<Unit>> = flow {
+        queueInteraction(contentId, "likes", ActionType.REMOVE)
+        emit(Result.success(Unit))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }.flowOn(dispatcher)
+
+    override suspend fun isContentLiked(contentId: String): Flow<Result<Boolean>> = flow {
+        val latest = mutex.withLock { pendingInteractions[Pair(contentId, "likes")]?.action }
+        emit(Result.success(latest == ActionType.ADD))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }.flowOn(dispatcher)
+
+    override suspend fun favoriteContent(contentId: String): Flow<Result<Unit>> = flow {
+        queueInteraction(contentId, "favorites", ActionType.ADD)
+        emit(Result.success(Unit))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }.flowOn(dispatcher)
+
+    override suspend fun unfavoriteContent(contentId: String): Flow<Result<Unit>> = flow {
+        queueInteraction(contentId, "favorites", ActionType.REMOVE)
+        emit(Result.success(Unit))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }.flowOn(dispatcher)
+
+    override suspend fun isContentFavorited(contentId: String): Flow<Result<Boolean>> = flow {
+        val latest = mutex.withLock { pendingInteractions[Pair(contentId, "favorites")]?.action }
+        emit(Result.success(latest == ActionType.ADD))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }.flowOn(dispatcher)
+
+    override suspend fun addToCollection(contentId: String, collectionId: String): Flow<Result<Unit>> = flow {
+        queueInteraction(contentId, collectionId, ActionType.ADD)
+        emit(Result.success(Unit))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }.flowOn(dispatcher)
+
+    override suspend fun removeFromCollection(contentId: String, collectionId: String): Flow<Result<Unit>> = flow {
+        queueInteraction(contentId, collectionId, ActionType.REMOVE)
+        emit(Result.success(Unit))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }.flowOn(dispatcher)
+
+    override suspend fun getQueueSize(): Int {
+        return mutex.withLock {
+            pendingInteractions.size
+        }
+    }
+
     override suspend fun processQueue() {
-        queueManager.processQueuedInteractions()
+        // Cancel any pending batch job and send immediately
+        batchJob?.cancel()
+        sendBatch()
     }
 }

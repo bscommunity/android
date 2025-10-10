@@ -15,7 +15,7 @@ import java.time.LocalDateTime
 @Parcelize
 data class Chart(
     @PrimaryKey @ColumnInfo(name = "id") val id: String,
-    val shareId: String,
+    val contentId: String,
     val artist: String,
     val track: String,
     val album: String?,

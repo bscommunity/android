@@ -3,8 +3,6 @@ package com.meninocoiso.bscm.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.data.repository.InteractionRepository
-import com.meninocoiso.bscm.domain.enums.ContentType
-import com.meninocoiso.bscm.domain.model.InteractionResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,9 +29,9 @@ class InteractionViewModel @Inject constructor(
     /**
      * Likes content using the offline-first queue system
      */
-    fun likeContent(contentType: ContentType, contentId: ULong) {
+    fun likeContent(contentId: String) {
         viewModelScope.launch {
-            interactionRepository.likeContent(contentType, contentId)
+            interactionRepository.likeContent(contentId)
                 .collect { result ->
                     result.onSuccess { 
                         updateQueueSize()
@@ -47,9 +45,9 @@ class InteractionViewModel @Inject constructor(
     /**
      * Unlikes content using the offline-first queue system
      */
-    fun unlikeContent(contentType: ContentType, contentId: ULong) {
+    fun unlikeContent(contentId: String) {
         viewModelScope.launch {
-            interactionRepository.unlikeContent(contentType, contentId)
+            interactionRepository.unlikeContent(contentId)
                 .collect { result ->
                     result.onSuccess { 
                         updateQueueSize()
@@ -63,21 +61,16 @@ class InteractionViewModel @Inject constructor(
     /**
      * Gets the like status for content
      */
-    fun getLikeStatus(contentType: ContentType, contentId: ULong): Flow<Result<Boolean>> {
-        return interactionRepository.isContentLiked(contentType, contentId)
+    suspend fun getLikeStatus(contentId: String): Flow<Result<Boolean>> {
+        return interactionRepository.isContentLiked(contentId)
     }
     
     /**
      * Bookmarks content using the offline-first queue system
      */
-    fun bookmarkContent(
-        contentType: ContentType, 
-        contentId: ULong, 
-        collectionId: ULong, 
-        userId: String
-    ) {
+    fun favoriteContent(contentId: String) {
         viewModelScope.launch {
-            interactionRepository.bookmarkContent(contentType, contentId, collectionId, userId)
+            interactionRepository.favoriteContent(contentId)
                 .collect { result ->
                     result.onSuccess { 
                         updateQueueSize()
@@ -91,14 +84,9 @@ class InteractionViewModel @Inject constructor(
     /**
      * Unbookmarks content using the offline-first queue system
      */
-    fun unbookmarkContent(
-        contentType: ContentType, 
-        contentId: ULong, 
-        collectionId: ULong, 
-        userId: String
-    ) {
+    fun unfavoriteContent(contentId: String) {
         viewModelScope.launch {
-            interactionRepository.unbookmarkContent(contentType, contentId, collectionId, userId)
+            interactionRepository.unfavoriteContent(contentId)
                 .collect { result ->
                     result.onSuccess { 
                         updateQueueSize()

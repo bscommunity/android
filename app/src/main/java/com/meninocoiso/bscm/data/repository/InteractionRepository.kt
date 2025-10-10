@@ -1,7 +1,5 @@
 package com.meninocoiso.bscm.data.repository
 
-import com.meninocoiso.bscm.domain.enums.ContentType
-import com.meninocoiso.bscm.domain.model.InteractionResult
 import kotlinx.coroutines.flow.Flow
 
 interface InteractionRepository {
@@ -9,46 +7,48 @@ interface InteractionRepository {
     /**
      * Queues a like interaction for offline-first processing
      */
-    suspend fun likeContent(
-        contentType: ContentType,
-        contentId: ULong
-    ): Flow<Result<InteractionResult>>
+    suspend fun likeContent(contentId: String): Flow<Result<Unit>>
     
     /**
      * Queues an unlike interaction for offline-first processing
      */
-    suspend fun unlikeContent(
-        contentType: ContentType,
-        contentId: ULong
-    ): Flow<Result<InteractionResult>>
+    suspend fun unlikeContent(contentId: String): Flow<Result<Unit>>
     
     /**
      * Checks if content is liked (from local state or server)
      */
-    suspend fun isContentLiked(
-        contentType: ContentType,
-        contentId: ULong
-    ): Flow<Result<Boolean>>
+    suspend fun isContentLiked(contentId: String): Flow<Result<Boolean>>
     
     /**
-     * Queues a bookmark interaction for offline-first processing
+     * Queues a favorite interaction for offline-first processing
      */
-    suspend fun bookmarkContent(
-        contentType: ContentType,
-        contentId: ULong,
-        collectionId: ULong,
-        userId: String
-    ): Flow<Result<InteractionResult>>
+    suspend fun favoriteContent(contentId: String): Flow<Result<Unit>>
     
     /**
-     * Queues an unbookmark interaction for offline-first processing
+     * Queues an unfavorite interaction for offline-first processing
      */
-    suspend fun unbookmarkContent(
-        contentType: ContentType,
-        contentId: ULong,
-        collectionId: ULong,
-        userId: String
-    ): Flow<Result<InteractionResult>>
+    suspend fun unfavoriteContent(contentId: String): Flow<Result<Unit>>
+    
+    /**
+     * Checks if content is favorited (from local state or server)
+     */
+    suspend fun isContentFavorited(contentId: String): Flow<Result<Boolean>>
+    
+    /**
+     * Queues adding content to a custom collection
+     */
+    suspend fun addToCollection(
+        contentId: String,
+        collectionId: String
+    ): Flow<Result<Unit>>
+    
+    /**
+     * Queues removing content from a custom collection
+     */
+    suspend fun removeFromCollection(
+        contentId: String,
+        collectionId: String
+    ): Flow<Result<Unit>>
     
     /**
      * Gets the current interaction queue size

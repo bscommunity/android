@@ -43,7 +43,6 @@ object InteractionModule {
     @Provides
     @Singleton
     fun provideInteractionRepository(
-        queueManager: InteractionQueueManager,
-        apiClient: ApiClient
-    ): InteractionRepository = InteractionRepositoryImpl(queueManager, apiClient)
+        apiClient: ApiClient,
+    ): InteractionRepository = InteractionRepositoryImpl(apiClient)
 }

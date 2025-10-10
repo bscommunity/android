@@ -2,17 +2,15 @@ package com.meninocoiso.bscm.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.meninocoiso.bscm.domain.enums.ContentType
-import com.meninocoiso.bscm.domain.model.InteractionType
+import com.meninocoiso.bscm.domain.enums.ActionType
 
 @Entity(tableName = "interaction_queue")
 data class QueuedInteractionEntity(
-    @PrimaryKey
-    val id: String,
-    val contentType: ContentType,
-    val contentId: ULong,
-    val interactionType: InteractionType,
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val contentId: String,
+    val collectionId: String, // "likes", "favorites", or custom collection ID
+    val action: ActionType,
     val timestamp: Long,
-    val retryCount: Int = 0,
-    val maxRetries: Int = 3
+    val retryCount: Int = 0
 )

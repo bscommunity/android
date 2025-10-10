@@ -1,10 +1,10 @@
 package com.meninocoiso.bscm.domain.serialization
 
 import androidx.room.TypeConverter
+import com.meninocoiso.bscm.domain.enums.ActionType
 import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.model.Contributor
-import com.meninocoiso.bscm.domain.model.InteractionType
 import com.meninocoiso.bscm.domain.model.KnownIssue
 import com.meninocoiso.bscm.domain.model.StreamingLink
 import com.meninocoiso.bscm.domain.model.Version
@@ -118,19 +118,15 @@ class Converters {
         }
     }
 
-    // InteractionType converters
+    // ActionType converters
     @TypeConverter
-    fun fromInteractionType(interactionType: InteractionType): String {
-        return interactionType.name
+    fun fromActionType(value: ActionType): String {
+        return value.name
     }
 
     @TypeConverter
-    fun toInteractionType(interactionTypeString: String): InteractionType {
-        return try {
-            InteractionType.valueOf(interactionTypeString)
-        } catch (e: IllegalArgumentException) {
-            InteractionType.LIKE // Default value if conversion fails
-        }
+    fun toActionType(value: String): ActionType {
+        return ActionType.valueOf(value)
     }
 
     // ContentType converters

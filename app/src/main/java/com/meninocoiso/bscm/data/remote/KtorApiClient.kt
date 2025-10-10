@@ -1,7 +1,9 @@
 package com.meninocoiso.bscm.data.remote
 
 import android.util.Log
-import com.meninocoiso.bscm.data.remote.dto.LikeRequest
+import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionRequest
+import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionItemRequest
+import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionRequest
 import com.meninocoiso.bscm.data.security.AuthInterceptor
 import com.meninocoiso.bscm.data.security.AuthPlugin
 import com.meninocoiso.bscm.domain.enums.ContentType
@@ -9,19 +11,16 @@ import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.OperationType
 import com.meninocoiso.bscm.domain.enums.SortOption
+import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
-import com.meninocoiso.bscm.domain.model.LikedContent
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.domain.model.auth.AuthRequest
 import com.meninocoiso.bscm.domain.model.auth.AuthResponse
 import com.meninocoiso.bscm.domain.model.auth.RefreshTokenRequest
-import com.meninocoiso.bscm.domain.model.collection.AddItemRequest
-import com.meninocoiso.bscm.domain.model.collection.Collection
-import com.meninocoiso.bscm.domain.model.collection.CollectionItem
-import com.meninocoiso.bscm.domain.model.collection.CreateCollectionRequest
-import com.meninocoiso.bscm.domain.model.collection.UpdateCollectionRequest
+import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
+import com.meninocoiso.bscm.util.DevelopmentUtils
 import com.meninocoiso.bscm.util.KeystoreUtils
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -35,6 +34,7 @@ import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import jakarta.inject.Inject
@@ -77,12 +77,12 @@ class KtorApiClient @Inject constructor(
         }
         
         defaultRequest {
-            url("https://api-cyb1.onrender.com")
-            /*url {
+            // url("https://api-cyb1.onrender.com")
+            url {
                 protocol = URLProtocol.HTTP
-                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.10"
+                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.13"
                 port = 8080
-            }*/
+            }
 
             val timestamp = System.currentTimeMillis().toString()
             val payload = "$timestamp:"
@@ -271,54 +271,8 @@ class KtorApiClient @Inject constructor(
         }
     }
 
-    override suspend fun getUserLikes(contentType: ContentType?, limit: Int?, offset: Int): List<LikedContent> {
-        val response = client.get("likes") {
-            url {
-                contentType?.let { parameters.append("contentType", it.name) }
-                limit?.let { parameters.append("limit", it.toString()) }
-                parameters.append("offset", offset.toString())
-            }
-        }
-        when (response.status) {
-            HttpStatusCode.OK -> return response.body()
-            else -> throw Exception("Failed to fetch user likes: ${response.status.value}")
-        }
-    }
-
-    override suspend fun likeContent(request: LikeRequest): Boolean {
-        val response = client.post("likes") {
-            setBody(request)
-        }
-        return response.status == HttpStatusCode.OK
-    }
-
-    override suspend fun unlikeContent(contentType: ContentType, contentId: ULong): Boolean {
-        val response = client.delete("likes") {
-            url {
-                parameters.append("contentType", contentType.name)
-                parameters.append("contentId", contentId.toString())
-            }
-        }
-        return response.status == HttpStatusCode.OK
-    }
-
-    override suspend fun isContentLiked(contentType: ContentType, contentId: ULong): Boolean {
-        val response = client.get("likes/check") {
-            url {
-                parameters.append("contentType", contentType.name)
-                parameters.append("contentId", contentId.toString())
-            }
-        }
-        when (response.status) {
-            HttpStatusCode.OK -> {
-                val result = response.body<Map<String, Boolean>>()
-                return result["isLiked"] ?: false
-            }
-            else -> throw Exception("Failed to check like status: ${response.status.value}")
-        }
-    }
-
-    override suspend fun getPublicCollections(limit: Int?, offset: Int?): List<Collection> {
+    // Collections
+    override suspend fun getCollections(limit: Int?, offset: Int?): List<Collection> {
         val response = client.get("collections") {
             url {
                 limit?.let { parameters.append("limit", it.toString()) }
@@ -328,119 +282,81 @@ class KtorApiClient @Inject constructor(
         return response.body()
     }
 
-    override suspend fun getCollection(collectionId: ULong, userId: String?): Collection? {
-        val response = client.get("collections/$collectionId") {
-            url {
-                userId?.let { parameters.append("userId", it) }
-            }
+    override suspend fun createCollection(request: CreateCollectionRequest): Collection {
+        val response = client.post("collections") {
+            setBody(request)
         }
-        return if (response.status == HttpStatusCode.OK) response.body() else null
+        return response.body()
     }
 
-    override suspend fun getCollectionItems(collectionId: ULong, userId: String?): List<CollectionItem> {
+    override suspend fun updateCollection(collectionId: String, request: UpdateCollectionRequest): Boolean {
+        val response = client.put("collections/$collectionId") {
+            setBody(request)
+        }
+        return response.status == HttpStatusCode.OK
+    }
+
+    override suspend fun deleteCollection(collectionId: String): Boolean {
+        val response = client.delete("collections/$collectionId")
+        return response.status == HttpStatusCode.OK
+    }
+
+    // Collection Items
+    override suspend fun getCollectionItems(
+        collectionId: String,
+        category: ContentType,
+        limit: Int?,
+        offset: Int?
+    ): List<CatalogItem> {
         val response = client.get("collections/$collectionId/items") {
             url {
-                userId?.let { parameters.append("userId", it) }
+                parameters.append("category", category.name)
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
             }
         }
         return response.body()
     }
 
-    override suspend fun getUserCollections(userId: String): List<Collection> {
-        val response = client.get("collections/my") {
-            url { parameters.append("userId", userId) }
-        }
-        return response.body()
-    }
-
-    override suspend fun createCollection(userId: String, request: CreateCollectionRequest): Collection {
-        val response = client.post("collections") {
-            url { parameters.append("userId", userId) }
-            setBody(request)
-        }
-        return response.body()
-    }
-
-    override suspend fun updateCollection(collectionId: ULong, userId: String, request: UpdateCollectionRequest): Boolean {
-        val response = client.put("collections/$collectionId") {
-            url { parameters.append("userId", userId) }
-            setBody(request)
-        }
-        return response.status == HttpStatusCode.OK
-    }
-
-    override suspend fun deleteCollection(collectionId: ULong, userId: String): Boolean {
-        val response = client.delete("collections/$collectionId") {
-            url { parameters.append("userId", userId) }
-        }
-        return response.status == HttpStatusCode.OK
-    }
-
-    override suspend fun addItemToCollection(collectionId: ULong, userId: String, request: AddItemRequest): Boolean {
+    override suspend fun addItemToCollection(collectionId: String, contentId: String): Boolean {
         val response = client.post("collections/$collectionId/items") {
-            url { parameters.append("userId", userId) }
-            setBody(request)
+            url {
+                parameters.append("contentId", contentId)
+            }
         }
         return response.status == HttpStatusCode.OK
     }
 
-    override suspend fun removeItemFromCollection(collectionId: ULong, userId: String, contentType: ContentType, contentId: ULong): Boolean {
+    override suspend fun removeItemFromCollection(collectionId: String, contentId: String): Boolean {
         val response = client.delete("collections/$collectionId/items") {
             url {
-                parameters.append("userId", userId)
-                parameters.append("contentType", contentType.name)
-                parameters.append("contentId", contentId.toString())
+                parameters.append("contentId", contentId)
             }
         }
         return response.status == HttpStatusCode.OK
     }
 
-    override suspend fun getUserCollectionsContaining(userId: String, contentType: ContentType, contentId: ULong): List<Collection> {
-        val response = client.get("collections/containing") {
-            url {
-                parameters.append("userId", userId)
-                parameters.append("contentType", contentType.name)
-                parameters.append("contentId", contentId.toString())
+    // Batch processing
+    override suspend fun batchProcessInteractions(interactions: List<UpdateCollectionItemRequest>): Boolean {
+        Log.d(TAG, "Sending batch of ${interactions.size} interactions")
+        val response = client.post("collections/batch") {
+            setBody(interactions)
+        }
+        
+        when (response.status) {
+            HttpStatusCode.OK -> {
+                Log.d(TAG, "Batch processing successful")
+                return true
+            }
+            else -> {
+                val errorResponse = try {
+                    response.body<ApiError>()
+                } catch (_: Exception) {
+                    ApiError("Batch processing failed")
+                }
+                Log.e(TAG, "Batch processing failed: ${errorResponse.error}")
+                return false
             }
         }
-        return response.body()
-    }
-
-    override suspend fun getUserFavorites(userId: String): List<CollectionItem> {
-        val response = client.get("favorites") {
-            url { parameters.append("userId", userId) }
-        }
-        return response.body()
-    }
-
-    override suspend fun addToFavorites(userId: String, request: AddItemRequest): Boolean {
-        val response = client.post("favorites") {
-            url { parameters.append("userId", userId) }
-            setBody(request)
-        }
-        return response.status == HttpStatusCode.OK
-    }
-
-    override suspend fun removeFromFavorites(userId: String, contentType: ContentType, contentId: ULong): Boolean {
-        val response = client.delete("favorites") {
-            url {
-                parameters.append("userId", userId)
-                parameters.append("contentType", contentType.name)
-                parameters.append("contentId", contentId.toString())
-            }
-        }
-        return response.status == HttpStatusCode.OK
-    }
-
-    override suspend fun isInFavorites(userId: String, contentType: ContentType, contentId: ULong): Boolean {
-        val response = client.get("favorites/check") {
-            url {
-                parameters.append("userId", userId)
-                parameters.append("contentType", contentType.name)
-                parameters.append("contentId", contentId.toString())
-            }
-        }
-        val result = response.body<Map<String, Boolean>>()
-        return result["isFavorited"] ?: false
     }
 }

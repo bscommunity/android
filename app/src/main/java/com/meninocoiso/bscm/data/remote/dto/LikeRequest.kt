@@ -6,5 +6,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class LikeRequest(
     val contentType: ContentType,
-    val contentId: ULong
+    val contentId: String
 )

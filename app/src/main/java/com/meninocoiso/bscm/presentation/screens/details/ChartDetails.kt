@@ -54,7 +54,7 @@ import com.meninocoiso.bscm.presentation.ui.components.MediaCarousel
 import com.meninocoiso.bscm.presentation.ui.components.RingConfig
 import com.meninocoiso.bscm.presentation.ui.components.chart.ChartContributors
 import com.meninocoiso.bscm.presentation.ui.components.details.DownloadButton
-import com.meninocoiso.bscm.presentation.ui.components.details.LikeButton
+import com.meninocoiso.bscm.presentation.ui.components.details.OfflineLikeButton
 import com.meninocoiso.bscm.presentation.ui.components.details.StatListItem
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ConfirmationDialog
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ListenTrackDialog
@@ -285,8 +285,8 @@ fun ChartDetailsScreen(
                             iconScale = iconScale
                         )
                     }
-                    
-                    LikeButton(false, onLikeChanged = { /* TODO */ })
+
+                    OfflineLikeButton(chart.id)
                 },
                 floatingActionButton = {
                     DownloadButton(
