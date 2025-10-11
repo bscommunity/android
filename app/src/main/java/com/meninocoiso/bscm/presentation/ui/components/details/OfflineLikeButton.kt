@@ -1,7 +1,6 @@
 package com.meninocoiso.bscm.presentation.ui.components.details
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -12,18 +11,10 @@ import com.meninocoiso.bscm.presentation.viewmodel.InteractionViewModel
 @Composable
 fun OfflineLikeButton(
     contentId: String,
+    defaultValue: Boolean = false,
     viewModel: InteractionViewModel = hiltViewModel()
 ) {
-    var isLiked by remember { mutableStateOf(false) }
-    
-    // Observe like status using LaunchedEffect to call suspend function
-    LaunchedEffect(contentId) {
-        viewModel.getLikeStatus(contentId).collect { result ->
-            result.onSuccess { liked ->
-                isLiked = liked
-            }
-        }
-    }
+    var isLiked by remember { mutableStateOf(defaultValue) }
     
     LikeButton(
         defaultValue = isLiked,

@@ -82,18 +82,14 @@ class ContentViewModel @Inject constructor(
 
     private fun observeDownloadEvents() {
         viewModelScope.launch {
-            try {
-                downloadServiceConnection.observeDownload().collect { event ->
-                    handleDownloadEvent(event)
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error observing download events", e)
+            downloadRepository.downloadEvents.collect { event ->
+                handleDownloadEvent(event)
             }
         }
     }
 
     /**
-     * Checks the installation status of a chart with improved error handling
+     * Checks the installation status of a chart
      */
     fun checkStatus(chart: Chart) {
         viewModelScope.launch {
@@ -116,8 +112,7 @@ class ContentViewModel @Inject constructor(
                 }
 
                 updateState(chart.id, state)
-                Log.d(TAG, "Status checked for chart ${chart.id}: $state")
-
+                // Log.d(TAG, "Status checked for chart ${chart.id}: $state")
             } catch (e: Exception) {
                 Log.e(TAG, "Error checking chart status for ${chart.id}", e)
                 updateState(chart.id, ContentState.Error(
@@ -412,10 +407,10 @@ class ContentViewModel @Inject constructor(
         )
     }
 
-    override fun onCleared() {
+    /*override fun onCleared() {
         super.onCleared()
         Log.d(TAG, "ContentViewModel cleared")
-    }
+    }*/
 }
 
 /**

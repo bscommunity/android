@@ -46,12 +46,15 @@ class AuthRepository @Inject constructor(
             Log.d(TAG, "authenticateWithDiscord: API call successful, saving tokens")
             tokenManager.saveTokens(result.accessToken, result.refreshToken)
 
+            Log.d(TAG, "authenticateWithDiscord: debug: result tokens: ${tokenManager.getAccessToken()} and ${tokenManager.getRefreshToken()}")
+            
             val user = result.user
             if (user == null) {
                 Log.e(TAG, "authenticateWithDiscord: User data is null in the response")
                 emit(Result.failure(Exception("User data is null in the response")))
                 return@flow
             }
+            
             // Cache user
             cacheRepository.setUser(user)
             Log.d(TAG, "authenticateWithDiscord: Authentication completed successfully")

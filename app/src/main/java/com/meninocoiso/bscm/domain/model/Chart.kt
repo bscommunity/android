@@ -24,6 +24,8 @@ data class Chart(
     @ColumnInfo(name = "track_urls") val trackUrls: List<StreamingLink>,
     @ColumnInfo(name = "track_preview_url") val trackPreviewUrl: String,
     @ColumnInfo(name = "is_featured") val isFeatured: Boolean,
+    @ColumnInfo(name = "is_liked") var isLiked: Boolean = false,
+    @ColumnInfo(name = "is_favorited") var isFavorited: Boolean = false,
     @ColumnInfo(name = "is_installed") var isInstalled: Boolean? = false,
     @ColumnInfo(name = "downloads_sum") var downloadsSum: Int = 0,
     @Serializable(with = LocalDateTimeSerializer::class)

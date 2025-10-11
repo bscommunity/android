@@ -10,8 +10,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -169,7 +169,7 @@ class DownloadServiceConnection @Inject constructor(
 
     /**
      * Public API for observing download events
-     * Returns a cold Flow that can be collected safely
+     * Returns a cold SharedFlow that can be collected safely
      */
-    fun observeDownload(): Flow<DownloadEvent> = _downloadEvents.asSharedFlow()
+    fun observeDownload(): SharedFlow<DownloadEvent> = _downloadEvents.asSharedFlow()
 }

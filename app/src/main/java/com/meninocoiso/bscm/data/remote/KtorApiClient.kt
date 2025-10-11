@@ -13,15 +13,14 @@ import com.meninocoiso.bscm.domain.enums.OperationType
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.domain.model.auth.AuthRequest
 import com.meninocoiso.bscm.domain.model.auth.AuthResponse
 import com.meninocoiso.bscm.domain.model.auth.RefreshTokenRequest
-import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
 import com.meninocoiso.bscm.util.DevelopmentUtils
-import com.meninocoiso.bscm.util.KeystoreUtils
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
@@ -80,17 +79,9 @@ class KtorApiClient @Inject constructor(
             // url("https://api-cyb1.onrender.com")
             url {
                 protocol = URLProtocol.HTTP
-                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.13"
+                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.5"
                 port = 8080
             }
-
-            val timestamp = System.currentTimeMillis().toString()
-            val payload = "$timestamp:"
-            val signature = KeystoreUtils.signData(payload)
-
-            headers.append("X-App-Timestamp", timestamp)
-            headers.append("X-App-Signature", signature)
-            
             contentType(KtorContentType.Application.Json)
         }
     }

@@ -45,9 +45,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
-import com.meninocoiso.bscm.presentation.ui.components.AnimatedIcon
 import com.meninocoiso.bscm.presentation.ui.components.BurstDotsConfig
-import com.meninocoiso.bscm.presentation.ui.components.BurstIconButton
 import com.meninocoiso.bscm.presentation.ui.components.CarouselItem
 import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
 import com.meninocoiso.bscm.presentation.ui.components.MediaCarousel
@@ -169,9 +167,6 @@ fun ChartDetailsScreen(
     }
 
     val lastUpdated = StringUtils.toRelativeString(chart.latestVersion.publishedAt)
-    println("Chart last updated: $lastUpdated")
-
-    var isFavorite by remember { mutableStateOf(false) }
 
     Scaffold(
         snackbarHost = {
@@ -263,7 +258,7 @@ fun ChartDetailsScreen(
                     )
                     val (iconScale, iconScaleAnimation) = rememberIconScaleModule()
 
-                    BurstIconButton(
+                    /*BurstIconButton(
                         isActive = isFavorite,
                         onClick = { isFavorite = !isFavorite },
                         animations = listOfNotNull(
@@ -284,9 +279,9 @@ fun ChartDetailsScreen(
                             inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             iconScale = iconScale
                         )
-                    }
+                    }*/
 
-                    OfflineLikeButton(chart.id)
+                    OfflineLikeButton(chart.contentId, chart.isLiked)
                 },
                 floatingActionButton = {
                     DownloadButton(

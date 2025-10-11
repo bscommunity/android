@@ -1,11 +1,14 @@
 package com.meninocoiso.bscm.data.repository
 
+import DownloadEvent
 import android.content.res.Resources.NotFoundException
 import com.meninocoiso.bscm.data.manager.ChartManager
+import com.meninocoiso.bscm.data.manager.DownloadManager
 import com.meninocoiso.bscm.data.manager.FetchResult
 import com.meninocoiso.bscm.domain.enums.OperationType
-import com.meninocoiso.bscm.data.manager.DownloadManager
+import com.meninocoiso.bscm.service.DownloadServiceConnection
 import com.meninocoiso.bscm.util.StorageUtils
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.io.IOException
 import javax.inject.Inject
@@ -18,7 +21,10 @@ class DownloadRepository @Inject constructor(
     private val downloadManager: DownloadManager,
     private val chartManager: ChartManager,
     private val cacheRepository: CacheRepository,
+    private val downloadServiceConnection: DownloadServiceConnection
 ) {
+    val downloadEvents: SharedFlow<DownloadEvent> = downloadServiceConnection.observeDownload()
+    
     /**
      * Downloads and extracts a chart to the beatstar folder
      * @param url URL of the chart zip file
