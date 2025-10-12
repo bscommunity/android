@@ -1,6 +1,5 @@
 package com.meninocoiso.bscm.data.manager
 
-import android.content.Context
 import android.util.Log
 import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
 import com.meninocoiso.bscm.data.local.entity.QueuedInteractionEntity
@@ -25,7 +24,6 @@ private const val BATCH_DELAY_MS = 3000L // 3 seconds to deduplicate interaction
 class InteractionQueueManager @Inject constructor(
     private val queueDao: InteractionQueueDao,
     private val apiClient: ApiClient,
-    @Suppress("UNUSED_PARAMETER") private val context: Context
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var batchJob: Job? = null

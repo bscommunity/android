@@ -3,6 +3,7 @@ package com.meninocoiso.bscm.data.repository
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionItemRequest
 import com.meninocoiso.bscm.domain.enums.ActionType
+import com.meninocoiso.bscm.domain.repository.InteractionRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

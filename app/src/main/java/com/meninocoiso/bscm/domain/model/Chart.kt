@@ -14,23 +14,27 @@ import java.time.LocalDateTime
 @Serializable
 @Parcelize
 data class Chart(
-    @PrimaryKey @ColumnInfo(name = "id") val id: String,
-    val contentId: String,
     val artist: String,
     val track: String,
     val album: String?,
     val genre: Genre?,
-    @ColumnInfo(name = "cover_url") val coverUrl: String,
     @ColumnInfo(name = "track_urls") val trackUrls: List<StreamingLink>,
     @ColumnInfo(name = "track_preview_url") val trackPreviewUrl: String,
-    @ColumnInfo(name = "is_featured") val isFeatured: Boolean,
-    @ColumnInfo(name = "is_liked") var isLiked: Boolean = false,
-    @ColumnInfo(name = "is_favorited") var isFavorited: Boolean = false,
-    @ColumnInfo(name = "is_installed") var isInstalled: Boolean? = false,
-    @ColumnInfo(name = "downloads_sum") var downloadsSum: Int = 0,
+
+    @PrimaryKey @ColumnInfo(name = "id") override val id: String,
+    @ColumnInfo(name = "content_id") override val contentId: String,
+    @ColumnInfo(name = "cover_url") override val coverUrl: String,
+    @ColumnInfo(name = "is_featured") override val isFeatured: Boolean,
+    @ColumnInfo(name = "downloads_sum") override val downloadsSum: Int = 0,
+
     @Serializable(with = LocalDateTimeSerializer::class)
-    @ColumnInfo(name = "latest_published_at") val latestPublishedAt: LocalDateTime,
+    @ColumnInfo(name = "latest_published_at") override val latestPublishedAt: LocalDateTime,
+
+    @ColumnInfo(name = "is_liked") override val isLiked: Boolean = false,
+    @ColumnInfo(name = "is_favorited") override val isFavorited: Boolean = false,
+    @ColumnInfo(name = "is_installed") override val isInstalled: Boolean? = false,
+    
     @ColumnInfo(name = "latest_version") val latestVersion: Version,
     @ColumnInfo(name = "available_version") var availableVersion: Version? = null,
     val contributors: List<Contributor>
-) : Parcelable
+) : Parcelable, CatalogItem

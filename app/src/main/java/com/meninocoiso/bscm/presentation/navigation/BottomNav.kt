@@ -25,11 +25,11 @@ import com.meninocoiso.bscm.domain.enums.UpdatesSection
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.presentation.ui.components.layout.SwipeableSnackbarHost
-import com.meninocoiso.bscm.presentation.screens.details.ChartDetails
-import com.meninocoiso.bscm.presentation.screens.settings.Profile
-import com.meninocoiso.bscm.presentation.screens.settings.SettingsScreen
-import com.meninocoiso.bscm.presentation.screens.updates.UpdatesScreen
-import com.meninocoiso.bscm.presentation.screens.workshop.WorkshopScreen
+import com.meninocoiso.bscm.presentation.screen.details.ChartDetails
+import com.meninocoiso.bscm.presentation.screen.settings.Profile
+import com.meninocoiso.bscm.presentation.screen.settings.SettingsScreen
+import com.meninocoiso.bscm.presentation.screen.updates.UpdatesScreen
+import com.meninocoiso.bscm.presentation.screen.workshop.WorkshopScreen
 import com.meninocoiso.bscm.presentation.ui.components.layout.LaunchAppButton
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable

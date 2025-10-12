@@ -6,7 +6,7 @@ import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.manager.DownloadManager
 import com.meninocoiso.bscm.data.manager.FetchResult
 import com.meninocoiso.bscm.domain.enums.OperationType
-import com.meninocoiso.bscm.service.DownloadServiceConnection
+import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
 import com.meninocoiso.bscm.util.StorageUtils
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.first
@@ -21,9 +21,9 @@ class DownloadRepository @Inject constructor(
     private val downloadManager: DownloadManager,
     private val chartManager: ChartManager,
     private val cacheRepository: CacheRepository,
-    private val downloadServiceConnection: DownloadServiceConnection
+    private val downloadServiceMonitor: DownloadServiceMonitor
 ) {
-    val downloadEvents: SharedFlow<DownloadEvent> = downloadServiceConnection.observeDownload()
+    val downloadEvents: SharedFlow<DownloadEvent> = downloadServiceMonitor.observeDownload()
     
     /**
      * Downloads and extracts a chart to the beatstar folder

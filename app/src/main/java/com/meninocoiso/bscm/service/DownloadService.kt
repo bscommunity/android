@@ -11,11 +11,12 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.manager.ChartManager
-import com.meninocoiso.bscm.data.manager.DownloadException
-import com.meninocoiso.bscm.data.manager.ExtractionException
 import com.meninocoiso.bscm.data.repository.DownloadRepository
 import com.meninocoiso.bscm.domain.enums.ErrorType
 import com.meninocoiso.bscm.domain.enums.OperationType
+import com.meninocoiso.bscm.domain.exceptions.DownloadException
+import com.meninocoiso.bscm.domain.exceptions.ExtractionException
+import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
 import com.meninocoiso.bscm.util.StringUtils.getFinalMessage
 import com.meninocoiso.bscm.util.StringUtils.getInitialMessage
 import com.meninocoiso.bscm.util.StringUtils.getProgressMessage
@@ -42,7 +43,7 @@ class DownloadService : Service() {
     lateinit var downloadRepository: DownloadRepository
 
     @Inject
-    lateinit var downloadServiceConnection: DownloadServiceConnection
+    lateinit var downloadServiceMonitor: DownloadServiceMonitor
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val notificationManager by lazy { getSystemService(NOTIFICATION_SERVICE) as NotificationManager }
@@ -157,7 +158,7 @@ class DownloadService : Service() {
             startForeground(notificationId, initialNotification)
 
             // Send initial event
-            downloadServiceConnection.sendEvent(DownloadEvent.Started(chartId))
+            downloadServiceMonitor.sendEvent(DownloadEvent.Started(chartId))
 
             // Perform the download with comprehensive error handling
             downloadRepository.downloadChart(
@@ -173,7 +174,7 @@ class DownloadService : Service() {
             )
 
             // Success - send complete event and update notification
-            downloadServiceConnection.sendEvent(DownloadEvent.Complete(chartId))
+            downloadServiceMonitor.sendEvent(DownloadEvent.Complete(chartId))
 
             updateNotification(
                 chartId = chartId,
@@ -202,7 +203,7 @@ class DownloadService : Service() {
         serviceScope.launch {
             try {
                 // Send progress event
-                downloadServiceConnection.sendEvent(DownloadEvent.Progress(chartId, progress))
+                downloadServiceMonitor.sendEvent(DownloadEvent.Progress(chartId, progress))
 
                 val progressInt = (progress * 100).coerceIn(0f, 100f).toInt()
                 val progressMessage = getProgressMessage(chartName, progressInt, operation)
@@ -223,7 +224,7 @@ class DownloadService : Service() {
         serviceScope.launch {
             try {
                 // Send extracting event
-                downloadServiceConnection.sendEvent(DownloadEvent.Extracting(chartId, progress))
+                downloadServiceMonitor.sendEvent(DownloadEvent.Extracting(chartId, progress))
 
                 val progressInt = (progress * 100).coerceIn(0f, 100f).toInt()
                 updateNotification(
@@ -247,7 +248,7 @@ class DownloadService : Service() {
 
         // Send error event
         serviceScope.launch {
-            downloadServiceConnection.sendEvent(
+            downloadServiceMonitor.sendEvent(
                 DownloadEvent.Error(chartId, userFriendlyMessage, errorType)
             )
 

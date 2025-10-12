@@ -2,6 +2,7 @@ package com.meninocoiso.bscm.data.security
 
 import android.net.Uri
 import androidx.core.net.toUri
+import com.meninocoiso.bscm.data.manager.SecureTokenManager
 import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.inject.Inject

@@ -1,5 +1,6 @@
 package com.meninocoiso.bscm.data.security
 
+import com.meninocoiso.bscm.data.manager.SecureTokenManager
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton

@@ -4,11 +4,19 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
-import com.meninocoiso.bscm.data.manager.getOrCreateSubfolder
+import kotlinx.io.IOException
 
 private const val TAG = "StorageUtils"
 
 object StorageUtils {
+    /**
+     * Enhanced DocumentFile extension with better error handling
+     */
+    internal fun DocumentFile.getOrCreateSubfolder(name: String): DocumentFile {
+        return findFile(name) ?: createDirectory(name)
+        ?: throw IOException("Failed to create/access subfolder: $name")
+    }
+    
     fun getChartFolderName(chartId: String): String {
         // Last 4 numbers from the chart ID
         return "bscm_" + chartId.takeLast(4)

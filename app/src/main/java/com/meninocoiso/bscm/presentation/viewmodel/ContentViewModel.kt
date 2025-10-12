@@ -9,14 +9,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.repository.CacheRepository
-import com.meninocoiso.bscm.data.repository.ChartRepository
+import com.meninocoiso.bscm.domain.repository.ChartRepository
 import com.meninocoiso.bscm.data.repository.DownloadRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.ErrorType
 import com.meninocoiso.bscm.domain.enums.OperationType
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.internal.Settings
-import com.meninocoiso.bscm.service.DownloadServiceConnection
+import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.BufferOverflow
@@ -43,7 +43,7 @@ private const val TAG = "ContentViewModel"
 @HiltViewModel
 class ContentViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val downloadServiceConnection: DownloadServiceConnection,
+    private val downloadServiceMonitor: DownloadServiceMonitor,
     private val downloadRepository: DownloadRepository,
     private val cacheRepository: CacheRepository,
     private val settingsRepository: SettingsRepository,
@@ -95,12 +95,12 @@ class ContentViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val isInstalled = chart.isInstalled == true
-                val isDownloadActive = downloadServiceConnection.isDownloadActive(chart.id)
+                val isDownloadActive = downloadServiceMonitor.isDownloadActive(chart.id)
 
                 val state = when {
                     isDownloadActive -> {
                         // Check what type of download is active
-                        val activeDownloads = downloadServiceConnection.getActiveDownloads()
+                        val activeDownloads = downloadServiceMonitor.getActiveDownloads()
                         if (chart.id in activeDownloads) {
                             ContentState.Downloading(chart.id, 0f) // Will be updated by events
                         } else {
@@ -221,7 +221,7 @@ class ContentViewModel @Inject constructor(
                 }
 
                 // Start the download
-                downloadServiceConnection.startDownload(
+                downloadServiceMonitor.startDownload(
                     chartId = chartId,
                     bundleUrl = version.bundleUrl,
                     chartName = "${chart.track} - ${chart.artist}",
@@ -403,7 +403,7 @@ class ContentViewModel @Inject constructor(
             downloadingCharts = states.values.count { it is ContentState.Downloading },
             extractingCharts = states.values.count { it is ContentState.Extracting },
             errorCharts = states.values.count { it is ContentState.Error },
-            activeDownloads = downloadServiceConnection.getActiveDownloads().size
+            activeDownloads = downloadServiceMonitor.getActiveDownloads().size
         )
     }
 

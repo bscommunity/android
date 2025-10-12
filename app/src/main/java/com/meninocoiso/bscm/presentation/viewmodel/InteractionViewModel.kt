@@ -2,7 +2,7 @@ package com.meninocoiso.bscm.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.meninocoiso.bscm.data.repository.InteractionRepository
+import com.meninocoiso.bscm.domain.repository.InteractionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow

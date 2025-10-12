@@ -1,7 +1,7 @@
 package com.meninocoiso.bscm
 
 import android.app.Application
-import com.meninocoiso.bscm.data.manager.InteractionSyncService
+import com.meninocoiso.bscm.service.InteractionSyncService
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 

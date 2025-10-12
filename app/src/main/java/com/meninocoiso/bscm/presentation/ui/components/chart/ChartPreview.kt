@@ -41,7 +41,7 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.dto.ContributorUserDto
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Contributor
-import com.meninocoiso.bscm.presentation.screens.details.OnNavigateToDetails
+import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.bscm.presentation.ui.modifiers.debouncedClickable

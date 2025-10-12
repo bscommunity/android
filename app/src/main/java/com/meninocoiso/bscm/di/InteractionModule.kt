@@ -3,11 +3,11 @@ package com.meninocoiso.bscm.di
 import android.content.Context
 import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
 import com.meninocoiso.bscm.data.manager.InteractionQueueManager
-import com.meninocoiso.bscm.data.manager.InteractionSyncService
-import com.meninocoiso.bscm.data.manager.NetworkConnectivityMonitor
 import com.meninocoiso.bscm.data.remote.ApiClient
-import com.meninocoiso.bscm.data.repository.InteractionRepository
 import com.meninocoiso.bscm.data.repository.InteractionRepositoryImpl
+import com.meninocoiso.bscm.domain.repository.InteractionRepository
+import com.meninocoiso.bscm.monitor.NetworkConnectivityMonitor
+import com.meninocoiso.bscm.service.InteractionSyncService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -31,7 +31,7 @@ object InteractionModule {
         queueDao: InteractionQueueDao,
         apiClient: ApiClient,
         @ApplicationContext context: Context
-    ): InteractionQueueManager = InteractionQueueManager(queueDao, apiClient, context)
+    ): InteractionQueueManager = InteractionQueueManager(queueDao, apiClient)
     
     @Provides
     @Singleton

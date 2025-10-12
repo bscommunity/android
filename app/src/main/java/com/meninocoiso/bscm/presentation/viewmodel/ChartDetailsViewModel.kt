@@ -5,8 +5,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.data.repository.ChartRepository
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.repository.ChartRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,9 +31,9 @@ sealed class DetailsState {
 
 @HiltViewModel
 class ChartDetailsViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
-    @Named("Remote") private val remoteChartRepository: ChartRepository,
-    @Named("Local") private val localChartRepository: ChartRepository
+    @param:ApplicationContext private val context: Context,
+    @param:Named("Remote") private val remoteChartRepository: ChartRepository,
+    @param:Named("Local") private val localChartRepository: ChartRepository
 ) : ViewModel() {
     private val _chart = MutableStateFlow<DetailsState>(DetailsState.Loading)
     val chart: StateFlow<DetailsState> = _chart.asStateFlow()

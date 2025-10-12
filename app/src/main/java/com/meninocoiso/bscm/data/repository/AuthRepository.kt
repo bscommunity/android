@@ -1,8 +1,8 @@
 package com.meninocoiso.bscm.data.repository
 
 import android.util.Log
+import com.meninocoiso.bscm.data.manager.SecureTokenManager
 import com.meninocoiso.bscm.data.remote.ApiClient
-import com.meninocoiso.bscm.data.security.SecureTokenManager
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.auth.AuthRequest
 import com.meninocoiso.bscm.domain.model.auth.AuthResponse

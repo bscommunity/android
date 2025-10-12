@@ -7,6 +7,7 @@ import com.meninocoiso.bscm.domain.enums.OperationType
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Version
+import com.meninocoiso.bscm.domain.repository.ChartRepository
 import jakarta.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers

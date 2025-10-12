@@ -18,12 +18,12 @@ import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.serialization.ChartParameterType
 import com.meninocoiso.bscm.domain.serialization.UserParameterType
-import com.meninocoiso.bscm.presentation.screens.details.ChartDetails
-import com.meninocoiso.bscm.presentation.screens.details.ChartDetailsRoute
-import com.meninocoiso.bscm.presentation.screens.details.ChartDetailsScreen
-import com.meninocoiso.bscm.presentation.screens.details.DeepLinkChartDetails
-import com.meninocoiso.bscm.presentation.screens.settings.Profile
-import com.meninocoiso.bscm.presentation.screens.settings.ProfileScreen
+import com.meninocoiso.bscm.presentation.screen.details.ChartDetails
+import com.meninocoiso.bscm.presentation.screen.details.ChartDetailsRoute
+import com.meninocoiso.bscm.presentation.screen.details.ChartDetailsScreen
+import com.meninocoiso.bscm.presentation.screen.details.DeepLinkChartDetails
+import com.meninocoiso.bscm.presentation.screen.settings.Profile
+import com.meninocoiso.bscm.presentation.screen.settings.ProfileScreen
 import kotlinx.serialization.Serializable
 import kotlin.reflect.typeOf
 

@@ -5,13 +5,13 @@ import android.net.Uri
 import android.util.Log
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.repository.CacheRepository
-import com.meninocoiso.bscm.data.repository.ChartRepository
 import com.meninocoiso.bscm.di.ApplicationScope
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.OperationType
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.repository.ChartRepository
 import com.meninocoiso.bscm.util.StorageUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
