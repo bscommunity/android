@@ -2,8 +2,8 @@ package com.meninocoiso.bscm.domain.serialization
 
 import androidx.room.TypeConverter
 import com.meninocoiso.bscm.domain.enums.ActionType
-import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.enums.Difficulty
+import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Contributor
 import com.meninocoiso.bscm.domain.model.KnownIssue
 import com.meninocoiso.bscm.domain.model.StreamingLink
@@ -46,7 +46,7 @@ class Converters {
         }
     }
 
-    // Contributor List converters
+    // Contributors List converters
     @TypeConverter
     fun fromContributorsList(contributors: List<Contributor>): String {
         return json.encodeToString(contributors)
@@ -58,6 +58,21 @@ class Converters {
             emptyList()
         } else {
             json.decodeFromString(contributorsString)
+        }
+    }
+
+    // Charts List converters
+    @TypeConverter
+    fun fromChartsList(charts: List<Chart>): String {
+        return json.encodeToString(charts)
+    }
+
+    @TypeConverter
+    fun toChartsList(chartsString: String): List<Chart> {
+        return if (chartsString.isBlank()) {
+            emptyList()
+        } else {
+            json.decodeFromString(chartsString)
         }
     }
 
@@ -104,20 +119,6 @@ class Converters {
         }
     }
 
-    @TypeConverter
-    fun fromStringList(stringList: List<String>): String {
-        return json.encodeToString(stringList)
-    }
-
-    @TypeConverter
-    fun toStringList(stringListString: String): List<String> {
-        return if (stringListString.isBlank()) {
-            emptyList()
-        } else {
-            json.decodeFromString(stringListString)
-        }
-    }
-
     // ActionType converters
     @TypeConverter
     fun fromActionType(value: ActionType): String {
@@ -127,20 +128,5 @@ class Converters {
     @TypeConverter
     fun toActionType(value: String): ActionType {
         return ActionType.valueOf(value)
-    }
-
-    // ContentType converters
-    @TypeConverter
-    fun fromContentType(contentType: ContentType): String {
-        return contentType.name
-    }
-
-    @TypeConverter
-    fun toContentType(contentTypeString: String): ContentType {
-        return try {
-            ContentType.valueOf(contentTypeString)
-        } catch (e: IllegalArgumentException) {
-            ContentType.CHART // Default value if conversion fails
-        }
     }
 }

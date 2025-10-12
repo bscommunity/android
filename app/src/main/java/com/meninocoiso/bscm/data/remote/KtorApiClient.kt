@@ -9,7 +9,7 @@ import com.meninocoiso.bscm.data.security.AuthPlugin
 import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
-import com.meninocoiso.bscm.domain.enums.OperationType
+import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
@@ -79,7 +79,7 @@ class KtorApiClient @Inject constructor(
             // url("https://api-cyb1.onrender.com")
             url {
                 protocol = URLProtocol.HTTP
-                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.5"
+                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.7"
                 port = 8080
             }
             contentType(KtorContentType.Application.Json)
@@ -172,11 +172,11 @@ class KtorApiClient @Inject constructor(
         }.body()
     }
 
-    override suspend fun postAnalytics(id: String, operationType: OperationType): Boolean {
-        Log.d(TAG, "Posting analytics for chart $id with operation $operationType")
+    override suspend fun postAnalytics(id: String, operationOption: OperationOption): Boolean {
+        Log.d(TAG, "Posting analytics for chart $id with operation $operationOption")
         return client.post("charts/analytics/$id") {
             url {
-                parameters.append("type", operationType.toString())
+                parameters.append("type", operationOption.toString())
             }
         }.body<Boolean>()
     }

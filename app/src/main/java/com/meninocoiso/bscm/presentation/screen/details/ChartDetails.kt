@@ -50,7 +50,7 @@ import com.meninocoiso.bscm.presentation.ui.components.CarouselItem
 import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
 import com.meninocoiso.bscm.presentation.ui.components.MediaCarousel
 import com.meninocoiso.bscm.presentation.ui.components.RingConfig
-import com.meninocoiso.bscm.presentation.ui.components.chart.ChartContributors
+import com.meninocoiso.bscm.presentation.ui.components.preview.PreviewContributors
 import com.meninocoiso.bscm.presentation.ui.components.details.DownloadButton
 import com.meninocoiso.bscm.presentation.ui.components.details.OfflineLikeButton
 import com.meninocoiso.bscm.presentation.ui.components.details.StatListItem
@@ -315,7 +315,7 @@ fun ChartDetailsScreen(
             )
 
             // Credits
-            ChartContributors(chart.contributors)
+            PreviewContributors(chart.contributors)
 
             // Stats
             Section(title = stringResource(R.string.stats)) {

@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.domain.enums.OperationType
+import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.model.internal.ContentMessage
 import java.time.Duration
 import java.time.LocalDateTime
@@ -13,10 +13,10 @@ object StringUtils {
     // Download state messages
     fun getInitialMessage(
         chartName: String,
-        type: OperationType
+        type: OperationOption
     ): ContentMessage {
         return when (type) {
-            OperationType.UPDATE -> {
+            OperationOption.UPDATE -> {
                 ContentMessage(
                     title = "Updating $chartName",
                     message = "Checking for updates for $chartName..."
@@ -35,10 +35,10 @@ object StringUtils {
     fun getProgressMessage(
         chartName: String,
         progress: Int,
-        type: OperationType
+        type: OperationOption
     ): ContentMessage {
         return when (type) {
-            OperationType.UPDATE -> {
+            OperationOption.UPDATE -> {
                 ContentMessage(
                     title = "Updating $chartName",
                     message = "Updating $progress%..."
@@ -56,10 +56,10 @@ object StringUtils {
 
     fun getFinalMessage(
         chartName: String,
-        type: OperationType
+        type: OperationOption
     ): ContentMessage {
         return when (type) {
-            OperationType.UPDATE -> {
+            OperationOption.UPDATE -> {
                 ContentMessage(
                     title = "Updated $chartName",
                     message = "Update completed!"

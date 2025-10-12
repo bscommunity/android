@@ -6,7 +6,7 @@ import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionRequest
 import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
-import com.meninocoiso.bscm.domain.enums.OperationType
+import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
@@ -36,7 +36,7 @@ interface ApiClient {
     suspend fun getLatestVersionsByChartIds(ids: List<String>): List<Version>
     suspend fun postAnalytics(
         id: String,
-        operationType: OperationType
+        operationOption: OperationOption
     ): Boolean
 
     // Authentication methods

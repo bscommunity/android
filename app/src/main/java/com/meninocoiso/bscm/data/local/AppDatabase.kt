@@ -8,15 +8,19 @@ import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
 import com.meninocoiso.bscm.data.local.entity.QueuedInteractionEntity
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.StreamingLink
+import com.meninocoiso.bscm.domain.model.Theme
+import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.domain.serialization.Converters
 
 @Database(
-    version = 20,
+    version = 21,
     entities = [
         Chart::class,
         Version::class,
         StreamingLink::class,
+        TourPass::class,
+        Theme::class,
         QueuedInteractionEntity::class
     ],
     exportSchema = false

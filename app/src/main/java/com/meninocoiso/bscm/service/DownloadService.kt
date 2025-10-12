@@ -13,7 +13,7 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.repository.DownloadRepository
 import com.meninocoiso.bscm.domain.enums.ErrorType
-import com.meninocoiso.bscm.domain.enums.OperationType
+import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.exceptions.DownloadException
 import com.meninocoiso.bscm.domain.exceptions.ExtractionException
 import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
@@ -129,7 +129,7 @@ class DownloadService : Service() {
             return null
         }
 
-        val operation = if (isUpdate) OperationType.UPDATE else OperationType.INSTALL
+        val operation = if (isUpdate) OperationOption.UPDATE else OperationOption.INSTALL
         return DownloadParams(chartId, bundleUrl, chartName, operation)
     }
 
@@ -137,7 +137,7 @@ class DownloadService : Service() {
         chartId: String,
         bundleUrl: String,
         chartName: String,
-        operation: OperationType
+        operation: OperationOption
     ) {
         val initialMessage = getInitialMessage(chartName, operation)
         val finalMessage = getFinalMessage(chartName, operation)
@@ -198,7 +198,7 @@ class DownloadService : Service() {
         chartId: String,
         chartName: String,
         progress: Float,
-        operation: OperationType
+        operation: OperationOption
     ) {
         serviceScope.launch {
             try {
@@ -394,6 +394,6 @@ class DownloadService : Service() {
         val chartId: String,
         val bundleUrl: String,
         val chartName: String,
-        val operation: OperationType
+        val operation: OperationOption
     )
 }

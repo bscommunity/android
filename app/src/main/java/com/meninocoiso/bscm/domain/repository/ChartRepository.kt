@@ -2,7 +2,7 @@ package com.meninocoiso.bscm.domain.repository
 
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
-import com.meninocoiso.bscm.domain.enums.OperationType
+import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Version
@@ -30,13 +30,13 @@ interface ChartRepository {
     suspend fun updateCharts(charts: List<Chart>): Flow<Result<Boolean>>
     suspend fun updateChart(
         id: String,
-        operation: OperationType = OperationType.INSTALL,
+        operation: OperationOption = OperationOption.INSTALL,
     ): Flow<Result<Boolean>>
     suspend fun deleteChart(chart: Chart): Flow<Result<Boolean>>
     suspend fun deleteChart(id: String): Flow<Result<Boolean>>
     suspend fun deleteCharts(charts: List<Chart>): Flow<Result<Boolean>>
     suspend fun postAnalytics(
         id: String,
-        operation: OperationType,
+        operation: OperationOption,
     ): Flow<Result<Boolean>>
 }

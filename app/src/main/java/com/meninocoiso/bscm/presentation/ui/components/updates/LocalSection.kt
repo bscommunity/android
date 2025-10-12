@@ -17,8 +17,8 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.manager.ChartState
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
-import com.meninocoiso.bscm.presentation.ui.components.chart.LocalChartPreview
 import com.meninocoiso.bscm.presentation.ui.components.layout.Section
+import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
 
 fun LazyListScope.localContentSection(
     state: ChartState,
@@ -75,11 +75,10 @@ fun LazyListScope.localContentSection(
 
     if (state is ChartState.Success && charts.isNotEmpty()) {
         items(charts) { chart ->
-            LocalChartPreview(
+            ChartPreview(
                 chart = chart,
                 onNavigateToDetails = { onNavigateToDetails(chart) },
-                modifier = Modifier
-                    .padding(start = 16.dp, end = 16.dp, top = 8.dp)
+                isLocal = true,
             )
         }
 

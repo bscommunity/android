@@ -3,7 +3,6 @@ package com.meninocoiso.bscm.presentation.ui.components.layout
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -34,26 +33,35 @@ import com.skydoves.landscapist.placeholder.shimmer.Shimmer
 import com.skydoves.landscapist.placeholder.shimmer.ShimmerPlugin
 import java.util.Locale
 
+sealed class CoverArtSize {
+    data class Single(val size: Dp) : CoverArtSize()
+    data class Double(val width: Dp, val height: Dp) : CoverArtSize()
+}
+
 @Composable
 fun CoverArt(
+    modifier: Modifier = Modifier,
     difficulty: Difficulty? = null,
-    isInstalled: Boolean? = null,
     borderRadius: Dp = 0.dp,
-    size: Dp = 76.dp,
+    size: CoverArtSize = CoverArtSize.Single(76.dp),
     url: String
 ) {
-    val sizeInPx = with(LocalDensity.current) { size.roundToPx() }
+    val (width, height) = when (size) {
+        is CoverArtSize.Single -> Pair(size.size, size.size)
+        is CoverArtSize.Double -> Pair(size.width, size.height)
+    }
+    val sizeInPx = with(LocalDensity.current) { width.roundToPx() to height.roundToPx() }
 
     val difficultiesList = getDifficultiesList()
-    
+
     val difficultyIcon =
         if (difficulty != null) difficultiesList.first { it.id == difficulty }.icon
         else null
 
     Box(
-        modifier = Modifier
-			.size(size)
-			.clip(RoundedCornerShape(borderRadius)),
+        modifier = modifier
+            .size(width, height)
+            .clip(RoundedCornerShape(borderRadius)),
         contentAlignment = Alignment.BottomEnd
     ) {
         CoilImage(
@@ -61,11 +69,11 @@ fun CoverArt(
             // imageModel = { "http://10.255.255.1/slow.jpg" },
             imageModel = { url },
             modifier = Modifier
-                .size(size),
+                .size(width, height),
             imageOptions = ImageOptions(
                 contentScale = ContentScale.Fit,
                 alignment = Alignment.Center,
-                requestSize = IntSize(sizeInPx, sizeInPx)
+                requestSize = IntSize(sizeInPx.first, sizeInPx.second)
             ),
             component = rememberImageComponent {
                 +ShimmerPlugin(
@@ -91,21 +99,6 @@ fun CoverArt(
                 }
             }
         )
-        if (isInstalled == true) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize().align(Alignment.Center),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.rounded_download_done_24),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .size(40.dp),
-                )
-            }
-        }
         if (difficultyIcon != null) {
             Box(
                 modifier = Modifier
@@ -122,8 +115,8 @@ fun CoverArt(
                 Image(
                     painter = painterResource(id = difficultyIcon),
                     modifier = Modifier
-						.size(24.dp)
-						.offset(x = 0.8.dp),
+                        .size(24.dp)
+                        .offset(x = 0.8.dp),
                     contentDescription = null,
                 )
             }
@@ -139,7 +132,9 @@ fun Avatar(
     alt: String? = null,
 ) {
     Box(
-        modifier = modifier.size(size),
+        modifier = modifier
+            .size(size)
+            .clip(CircleShape),
         contentAlignment = Alignment.Center
     ) {
         AvatarPlaceholder(size = size, alt = alt)
@@ -177,7 +172,7 @@ fun AvatarPlaceholder(size: Dp = 18.dp, alt: String?) {
                 ),
             )
         } else {
-            Icon(    
+            Icon(
                 painter = painterResource(id = R.drawable.rounded_person_24px),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurface,

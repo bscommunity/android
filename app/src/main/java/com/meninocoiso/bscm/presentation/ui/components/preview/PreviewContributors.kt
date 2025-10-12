@@ -1,4 +1,4 @@
-package com.meninocoiso.bscm.presentation.ui.components.chart
+package com.meninocoiso.bscm.presentation.ui.components.preview
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -40,7 +40,7 @@ import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun ChartContributors(authors: List<Contributor>) {
+fun PreviewContributors(authors: List<Contributor>) {
     var isExpanded by remember {
         mutableStateOf(false)
     }

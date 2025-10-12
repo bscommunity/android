@@ -53,13 +53,19 @@ fun WorkshopScreen(
             when (index) {
                 0 -> ChartsSection(
                     connection,
-                    listState = viewModel.listState,
+                    viewModel.listState,
                     onNavigateToDetails,
                     onFabStateChange,
                     onSnackbar,
                     viewModel
                 )
-                1 -> TourPassesSection(connection)
+
+                1 -> TourPassesSection(
+                    connection, 
+                    viewModel.listState,
+                    onFabStateChange
+                )
+
                 2 -> ThemesSection(connection)
             }
         }

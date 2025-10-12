@@ -13,7 +13,7 @@ import com.meninocoiso.bscm.domain.repository.ChartRepository
 import com.meninocoiso.bscm.data.repository.DownloadRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.ErrorType
-import com.meninocoiso.bscm.domain.enums.OperationType
+import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.internal.Settings
 import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
@@ -277,7 +277,7 @@ class ContentViewModel @Inject constructor(
 
                 // Update the chart in local database first
                 val updateResult = localChartRepository
-                    .updateChart(chartId, OperationType.DELETE)
+                    .updateChart(chartId, OperationOption.DELETE)
                     .first()
 
                 updateResult.getOrThrow() // Will throw if update failed

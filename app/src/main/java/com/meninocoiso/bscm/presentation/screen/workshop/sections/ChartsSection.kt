@@ -31,7 +31,7 @@ import com.meninocoiso.bscm.data.manager.ChartState
 import com.meninocoiso.bscm.data.manager.FetchEvent
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
-import com.meninocoiso.bscm.presentation.ui.components.chart.ChartPreview
+import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
 import com.meninocoiso.bscm.presentation.ui.components.layout.SectionWrapper
 import com.meninocoiso.bscm.presentation.ui.components.workshop.WorkshopChips
 import com.meninocoiso.bscm.presentation.ui.modifiers.fabScrollObserver
@@ -144,8 +144,8 @@ internal fun ChartsSection(
                     itemsIndexed(charts) { index, chart ->
                         ChartPreview(
                             chart = chart,
-                            isBlocked = chart.latestVersion.isExplicit && !isExplicitAllowed.value,
-                            onBlocked = {
+                            isDisabled = chart.latestVersion.isExplicit && !isExplicitAllowed.value,
+                            onDisabled = {
                                 onSnackbar(context.getString(R.string.explicit_content_disabled))
                             },
                             onNavigateToDetails = {

@@ -1,6 +1,6 @@
 package com.meninocoiso.bscm.domain.enums
 
-enum class OperationType {
+enum class OperationOption {
     INSTALL,
     UPDATE,
     DELETE
