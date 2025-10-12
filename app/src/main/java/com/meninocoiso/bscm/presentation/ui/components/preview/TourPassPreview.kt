@@ -65,6 +65,8 @@ fun TourPassPreview(
                 modifier = Modifier.fillMaxWidth(),
                 url = tourPass.coverUrl,
                 borderRadius = if (isLocal) 8.dp else 0.dp,
+                width = 400.dp,
+                height = 100.dp
             )
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column {
@@ -99,7 +101,13 @@ fun TourPassPreview(
                     }
                     Text(style = MaterialTheme.typography.labelMedium, text = tourPass.artist ?: "Multiple Artists")
                 }
-                ChartAuthors(authors = tourPass.contributors)
+                PreviewAuthors(
+                    contentString = "Tour Pass by ${tourPass.contributors[0].user.username}",
+                    /*contentString = stringResource(
+                        R.string.chart_by,
+                        tourPass.contributors[0].user.username
+                    ),*/
+                    authors = tourPass.contributors)
                 if (!isLocal && tourPass.isInstalled == true) {
                     Box(
                         modifier = Modifier

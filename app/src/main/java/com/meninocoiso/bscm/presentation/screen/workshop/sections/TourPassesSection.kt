@@ -10,6 +10,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.meninocoiso.bscm.data.remote.dto.ContributorUserDto
+import com.meninocoiso.bscm.domain.enums.Role
+import com.meninocoiso.bscm.domain.model.Contributor
 import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.presentation.ui.components.layout.SectionWrapper
 import com.meninocoiso.bscm.presentation.ui.components.preview.TourPassPreview
@@ -34,7 +37,14 @@ internal fun TourPassesSection(
             isFeatured = false,
             latestPublishedAt = LocalDateTime.now(),
             charts = listOf(),
-            contributors = listOf()
+            contributors = listOf(
+                Contributor(
+                    user = ContributorUserDto(id = "1", username = "meninocoiso", imageUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
+                    chartId = "asdads",
+                    roles = listOf(Role.GAMEPLAY),
+                    joinedAt = LocalDateTime.now()
+                )
+            )
         )
     )
     

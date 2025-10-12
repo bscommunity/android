@@ -21,8 +21,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.bscm.presentation.ui.modifiers.debouncedClickable
@@ -108,7 +110,13 @@ fun ChartPreview(
                     }
                     Text(style = MaterialTheme.typography.labelMedium, text = chart.artist)
                 }
-                ChartAuthors(authors = chart.contributors)
+                PreviewAuthors(
+                    contentString = stringResource(
+                        R.string.chart_by,
+                        chart.contributors[0].user.username
+                    ), 
+                    authors = chart.contributors
+                )
                 if (!isLocal && chart.isInstalled == true) {
                     Box(
                         modifier = Modifier

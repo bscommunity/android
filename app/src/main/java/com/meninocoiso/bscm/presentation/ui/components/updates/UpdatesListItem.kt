@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
-import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArtSize
 import com.meninocoiso.bscm.presentation.viewmodel.ContentState
 
 @Composable
@@ -42,7 +41,7 @@ internal fun UpdateListItem(
                 difficulty = null,
                 borderRadius = 2.dp,
                 url = chart.coverUrl,
-                size = CoverArtSize.Single(40.dp)
+                size = 40.dp
             )
         },
         headlineContent = {

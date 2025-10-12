@@ -33,9 +33,22 @@ import com.skydoves.landscapist.placeholder.shimmer.Shimmer
 import com.skydoves.landscapist.placeholder.shimmer.ShimmerPlugin
 import java.util.Locale
 
-sealed class CoverArtSize {
-    data class Single(val size: Dp) : CoverArtSize()
-    data class Double(val width: Dp, val height: Dp) : CoverArtSize()
+@Composable
+fun CoverArt(
+    modifier: Modifier = Modifier,
+    difficulty: Difficulty? = null,
+    borderRadius: Dp = 0.dp,
+    size: Dp = 76.dp,
+    url: String
+) {
+    CoverArt(
+        modifier = modifier,
+        difficulty = difficulty,
+        borderRadius = borderRadius,
+        width = size,
+        height = size,
+        url = url
+    )
 }
 
 @Composable
@@ -43,13 +56,10 @@ fun CoverArt(
     modifier: Modifier = Modifier,
     difficulty: Difficulty? = null,
     borderRadius: Dp = 0.dp,
-    size: CoverArtSize = CoverArtSize.Single(76.dp),
+    width: Dp = 76.dp,
+    height: Dp = 76.dp,
     url: String
 ) {
-    val (width, height) = when (size) {
-        is CoverArtSize.Single -> Pair(size.size, size.size)
-        is CoverArtSize.Double -> Pair(size.width, size.height)
-    }
     val sizeInPx = with(LocalDensity.current) { width.roundToPx() to height.roundToPx() }
 
     val difficultiesList = getDifficultiesList()
@@ -71,7 +81,7 @@ fun CoverArt(
             modifier = Modifier
                 .size(width, height),
             imageOptions = ImageOptions(
-                contentScale = ContentScale.Fit,
+                contentScale = ContentScale.Crop,
                 alignment = Alignment.Center,
                 requestSize = IntSize(sizeInPx.first, sizeInPx.second)
             ),

@@ -26,7 +26,8 @@ import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 import java.time.LocalDateTime
 
 @Composable
-fun ChartAuthors(
+fun PreviewAuthors(
+    contentString: String,
     authors: List<Contributor>,
     avatarSize: Dp = 18.dp,
 ) {
@@ -59,10 +60,7 @@ fun ChartAuthors(
                 }
                 Text(
                     style = MaterialTheme.typography.bodySmall,
-                    text = "${stringResource(
-                        R.string.chart_by,
-                        authors[0].user.username
-                    )} ${if (authors.size > 1) stringResource(
+                    text = "$contentString ${if (authors.size > 1) stringResource(
                         R.string.and_others
                     ) else ""}",
                     maxLines = 1,
@@ -77,7 +75,11 @@ fun ChartAuthors(
 @Preview
 @Composable
 fun ChartAuthorsPreview() {
-    ChartAuthors(
+    PreviewAuthors(
+        contentString = stringResource(
+            R.string.chart_by,
+            "user1"
+        ),
         authors = listOf(
             Contributor(
                 user = ContributorUserDto(
