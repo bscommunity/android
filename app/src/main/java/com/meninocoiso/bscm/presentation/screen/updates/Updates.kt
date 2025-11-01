@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.UpdatesSection
+import com.meninocoiso.bscm.presentation.navigation.OnSnackbar
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.screen.updates.sections.InstallationsSection
 import com.meninocoiso.bscm.presentation.screen.updates.sections.WorkshopSection
@@ -47,7 +48,7 @@ private val TabsHeight = 55.dp
 fun UpdatesScreen(
 	section: UpdatesSection,
 	onNavigateToDetails: OnNavigateToDetails,
-	onSnackbar: (String) -> Unit,
+	onSnackbar: OnSnackbar,
 	onFabStateChange: (Boolean) -> Unit,
 	viewModel: UpdatesViewModel = hiltViewModel(),
 ) {

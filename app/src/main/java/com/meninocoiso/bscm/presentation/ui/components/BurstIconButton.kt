@@ -219,8 +219,9 @@ fun AnimatedIcon(
 @Composable
 fun BurstIconButton(
     isActive: Boolean,
-    onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
     animations: List<IconButtonAnimation> = listOf(),
     visuals: List<IconButtonVisual> = listOf(),
     hapticFeedback: Boolean = true,
@@ -228,7 +229,7 @@ fun BurstIconButton(
 ) {
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
-    
+
     fun triggerAnimations() {
         if (hapticFeedback) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
         scope.launch {
@@ -237,12 +238,21 @@ fun BurstIconButton(
         }
     }
 
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+    Box(
+        modifier = modifier
+            .graphicsLayer {
+                alpha = if (enabled) 1f else 0.6f
+            },
+        contentAlignment = Alignment.Center
+    ) {
         visuals.forEach { visual -> visual() }
-        IconButton(onClick = {
-            onClick()
-            if (!isActive) triggerAnimations()
-        }) {
+        IconButton(
+            enabled = enabled,
+            onClick = {
+                onClick()
+                if (!isActive) triggerAnimations()
+            }
+        ) {
             icon()
         }
     }

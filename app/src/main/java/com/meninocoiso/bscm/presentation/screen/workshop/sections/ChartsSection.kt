@@ -29,10 +29,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.manager.ChartState
 import com.meninocoiso.bscm.data.manager.FetchEvent
+import com.meninocoiso.bscm.presentation.navigation.OnSnackbar
+import com.meninocoiso.bscm.presentation.navigation.show
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
-import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
 import com.meninocoiso.bscm.presentation.ui.components.layout.SectionWrapper
+import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
 import com.meninocoiso.bscm.presentation.ui.components.workshop.WorkshopChips
 import com.meninocoiso.bscm.presentation.ui.modifiers.fabScrollObserver
 import com.meninocoiso.bscm.presentation.viewmodel.WorkshopViewModel
@@ -42,9 +44,10 @@ import com.meninocoiso.bscm.presentation.viewmodel.WorkshopViewModel
 internal fun ChartsSection(
     nestedScrollConnection: NestedScrollConnection,
     listState: LazyListState,
-    onNavigateToDetails: OnNavigateToDetails,
     onFabStateChange: (Boolean) -> Unit,
-    onSnackbar: (String) -> Unit,
+    onSnackbar: OnSnackbar,
+    onNavigateToDetails: OnNavigateToDetails,
+    onNavigateToSettings: () -> Unit,
     viewModel: WorkshopViewModel
 ) {
     val context = LocalContext.current
@@ -69,7 +72,7 @@ internal fun ChartsSection(
             when (event) {
                 is FetchEvent.Error -> {
                     println("Triggering snackbar: ${event.message}")
-                    onSnackbar(event.message)
+                    onSnackbar.show(event.message)
                 }
             }
         }
@@ -146,7 +149,12 @@ internal fun ChartsSection(
                             chart = chart,
                             isDisabled = chart.latestVersion.isExplicit && !isExplicitAllowed.value,
                             onDisabled = {
-                                onSnackbar(context.getString(R.string.explicit_content_disabled))
+                                onSnackbar.show(
+                                    message = context.getString(R.string.explicit_content_disabled),
+                                    actionLabel = "Go to Settings",
+                                    onAction = {
+                                        onNavigateToSettings()
+                                    })
                             },
                             onNavigateToDetails = {
                                 onNavigateToDetails(chart)

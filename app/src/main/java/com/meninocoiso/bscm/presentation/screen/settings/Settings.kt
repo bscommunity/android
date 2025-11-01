@@ -65,6 +65,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.BuildConfig
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.User
+import com.meninocoiso.bscm.presentation.navigation.OnSnackbar
+import com.meninocoiso.bscm.presentation.navigation.show
 import com.meninocoiso.bscm.presentation.ui.components.CollapsableSection
 import com.meninocoiso.bscm.presentation.ui.components.SwitchUI
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ContributorsDialog
@@ -90,7 +92,7 @@ fun SettingsScreen(
     startOAuth: (Uri) -> Unit,
     cacheUser: User?,
     onFabStateChange: (Boolean) -> Unit,
-    onSnackbar: (String) -> Unit,
+    onSnackbar: OnSnackbar,
     onNavigateToProfile: (user: User) -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -125,14 +127,14 @@ fun SettingsScreen(
     // Collects Snackbar events from AuthViewModel
     LaunchedEffect(Unit) {
         authViewModel.snackbarEvents.collect { message ->
-            onSnackbar(message)
+            onSnackbar.show(message)
         }
     }
 
     // Collects update events from SettingsViewModel
     LaunchedEffect(Unit) {
         viewModel.updateEvents.collect { message ->
-            onSnackbar(message)
+            onSnackbar.show(message)
         }
     }
 
@@ -182,7 +184,7 @@ fun SettingsScreen(
                                     )
                                     .roundedPolygonClip()
                                     .clickable(
-                                        onClick = { onNavigateToProfile(displayUser) },
+                                        onClick = { /*onNavigateToProfile(displayUser)*/ },
                                         indication = ripple(
                                             bounded = true,
                                             radius = Dp.Unspecified,

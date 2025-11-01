@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.presentation.navigation.OnSnackbar
+import com.meninocoiso.bscm.presentation.navigation.show
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.updates.localContentSection
@@ -29,7 +31,7 @@ import com.meninocoiso.bscm.presentation.viewmodel.UpdatesViewModel
 internal fun WorkshopSection(
     viewModel: UpdatesViewModel,
     onNavigateToDetails: OnNavigateToDetails,
-    onSnackbar: (String) -> Unit,
+    onSnackbar: OnSnackbar,
     onFabStateChange: (Boolean) -> Unit,
     nestedScrollConnection: NestedScrollConnection,
     contentViewModel: ContentViewModel = hiltViewModel()
@@ -50,10 +52,10 @@ internal fun WorkshopSection(
             when (event) {
                 is DownloadEvent.Complete -> {
                     itemsUpdating.remove(event.chartId)
-                    onSnackbar(context.getString(R.string.update_complete))
+                    onSnackbar.show(context.getString(R.string.update_complete))
                 }
 
-                is DownloadEvent.Error -> onSnackbar(
+                is DownloadEvent.Error -> onSnackbar.show(
                     context.getString(R.string.error, event.message)
                 )
 

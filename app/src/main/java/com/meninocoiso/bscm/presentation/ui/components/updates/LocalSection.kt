@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.manager.ChartState
 import com.meninocoiso.bscm.domain.model.Chart
-import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.layout.Section
 import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
 
@@ -50,15 +49,6 @@ fun LazyListScope.localContentSection(
                     }
                 }
 
-                is ChartState.Error -> {
-                    StatusMessageUI(
-                        modifier = Modifier.fillMaxSize(),
-                        title = stringResource(R.string.something_went_wrong),
-                        message = stringResource(R.string.reopen_app),
-                        icon = R.drawable.rounded_hourglass_disabled_24
-                    )
-                }
-
                 else -> {
                     // TODO: Implement other content types
                     // SegmentedButtonUI()
@@ -73,7 +63,7 @@ fun LazyListScope.localContentSection(
         }
     }
 
-    if (state is ChartState.Success && charts.isNotEmpty()) {
+    if (state !is ChartState.Loading && charts.isNotEmpty()) {
         items(charts) { chart ->
             ChartPreview(
                 chart = chart,

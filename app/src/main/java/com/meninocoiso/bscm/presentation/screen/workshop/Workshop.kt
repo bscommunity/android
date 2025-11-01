@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.meninocoiso.bscm.presentation.navigation.OnSnackbar
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.screen.workshop.sections.ChartsSection
 import com.meninocoiso.bscm.presentation.screen.workshop.sections.ThemesSection
@@ -25,9 +26,10 @@ private val TabsHeight = 48.dp
 
 @Composable
 fun WorkshopScreen(
-    onNavigateToDetails: OnNavigateToDetails,
+    onSnackbar: OnSnackbar,
     onFabStateChange: (Boolean) -> Unit,
-    onSnackbar: (String) -> Unit,
+    onNavigateToDetails: OnNavigateToDetails,
+    onNavigateToSettings: () -> Unit,
     viewModel: WorkshopViewModel = hiltViewModel()
 ) {
     val workshopTabsItems = getWorkshopTabsItems()
@@ -52,21 +54,26 @@ fun WorkshopScreen(
         ) { index ->
             when (index) {
                 0 -> ChartsSection(
-                    connection,
-                    viewModel.listState,
-                    onNavigateToDetails,
-                    onFabStateChange,
-                    onSnackbar,
-                    viewModel
+                    nestedScrollConnection = connection,
+                    listState = viewModel.listState,
+                    onFabStateChange = onFabStateChange,
+                    onSnackbar = onSnackbar,
+                    onNavigateToSettings = onNavigateToSettings,
+                    onNavigateToDetails = onNavigateToDetails,
+                    viewModel = viewModel
                 )
 
                 1 -> TourPassesSection(
-                    connection, 
+                    connection,
                     viewModel.listState,
                     onFabStateChange
                 )
 
-                2 -> ThemesSection(connection)
+                2 -> ThemesSection(
+                    connection, 
+                    viewModel.listState,
+                    onFabStateChange
+                )
             }
         }
     }

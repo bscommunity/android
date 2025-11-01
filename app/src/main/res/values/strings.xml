@@ -32,7 +32,7 @@
     <string name="install_update">Install update</string>
     <string name="update_from_to">Update from v%1$d → v%2$d</string>
     <string name="update_complete">Update complete</string>
-    <string name="updates_available">Updates available (%1$s)</string>
+    <string name="updates_available">Updates available (%1$d)</string>
     <string name="no_updates_available">No updates available</string>
     <string name="checking_for_updates">Checking for updates…</string>
     <string name="check_for_updates">Check for updates</string>
@@ -250,7 +250,7 @@
     <string name="tour_passes">Tour Passes</string>
     <string name="feature_not_implemented">Feature not implemented yet</string>
     <string name="work_in_progress">Work in progress!</string>
-    <string name="work_in_progress_description">This feature still needs some work\nPlease, check back later</string>
+    <string name="work_in_progress_description">This feature might be coming sooner than you think\nPlease, check back later</string>
     
     <!-- 📂 Storage & Permissions -->
     <string name="storage_permission_required">Storage Permission Required</string>

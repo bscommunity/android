@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import kotlinx.coroutines.launch
 
+@Deprecated("Use the BurstIconButton component instead")
 @Composable
 fun LikeButton(
     defaultValue: Boolean = false,

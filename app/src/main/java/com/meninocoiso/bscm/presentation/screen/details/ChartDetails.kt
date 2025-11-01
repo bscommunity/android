@@ -45,13 +45,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
-import com.meninocoiso.bscm.presentation.ui.components.BurstDotsConfig
 import com.meninocoiso.bscm.presentation.ui.components.CarouselItem
 import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
 import com.meninocoiso.bscm.presentation.ui.components.MediaCarousel
-import com.meninocoiso.bscm.presentation.ui.components.RingConfig
-import com.meninocoiso.bscm.presentation.ui.components.preview.PreviewContributors
 import com.meninocoiso.bscm.presentation.ui.components.details.DownloadButton
+import com.meninocoiso.bscm.presentation.ui.components.details.OfflineFavoriteButton
 import com.meninocoiso.bscm.presentation.ui.components.details.OfflineLikeButton
 import com.meninocoiso.bscm.presentation.ui.components.details.StatListItem
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ConfirmationDialog
@@ -59,9 +57,7 @@ import com.meninocoiso.bscm.presentation.ui.components.dialog.ListenTrackDialog
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ReportDialog
 import com.meninocoiso.bscm.presentation.ui.components.layout.Section
 import com.meninocoiso.bscm.presentation.ui.components.layout.SwipeableSnackbarHost
-import com.meninocoiso.bscm.presentation.ui.components.rememberBurstDotsModule
-import com.meninocoiso.bscm.presentation.ui.components.rememberIconScaleModule
-import com.meninocoiso.bscm.presentation.ui.components.rememberRingModule
+import com.meninocoiso.bscm.presentation.ui.components.preview.PreviewContributors
 import com.meninocoiso.bscm.presentation.viewmodel.ContentState
 import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.bscm.util.LinkingUtils.shareChartLink
@@ -199,7 +195,7 @@ fun ChartDetailsScreen(
                             text = { Text(stringResource(R.string.share)) },
                             leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
                             onClick = {
-                                shareChartLink(context, chart.id)
+                                shareChartLink(context, chart.contentId)
                             }
                         )
                         DropdownMenuItem(
@@ -250,37 +246,7 @@ fun ChartDetailsScreen(
                         )
                     }
                     
-                    val (burstAnimation, burstVisual) = rememberBurstDotsModule(
-                        config = BurstDotsConfig(color = MaterialTheme.colorScheme.primary)
-                    )
-                    val (ringAnimation, ringVisual) = rememberRingModule(
-                        config = RingConfig(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-                    )
-                    val (iconScale, iconScaleAnimation) = rememberIconScaleModule()
-
-                    /*BurstIconButton(
-                        isActive = isFavorite,
-                        onClick = { isFavorite = !isFavorite },
-                        animations = listOfNotNull(
-                            burstAnimation,
-                            ringAnimation,
-                            iconScaleAnimation
-                        ),
-                        visuals = listOfNotNull(
-                            burstVisual,
-                            ringVisual
-                        ),
-                    ) {
-                        AnimatedIcon(
-                            isActive = isFavorite,
-                            activeIconResId = R.drawable.baseline_bookmark_24,
-                            inactiveIconResId = R.drawable.rounded_bookmark_24,
-                            activeColor = MaterialTheme.colorScheme.primary,
-                            inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            iconScale = iconScale
-                        )
-                    }*/
-
+                    OfflineFavoriteButton(chart.contentId, chart.isLiked)
                     OfflineLikeButton(chart.contentId, chart.isLiked)
                 },
                 floatingActionButton = {

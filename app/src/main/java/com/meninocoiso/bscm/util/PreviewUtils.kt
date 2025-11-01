@@ -19,6 +19,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.meninocoiso.bscm.R
@@ -51,6 +52,8 @@ object PreviewUtils {
                     isExplicit = isExplicit,
                     isDeluxe = isDeluxe
                 ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
 

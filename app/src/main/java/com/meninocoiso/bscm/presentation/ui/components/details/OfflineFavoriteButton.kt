@@ -18,12 +18,12 @@ import com.meninocoiso.bscm.presentation.ui.components.rememberRingModule
 import com.meninocoiso.bscm.presentation.viewmodel.InteractionViewModel
 
 @Composable
-fun OfflineLikeButton(
+fun OfflineFavoriteButton(
     contentId: String,
     defaultValue: Boolean = false,
     viewModel: InteractionViewModel = hiltViewModel()
 ) {
-    var isLiked by remember { mutableStateOf(defaultValue) }
+    var isFavorite by remember { mutableStateOf(defaultValue) }
 
     val (burstAnimation, burstVisual) = rememberBurstDotsModule(
         config = BurstDotsConfig(color = MaterialTheme.colorScheme.primary)
@@ -35,8 +35,8 @@ fun OfflineLikeButton(
 
     BurstIconButton(
         enabled = false,
-        isActive = isLiked,
-        onClick = { isLiked = !isLiked },
+        isActive = isFavorite,
+        onClick = { isFavorite = !isFavorite },
         animations = listOfNotNull(
             burstAnimation,
             ringAnimation,
@@ -48,9 +48,9 @@ fun OfflineLikeButton(
         ),
     ) {
         AnimatedIcon(
-            isActive = isLiked,
-            activeIconResId = R.drawable.baseline_favorite_24,
-            inactiveIconResId = R.drawable.rounded_favorite_24,
+            isActive = isFavorite,
+            activeIconResId = R.drawable.baseline_bookmark_24,
+            inactiveIconResId = R.drawable.rounded_bookmark_24,
             activeColor = MaterialTheme.colorScheme.primary,
             inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant,
             iconScale = iconScale
