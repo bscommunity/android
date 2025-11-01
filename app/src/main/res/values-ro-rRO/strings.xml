@@ -206,11 +206,15 @@
     <string name="logged_out_successfully">Deconectat cu succes</string>
     <string name="discord_icon">Iconiță Discord</string>
     <string name="no_email_provided">Nici un e-mail furnizat</string>
-    <string name="welcome_title">Bun venit la BSCM</string>
     <string name="login_description">Conectează-ți contul Discord pentru a accesa funcționalități personalizate</string>
     <string name="login_with_discord">Autentifică-te cu Discord</string>
     <string name="login_terms">Continuând, ești de acord cu Termenii de utilizare și Politica de confidențialitate</string>
-    <string name="logged_in_successfully">Bine ați venit, %1$s! V-ați conectat cu succes.</string>
+    <string name="login_success">Welcome, %1$s!\nYou have successfully logged in.</string>
+    <string name="logout_success">Logout successful</string>
+    <string name="error_login">Error during login: %1$s</string>
+    <string name="error_logout">Error during logout: %1$s</string>
+    <string name="error_invalid_auth_code">Error during login: invalid authorization code</string>
+    <string name="auth_cancelled">Authentication cancelled</string>
     <!-- 📄 Legal & Documentation -->
     <string name="legal">Juridic</string>
     <string name="terms_of_use">Termeni de utilizare</string>
