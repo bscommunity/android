@@ -199,11 +199,15 @@
     <string name="logged_out_successfully">Logged out successfully</string>
     <string name="discord_icon">Discord Icon</string>
     <string name="no_email_provided">No email provided</string>
-    <string name="welcome_title">Welcome to BSCM</string>
     <string name="login_description">Connect your Discord account to access personalized features</string>
     <string name="login_with_discord">Login with Discord</string>
     <string name="login_terms">By continuing, you agree to our Terms of Service and Privacy Policy</string>
-    <string name="logged_in_successfully">Welcome, %1$s! You have successfully logged in.</string>
+    <string name="login_success">Welcome, %1$s!\nYou have successfully logged in.</string>
+    <string name="logout_success">Logout successful</string>
+    <string name="error_login">Error during login: %1$s</string>
+    <string name="error_logout">Error during logout: %1$s</string>
+    <string name="error_invalid_auth_code">Error during login: invalid authorization code</string>
+    <string name="auth_cancelled">Authentication cancelled</string>
     <!-- 📄 Legal & Documentation -->
     <string name="legal">Jogi Információk</string>
     <string name="terms_of_use">Felhasználási Feltételek</string>

@@ -30,7 +30,7 @@
     <string name="install_update">Instalar atualização</string>
     <string name="update_from_to">Atualizar de v%1$d → v%2$d</string>
     <string name="update_complete">Atualização concluída</string>
-    <string name="updates_available">Atualizações disponíveis (%1$s)</string>
+    <string name="updates_available">Atualizações disponíveis (%1$d)</string>
     <string name="no_updates_available">Nenhuma atualização disponível</string>
     <string name="checking_for_updates">Verificando atualizações…</string>
     <string name="check_for_updates">Verificar atualizações</string>
@@ -102,7 +102,7 @@
         <item quantity="other">%1$d efeitos</item>
     </plurals>
     <plurals name="downloads_amount">
-        <item quantity="one">+ Download%1$d</item>
+        <item quantity="one">+ %1$d download</item>
         <item quantity="other">+ downloads%1$d</item>
     </plurals>
     <!-- ⏰ Time Expressions -->
@@ -199,11 +199,15 @@
     <string name="logged_out_successfully">Sessão encerrada com sucesso</string>
     <string name="discord_icon">Ícone do Discord</string>
     <string name="no_email_provided">Nenhum e-mail fornecido</string>
-    <string name="welcome_title">Bem-vindo(a) ao BSCM</string>
     <string name="login_description">Conecte sua conta do Discord para acessar recursos personalizados</string>
     <string name="login_with_discord">Entrar com o Discord</string>
     <string name="login_terms">Ao continuar, você concorda com nossos Termos de Serviço e Política de Privacidade</string>
-    <string name="logged_in_successfully">Bem-vindo, %1$s! Você logou com sucesso.</string>
+    <string name="login_success">Boas-vindas, %1$s!\nVocê entrou na sua conta com sucesso.</string>
+    <string name="logout_success">Você saiu com sucesso</string>
+    <string name="error_login">Erro durante login: %1$s</string>
+    <string name="error_logout">Erro durante logout: %1$s</string>
+    <string name="error_invalid_auth_code">Erro durante login: código de autorização inválido</string>
+    <string name="auth_cancelled">Autenticação cancelada</string>
     <!-- 📄 Legal & Documentation -->
     <string name="legal">Informações</string>
     <string name="terms_of_use">Termos de Uso</string>
@@ -245,7 +249,7 @@
     <string name="go_to_updates">Ir para atualizações</string>
     <!-- 📭 Empty States -->
     <string name="empty_downloads">Nenhum download ainda</string>
-    <string name="empty_downloads_description">Baixe alguns charts pra começar</string>
+    <string name="empty_downloads_description">Baixe alguns charts para começar</string>
     <string name="no_charts_found">Nenhum chart encontrado</string>
     <string name="no_charts_found_description">Tente buscar alguma outra coisa</string>
     <string name="workshop_feed_end">Fim do feed</string>

@@ -199,11 +199,15 @@
     <string name="logged_out_successfully">Déconnexion réussie</string>
     <string name="discord_icon">Icône Discord</string>
     <string name="no_email_provided">Aucun e-mail fourni</string>
-    <string name="welcome_title">Bienvenue dans BSCM</string>
     <string name="login_description">Connectez votre compte Discord pour accéder à des fonctionnalités personnalisées</string>
     <string name="login_with_discord">Se connecter avec Discord</string>
     <string name="login_terms">En continuant, vous acceptez nos conditions d\'utilisation et notre politique de confidentialité</string>
-    <string name="logged_in_successfully">Bienvenue, %1$s! Vous êtes bien connecté.</string>
+    <string name="login_success">Welcome, %1$s!\nYou have successfully logged in.</string>
+    <string name="logout_success">Logout successful</string>
+    <string name="error_login">Error during login: %1$s</string>
+    <string name="error_logout">Error during logout: %1$s</string>
+    <string name="error_invalid_auth_code">Error during login: invalid authorization code</string>
+    <string name="auth_cancelled">Authentication cancelled</string>
     <!-- 📄 Legal & Documentation -->
     <string name="legal">Mentions légales</string>
     <string name="terms_of_use">Conditions d\'utilisation</string>

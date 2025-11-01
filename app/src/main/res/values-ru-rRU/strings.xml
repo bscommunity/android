@@ -213,11 +213,15 @@
     <string name="logged_out_successfully">Успешный выход из системы</string>
     <string name="discord_icon">Значок Discord</string>
     <string name="no_email_provided">Письмо не предоставлено</string>
-    <string name="welcome_title">Добро пожаловать в BSCM</string>
     <string name="login_description">Подключите свою учётную запись Discord для доступа к персонализированным функциям</string>
     <string name="login_with_discord">Войти через Discord</string>
     <string name="login_terms">Продолжая, вы соглашаетесь с нашими Условиями обслуживания и Политикой конфиденциальности</string>
-    <string name="logged_in_successfully">Добро пожаловать, %1$s! Вы успешно вошли в систему.</string>
+    <string name="login_success">Welcome, %1$s!\nYou have successfully logged in.</string>
+    <string name="logout_success">Logout successful</string>
+    <string name="error_login">Error during login: %1$s</string>
+    <string name="error_logout">Error during logout: %1$s</string>
+    <string name="error_invalid_auth_code">Error during login: invalid authorization code</string>
+    <string name="auth_cancelled">Authentication cancelled</string>
     <!-- 📄 Legal & Documentation -->
     <string name="legal">Юридическая информация</string>
     <string name="terms_of_use">Политика использования</string>
