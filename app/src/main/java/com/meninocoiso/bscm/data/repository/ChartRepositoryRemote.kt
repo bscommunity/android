@@ -3,10 +3,11 @@ package com.meninocoiso.bscm.data.repository
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
-import com.meninocoiso.bscm.domain.enums.OperationType
+import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Version
+import com.meninocoiso.bscm.domain.repository.ChartRepository
 import jakarta.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -68,7 +69,7 @@ class ChartRepositoryRemote @Inject constructor(
 
     override suspend fun postAnalytics(
         id: String,
-        operation: OperationType,
+        operation: OperationOption,
     ): Flow<Result<Boolean>> = flow {
         val result = apiClient.postAnalytics(id, operation)
         emit(Result.success(result))
@@ -98,7 +99,7 @@ class ChartRepositoryRemote @Inject constructor(
 
     override suspend fun updateChart(
         id: String,
-        operation: OperationType,
+        operation: OperationOption,
     ): Flow<Result<Boolean>> {
         TODO("Not yet implemented")
     }

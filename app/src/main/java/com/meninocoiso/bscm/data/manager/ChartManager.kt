@@ -5,13 +5,13 @@ import android.net.Uri
 import android.util.Log
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.repository.CacheRepository
-import com.meninocoiso.bscm.data.repository.ChartRepository
 import com.meninocoiso.bscm.di.ApplicationScope
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
-import com.meninocoiso.bscm.domain.enums.OperationType
+import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.repository.ChartRepository
 import com.meninocoiso.bscm.util.StorageUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -206,6 +206,7 @@ class ChartManager @Inject constructor(
         remoteResult.fold(
             onSuccess = { remoteCharts ->
                 Log.d(TAG, "Fetched ${remoteCharts.size} charts from remote")
+                Log.d(TAG, "Charts: $remoteCharts")
 
                 if (offset == 0) {
                     // Initial load - update cache and handle deletions
@@ -383,7 +384,7 @@ class ChartManager @Inject constructor(
     /**
      * Update a single chart with specific operation
      */
-    fun updateChart(chartId: String, operation: OperationType): Flow<FetchResult<List<Chart>>> = flow {
+    fun updateChart(chartId: String, operation: OperationOption): Flow<FetchResult<List<Chart>>> = flow {
         val existingChart = _charts.value[chartId] ?: run {
             emit(FetchResult.Error(context.getString(R.string.chart_not_found)))
             return@flow
@@ -401,8 +402,8 @@ class ChartManager @Inject constructor(
 
                 // Update in-memory state
                 val updatedChart = when (operation) {
-                    OperationType.INSTALL -> existingChart.copy(isInstalled = true)
-                    OperationType.UPDATE -> {
+                    OperationOption.INSTALL -> existingChart.copy(isInstalled = true)
+                    OperationOption.UPDATE -> {
                         val availableVersion = existingChart.availableVersion
                         if (availableVersion == null) {
                             emit(FetchResult.Error(context.getString(R.string.no_available_version)))
@@ -413,7 +414,7 @@ class ChartManager @Inject constructor(
                             availableVersion = null
                         )
                     }
-                    OperationType.DELETE -> existingChart.copy(isInstalled = false)
+                    OperationOption.DELETE -> existingChart.copy(isInstalled = false)
                 }
 
                 updateChartInMemory(updatedChart)
@@ -451,7 +452,7 @@ class ChartManager @Inject constructor(
     /**
      * Post analytics for chart operations
      */
-    fun postAnalytics(chartId: String, operation: OperationType) {
+    fun postAnalytics(chartId: String, operation: OperationOption) {
         coroutineScope.launch {
             try {
                 remoteChartRepository.postAnalytics(chartId, operation).collect { result ->

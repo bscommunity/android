@@ -1,30 +1,37 @@
 package com.meninocoiso.bscm.data.remote
 
 import android.util.Log
+import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionRequest
+import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionItemRequest
+import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionRequest
 import com.meninocoiso.bscm.data.security.AuthInterceptor
 import com.meninocoiso.bscm.data.security.AuthPlugin
+import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
-import com.meninocoiso.bscm.domain.enums.OperationType
+import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.enums.SortOption
+import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.domain.model.auth.AuthRequest
 import com.meninocoiso.bscm.domain.model.auth.AuthResponse
 import com.meninocoiso.bscm.domain.model.auth.RefreshTokenRequest
+import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
 import com.meninocoiso.bscm.util.DevelopmentUtils
-import com.meninocoiso.bscm.util.KeystoreUtils
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
@@ -32,6 +39,7 @@ import io.ktor.serialization.kotlinx.json.json
 import jakarta.inject.Inject
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import io.ktor.http.ContentType as KtorContentType
 
 private const val TAG = "KtorApiClient"
 
@@ -68,21 +76,13 @@ class KtorApiClient @Inject constructor(
         }
         
         defaultRequest {
-            url("https://api-cyb1.onrender.com")
-            /*url {
+            // url("https://api-cyb1.onrender.com")
+            url {
                 protocol = URLProtocol.HTTP
-                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.10"
+                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.6"
                 port = 8080
-            }*/
-
-            val timestamp = System.currentTimeMillis().toString()
-            val payload = "$timestamp:"
-            val signature = KeystoreUtils.signData(payload)
-
-            headers.append("X-App-Timestamp", timestamp)
-            headers.append("X-App-Signature", signature)
-            
-            contentType(ContentType.Application.Json)
+            }
+            contentType(KtorContentType.Application.Json)
         }
     }
 
@@ -172,11 +172,11 @@ class KtorApiClient @Inject constructor(
         }.body()
     }
 
-    override suspend fun postAnalytics(id: String, operationType: OperationType): Boolean {
-        Log.d(TAG, "Posting analytics for chart $id with operation $operationType")
+    override suspend fun postAnalytics(id: String, operationOption: OperationOption): Boolean {
+        Log.d(TAG, "Posting analytics for chart $id with operation $operationOption")
         return client.post("charts/analytics/$id") {
             url {
-                parameters.append("type", operationType.toString())
+                parameters.append("type", operationOption.toString())
             }
         }.body<Boolean>()
     }
@@ -245,6 +245,108 @@ class KtorApiClient @Inject constructor(
                     ApiError("Failed to get user info")
                 }
                 throw Exception("User Error (${response.status.value}): ${errorResponse.error}")
+            }
+        }
+    }
+
+    /**
+     * Fetches the list of contributors from the remote server.
+     * @return A list of ContributionCategory objects.
+     */
+    override suspend fun getContributors(): List<ContributionCategory> {
+        return try {
+            client.get("https://bscm.netlify.app/contributors.json").body()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to fetch contributors", e)
+            emptyList()
+        }
+    }
+
+    // Collections
+    override suspend fun getCollections(limit: Int?, offset: Int?): List<Collection> {
+        val response = client.get("collections") {
+            url {
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
+            }
+        }
+        return response.body()
+    }
+
+    override suspend fun createCollection(request: CreateCollectionRequest): Collection {
+        val response = client.post("collections") {
+            setBody(request)
+        }
+        return response.body()
+    }
+
+    override suspend fun updateCollection(collectionId: String, request: UpdateCollectionRequest): Boolean {
+        val response = client.put("collections/$collectionId") {
+            setBody(request)
+        }
+        return response.status == HttpStatusCode.OK
+    }
+
+    override suspend fun deleteCollection(collectionId: String): Boolean {
+        val response = client.delete("collections/$collectionId")
+        return response.status == HttpStatusCode.OK
+    }
+
+    // Collection Items
+    override suspend fun getCollectionItems(
+        collectionId: String,
+        category: ContentType,
+        limit: Int?,
+        offset: Int?
+    ): List<CatalogItem> {
+        val response = client.get("collections/$collectionId/items") {
+            url {
+                parameters.append("category", category.name)
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
+            }
+        }
+        return response.body()
+    }
+
+    override suspend fun addItemToCollection(collectionId: String, contentId: String): Boolean {
+        val response = client.post("collections/$collectionId/items") {
+            url {
+                parameters.append("contentId", contentId)
+            }
+        }
+        return response.status == HttpStatusCode.OK
+    }
+
+    override suspend fun removeItemFromCollection(collectionId: String, contentId: String): Boolean {
+        val response = client.delete("collections/$collectionId/items") {
+            url {
+                parameters.append("contentId", contentId)
+            }
+        }
+        return response.status == HttpStatusCode.OK
+    }
+
+    // Batch processing
+    override suspend fun batchProcessInteractions(interactions: List<UpdateCollectionItemRequest>): Boolean {
+        Log.d(TAG, "Sending batch of ${interactions.size} interactions")
+        val response = client.post("collections/batch") {
+            setBody(interactions)
+        }
+        
+        when (response.status) {
+            HttpStatusCode.OK -> {
+                Log.d(TAG, "Batch processing successful")
+                return true
+            }
+            else -> {
+                val errorResponse = try {
+                    response.body<ApiError>()
+                } catch (_: Exception) {
+                    ApiError("Batch processing failed")
+                }
+                Log.e(TAG, "Batch processing failed: ${errorResponse.error}")
+                return false
             }
         }
     }

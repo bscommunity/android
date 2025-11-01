@@ -3,7 +3,6 @@ package com.meninocoiso.bscm.presentation.ui.components.layout
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -22,6 +21,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.Difficulty
@@ -35,24 +35,43 @@ import java.util.Locale
 
 @Composable
 fun CoverArt(
+    modifier: Modifier = Modifier,
     difficulty: Difficulty? = null,
-    isInstalled: Boolean? = null,
     borderRadius: Dp = 0.dp,
     size: Dp = 76.dp,
     url: String
 ) {
-    val sizeInPx = with(LocalDensity.current) { size.roundToPx() }
+    CoverArt(
+        modifier = modifier,
+        difficulty = difficulty,
+        borderRadius = borderRadius,
+        width = size,
+        height = size,
+        url = url
+    )
+}
+
+@Composable
+fun CoverArt(
+    modifier: Modifier = Modifier,
+    difficulty: Difficulty? = null,
+    borderRadius: Dp = 0.dp,
+    width: Dp = 76.dp,
+    height: Dp = 76.dp,
+    url: String
+) {
+    val sizeInPx = with(LocalDensity.current) { width.roundToPx() to height.roundToPx() }
 
     val difficultiesList = getDifficultiesList()
-    
+
     val difficultyIcon =
         if (difficulty != null) difficultiesList.first { it.id == difficulty }.icon
         else null
 
     Box(
-        modifier = Modifier
-			.size(size)
-			.clip(RoundedCornerShape(borderRadius)),
+        modifier = modifier
+            .size(width, height)
+            .clip(RoundedCornerShape(borderRadius)),
         contentAlignment = Alignment.BottomEnd
     ) {
         CoilImage(
@@ -60,11 +79,11 @@ fun CoverArt(
             // imageModel = { "http://10.255.255.1/slow.jpg" },
             imageModel = { url },
             modifier = Modifier
-                .size(size),
+                .size(width, height),
             imageOptions = ImageOptions(
-                contentScale = ContentScale.Fit,
+                contentScale = ContentScale.Crop,
                 alignment = Alignment.Center,
-                requestSize = IntSize(sizeInPx, sizeInPx)
+                requestSize = IntSize(sizeInPx.first, sizeInPx.second)
             ),
             component = rememberImageComponent {
                 +ShimmerPlugin(
@@ -90,21 +109,6 @@ fun CoverArt(
                 }
             }
         )
-        if (isInstalled == true) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize().align(Alignment.Center),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.rounded_download_done_24),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .size(40.dp),
-                )
-            }
-        }
         if (difficultyIcon != null) {
             Box(
                 modifier = Modifier
@@ -121,8 +125,8 @@ fun CoverArt(
                 Image(
                     painter = painterResource(id = difficultyIcon),
                     modifier = Modifier
-						.size(24.dp)
-						.offset(x = 0.8.dp),
+                        .size(24.dp)
+                        .offset(x = 0.8.dp),
                     contentDescription = null,
                 )
             }
@@ -135,10 +139,12 @@ fun Avatar(
     modifier: Modifier = Modifier,
     size: Dp = 18.dp,
     url: String? = null,
-    alt: String
+    alt: String? = null,
 ) {
     Box(
-        modifier = modifier.size(size),
+        modifier = modifier
+            .size(size)
+            .clip(CircleShape),
         contentAlignment = Alignment.Center
     ) {
         AvatarPlaceholder(size = size, alt = alt)
@@ -147,8 +153,7 @@ fun Avatar(
                 model = url,
                 contentDescription = null,
                 modifier = Modifier
-                    .matchParentSize()
-                    .clip(CircleShape),
+                    .matchParentSize(),
                 contentScale = ContentScale.Fit,
                 alignment = Alignment.Center,
             )
@@ -157,7 +162,7 @@ fun Avatar(
 }
 
 @Composable
-fun AvatarPlaceholder(size: Dp = 18.dp, alt: String) {
+fun AvatarPlaceholder(size: Dp = 18.dp, alt: String?) {
     Box(
         modifier = Modifier
             .size(size)
@@ -165,12 +170,25 @@ fun AvatarPlaceholder(size: Dp = 18.dp, alt: String) {
             .background(MaterialTheme.colorScheme.surfaceContainerHigh),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = alt.uppercase(Locale.getDefault()),
-            style = (size > 24.dp).let {
-                if (it) MaterialTheme.typography.titleMedium
-                else MaterialTheme.typography.labelSmall
-            },
-        )
+        if (alt != null) {
+            Text(
+                text = alt.uppercase(Locale.getDefault()),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = when {
+                        size > 40.dp -> 24.sp
+                        size > 24.dp -> 16.sp
+                        else -> 12.sp
+                    }
+                ),
+            )
+        } else {
+            Icon(
+                painter = painterResource(id = R.drawable.rounded_person_24px),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .size(size * 0.4f)
+            )
+        }
     }
 }

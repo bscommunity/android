@@ -1,11 +1,14 @@
 package com.meninocoiso.bscm.data.repository
 
+import DownloadEvent
 import android.content.res.Resources.NotFoundException
 import com.meninocoiso.bscm.data.manager.ChartManager
-import com.meninocoiso.bscm.data.manager.FetchResult
-import com.meninocoiso.bscm.domain.enums.OperationType
 import com.meninocoiso.bscm.data.manager.DownloadManager
+import com.meninocoiso.bscm.data.manager.FetchResult
+import com.meninocoiso.bscm.domain.enums.OperationOption
+import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
 import com.meninocoiso.bscm.util.StorageUtils
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.io.IOException
 import javax.inject.Inject
@@ -18,7 +21,10 @@ class DownloadRepository @Inject constructor(
     private val downloadManager: DownloadManager,
     private val chartManager: ChartManager,
     private val cacheRepository: CacheRepository,
+    private val downloadServiceMonitor: DownloadServiceMonitor
 ) {
+    val downloadEvents: SharedFlow<DownloadEvent> = downloadServiceMonitor.observeDownload()
+    
     /**
      * Downloads and extracts a chart to the beatstar folder
      * @param url URL of the chart zip file
@@ -30,7 +36,7 @@ class DownloadRepository @Inject constructor(
     suspend fun downloadChart(
         url: String,
         chartId: String,
-        operation: OperationType,
+        operation: OperationOption,
         onDownloadProgress: (Float) -> Unit = {},
         onExtractProgress: (Float) -> Unit = {}
     ) {
@@ -70,7 +76,7 @@ class DownloadRepository @Inject constructor(
         // Update the chart list
         chartManager.updateChart(chartId, operation).first().let {
             if (it is FetchResult.Error) {
-                throw Error(it.message)
+                throw Exception(it.message)
             }
         }
     }
@@ -91,9 +97,9 @@ class DownloadRepository @Inject constructor(
         }
 
         // Update the chart list
-        chartManager.updateChart(chartId, OperationType.DELETE).first().let {
+        chartManager.updateChart(chartId, OperationOption.DELETE).first().let {
             if (it is FetchResult.Error) {
-                throw Error(it.message)
+                throw Exception(it.message)
             }
         }
     }

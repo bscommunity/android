@@ -64,18 +64,6 @@ inline fun <reified T : Any> NavGraphBuilder.composableWithTransitions(
 	)
 }
 
-inline fun <reified T : Any> NavGraphBuilder.composableWithoutTransitions(
-	noinline content: @Composable AnimatedContentScope.(NavBackStackEntry) -> Unit
-) {
-	composable<T>(
-		enterTransition = { EnterTransition.None },
-		exitTransition = { ExitTransition.None },
-		popEnterTransition = { EnterTransition.None },
-		popExitTransition = { ExitTransition.None },
-		content = content
-	)
-}
-
 fun enterTransition(anim: AnimatedContentTransitionScope<NavBackStackEntry>): EnterTransition {
 	return slideInHorizontally(initialOffsetX = { it }) + fadeIn()
 }

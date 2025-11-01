@@ -5,13 +5,18 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.repository.AppUpdateRepository
+import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.ThemePreference
+import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
 import com.meninocoiso.bscm.domain.model.internal.Settings
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,13 +47,15 @@ private const val TAG = "SettingsViewModel"
 class SettingsViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val settingsRepository: SettingsRepository,
-    private val appUpdateRepository: AppUpdateRepository
+    private val appUpdateRepository: AppUpdateRepository,
+    private val apiClient: ApiClient,
+    private val cacheRepository: CacheRepository, // Inject CacheRepository
 ) : ViewModel() {
     /**
      * Expose settings as a StateFlow for reactive UI updates
      */
     val uiState: StateFlow<Settings> = settingsRepository.settingsFlow
-        .map { it }  // Simplified - removed unnecessary mapping if Settings object structure matches
+        .map { it }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -57,6 +64,18 @@ class SettingsViewModel @Inject constructor(
 
     private val _updateState = MutableStateFlow<AppUpdateState>(AppUpdateState.Idle)
     val updateState: StateFlow<AppUpdateState> = _updateState.asStateFlow()
+
+    // New: update events for one-off notifications (snackbar, etc.)
+    private val _updateEvents = MutableSharedFlow<String>()
+    val updateEvents: SharedFlow<String> = _updateEvents
+
+    // Contributors state (not persisted)
+    data class ContributorsState(
+        val isLoading: Boolean = false,
+        val items: List<ContributionCategory> = emptyList()
+    )
+    private val _contributorsState = MutableStateFlow(ContributorsState())
+    val contributorsState: StateFlow<ContributorsState> = _contributorsState.asStateFlow()
 
     init {
         // Initialize the update state with the current version
@@ -70,6 +89,45 @@ class SettingsViewModel @Inject constructor(
                     AppUpdateState.Idle
                 } else {
                     newState
+                }
+                // Emit event if update is available
+                if (newState is AppUpdateState.UpdateAvailable) {
+                    _updateEvents.emit("Update available: ${newState.version}")
+                }
+            }
+        }
+    }
+
+    /**
+     * Trigger loading contributors only once (first open)
+     */
+    fun loadContributorsIfNeeded() {
+        val current = _contributorsState.value
+        if (current.isLoading || current.items.isNotEmpty()) return
+
+        viewModelScope.launch {
+            _contributorsState.value = current.copy(isLoading = true)
+
+            // Load from CacheRepository first
+            val cached = cacheRepository.getContributors()
+            if (cached.isNotEmpty()) {
+                _contributorsState.value = ContributorsState(isLoading = false, items = cached)
+                return@launch
+            }
+
+            val result = apiClient.getContributors()
+            if (result.isNotEmpty()) {
+                _contributorsState.value = ContributorsState(isLoading = false, items = result)
+                cacheRepository.setContributors(result)
+            } else {
+                // Try again one more time if the result is empty
+                try {
+                    val retryResult = apiClient.getContributors()
+                    _contributorsState.value = ContributorsState(isLoading = false, items = retryResult)
+                    cacheRepository.setContributors(retryResult)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to load contributors on retry", e)
+                    _contributorsState.value = current.copy(isLoading = false)
                 }
             }
         }
@@ -159,7 +217,8 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    
+    /** Helper to extract shrunk version name (removes suffix after last '-') */
+    fun shrunkVersion(version: String): String = version.substringBeforeLast("-")
 
     fun downloadUpdate(version: String) {
         Log.d(TAG, "Downloading update for version: $version")

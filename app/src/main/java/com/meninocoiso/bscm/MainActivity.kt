@@ -242,7 +242,6 @@ class MainActivity : AppCompatActivity() {
                 authViewModel.handleAuthCallback(code)
             }
             error != null -> {
-                println("OAuth error: $error")
                 authViewModel.setError(error)
             }
             else -> {

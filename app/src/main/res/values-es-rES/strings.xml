@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 📱 App Basic Information -->
+    <!-- 🧭 Navigation & Main Sections -->
+    <string name="workshop">Taller</string>
+    <string name="updates">Actualizaciones</string>
+    <string name="settings">Configuraciones</string>
+    <string name="charts">Niveles</string>
+    <string name="installations">Instalaciones</string>
+    <string name="back">Atrás</string>
+    <string name="return_screen">Regresar</string>
+    <!-- 📥 Download & Update States -->
+    <string name="download">Descargar</string>
+    <string name="downloading">Descargando…</string>
+    <string name="downloading_update">Descargando actualización</string>
+    <string name="starting_download_for_version">Iniciando descarga de la versión %*1$s</string>
+    <string name="downloading_version">Descargando versión %1$s… %2$d%%</string>
+    <string name="extracting">Extrayendo…</string>
+    <string name="extracting_progress_title">Extrayendo %1$s</string>
+    <string name="extracting_progress_description">Extrayendo archivos… %1$d%%</string>
+    <string name="download_complete">Descarga completa</string>
+    <string name="download_chart">Descargar nivel</string>
+    <string name="downloaded">(%1$s) descargado</string>
+    <string name="update">Actualizar</string>
+    <string name="update_chart">Actualizar nivel</string>
+    <string name="update_ready">Actualización lista</string>
+    <string name="tap_to_install_version">Toca para instalar la versión %*1$s</string>
+    <string name="update_failed">Actualización fallida</string>
+    <string name="update_now">Actualizar ahora</string>
+    <string name="install_update">Instalar actualización</string>
+    <string name="update_from_to">Actualizar v%1$d → v%2$d</string>
+    <string name="update_complete">Actualización completada</string>
+    <string name="updates_available">Actualizaciones disponibles (%1$s)</string>
+    <string name="no_updates_available">Sin actualizaciones disponibles</string>
+    <string name="checking_for_updates">Revisando actualizaciones</string>
+    <string name="check_for_updates">Revisar actualizaciones</string>
+    <string name="failed_to_check_for_updates">Error al buscar actualizaciones</string>
+    <string name="fetch_updates_error">No pudimos buscar actualizaciones</string>
+    <string name="up_to_date">La aplicación ya está actualizada</string>
+    <string name="client_outdated">Cliente desactualizado</string>
+    <string name="concluded_progress">%1$d% finalizado</string>
+    <string name="installed">Instalados</string>
+    <!-- 📊 Chart Information & Statistics -->
+    <string name="chart_by">Nivel por %1$s</string>
+    <string name="contributors_list_title">Los siguientes usuarios han contribuido a este gráfico:</string>
+    <string name="credits">Créditos</string>
+    <string name="stats">Estadísticas</string>
+    <string name="updated_at">Actualizado a las %1$s</string>
+    <string name="known_issues">Problemas conocidos</string>
+    <string name="no_known_issues">Sin problemas conocidos</string>
+    <string name="explicit">Explicito</string>
+    <string name="deluxe">Deluxe</string>
+    <string name="no_deluxe">Estándar</string>
+    <string name="and_others">y demás</string>
+    <!-- 🎮 Gameplay & Difficulty -->
+    <string name="no_gameplay_available">Sin gameplay disponible</string>
+    <string name="normal">Normal</string>
+    <string name="hard">Difícil</string>
+    <string name="extreme">Extremo</string>
+    <string name="expert">Experto</string>
+    <string name="difficulty">Dificultad</string>
+    <!-- 🎵 Music & Audio -->
+    <string name="listen">Escuchar</string>
+    <string name="listen_to_track">Escuchar la pista</string>
+    <string name="support_the_artist">Apoya al artista</string>
+    <string name="support_the_artist_description">Escucha la canción completa de este nivel en tu servicio de streaming y apoya al artista</string>
+    <string name="empty_streaming_links">Sin enlaces de streaming disponibles</string>
+    <string name="minutes_seconds">%1$dmin%2$dseg</string>
+    <!-- 🎨 Music Genres -->
+    <string name="hip_hop">Hip-hop</string>
+    <string name="pop">Pop</string>
+    <string name="r_b"><![CDATA[R & B]]></string>
+    <string name="rock">Roca</string>
+    <string name="dance">Baile</string>
+    <string name="alternative">Alternativa</string>
+    <string name="classical">Música clasica</string>
+    <string name="genre">Género</string>
+    <!-- 🏆 Features & Categories -->
+    <string name="awarded">Premiado</string>
+    <string name="editors_choice">Selección del editor</string>
+    <string name="featured">Destacado</string>
+    <string name="trending">Tendencia</string>
+    <string name="weekly_rank">Rango semanal</string>
+    <string name="most_downloaded">Más descargados</string>
+    <string name="most_liked">Más gustados</string>
+    <string name="last_updated">Última actualizacion</string>
+    <!-- 👥 User Roles & Contributions -->
+    <string name="author_role">Autor</string>
+    <string name="chart_role">Nivel</string>
+    <string name="audio_role">Audio</string>
+    <string name="revision_role">Revisión</string>
+    <string name="effects_role">Effectos</string>
+    <string name="sync_role">Sincronización</string>
+    <string name="gameplay_role">Juego</string>
+    <!-- 🔢 Plurals - Quantities -->
+    <plurals name="notes_amount">
+        <item quantity="one">%1$d nota</item>
+        <item quantity="other">%1$d notas</item>
+    </plurals>
+    <plurals name="effects_amount">
+        <item quantity="one">%1$d efecto</item>
+        <item quantity="other">%1$d efectos</item>
+    </plurals>
+    <plurals name="downloads_amount">
+        <item quantity="one">%1$d descarga</item>
+        <item quantity="other">%1$d descargas</item>
+    </plurals>
+    <!-- ⏰ Time Expressions -->
+    <string name="today">Hoy</string>
+    <string name="yesterday">Ayer</string>
+    <plurals name="days_ago">
+        <item quantity="one">Hace %1$d día</item>
+        <item quantity="other">Hace %1$d días</item>
+    </plurals>
+    <plurals name="weeks_ago">
+        <item quantity="one">Hace %1$d semana</item>
+        <item quantity="other">Hace %1$d semanas</item>
+    </plurals>
+    <plurals name="months_ago">
+        <item quantity="one">Hace %1$d mes</item>
+        <item quantity="other">Hace %1$d meses</item>
+    </plurals>
+    <plurals name="years_ago">
+        <item quantity="one">Hace %1$d año</item>
+        <item quantity="other">Hace %1$d años</item>
+    </plurals>
+    <!-- 🔍 Search & Filtering -->
+    <string name="search">Buscar</string>
+    <string name="search_in_workshop">Buscar en el taller</string>
+    <string name="search_description">Intenta buscando por pistas, artistas o álbumes</string>
+    <string name="clear_search">Limpiar búsqueda</string>
+    <string name="recent_searches">Búsquedas recientes</string>
+    <string name="history">Historial</string>
+    <string name="delete_history_item">Eliminar historial</string>
+    <string name="remove_history_item">Eliminar %1$s</string>
+    <string name="remove_history_item_description">¿Estás seguro de que quieres eliminar este elemento de tu historial de búsqueda?</string>
+    <string name="search_failed">Búsqueda fallida</string>
+    <string name="filters">Filtros</string>
+    <!-- ❌ Delete & Remove Actions -->
+    <string name="delete_chart">Eliminar nivel</string>
+    <string name="delete_chart_description">Estás seguro de querer eliminar este nivel t?\nPodras descargarlo despues.</string>
+    <string name="chart_deleted">Nivel eliminado</string>
+    <string name="failed_to_delete_chart">Error al eliminar nivel</string>
+    <!-- 🔄 Common Actions -->
+    <string name="share">Compartir</string>
+    <string name="share_via">Compatir mediante</string>
+    <string name="report">Reportar</string>
+    <string name="like_chart">Agregar a favoritos</string>
+    <string name="retry">Reintentar</string>
+    <string name="try_again">Intenta de nuevo</string>
+    <string name="cancel">Cancelar</string>
+    <string name="confirm">Confirmar</string>
+    <string name="dismiss">Ignorar</string>
+    <!-- 📋 Menu & Interface Elements -->
+    <string name="more_options_menu">Menú de más opciones</string>
+    <string name="collapse_expand_chart_contributors">Colapsar/expandir contribuidores del nivel</string>
+    <string name="expand_collapse">Desplegar/Contraer</string>
+    <string name="open_dialog">Abrir diálogo</string>
+    <string name="close_bottomsheet">Cerrar BottomSheet</string>
+    <string name="checked">Revisado</string>
+    <string name="unchecked">Sin revisar</string>
+    <!-- ⚠️ Confirmations & Dialogs -->
+    <string name="confirmation_title">¿Estas seguro?</string>
+    <string name="confirmation_description">Esta acción no puede deshacerse</string>
+    <!-- 📱 App & System Settings -->
+    <string name="preferences">Preferencias</string>
+    <string name="customization">Personalización</string>
+    <string name="version">Versión</string>
+    <string name="launch_app">Lanzar app</string>
+    <string name="reopen_app">Por favor, reabre la aplicación e intenta de nuevo</string>
+    <string name="open_settings">Abrir ajustes</string>
+    <!-- 🎨 Theme & Appearance -->
+    <string name="material_you_description">Activar el uso de los colores del sistema</string>
+    <string name="theme">Tema</string>
+    <string name="app_theme">Tema de la app</string>
+    <string name="theme_description">Elige entre las preferencias de tu sistema, modo claro u oscuro</string>
+    <string name="system">Sistema</string>
+    <string name="light">Claro</string>
+    <string name="dark">Oscuro</string>
+    <string name="themes">Temas</string>
+    <!-- 🌐 Language Settings -->
+    <string name="language">Idioma</string>
+    <string name="app_language">Idioma de la aplicación</string>
+    <string name="language_description">Elige el idioma para mostrar en la aplicación</string>
+    <string name="system_default_language">Sistema</string>
+    <string name="language_dialog_info">¡Mira quiénes ayudaron a traducir la app en tu idioma</string>
+    <!-- 🔞 Content Settings -->
+    <string name="explicit_content">Contenido explicito</string>
+    <string name="explicit_content_description">Permitir mostrar niveles con canciones explicitas</string>
+    <string name="explicit_content_disabled">Contenido explicito desactivado en ajustes</string>
+    <string name="gameplay_preview">Vista previa del gameplay</string>
+    <string name="gameplay_preview_description">Habilitar vistas previas de video del gameplay\nPodría afectar el rendimiento</string>
+    <!-- 🔐 Authentication & Account -->
+    <string name="account">Cuenta</string>
+    <string name="link_account">Vincular cuenta</string>
+    <string name="link_account_description">Guarda tu contenido favorito a todas partes</string>
+    <string name="connect">Conectar</string>
+    <string name="logout">Cerrar sesión</string>
+    <string name="logged_out_successfully">Sesión cerrada correctamente</string>
+    <string name="discord_icon">Icono de Discord</string>
+    <string name="no_email_provided">No hay email proporcionado</string>
+    <string name="welcome_title">Bienvenido a BSCM</string>
+    <string name="login_description">Conecta tu cuenta de Discord para acceder a funciones personalizadas</string>
+    <string name="login_with_discord">Iniciar sesión con Discord</string>
+    <string name="login_terms">Al continuar, aceptas nuestros Términos de Servicio y Política de Privacidad</string>
+    <string name="logged_in_successfully">¡Bienvenido, %1$s! Has iniciado sesión con éxito.</string>
+    <!-- 📄 Legal & Documentation -->
+    <string name="legal">Legal</string>
+    <string name="terms_of_use">Términos de uso</string>
+    <string name="privacy_police">Política de privacidad</string>
+    <string name="read_changelog">Leer registro de cambios</string>
+    <!-- 📝 Feedback & Reporting -->
+    <string name="feedback">Retroalimentación</string>
+    <string name="feedback_description">Ayuda a los contribuidores de niveles a mejorar reportando bugs o sugiriendo nuevas caracteristicas.</string>
+    <string name="bug">Fallo</string>
+    <string name="suggestion">Sugerencias</string>
+    <string name="report_description">Ayuda a la comunidad reportando contenido inapropiado\nTú reporte es anónimo</string>
+    <string name="violent_content">Contenido violento</string>
+    <string name="spam">Spam</string>
+    <string name="intellectual_property">Propiedad intelectual</string>
+    <!-- 🎫 Game Features -->
+    <string name="tour_passes">Tour Pass</string>
+    <string name="feature_not_implemented">Caracteristica aún no implementada</string>
+    <string name="work_in_progress">Trabajo en progreso!</string>
+    <string name="work_in_progress_description">Esta característica aún necesita algo de trabajo/nPor favor, revisa más tarde.</string>
+    <!-- 📂 Storage & Permissions -->
+    <string name="storage_permission_required">Permiso de almacenamiento requerido</string>
+    <string name="storage_permission_required_description">Para descargar niveles, la aplicación necesita permiso para acceder a tu almacenamiento.\nPor favor, selecciona o crea la carpeta \'beatstar\' en el almacenamiento interno de tu teléfono.</string>
+    <string name="select_folder">Seleccionar carpeta</string>
+    <string name="incorrect_storage_permission">Carpeta inválida seleccionada</string>
+    <string name="incorrect_storage_permission_description">La carpeta seleccionada no es válida.\nPor favor seleccione o cree una carpeta \'beatstar\'en la raíz del directorio de tu dispositivo e inténtalo de nuevo.</string>
+    <!-- 🔔 Notifications -->
+    <string name="notifications_required">Notificaciones requeridas</string>
+    <string name="notifications_required_description">Las notificaciones son importantes para mostrarte el estado de tus descargas.\n¿Te gustaría activarlas?</string>
+    <string name="not_now">No por ahora</string>
+    <string name="enable_notifications">Activar notificaciones</string>
+    <string name="enable_notifications_description">Para habilitar notificaciones, por favor abre las configuraciones de la aplicación y otorga el permiso de notificaciones.</string>
+    <string name="download_failed">Descarga fallida</string>
+    <string name="download_failed_for_chart">No se pudo descargar el nivel: %1$s</string>
+    <string name="notification_channel_downloads_name">Descargas</string>
+    <string name="notification_channel_downloads_description">Mostrar progreso y resultados de tus descargas</string>
+    <!-- 🏪 App Installation & Updates -->
+    <string name="mod_not_installed">Mod no instalado</string>
+    <string name="mod_not_installed_description">No pudimos encontrar el mod en tu dispositivo. Visita la sección de \'Instalaciones\' en la página de Actualizaciones para descargar la última versión.</string>
+    <string name="go_to_updates">Ir a actualizaciones</string>
+    <!-- 📭 Empty States -->
+    <string name="empty_downloads">Sin descargas aún</string>
+    <string name="empty_downloads_description">Descarga algunos niveles para empezar</string>
+    <string name="no_charts_found">No se encontraron niveles</string>
+    <string name="no_charts_found_description">Intenta buscar algo más</string>
+    <string name="workshop_feed_end">Fin de los niveles</string>
+    <!-- ⚠️ Error Messages -->
+    <string name="error">Error: %1$s</string>
+    <string name="something_went_wrong">Algo salió mal…</string>
+    <string name="check_connection">Por favor, revisa tu conexión e intenta de nuevo</string>
+    <string name="failed_to_load_chart_details">Error al cargar detalles del nivel</string>
+    <string name="failed_to_load_chart_details_description">Un error ocurrió al cargar los detalles del nivel</string>
+    <string name="invalid_chart_id">ID de nivel invalida</string>
+    <string name="failed_to_load_cached_charts">Error al cargar niveles en caché</string>
+    <string name="failed_to_fetch_feed_charts">Error al actualizar la página de niveles</string>
+    <string name="chart_not_found">Nivel no encontrado</string>
+    <string name="failed_to_update">Error al actualizar nivel</string>
+    <string name="no_available_version">No hay una versión disponible para actualizar</string>
+    <string name="failed_to_start_download">Error al iniciar descarga</string>
+    <string name="no_internet_connection">Sin conexión a internet</string>
+    <string name="no_internet_connection_description">Por favor, revisa tu conexión e intentalo de nuevo</string>
+    <string name="error_network_connection">No hay conexión a internet. Por favor revisa tu conexión</string>
+    <string name="error_file_not_found">El archivo requerido no se encontró.</string>
+    <string name="error_server_problem">El servidor no responde. Intentalo más tarde.</string>
+    <string name="error_permission_denied">Permiso denegado. Por favor permite el acceso en configuración.</string>
+    <string name="error_storage_full">No hay suficiente espacio. Libera almacenamiento e inténtalo de nuevo.</string>
+    <string name="error_storage_problem">Hubo un problema accediendo al almacenamiento.</string>
+    <string name="error_extraction_failed">No se pudieron extraer los archivos descargados.</string>
+    <string name="error_download_failed">La descarga no pudo ser completada.</string>
+    <string name="unknown_error">Error desconocido</string>
+    <!-- ⚙️ Operation States -->
+    <string name="operation_in_progress">Esta acción ya se está realizando.</string>
+    <string name="cannot_delete_during_download">No puedes borrar un nivel mientras se descarga o extrae.</string>
+    <string name="permission_denied_delete">Permiso denegado. No es posible borrar el nivel.</string>
+    <string name="storage_error_delete">No se puede borrar el nivel debido a un problema con el almacenamiento.</string>
+</resources>

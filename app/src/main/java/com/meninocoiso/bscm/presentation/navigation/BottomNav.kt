@@ -1,10 +1,15 @@
 package com.meninocoiso.bscm.presentation.navigation
 
 import android.net.Uri
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,11 +26,13 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.UpdatesSection
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.User
-import com.meninocoiso.bscm.presentation.screens.SettingsScreen
-import com.meninocoiso.bscm.presentation.screens.details.ChartDetails
-import com.meninocoiso.bscm.presentation.screens.updates.UpdatesScreen
-import com.meninocoiso.bscm.presentation.screens.workshop.WorkshopScreen
+import com.meninocoiso.bscm.presentation.screen.details.ChartDetails
+import com.meninocoiso.bscm.presentation.screen.settings.Profile
+import com.meninocoiso.bscm.presentation.screen.settings.SettingsScreen
+import com.meninocoiso.bscm.presentation.screen.updates.UpdatesScreen
+import com.meninocoiso.bscm.presentation.screen.workshop.WorkshopScreen
 import com.meninocoiso.bscm.presentation.ui.components.layout.LaunchAppButton
+import com.meninocoiso.bscm.presentation.ui.components.layout.SwipeableSnackbarHost
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -70,8 +77,31 @@ fun getBottomNavigationItems(): List<BottomNavigationItem> {
     )
 }
 
+typealias OnSnackbar = (
+    message: String,
+    actionLabel: String?,
+    withDismissAction: Boolean,
+    duration: SnackbarDuration,
+    onAction: (() -> Unit)?,
+        onDismiss: (() -> Unit)?
+) -> Unit
+
+fun OnSnackbar.show(
+    message: String,
+    actionLabel: String? = null,
+    withDismissAction: Boolean = false,
+    duration: SnackbarDuration =
+        if (actionLabel == null) SnackbarDuration.Short else SnackbarDuration.Indefinite,
+    onAction: (() -> Unit)? = null,
+    onDismiss: (() -> Unit)? = null
+) = this(message, actionLabel, withDismissAction, duration, onAction, onDismiss)
+
+
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun BottomNav(
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope,
     bottomNavController: NavHostController,
     navController: NavHostController,
     hasUpdate: Boolean = false,
@@ -98,9 +128,23 @@ fun BottomNav(
 
     var fabExtended by remember { mutableStateOf(true) }
 
-    val onSnackbar: (String) -> Unit = { message ->
+    val onSnackbar: OnSnackbar = { message, actionLabel, withDismissAction, duration, onAction, onDismiss ->
         coroutineScope.launch {
-            snackbarHostState.showSnackbar(message)
+            val result = snackbarHostState.showSnackbar(
+                message = message,
+                actionLabel = actionLabel,
+                withDismissAction = withDismissAction,
+                duration = duration
+            )
+            
+            when (result) {
+                SnackbarResult.Dismissed -> {
+                    onDismiss?.invoke()
+                }
+                SnackbarResult.ActionPerformed -> {
+                    onAction?.invoke()
+                }
+            }
         }
     }
 
@@ -110,6 +154,24 @@ fun BottomNav(
             launchSingleTop = true
         }
     }
+    
+    val onNavigateToSettings = {
+        bottomNavController.navigate(route = Route.Settings) {
+            popUpTo(bottomNavController.graph.startDestinationId) {
+                saveState = true
+            }
+            // Avoid multiple copies of the same destination when
+            // reselecting the same item
+            launchSingleTop = true
+
+            // Restore cacheState when reselecting a previously selected item
+            restoreState = true
+        }
+    }
+
+    val onNavigateToProfile = { user: User ->
+        navController.navigate(route = Profile(user))
+    }
 
     val onFabStateChange: (Boolean) -> Unit = { shouldExtend ->
         if (shouldExtend != fabExtended) {
@@ -118,7 +180,7 @@ fun BottomNav(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SwipeableSnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             BottomNavBar(
                 navBackStackEntry = navBackStackEntry,
@@ -158,7 +220,8 @@ fun BottomNav(
                     translationY = fabOffset
                 }*/
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         NavHost(
             modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
@@ -167,22 +230,31 @@ fun BottomNav(
         ) {
             composableWithFade<Route.Workshop> {
                 WorkshopScreen(
-                    onNavigateToDetails,
-                    onFabStateChange,
-                    onSnackbar,
+                    onSnackbar = onSnackbar,
+                    onFabStateChange = onFabStateChange,
+                    onNavigateToSettings = onNavigateToSettings,
+                    onNavigateToDetails = onNavigateToDetails,
                 )
             }
             composableWithFade<Route.Updates> { backStackEntry ->
                 val updates: Route.Updates = backStackEntry.toRoute()
                 UpdatesScreen(
-                    updates.section,
-                    onNavigateToDetails,
-                    onSnackbar,
-                    onFabStateChange
+                    section = updates.section,
+                    onNavigateToDetails = onNavigateToDetails,
+                    onSnackbar = onSnackbar,
+                    onFabStateChange = onFabStateChange
                 )
             }
             composableWithFade<Route.Settings> {
-                SettingsScreen(startOAuth, cacheUser, onFabStateChange, onSnackbar)
+                SettingsScreen(
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedContentScope = animatedContentScope,
+                    startOAuth = startOAuth,
+                    cacheUser = cacheUser,
+                    onFabStateChange = onFabStateChange,
+                    onSnackbar = onSnackbar,
+                    onNavigateToProfile = onNavigateToProfile
+                )
             }
         }
     }

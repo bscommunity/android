@@ -9,14 +9,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.repository.CacheRepository
-import com.meninocoiso.bscm.data.repository.ChartRepository
+import com.meninocoiso.bscm.domain.repository.ChartRepository
 import com.meninocoiso.bscm.data.repository.DownloadRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.ErrorType
-import com.meninocoiso.bscm.domain.enums.OperationType
+import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.internal.Settings
-import com.meninocoiso.bscm.service.DownloadServiceConnection
+import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.BufferOverflow
@@ -43,7 +43,7 @@ private const val TAG = "ContentViewModel"
 @HiltViewModel
 class ContentViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val downloadServiceConnection: DownloadServiceConnection,
+    private val downloadServiceMonitor: DownloadServiceMonitor,
     private val downloadRepository: DownloadRepository,
     private val cacheRepository: CacheRepository,
     private val settingsRepository: SettingsRepository,
@@ -82,29 +82,25 @@ class ContentViewModel @Inject constructor(
 
     private fun observeDownloadEvents() {
         viewModelScope.launch {
-            try {
-                downloadServiceConnection.observeDownload().collect { event ->
-                    handleDownloadEvent(event)
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error observing download events", e)
+            downloadRepository.downloadEvents.collect { event ->
+                handleDownloadEvent(event)
             }
         }
     }
 
     /**
-     * Checks the installation status of a chart with improved error handling
+     * Checks the installation status of a chart
      */
     fun checkStatus(chart: Chart) {
         viewModelScope.launch {
             try {
                 val isInstalled = chart.isInstalled == true
-                val isDownloadActive = downloadServiceConnection.isDownloadActive(chart.id)
+                val isDownloadActive = downloadServiceMonitor.isDownloadActive(chart.id)
 
                 val state = when {
                     isDownloadActive -> {
                         // Check what type of download is active
-                        val activeDownloads = downloadServiceConnection.getActiveDownloads()
+                        val activeDownloads = downloadServiceMonitor.getActiveDownloads()
                         if (chart.id in activeDownloads) {
                             ContentState.Downloading(chart.id, 0f) // Will be updated by events
                         } else {
@@ -116,8 +112,7 @@ class ContentViewModel @Inject constructor(
                 }
 
                 updateState(chart.id, state)
-                Log.d(TAG, "Status checked for chart ${chart.id}: $state")
-
+                // Log.d(TAG, "Status checked for chart ${chart.id}: $state")
             } catch (e: Exception) {
                 Log.e(TAG, "Error checking chart status for ${chart.id}", e)
                 updateState(chart.id, ContentState.Error(
@@ -226,7 +221,7 @@ class ContentViewModel @Inject constructor(
                 }
 
                 // Start the download
-                downloadServiceConnection.startDownload(
+                downloadServiceMonitor.startDownload(
                     chartId = chartId,
                     bundleUrl = version.bundleUrl,
                     chartName = "${chart.track} - ${chart.artist}",
@@ -282,7 +277,7 @@ class ContentViewModel @Inject constructor(
 
                 // Update the chart in local database first
                 val updateResult = localChartRepository
-                    .updateChart(chartId, OperationType.DELETE)
+                    .updateChart(chartId, OperationOption.DELETE)
                     .first()
 
                 updateResult.getOrThrow() // Will throw if update failed
@@ -408,14 +403,14 @@ class ContentViewModel @Inject constructor(
             downloadingCharts = states.values.count { it is ContentState.Downloading },
             extractingCharts = states.values.count { it is ContentState.Extracting },
             errorCharts = states.values.count { it is ContentState.Error },
-            activeDownloads = downloadServiceConnection.getActiveDownloads().size
+            activeDownloads = downloadServiceMonitor.getActiveDownloads().size
         )
     }
 
-    override fun onCleared() {
+    /*override fun onCleared() {
         super.onCleared()
         Log.d(TAG, "ContentViewModel cleared")
-    }
+    }*/
 }
 
 /**

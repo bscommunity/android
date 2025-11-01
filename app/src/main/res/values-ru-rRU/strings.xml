@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 📱 App Basic Information -->
+    <!-- 🧭 Navigation & Main Sections -->
+    <string name="workshop">Мастерская</string>
+    <string name="updates">Обновления</string>
+    <string name="settings">Настройки</string>
+    <string name="charts">Чарты</string>
+    <string name="installations">Установки</string>
+    <string name="back">Назад</string>
+    <string name="return_screen">Вернуться</string>
+    <!-- 📥 Download & Update States -->
+    <string name="download">Установить</string>
+    <string name="downloading">Загрузка…</string>
+    <string name="downloading_update">Загрузка обновления</string>
+    <string name="starting_download_for_version">Начата загрузка версии %1$s…</string>
+    <string name="downloading_version">Загружается версия %1$s… %2$d%%</string>
+    <string name="extracting">Извлечение…</string>
+    <string name="extracting_progress_title">Извлечение %1$s</string>
+    <string name="extracting_progress_description">Извлечение файлов… %1$d%%</string>
+    <string name="download_complete">Загрузка завершена</string>
+    <string name="download_chart">Скачать чарт</string>
+    <string name="downloaded">Установлено (%1$s)</string>
+    <string name="update">Обновление</string>
+    <string name="update_chart">Обновить чарт</string>
+    <string name="update_ready">Обновление готово</string>
+    <string name="tap_to_install_version">Нажмите для установки версии %1$s</string>
+    <string name="update_failed">Обновить не удалось</string>
+    <string name="update_now">Обновить сейчас</string>
+    <string name="install_update">Установить обновление</string>
+    <string name="update_from_to">Обновление с версии v%1$d → v%2$d</string>
+    <string name="update_complete">Обновление завершено</string>
+    <string name="updates_available">Доступны обновления (%1$s)</string>
+    <string name="no_updates_available">Нет доступных обновлений</string>
+    <string name="checking_for_updates">Проверка обновлений…</string>
+    <string name="check_for_updates">Проверить обновления</string>
+    <string name="failed_to_check_for_updates">Не удалось проверить обновления</string>
+    <string name="fetch_updates_error">Не удалось получить обновления…</string>
+    <string name="up_to_date">Последняя версия bscm установлена</string>
+    <string name="client_outdated">Клиент устарел</string>
+    <string name="concluded_progress">%1$d% завершён</string>
+    <string name="installed">Установлено</string>
+    <!-- 📊 Chart Information & Statistics -->
+    <string name="chart_by">Чарт от %1$s</string>
+    <string name="contributors_list_title">Создатели чарта:</string>
+    <string name="credits">Благодарности</string>
+    <string name="stats">Статистика</string>
+    <string name="updated_at">Обновлено %1$s</string>
+    <string name="known_issues">Известные проблемы</string>
+    <string name="no_known_issues">Нет известных проблем</string>
+    <string name="explicit">18+</string>
+    <string name="deluxe">Делюкс</string>
+    <string name="no_deluxe">Стандарт</string>
+    <string name="and_others">и другие</string>
+    <!-- 🎮 Gameplay & Difficulty -->
+    <string name="no_gameplay_available">Геймплей недоступен</string>
+    <string name="normal">Нормальный</string>
+    <string name="hard">Сложный</string>
+    <string name="extreme">Безумный</string>
+    <string name="expert">Эксперт</string>
+    <string name="difficulty">Сложность</string>
+    <!-- 🎵 Music & Audio -->
+    <string name="listen">Слушать</string>
+    <string name="listen_to_track">Прослушать трек</string>
+    <string name="support_the_artist">Поддержать исполнителя</string>
+    <string name="support_the_artist_description">Полную версию этого трека можно послушать в любом стриминговом сервисе - поддержите работу исполнителя!</string>
+    <string name="empty_streaming_links">Нет стриминговых ссылок</string>
+    <string name="minutes_seconds">%1$dмин%2$dсек</string>
+    <!-- 🎨 Music Genres -->
+    <string name="hip_hop">Хип-хоп</string>
+    <string name="pop">Поп</string>
+    <string name="r_b"><![CDATA[Р&Б]]></string>
+    <string name="rock">Рок</string>
+    <string name="dance">Танцевальная</string>
+    <string name="alternative">Альтернатива</string>
+    <string name="classical">Классический</string>
+    <string name="genre">Жанр</string>
+    <!-- 🏆 Features & Categories -->
+    <string name="awarded">Награждён</string>
+    <string name="editors_choice">Выбор редакции</string>
+    <string name="featured">Рекомендации</string>
+    <string name="trending">В тренде</string>
+    <string name="weekly_rank">Еженедельный рейтинг</string>
+    <string name="most_downloaded">Самые загружаемые</string>
+    <string name="most_liked">Самые залайканные</string>
+    <string name="last_updated">Недавно обновлено</string>
+    <!-- 👥 User Roles & Contributions -->
+    <string name="author_role">Автор</string>
+    <string name="chart_role">Чарт</string>
+    <string name="audio_role">Аудио</string>
+    <string name="revision_role">Ревизия</string>
+    <string name="effects_role">Эффекты</string>
+    <string name="sync_role">Синхронизация</string>
+    <string name="gameplay_role">Геймплей</string>
+    <!-- 🔢 Plurals - Quantities -->
+    <plurals name="notes_amount">
+        <item quantity="one">%1$d нота</item>
+        <item quantity="few">%1$d нот</item>
+        <item quantity="many">%1$d нот</item>
+        <item quantity="other">%1$d нот</item>
+    </plurals>
+    <plurals name="effects_amount">
+        <item quantity="one">%1$d эффект</item>
+        <item quantity="few">%1$d эффектов</item>
+        <item quantity="many">%1$d эффектов</item>
+        <item quantity="other">%1$d эффектов</item>
+    </plurals>
+    <plurals name="downloads_amount">
+        <item quantity="one">%1$d загрузка</item>
+        <item quantity="few">%1$d загрузок</item>
+        <item quantity="many">%1$d загрузок</item>
+        <item quantity="other">%1$d загрузок</item>
+    </plurals>
+    <!-- ⏰ Time Expressions -->
+    <string name="today">сегодня</string>
+    <string name="yesterday">вчера</string>
+    <plurals name="days_ago">
+        <item quantity="one">%1$d день назад</item>
+        <item quantity="few">%1$d дней назад</item>
+        <item quantity="many">%1$d дней назад</item>
+        <item quantity="other">%1$d дней назад</item>
+    </plurals>
+    <plurals name="weeks_ago">
+        <item quantity="one">%1$d неделю назад</item>
+        <item quantity="few">%1$d недель назад</item>
+        <item quantity="many">%1$d недель назад</item>
+        <item quantity="other">%1$d недель назад</item>
+    </plurals>
+    <plurals name="months_ago">
+        <item quantity="one">%1$d месяц назад</item>
+        <item quantity="few">%1$d недель назад</item>
+        <item quantity="many">%1$d недель назад</item>
+        <item quantity="other">%1$d месяцев назад</item>
+    </plurals>
+    <plurals name="years_ago">
+        <item quantity="one">%1$d год назад</item>
+        <item quantity="few">%1$d лет назад</item>
+        <item quantity="many">%1$d лет назад</item>
+        <item quantity="other">%1$d лет назад</item>
+    </plurals>
+    <!-- 🔍 Search & Filtering -->
+    <string name="search">Поиск</string>
+    <string name="search_in_workshop">Искать в мастерской</string>
+    <string name="search_description">Ищите треки, исполнителей или альбомы</string>
+    <string name="clear_search">Очистить поиск</string>
+    <string name="recent_searches">Недавно искали</string>
+    <string name="history">История</string>
+    <string name="delete_history_item">Удалить элемент истории</string>
+    <string name="remove_history_item">Удалить %1$s</string>
+    <string name="remove_history_item_description">Уверены, что хотите удалить этот элемент из вашей истории?</string>
+    <string name="search_failed">Поиск не удался</string>
+    <string name="filters">Фильтры</string>
+    <!-- ❌ Delete & Remove Actions -->
+    <string name="delete_chart">Удалить чарт</string>
+    <string name="delete_chart_description">Уверены, что хотите удалить этот чарт?\nВы сможете скачать его позже</string>
+    <string name="chart_deleted">Чарт удален</string>
+    <string name="failed_to_delete_chart">Не удалось удалить чарт</string>
+    <!-- 🔄 Common Actions -->
+    <string name="share">Поделиться</string>
+    <string name="share_via">Поделиться с помощью</string>
+    <string name="report">Жалоба</string>
+    <string name="like_chart">Лайкнуть чарт</string>
+    <string name="retry">Повторить</string>
+    <string name="try_again">Попробовать снова</string>
+    <string name="cancel">Отмена</string>
+    <string name="confirm">Подтвердить</string>
+    <string name="dismiss">Отклонить</string>
+    <!-- 📋 Menu & Interface Elements -->
+    <string name="more_options_menu">Больше опций</string>
+    <string name="collapse_expand_chart_contributors">Свернуть/развернуть создателей чарта</string>
+    <string name="expand_collapse">Показать/скрыть</string>
+    <string name="open_dialog">Открыть диалог</string>
+    <string name="close_bottomsheet">Закрыть панель</string>
+    <string name="checked">Проверено</string>
+    <string name="unchecked">Не проверено</string>
+    <!-- ⚠️ Confirmations & Dialogs -->
+    <string name="confirmation_title">Вы уверены?</string>
+    <string name="confirmation_description">Это действие нельзя отменить</string>
+    <!-- 📱 App & System Settings -->
+    <string name="preferences">Предпочтения</string>
+    <string name="customization">Персонализация</string>
+    <string name="version">Версия</string>
+    <string name="launch_app">Запустить игру</string>
+    <string name="reopen_app">Перезапустите игру и попробуйте снова</string>
+    <string name="open_settings">Открыть Настройки</string>
+    <!-- 🎨 Theme & Appearance -->
+    <string name="material_you_description">Использовать акцентный цвет</string>
+    <string name="theme">Тема</string>
+    <string name="app_theme">Тема приложения</string>
+    <string name="theme_description">Выберите между настройками системы, светлой или тёмной темой</string>
+    <string name="system">Системная</string>
+    <string name="light">Светлая</string>
+    <string name="dark">Темная</string>
+    <string name="themes">Темы</string>
+    <!-- 🌐 Language Settings -->
+    <string name="language">Язык</string>
+    <string name="app_language">Язык приложения</string>
+    <string name="language_description">Выберите язык приложения</string>
+    <string name="system_default_language">Язык системы</string>
+    <string name="language_dialog_info">Посмотри, какие классные ребята помогли перевести приложение на твой язык</string>
+    <!-- 🔞 Content Settings -->
+    <string name="explicit_content">Контент для взрослых</string>
+    <string name="explicit_content_description">Разрешить чарты с песнями 18+</string>
+    <string name="explicit_content_disabled">Контент 18+ выключен в настройках</string>
+    <string name="gameplay_preview">Предпросмотр геймплея</string>
+    <string name="gameplay_preview_description">Включить видео-предпросмотр\nМожет снизить производительность</string>
+    <!-- 🔐 Authentication & Account -->
+    <string name="account">Аккаунт</string>
+    <string name="link_account">Привязать аккаунт</string>
+    <string name="link_account_description">Сохраняйте любимый контент в своём профиле</string>
+    <string name="connect">Подключить</string>
+    <string name="logout">Выйти</string>
+    <string name="logged_out_successfully">Успешный выход из системы</string>
+    <string name="discord_icon">Значок Discord</string>
+    <string name="no_email_provided">Письмо не предоставлено</string>
+    <string name="welcome_title">Добро пожаловать в BSCM</string>
+    <string name="login_description">Подключите свою учётную запись Discord для доступа к персонализированным функциям</string>
+    <string name="login_with_discord">Войти через Discord</string>
+    <string name="login_terms">Продолжая, вы соглашаетесь с нашими Условиями обслуживания и Политикой конфиденциальности</string>
+    <string name="logged_in_successfully">Добро пожаловать, %1$s! Вы успешно вошли в систему.</string>
+    <!-- 📄 Legal & Documentation -->
+    <string name="legal">Юридическая информация</string>
+    <string name="terms_of_use">Политика использования</string>
+    <string name="privacy_police">Политика конфиденциальности</string>
+    <string name="read_changelog">Список изменений</string>
+    <!-- 📝 Feedback & Reporting -->
+    <string name="feedback">Обратная связь</string>
+    <string name="feedback_description">Помогите авторам чартов: сообщайте об ошибках или предлагайте новые функции.</string>
+    <string name="bug">Баг</string>
+    <string name="suggestion">Предложение</string>
+    <string name="report_description">Сообщите о неуместном контенте, чтобы помочь сообществу.\nВаше обращение останется анонимным.</string>
+    <string name="violent_content">Жестокий контент</string>
+    <string name="spam">Спам</string>
+    <string name="intellectual_property">Авторские права</string>
+    <!-- 🎫 Game Features -->
+    <string name="tour_passes">Тур Пассы</string>
+    <string name="feature_not_implemented">Функция ещё не реализована</string>
+    <string name="work_in_progress">Ведутся работы!</string>
+    <string name="work_in_progress_description">Эта функция требует доработки\nПожалуйста, вернитесь позже</string>
+    <!-- 📂 Storage & Permissions -->
+    <string name="storage_permission_required">Требуется доступ к хранилищу</string>
+    <string name="storage_permission_required_description">Чтобы скачивать чарты, выберите или создайте папку \'beatstar\' в корневой папке хранилища</string>
+    <string name="select_folder">Выбрать папку</string>
+    <string name="incorrect_storage_permission">Выбрана неверная папка</string>
+    <string name="incorrect_storage_permission_description">Неверная папка. Пожалуйста, выберите или создайте папку \'beatstar\' в корневой папке хранилища и попробуйте снова.</string>
+    <!-- 🔔 Notifications -->
+    <string name="notifications_required">Требуется доступ к уведомлениям</string>
+    <string name="notifications_required_description">Уведомления важны для показа статуса ваших загрузок. Хотите включить их?</string>
+    <string name="not_now">Не сейчас</string>
+    <string name="enable_notifications">Включить уведомления</string>
+    <string name="enable_notifications_description">Чтобы включить уведомления, откройте настройки приложения и выдайте разрешение на показ уведомлений.</string>
+    <string name="download_failed">Ошибка загрузки</string>
+    <string name="download_failed_for_chart">Не удалось скачать чарт: %1$s</string>
+    <string name="notification_channel_downloads_name">Загрузки</string>
+    <string name="notification_channel_downloads_description">Показывает прогресс и результат загрузки</string>
+    <!-- 🏪 App Installation & Updates -->
+    <string name="mod_not_installed">Мод игры не установлен</string>
+    <string name="mod_not_installed_description">Мод не найден на устройстве. Скачайте последнюю версию в разделе \'Установки\'</string>
+    <string name="go_to_updates">Перейти к обновлениям</string>
+    <!-- 📭 Empty States -->
+    <string name="empty_downloads">Нет загрузок</string>
+    <string name="empty_downloads_description">Скачайте пару чартов, чтобы начать</string>
+    <string name="no_charts_found">Чарты не найдены</string>
+    <string name="no_charts_found_description">Поищите что-то другое…</string>
+    <string name="workshop_feed_end">Конец ленты</string>
+    <!-- ⚠️ Error Messages -->
+    <string name="error">Ошибка: %1$s</string>
+    <string name="something_went_wrong">Похоже, что-то пошло не так…</string>
+    <string name="check_connection">Пожалуйста, проверьте соединение и повторите снова</string>
+    <string name="failed_to_load_chart_details">Ошибка загрузки данных чарта</string>
+    <string name="failed_to_load_chart_details_description">Произошла ошибка при загрузке данных чарта</string>
+    <string name="invalid_chart_id">Некорректный ID чарта</string>
+    <string name="failed_to_load_cached_charts">Не удалось загрузить кешированные чарты</string>
+    <string name="failed_to_fetch_feed_charts">Не удалось загрузить ленту чартов</string>
+    <string name="chart_not_found">Чарт не найден</string>
+    <string name="failed_to_update">Ошибка обновления чарта</string>
+    <string name="no_available_version">Нет доступной версии для обновления</string>
+    <string name="failed_to_start_download">Не удалось начать загрузку</string>
+    <string name="no_internet_connection">Нет интернет-соединения</string>
+    <string name="no_internet_connection_description">Проверьте соединение и повторите снова</string>
+    <string name="error_network_connection">Не удалось подключиться к сети. Пожалуйста, проверьте соединение с интернетом.</string>
+    <string name="error_file_not_found">Файл не найден</string>
+    <string name="error_server_problem">Сервер не отвечает. Попробуйте позже.</string>
+    <string name="error_permission_denied">Нет разрешения. Пожалуйста, выдайте разрешение в настройках.</string>
+    <string name="error_storage_full">Недостаточно места. Освободите хранилище и попробуйте снова.</string>
+    <string name="error_storage_problem">Проблема доступа к хранилищу.</string>
+    <string name="error_extraction_failed">Не удалось извлечь скачанные файлы.</string>
+    <string name="error_download_failed">Не удалось завершить загрузку.</string>
+    <string name="unknown_error">Неизвестная ошибка</string>
+    <!-- ⚙️ Operation States -->
+    <string name="operation_in_progress">Уже в процессе.</string>
+    <string name="cannot_delete_during_download">Нельзя удалить чарт, пока он скачивается или извлекается.</string>
+    <string name="permission_denied_delete">Нет разрешения. Невозможно удалить чарт</string>
+    <string name="storage_error_delete">Не удалось удалить чарт из-за проблемы с хранилищем.</string>
+</resources>

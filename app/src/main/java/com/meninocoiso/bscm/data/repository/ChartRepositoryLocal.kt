@@ -4,10 +4,11 @@ import android.util.Log
 import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
-import com.meninocoiso.bscm.domain.enums.OperationType
+import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Version
+import com.meninocoiso.bscm.domain.repository.ChartRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -96,20 +97,20 @@ class ChartRepositoryLocal(
 
     override suspend fun updateChart(
         id: String,
-        operation: OperationType
+        operation: OperationOption
     ): Flow<Result<Boolean>> = flow {
         // Log.d(TAG, "Current chart: ${chartDao.getChart(id)}")
 
         when (operation) {
-            OperationType.INSTALL -> {
+            OperationOption.INSTALL -> {
                 Log.d(TAG, "Updating data from chart with id: $id")
                 chartDao.update(id, true)
             }
-            OperationType.UPDATE -> {
+            OperationOption.UPDATE -> {
                 Log.d(TAG, "Updating chart with id: $id")
                 chartDao.updateVersion(id)
             }
-            OperationType.DELETE -> {
+            OperationOption.DELETE -> {
                 Log.d(TAG, "Deleting chart with id: $id")
                 chartDao.update(id, false)
             }
@@ -158,7 +159,7 @@ class ChartRepositoryLocal(
 
     override suspend fun postAnalytics(
         id: String,
-        operation: OperationType
+        operation: OperationOption
     ): Flow<Result<Boolean>> {
         TODO("Not yet implemented")
     }

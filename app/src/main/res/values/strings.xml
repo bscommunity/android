@@ -1,6 +1,6 @@
 <resources>
     <!-- 📱 App Basic Information -->
-    <string name="app_name">bscm</string>
+    <string name="app_name" translatable="false">bscm</string>
     
     <!-- 🧭 Navigation & Main Sections -->
     <string name="workshop">Workshop</string>
@@ -32,7 +32,7 @@
     <string name="install_update">Install update</string>
     <string name="update_from_to">Update from v%1$d → v%2$d</string>
     <string name="update_complete">Update complete</string>
-    <string name="updates_available">Updates available (%1$s)</string>
+    <string name="updates_available">Updates available (%1$d)</string>
     <string name="no_updates_available">No updates available</string>
     <string name="checking_for_updates">Checking for updates…</string>
     <string name="check_for_updates">Check for updates</string>
@@ -40,7 +40,7 @@
     <string name="fetch_updates_error">We couldn\'t fetch updates…</string>
     <string name="up_to_date">App is up to date</string>
     <string name="client_outdated">Client outdated</string>
-    <string name="concluded_progress">%1$s% concluded</string>
+    <string name="concluded_progress">%1$d% concluded</string>
     <string name="installed">Installed</string>
     
     <!-- 📊 Chart Information & Statistics -->
@@ -220,11 +220,15 @@
     <string name="logged_out_successfully">Logged out successfully</string>
     <string name="discord_icon">Discord Icon</string>
     <string name="no_email_provided">No email provided</string>
-    <string name="welcome_title">Welcome to BSCM</string>
     <string name="login_description">Connect your Discord account to access personalized features</string>
     <string name="login_with_discord">Login with Discord</string>
     <string name="login_terms">By continuing, you agree to our Terms of Service and Privacy Policy</string>
-    <string name="logged_in_successfully">Welcome, %1$s! You have successfully logged in.</string>
+    <string name="login_success">Welcome, %1$s!\nYou have successfully logged in.</string>
+    <string name="logout_success">Logout successful</string>
+    <string name="error_login">Error during login: %1$s</string>
+    <string name="error_logout">Error during logout: %1$s</string>
+    <string name="error_invalid_auth_code">Error during login: invalid authorization code</string>
+    <string name="auth_cancelled">Authentication cancelled</string>
 
     <!-- 📄 Legal & Documentation -->
     <string name="legal">Legal</string>
@@ -246,7 +250,7 @@
     <string name="tour_passes">Tour Passes</string>
     <string name="feature_not_implemented">Feature not implemented yet</string>
     <string name="work_in_progress">Work in progress!</string>
-    <string name="work_in_progress_description">This feature still needs some work\nPlease, check back later</string>
+    <string name="work_in_progress_description">This feature might be coming sooner than you think\nPlease, check back later</string>
     
     <!-- 📂 Storage & Permissions -->
     <string name="storage_permission_required">Storage Permission Required</string>

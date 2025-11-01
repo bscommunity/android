@@ -25,7 +25,7 @@ android {
 		minSdk = 26
 		targetSdk = 37
 		versionCode = 13
-		versionName = "0.2.1-beta"
+		versionName = "0.2.2"
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 		vectorDrawables {
@@ -118,6 +118,7 @@ dependencies {
 	implementation(libs.material)
 	implementation(libs.androidx.constraintlayout.compose)
 	implementation(libs.navigation.compose)
+    // implementation(libs.androidx.compose.animation.graphics)
 
 	// Image Loading
 	implementation(libs.coil.compose)
@@ -128,7 +129,7 @@ dependencies {
 	// Dependency Injection
 	implementation(libs.androidx.hilt.navigation.compose)
 	implementation(libs.hilt.android)
-	ksp(libs.hilt.compiler)
+    ksp(libs.hilt.compiler)
 
 	// Network and Serialization
 	implementation(libs.ktor.client.android)

@@ -15,13 +15,15 @@ import com.meninocoiso.bscm.R
 @Composable
 fun SwitchUI(
 	checked: Boolean = false,
-	onCheckedChange: (Boolean) -> Unit
+	onCheckedChange: (Boolean) -> Unit,
+	enabled: Boolean = true,
 ) {
 	Switch(
 		checked = checked,
 		onCheckedChange = {
 			onCheckedChange(it)
 		},
+		enabled = enabled,
 		thumbContent = if (checked) {
 			{
 				Icon(

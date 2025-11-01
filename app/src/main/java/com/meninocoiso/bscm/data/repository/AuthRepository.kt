@@ -1,8 +1,8 @@
 package com.meninocoiso.bscm.data.repository
 
 import android.util.Log
+import com.meninocoiso.bscm.data.manager.SecureTokenManager
 import com.meninocoiso.bscm.data.remote.ApiClient
-import com.meninocoiso.bscm.data.security.SecureTokenManager
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.auth.AuthRequest
 import com.meninocoiso.bscm.domain.model.auth.AuthResponse
@@ -46,12 +46,15 @@ class AuthRepository @Inject constructor(
             Log.d(TAG, "authenticateWithDiscord: API call successful, saving tokens")
             tokenManager.saveTokens(result.accessToken, result.refreshToken)
 
+            Log.d(TAG, "authenticateWithDiscord: debug: result tokens: ${tokenManager.getAccessToken()} and ${tokenManager.getRefreshToken()}")
+            
             val user = result.user
             if (user == null) {
                 Log.e(TAG, "authenticateWithDiscord: User data is null in the response")
                 emit(Result.failure(Exception("User data is null in the response")))
                 return@flow
             }
+            
             // Cache user
             cacheRepository.setUser(user)
             Log.d(TAG, "authenticateWithDiscord: Authentication completed successfully")

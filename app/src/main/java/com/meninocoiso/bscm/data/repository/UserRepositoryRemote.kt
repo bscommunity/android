@@ -2,6 +2,7 @@ package com.meninocoiso.bscm.data.repository
 
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.domain.model.User
+import com.meninocoiso.bscm.domain.repository.UserRepository
 import jakarta.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers

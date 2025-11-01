@@ -1,19 +1,25 @@
 package com.meninocoiso.bscm.presentation.viewmodel
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.repository.AuthRepository
 import com.meninocoiso.bscm.data.security.DiscordOAuth
 import com.meninocoiso.bscm.domain.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -21,8 +27,7 @@ import javax.inject.Inject
 data class AuthUiState(
     val isLoading: Boolean = false,
     val isLoggedIn: Boolean = false,
-    val user: User? = null,
-    val error: String? = null,
+    val user: User? = null
 )
 
 private const val TAG = "AuthViewModel"
@@ -30,12 +35,19 @@ private const val TAG = "AuthViewModel"
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val discordOAuth: DiscordOAuth
+    private val discordOAuth: DiscordOAuth,
+    @param:ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
+    private val _snackbarEvents = MutableSharedFlow<String>()
+    val snackbarEvents: SharedFlow<String> = _snackbarEvents.shareIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, replay = 0)
+
+    // If we ever need to handle errors in other ways (e.g., dialogs, logging, analytics), 
+    // keep error-related events separate, in something like errorEvents.
+    
     /**
      * Restores the user session if possible.
      */
@@ -53,7 +65,7 @@ class AuthViewModel @Inject constructor(
      * Call this when starting an OAuth flow to set state accordingly.
      */
     fun startPendingOAuth() {
-        _uiState.update { it.copy(isLoading = true, error = null) }
+        _uiState.update { it.copy(isLoading = true) }
     }
 
     /**
@@ -72,11 +84,9 @@ class AuthViewModel @Inject constructor(
     }
     
     fun setError(message: String) {
-        _uiState.update {
-            it.copy(
-                error = message,
-                isLoading = false
-            )
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = false) }
+            _snackbarEvents.emit(message)
         }
     }
 
@@ -85,35 +95,32 @@ class AuthViewModel @Inject constructor(
      */
     fun cancelPendingOAuth() {
         Log.d(TAG, "cancelPendingOAuth: Cancelling pending OAuth")
+        viewModelScope.launch {
+            _snackbarEvents.emit(context.getString(R.string.auth_cancelled))
+        }
         _uiState.update {
-            it.copy(
-                error = "Authentication cancelled",
-                isLoading = false
-            )
+            it.copy(isLoading = false)
         }
     }
 
     fun handleAuthCallback(code: String) {
         if (code.isBlank()) {
             Log.e(TAG, "handleAuthCallback: Invalid authorization code")
+            viewModelScope.launch {
+                _snackbarEvents.emit(context.getString(R.string.error_invalid_auth_code))
+            }
             _uiState.update {
-                it.copy(
-                    error = "Invalid authorization code",
-                    isLoading = false
-                )
+                it.copy(isLoading = false)
             }
             return
         }
-        
         viewModelScope.launch {
             authRepository.authenticateWithDiscord(code, "bscm://auth")
                 .catch { e ->
                     Log.e(TAG, "handleAuthCallback: Flow error - ${e.message}", e)
+                    _snackbarEvents.emit(context.getString(R.string.error_login, e.message ?: ""))
                     _uiState.update {
-                        it.copy(
-                            error = "Error during authentication: ${e.message}",
-                            isLoading = false
-                        )
+                        it.copy(isLoading = false)
                     }
                 }
                 .collect { result ->
@@ -124,18 +131,16 @@ class AuthViewModel @Inject constructor(
                                 it.copy(
                                     isLoggedIn = true,
                                     user = user,
-                                    error = null,
                                     isLoading = false
                                 )
                             }
+                            _snackbarEvents.emit(context.getString(R.string.login_success, user.username))
                         },
                         onFailure = { ex ->
                             Log.e(TAG, "handleAuthCallback: Authentication failed - ${ex.message}", ex)
+                            _snackbarEvents.emit(context.getString(R.string.error_login, ex.message ?: ""))
                             _uiState.update {
-                                it.copy(
-                                    error = "Authentication failed: ${ex.message}",
-                                    isLoading = false
-                                )
+                                it.copy(isLoading = false)
                             }
                         }
                     )
@@ -175,7 +180,7 @@ class AuthViewModel @Inject constructor(
             it.copy(
                 user = null,
                 isLoggedIn = false,
-                error = null,
+                isLoading = false
             )
         }
     }
@@ -183,11 +188,12 @@ class AuthViewModel @Inject constructor(
     fun logout() {
         viewModelScope.launch {
             Log.d(TAG, "logout: Logging out")
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isLoading = true) }
             runCatching { authRepository.logout() }
                 .onSuccess {
                     Log.d(TAG, "logout: Logout successful")
                     _uiState.update { AuthUiState(isLoading = false) }
+                    _snackbarEvents.emit(context.getString(R.string.logout_success))
                 }
                 .onFailure { e ->
                     if (e is CancellationException) {
@@ -195,7 +201,8 @@ class AuthViewModel @Inject constructor(
                         throw e
                     }
                     Log.e(TAG, "logout: Error during logout - ${e.message}", e)
-                    _uiState.update { it.copy(error = "Error during logout: ${e.message}") }
+                    _snackbarEvents.emit(context.getString(R.string.error_logout, e.message ?: ""))
+                    _uiState.update { it.copy(isLoading = false) }
                 }
         }
     }

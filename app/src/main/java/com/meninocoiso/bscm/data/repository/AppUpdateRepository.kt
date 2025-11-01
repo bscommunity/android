@@ -47,7 +47,7 @@ private const val TAG = "AppUpdateRepository"
 
 @Singleton
 class AppUpdateRepository @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val downloadManager: DownloadManager,
     private val okHttpClient: OkHttpClient,
     private val dataStore: DataStore<Preferences>,

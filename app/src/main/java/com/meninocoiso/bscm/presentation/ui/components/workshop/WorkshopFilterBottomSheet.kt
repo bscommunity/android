@@ -35,154 +35,199 @@ import java.util.Locale
 
 @Composable
 fun ExtendedFilterChip(
-	id: String,
-	filtersList: SnapshotStateList<String>,
-	leadingIcon: @Composable() (() -> Unit)? = null,
-	label: @Composable () -> Unit
+    id: String,
+    filtersList: SnapshotStateList<String>,
+    leadingIcon: @Composable() (() -> Unit)? = null,
+    label: @Composable () -> Unit
 ) {
-	FilterChip(
-		selected = filtersList.contains(id),
-		onClick = {
-			if (filtersList.contains(id)) {
-				filtersList.remove(id)
-			} else {
-				filtersList.add(id)
-			}
-		},
-		leadingIcon = {
-			if (filtersList.contains(id)) {
-				Icon(
-					modifier = Modifier.size(FilterChipDefaults.IconSize),
-					imageVector = Icons.Default.Check,
-					contentDescription = "Selected"
-				)
-			} else {
-				/*leadingIcon?.invoke()*/
-			}
-		},
-		label = label
-	)
+    FilterChip(
+        selected = filtersList.contains(id),
+        onClick = {
+            if (filtersList.contains(id)) {
+                filtersList.remove(id)
+            } else {
+                filtersList.add(id)
+            }
+        },
+        leadingIcon = {
+            if (filtersList.contains(id)) {
+                Icon(
+                    modifier = Modifier.size(FilterChipDefaults.IconSize),
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Selected"
+                )
+            } else {
+                /*leadingIcon?.invoke()*/
+            }
+        },
+        label = label
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkshopFilterBottomSheet(
-	filtersList: SnapshotStateList<String>,
-	sheetState: SheetState,
-	onDismissRequest: () -> Unit,
-	onClose: () -> Unit
+    filtersList: SnapshotStateList<String>,
+    sheetState: SheetState,
+    onDismissRequest: () -> Unit,
+    onClose: () -> Unit
 ) {
-	val difficultiesList = getDifficultiesList()
-	val genresList = getGenresList()
-	
-	ModalBottomSheet(
-		sheetState = sheetState,
-		onDismissRequest = onDismissRequest,
-	) {
-		Row(
-			modifier = Modifier
-				.fillMaxWidth()
-				.padding(horizontal = 16.dp, vertical = 12.dp),
-			horizontalArrangement = Arrangement.SpaceBetween,
-			verticalAlignment = Alignment.CenterVertically
-		) {
-			Text(text = stringResource(R.string.filters), style = MaterialTheme.typography.titleLarge)
-			IconButton(onClick = onClose) {
-				Icon(imageVector = Icons.Default.Close, contentDescription = stringResource(R.string.close_bottomsheet))
-			}
-		}
-		Column(
-			modifier = Modifier.verticalScroll(rememberScrollState())
-		) {
-			CollapsableSection(title = stringResource(R.string.awarded)) {
-				ExtendedFilterChip(
-					filtersList = filtersList,
-					id = "editor_choice",
-					leadingIcon = {
-						Icon(
-							modifier = Modifier.size(FilterChipDefaults.IconSize),
-							painter = painterResource(id = R.drawable.rounded_award_star_24),
-							contentDescription = null
-						)
-					},
-					label = {
-						Text(text = stringResource(R.string.editors_choice))
-					}
-				)
-				ExtendedFilterChip(
-					filtersList = filtersList,
-					id = "featured",
-					leadingIcon = {
-						Icon(
-							modifier = Modifier.size(FilterChipDefaults.IconSize),
-							painter = painterResource(id = R.drawable.rounded_local_fire_department_24),
-							contentDescription = null
-						)
-					},
-					label = {
-						Text(text = stringResource(R.string.featured))
-					}
-				)
-				ExtendedFilterChip(
-					filtersList = filtersList,
-					id = "trending",
-					leadingIcon = {
-						Icon(
-							modifier = Modifier.size(FilterChipDefaults.IconSize),
-							painter = painterResource(id = R.drawable.rounded_trending_up_24),
-							contentDescription = null
-						)
-					},
-					label = {
-						Text(text = stringResource(R.string.trending))
-					}
-				)
-			}
-			CollapsableSection(title = stringResource(R.string.difficulty)) {
-				difficultiesList.forEach {
-					ExtendedFilterChip(
-						filtersList = filtersList,
-						id = it.label.lowercase(Locale.ROOT),
-						label = {
-							Text(text = it.label)
-						}
-					)
-				}
-			}
-			CollapsableSection(title = stringResource(R.string.genre)) {
-				genresList.forEach {
-					ExtendedFilterChip(
-						filtersList = filtersList,
-						id = it.label,
-						leadingIcon = {
-							Icon(
-								painter = painterResource(id = it.icon),
-								contentDescription = it.label
-							)
-						},
-						label = {
-							Text(text = it.label.lowercase()
-								.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() })
-						}
-					)
-				}
-			}
-			CollapsableSection(title = stringResource(R.string.version)) {
-				ExtendedFilterChip(
-					filtersList = filtersList,
-					id = "default",
-					label = {
-						Text(text = stringResource(R.string.no_deluxe))
-					}
-				)
-				ExtendedFilterChip(
-					filtersList = filtersList,
-					id = "deluxe",
-					label = {
-						Text(text = stringResource(R.string.deluxe))
-					}
-				)
-			}
-		}
-	}
+    val difficultiesList = getDifficultiesList()
+    val genresList = getGenresList()
+
+    ModalBottomSheet(
+        sheetState = sheetState,
+        onDismissRequest = onDismissRequest,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.filters),
+                style = MaterialTheme.typography.titleLarge
+            )
+            IconButton(onClick = onClose) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = stringResource(R.string.close_bottomsheet)
+                )
+            }
+        }
+        Column(
+            modifier = Modifier.verticalScroll(rememberScrollState())
+        ) {
+            CollapsableSection(
+                modifier = Modifier.collapsableSection(),
+                header = { trigger, _ ->
+                    CollapsableSectionHeader(stringResource(R.string.awarded), trigger)
+                }
+            ) {
+                ExtendedFilterChip(
+                    filtersList = filtersList,
+                    id = "editor_choice",
+                    leadingIcon = {
+                        Icon(
+                            modifier = Modifier.size(FilterChipDefaults.IconSize),
+                            painter = painterResource(id = R.drawable.rounded_award_star_24),
+                            contentDescription = null
+                        )
+                    },
+                    label = {
+                        Text(text = stringResource(R.string.editors_choice))
+                    }
+                )
+                ExtendedFilterChip(
+                    filtersList = filtersList,
+                    id = "featured",
+                    leadingIcon = {
+                        Icon(
+                            modifier = Modifier.size(FilterChipDefaults.IconSize),
+                            painter = painterResource(id = R.drawable.rounded_local_fire_department_24),
+                            contentDescription = null
+                        )
+                    },
+                    label = {
+                        Text(text = stringResource(R.string.featured))
+                    }
+                )
+                ExtendedFilterChip(
+                    filtersList = filtersList,
+                    id = "trending",
+                    leadingIcon = {
+                        Icon(
+                            modifier = Modifier.size(FilterChipDefaults.IconSize),
+                            painter = painterResource(id = R.drawable.rounded_trending_up_24),
+                            contentDescription = null
+                        )
+                    },
+                    label = {
+                        Text(text = stringResource(R.string.trending))
+                    }
+                )
+            }
+            CollapsableSection(
+                modifier = Modifier.collapsableSection(),
+                header = { trigger, _ ->
+                    CollapsableSectionHeader(stringResource(R.string.difficulty), trigger)
+                }
+            ) {
+                difficultiesList.forEach {
+                    ExtendedFilterChip(
+                        filtersList = filtersList,
+                        id = it.label.lowercase(Locale.ROOT),
+                        label = {
+                            Text(text = it.label)
+                        }
+                    )
+                }
+            }
+            CollapsableSection(
+                modifier = Modifier.collapsableSection(),
+                header = { trigger, _ ->
+                    CollapsableSectionHeader(stringResource(R.string.genre), trigger)
+                }
+            ) {
+                genresList.forEach {
+                    ExtendedFilterChip(
+                        filtersList = filtersList,
+                        id = it.label,
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(id = it.icon),
+                                contentDescription = it.label
+                            )
+                        },
+                        label = {
+                            Text(
+                                text = it.label.lowercase()
+                                    .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() })
+                        }
+                    )
+                }
+            }
+            CollapsableSection(
+                modifier = Modifier.collapsableSection(),
+                header = { trigger, _ ->
+                    CollapsableSectionHeader(stringResource(R.string.version), trigger)
+                }
+            ) {
+                ExtendedFilterChip(
+                    filtersList = filtersList,
+                    id = "default",
+                    label = {
+                        Text(text = stringResource(R.string.no_deluxe))
+                    }
+                )
+                ExtendedFilterChip(
+                    filtersList = filtersList,
+                    id = "deluxe",
+                    label = {
+                        Text(text = stringResource(R.string.deluxe))
+                    }
+                )
+            }
+        }
+    }
+}
+
+private fun Modifier.collapsableSection(): Modifier {
+    return this
+        .padding(horizontal = 16.dp)
+}
+
+@Composable
+private fun CollapsableSectionHeader(title: String, content: @Composable (() -> Unit)) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(text = title, style = MaterialTheme.typography.titleMedium)
+        content()
+    }
 }

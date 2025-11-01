@@ -4,8 +4,11 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
+import com.meninocoiso.bscm.domain.exceptions.DeletionException
+import com.meninocoiso.bscm.domain.exceptions.DownloadException
+import com.meninocoiso.bscm.domain.exceptions.ExtractionException
 import com.meninocoiso.bscm.util.StorageUtils
-import com.meninocoiso.bscm.util.unzipFrom
+import com.meninocoiso.bscm.util.ZipUtils.unzipFrom
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -27,7 +30,7 @@ private const val MIN_FILE_SIZE = 1024L // 1KB minimum for valid files
  */
 @Singleton
 class DownloadManager @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val okHttpClient: OkHttpClient,
 ) {
     /**
@@ -309,18 +312,3 @@ class DownloadManager @Inject constructor(
         }
     }
 }
-
-/**
- * Enhanced DocumentFile extension with better error handling
- */
-internal fun DocumentFile.getOrCreateSubfolder(name: String): DocumentFile {
-    return findFile(name) ?: createDirectory(name)
-    ?: throw IOException("Failed to create/access subfolder: $name")
-}
-
-/**
- * Custom exceptions for better error categorization
- */
-class DownloadException(message: String, cause: Throwable? = null) : Exception(message, cause)
-class ExtractionException(message: String, cause: Throwable? = null) : Exception(message, cause)
-class DeletionException(message: String, cause: Throwable? = null) : Exception(message, cause)

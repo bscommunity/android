@@ -11,11 +11,13 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.internal.Cache
+import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import java.io.IOException
 import javax.inject.Inject
@@ -30,6 +32,7 @@ class CacheRepository @Inject constructor(
         val FOLDER_URI = stringPreferencesKey("folder_uri")
         val LATEST_WORKSHOP_SORT = stringPreferencesKey("latest_workshop_sort")
         val USER_JSON = stringPreferencesKey("user_json")
+        val CONTRIBUTORS_JSON = stringPreferencesKey("contributors_json") // Added key
     }
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -41,6 +44,7 @@ class CacheRepository @Inject constructor(
                     Log.e("CacheRepository", "Error reading cache", exception)
                     emit(emptyPreferences())
                 }
+
                 else -> throw exception
             }
         }
@@ -69,7 +73,7 @@ class CacheRepository @Inject constructor(
             null
         }
     }
-    
+
     suspend fun getLatestWorkshopSort(): SortOption? {
         return dataStore.data.first()[LATEST_WORKSHOP_SORT]?.let { SortOption.valueOf(it) }
     }
@@ -99,13 +103,35 @@ class CacheRepository @Inject constructor(
         dataStore.edit { it.remove(USER_JSON) }
     }
 
+    suspend fun setContributors(contributors: List<ContributionCategory>) {
+        val jsonStr =
+            json.encodeToString(ListSerializer(ContributionCategory.serializer()), contributors)
+        dataStore.edit { it[CONTRIBUTORS_JSON] = jsonStr }
+    }
+
+    suspend fun getContributors(): List<ContributionCategory> {
+        val jsonStr = dataStore.data.first()[CONTRIBUTORS_JSON]
+        return if (!jsonStr.isNullOrEmpty()) {
+            try {
+                json.decodeFromString(jsonStr)
+            } catch (e: SerializationException) {
+                emptyList()
+            }
+        } else emptyList()
+    }
+
     private fun mapCache(preferences: Preferences): Cache = Cache(
         searchHistory = preferences[SEARCH_HISTORY]?.split("|") ?: emptyList(),
         folderUri = preferences[FOLDER_URI]
             ?: Cache().folderUri,
-        latestWorkshopSort = preferences[LATEST_WORKSHOP_SORT]?.let { SortOption.valueOf(it) } ?: Cache().latestWorkshopSort,
+        latestWorkshopSort = preferences[LATEST_WORKSHOP_SORT]?.let { SortOption.valueOf(it) }
+            ?: Cache().latestWorkshopSort,
         user = preferences[USER_JSON]?.let { encoded ->
-            try { json.decodeFromString(User.serializer(), encoded) } catch (_: Exception) { null }
+            try {
+                json.decodeFromString(User.serializer(), encoded)
+            } catch (_: Exception) {
+                null
+            }
         }
     )
 }

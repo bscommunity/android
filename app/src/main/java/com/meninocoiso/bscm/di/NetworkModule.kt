@@ -2,9 +2,9 @@ package com.meninocoiso.bscm.di
 
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.KtorApiClient
-import com.meninocoiso.bscm.data.repository.ChartRepository
+import com.meninocoiso.bscm.domain.repository.ChartRepository
 import com.meninocoiso.bscm.data.repository.ChartRepositoryRemote
-import com.meninocoiso.bscm.data.repository.UserRepository
+import com.meninocoiso.bscm.domain.repository.UserRepository
 import com.meninocoiso.bscm.data.repository.UserRepositoryRemote
 import com.meninocoiso.bscm.data.security.AuthInterceptor
 import dagger.Module
