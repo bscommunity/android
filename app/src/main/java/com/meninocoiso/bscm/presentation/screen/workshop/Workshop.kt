@@ -63,17 +63,8 @@ fun WorkshopScreen(
                     viewModel = viewModel
                 )
 
-                1 -> TourPassesSection(
-                    connection,
-                    viewModel.listState,
-                    onFabStateChange
-                )
-
-                2 -> ThemesSection(
-                    connection, 
-                    viewModel.listState,
-                    onFabStateChange
-                )
+                1 -> TourPassesSection(onFabStateChange)
+                2 -> ThemesSection(onFabStateChange)
             }
         }
     }

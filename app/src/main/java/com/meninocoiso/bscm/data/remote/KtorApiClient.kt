@@ -20,7 +20,6 @@ import com.meninocoiso.bscm.domain.model.auth.AuthRequest
 import com.meninocoiso.bscm.domain.model.auth.AuthResponse
 import com.meninocoiso.bscm.domain.model.auth.RefreshTokenRequest
 import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
-import com.meninocoiso.bscm.util.DevelopmentUtils
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
@@ -33,7 +32,6 @@ import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import jakarta.inject.Inject
@@ -76,12 +74,12 @@ class KtorApiClient @Inject constructor(
         }
         
         defaultRequest {
-            // url("https://api-cyb1.onrender.com")
-            url {
+            url("https://api-cyb1.onrender.com")
+            /*url {
                 protocol = URLProtocol.HTTP
-                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.6"
+                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.3"
                 port = 8080
-            }
+            }*/
             contentType(KtorContentType.Application.Json)
         }
     }
