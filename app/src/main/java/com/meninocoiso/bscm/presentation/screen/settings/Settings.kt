@@ -223,10 +223,8 @@ fun SettingsScreen(
                         },
                         trailingContent = {
                             SwitchUI(
-                                checked = uiState.enableGameplayPreviewVideo,
-                                onCheckedChange = {
-                                    viewModel.enableGameplayPreviewVideo(it)
-                                },
+                                checked = false,
+                                onCheckedChange = {},
                                 enabled = false
                             )
                         }
@@ -577,7 +575,7 @@ fun SettingsScreen(
                             SocialsRow(
                                 icon = R.drawable.discord,
                                 title = "Discord",
-                                url = "https://discord.gg/bscm"
+                                url = "https://discord.gg/NNvzMAT6dS"
                             )
                             SocialsRow(
                                 icon = R.drawable.github,

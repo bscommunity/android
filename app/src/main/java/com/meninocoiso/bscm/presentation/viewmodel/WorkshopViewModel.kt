@@ -268,12 +268,10 @@ class WorkshopViewModel @Inject constructor(
         snapshotFlow {
             val layoutInfo = listState.layoutInfo
             val totalItems = layoutInfo.totalItemsCount
-            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index
+            val lastVisibleItem =
+                layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: return@snapshotFlow false
 
             // Ignore if no items are visible
-            if (lastVisibleItem == null) {
-                return@snapshotFlow false
-            }
 
             lastVisibleItem >= totalItems - 3 // Load more when 3 items from end
         }
@@ -282,6 +280,7 @@ class WorkshopViewModel @Inject constructor(
                 // Check if we are at the end of the list 
                 // and if there's data already loaded
                 if (isAtEnd && chartManager.getChartsLength() > 0) {
+                    Log.d(TAG, "User scrolled to bottom, loading more charts")
                     loadMoreCharts()
                 }
             }

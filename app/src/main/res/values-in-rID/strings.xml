@@ -38,7 +38,7 @@
     <string name="fetch_updates_error">Kami tidak dapat mengambil pemutakhiran…</string>
     <string name="up_to_date">Aplikasi sudah mutakhir</string>
     <string name="client_outdated">Klien kedaluwarsa</string>
-    <string name="concluded_progress">%1$d% selesai</string>
+    <string name="concluded_progress">%1$d%% selesai</string>
     <string name="installed">Terinstal</string>
     <!-- 📊 Chart Information & Statistics -->
     <string name="chart_by">Chart oleh %1$s</string>

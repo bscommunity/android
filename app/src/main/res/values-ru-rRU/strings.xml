@@ -38,7 +38,7 @@
     <string name="fetch_updates_error">Не удалось получить обновления…</string>
     <string name="up_to_date">Последняя версия bscm установлена</string>
     <string name="client_outdated">Клиент устарел</string>
-    <string name="concluded_progress">%1$d% завершён</string>
+    <string name="concluded_progress">%1$d%% завершён</string>
     <string name="installed">Установлено</string>
     <!-- 📊 Chart Information & Statistics -->
     <string name="chart_by">Чарт от %1$s</string>

@@ -38,7 +38,7 @@
     <string name="fetch_updates_error">Nu am putut prelua actualizări…</string>
     <string name="up_to_date">Aplicația este actualizată</string>
     <string name="client_outdated">Pasagerul a expirat</string>
-    <string name="concluded_progress">%1$d% încheiat</string>
+    <string name="concluded_progress">%1$d%% încheiat</string>
     <string name="installed">Instalat</string>
     <!-- 📊 Chart Information & Statistics -->
     <string name="chart_by">Grafic de %1$s</string>

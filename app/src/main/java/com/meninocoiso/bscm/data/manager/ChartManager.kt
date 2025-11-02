@@ -206,7 +206,7 @@ class ChartManager @Inject constructor(
         remoteResult.fold(
             onSuccess = { remoteCharts ->
                 Log.d(TAG, "Fetched ${remoteCharts.size} charts from remote")
-                Log.d(TAG, "Charts: $remoteCharts")
+                // Log.d(TAG, "Charts: $remoteCharts")
 
                 if (offset == 0) {
                     // Initial load - update cache and handle deletions

@@ -38,7 +38,7 @@
     <string name="fetch_updates_error">Nous n\'avons pas pu récupérer les mises à jour…</string>
     <string name="up_to_date">L\'application est à jour</string>
     <string name="client_outdated">Client obsolète</string>
-    <string name="concluded_progress">%1$d% a terminé</string>
+    <string name="concluded_progress">%1$d%% a terminé</string>
     <string name="installed">Installé</string>
     <!-- 📊 Chart Information & Statistics -->
     <string name="chart_by">Chart par %1$s</string>

@@ -38,7 +38,7 @@
     <string name="fetch_updates_error">Nem sikerült lekérni a frissítéseket…</string>
     <string name="up_to_date">Az alkalmazás naprakész</string>
     <string name="client_outdated">Elavult kliensverzió</string>
-    <string name="concluded_progress">%1$d% kész</string>
+    <string name="concluded_progress">%1$d%% kész</string>
     <string name="installed">Telepítve</string>
     <!-- 📊 Chart Information & Statistics -->
     <string name="chart_by">Chartot készítette %1$s</string>

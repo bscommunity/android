@@ -38,7 +38,7 @@
     <string name="fetch_updates_error">Wir konnten das Update nicht fetchen…</string>
     <string name="up_to_date">BSCM ist auf dem neustem Stand :D</string>
     <string name="client_outdated">Veralteter Client</string>
-    <string name="concluded_progress">%1$d% abgeschlossen</string>
+    <string name="concluded_progress">%1$d%% abgeschlossen</string>
     <string name="installed">Installiert</string>
     <!-- 📊 Chart Information & Statistics -->
     <string name="chart_by">Level von %1$s</string>
