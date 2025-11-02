@@ -3,8 +3,11 @@ package com.meninocoiso.bscm.presentation.ui.components.dialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -15,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.Placeholder
@@ -29,12 +31,10 @@ import com.meninocoiso.bscm.presentation.ui.components.RadioGroupUI
 data class SupportedLanguage(
     val tag: String?,
     val displayName: String,
-    val contributor: String? = null
 )
 
 @Composable
 fun LanguageDialog() {
-    val context = LocalContext.current
     val (isOpened, setIsOpened) = remember { mutableStateOf(false) }
 
     val systemDefault = SupportedLanguage(null, stringResource(R.string.system_default_language))
@@ -42,8 +42,13 @@ fun LanguageDialog() {
         systemDefault,
         SupportedLanguage("en-US", "English"),
         SupportedLanguage("pt-BR", "Português (Brasil)"),
-        SupportedLanguage("es-ES", "Español", contributor = "@farlixx03"),
-        SupportedLanguage("ru-RU", "Русский", contributor = "@MusicCat")
+        SupportedLanguage("es-ES", "Español"),
+        SupportedLanguage("ru-RU", "Русский"),
+        SupportedLanguage("fr-FR", "Français"),
+        SupportedLanguage("de-DE", "Deutsch"),
+        SupportedLanguage("ro-RO", "Română" ),
+        SupportedLanguage("id-ID", "Bahasa Indonesia"),
+        SupportedLanguage("hu-HU", "Magyar")
     )
 
     val currentLocaleTag = AppCompatDelegate.getApplicationLocales()[0]?.toLanguageTag()
@@ -58,6 +63,7 @@ fun LanguageDialog() {
     }
     if (isOpened) {
         AlertDialog(
+            modifier = Modifier.heightIn(max = 650.dp),
             onDismissRequest = { setIsOpened(false) },
             title = { Text(text = stringResource(R.string.app_language)) },
             icon = {
@@ -67,26 +73,10 @@ fun LanguageDialog() {
                 )
             },
             text = {
-                Column {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     RadioGroupUI(
                         initialSelected = selectedLanguage.value.displayName,
                         radioOptions = supportedLanguages.map { it.displayName },
-                        trailingElements = supportedLanguages.map { lang ->
-                            lang.contributor?.let { contributor ->
-                                @Composable {
-                                    Text(
-                                        /*modifier = Modifier
-                                            .zIndex(10f)
-                                            .clickable {
-                                            LinkingUtils.openLink(context, CONTRIBUTORS_LINK)
-                                        },*/
-                                        text = "by $contributor",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.secondary
-                                    )
-                                }
-                            } ?: @Composable {}
-                        },
                         onOptionSelected = { index, _ ->
                             val lang = supportedLanguages[index]
                             if (lang.tag == null) {
@@ -101,21 +91,6 @@ fun LanguageDialog() {
                             selectedLanguage.value = lang
                         },
                     )
-                    /*Text(
-                        text = buildAnnotatedString {
-                            append(stringResource(R.string.language_dialog_info))
-                            appendInlineContent(inlineContentId, "[icon]")
-                        },
-                        modifier = Modifier
-                            .padding(top = 16.dp)
-                            .clickable(onClick = {
-                                LinkingUtils.openLink(context, CONTRIBUTORS_LINK)
-                            }),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        lineHeight = 20.sp,
-                        inlineContent = inlineContent
-                    )*/
                 }
             },
             dismissButton = {

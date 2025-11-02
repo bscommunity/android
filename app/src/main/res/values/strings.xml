@@ -40,7 +40,7 @@
     <string name="fetch_updates_error">We couldn\'t fetch updates…</string>
     <string name="up_to_date">App is up to date</string>
     <string name="client_outdated">Client outdated</string>
-    <string name="concluded_progress">%1$d% concluded</string>
+    <string name="concluded_progress">%1$d%% concluded</string>
     <string name="installed">Installed</string>
     
     <!-- 📊 Chart Information & Statistics -->

@@ -44,7 +44,7 @@ fun ContributorsDialog(
     onDismiss: () -> Unit
 ) {
     AlertDialog(
-        modifier = Modifier.heightIn(max = 600.dp),
+        modifier = Modifier.heightIn(max = 650.dp),
         onDismissRequest = onDismiss,
         title = {
             Text(text = "Contributors")

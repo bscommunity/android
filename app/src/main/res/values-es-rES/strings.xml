@@ -38,7 +38,7 @@
     <string name="fetch_updates_error">No pudimos buscar actualizaciones</string>
     <string name="up_to_date">La aplicación ya está actualizada</string>
     <string name="client_outdated">Cliente desactualizado</string>
-    <string name="concluded_progress">%1$d% finalizado</string>
+    <string name="concluded_progress">%1$d%% finalizado</string>
     <string name="installed">Instalados</string>
     <!-- 📊 Chart Information & Statistics -->
     <string name="chart_by">Nivel por %1$s</string>

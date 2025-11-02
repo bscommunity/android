@@ -38,7 +38,7 @@
     <string name="fetch_updates_error">Não conseguimos obter as atualizações…</string>
     <string name="up_to_date">App já está atualizado</string>
     <string name="client_outdated">Cliente desatualizado</string>
-    <string name="concluded_progress">%1$d% concluído</string>
+    <string name="concluded_progress">%1$d%% concluído</string>
     <string name="installed">Instalado</string>
     <!-- 📊 Chart Information & Statistics -->
     <string name="chart_by">Criado por %1$s</string>
@@ -103,7 +103,7 @@
     </plurals>
     <plurals name="downloads_amount">
         <item quantity="one">+ %1$d download</item>
-        <item quantity="other">+ downloads%1$d</item>
+        <item quantity="other">+ %1$d downloads</item>
     </plurals>
     <!-- ⏰ Time Expressions -->
     <string name="today">hoje</string>
