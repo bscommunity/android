@@ -29,7 +29,7 @@ import androidx.compose.ui.zIndex
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.ui.components.details.GameplayPreview
 import com.meninocoiso.bscm.presentation.ui.components.details.GameplayPreviewThumbnail
-import com.meninocoiso.bscm.presentation.ui.components.details.OpenLinkIntent
+import com.meninocoiso.bscm.presentation.ui.components.details.openLinkIntent
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
 import com.skydoves.landscapist.components.rememberImageComponent
@@ -128,7 +128,7 @@ fun MediaCarousel(items: List<CarouselItem>, isVideoEnabled: Boolean) {
                                 .background(MaterialTheme.colorScheme.surfaceContainer)
                                 .zIndex(2f)
                                 .clickable {
-                                    context.startActivity(OpenLinkIntent(item.videoId))
+                                    context.startActivity(openLinkIntent(item.videoId))
                                 }
                         )
                     }

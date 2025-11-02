@@ -41,138 +41,156 @@ fun GameplayPreview(
 ) {
     var isLoading by remember { mutableStateOf(true) }
 
-    val customHtml = """
-                        <!DOCTYPE html>
-                        <html>
-                        <head>
-                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                            <style>
-                                body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: transparent; }
-                                #player { position: absolute; left: -50%; width: 200%; height: 100%; border: none }
-                            </style>
-                        </head>
-                        <body>
-                            <div id="player"></div>
-                            <script>
-                                // Create YouTube player once API is ready
-                                var tag = document.createElement('script');
-                                tag.src = "https://www.youtube.com/iframe_api";
-                                var firstScriptTag = document.getElementsByTagName('script')[0];
-                                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-                                
-                                var player;
-                                function onYouTubeIframeAPIReady() {
-                                    player = new YT.Player('player', {
-                                        videoId: '$videoId',
-                                        playerVars: {
-                                            'autoplay': 1,
-                                            'controls': 0,
-                                            'showinfo': 0,
-                                            'modestbranding': 1,
-                                            'loop': 1,
-                                            'rel': 0,
-                                            'fs': 0,
-                                            'playsinline': 1,
-                                            'mute': 1,
-                                            'disablekb': 1,
-                                            'playlist': '$videoId' // Required for looping
-                                        },
-                                        events: {
-                                            'onReady': onPlayerReady,
-                                            'onStateChange': onPlayerStateChange
-                                        }
-                                    });
-                                }
-                                
-                                function onPlayerReady(event) {
-                                    event.target.playVideo();
-                                }
-                                
-                                function onPlayerStateChange(event) {
-                                    // If video ends, restart it (backup for loop)
-                                    // If video pauses for any reason, resume it
-                                    if (event.data === YT.PlayerState.ENDED || event.data === YT.PlayerState.PAUSED) {
-                                        player.playVideo();
-                                    }
-                                }
-                            </script>
-                        </body>
-                        </html>
-                    """.trimIndent()
+    // --- 1️⃣ Keep one WebView instance per Composable lifecycle ---
+    val webView = remember {
+        WebView(context).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
 
-    Box(modifier = modifier) {
-        // WebView to load and play YouTube video
-        AndroidView(
-            factory = { ctx ->
-                WebView(ctx).apply {
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
+            //  HTML with origin + referrer policy
+            val customHtml = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="referrer" content="strict-origin-when-cross-origin">
+            <style>
+                html, body {
+                    margin: 0; padding: 0;
+                    width: 100%; height: 100%;
+                    overflow: hidden;
+                    background-color: transparent;
+                }
+                #player {
+                    position: absolute;
+                    left: -50%;
+                    width: 200%;
+                    height: 100%;
+                    border: none;
+                }
+            </style>
+        </head>
+        <body>
+            <div id="player"></div>
+            <script>
+                var tag = document.createElement('script');
+                tag.src = "https://www.youtube.com/iframe_api";
+                var firstScriptTag = document.getElementsByTagName('script')[0];
+                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-                    // Configure WebView settings for optimal performance
-                    settings.apply {
-                        javaScriptEnabled = true
-                        mediaPlaybackRequiresUserGesture = false
-                        domStorageEnabled = true
-
-                        allowFileAccess = false
-                        allowContentAccess = false
-                        javaScriptCanOpenWindowsAutomatically = false
-
-                        // Optimize for video playback
-                        cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
-                        layoutAlgorithm = WebSettings.LayoutAlgorithm.NORMAL
-
-                        // Hardware acceleration
-                        setLayerType(WebView.LAYER_TYPE_HARDWARE, null)
-                    }
-
-                    // Custom WebViewClient to track loading cacheState
-                    webViewClient = object : WebViewClient() {
-                        override fun shouldOverrideUrlLoading(
-                            view: WebView,
-                            request: WebResourceRequest
-                        ): Boolean {
-                            // Prevent navigation outside the player
-                            return true
+                var player;
+                function onYouTubeIframeAPIReady() {
+                    player = new YT.Player('player', {
+                        videoId: '$videoId',
+                        playerVars: {
+                            'autoplay': 1,
+                            'controls': 0,
+                            'showinfo': 0,
+                            'modestbranding': 1,
+                            'loop': 1,
+                            'rel': 0,
+                            'fs': 0,
+                            'playsinline': 1,
+                            'mute': 1,
+                            'disablekb': 1,
+                            'playlist': '$videoId',
+                            'origin': 'https://www.youtube-nocookie.com' // ✅ required
+                        },
+                        events: {
+                            'onReady': onPlayerReady,
+                            'onStateChange': onPlayerStateChange
                         }
+                    });
+                }
 
-                        override fun onPageFinished(view: WebView, url: String) {
-                            super.onPageFinished(view, url)
-                            isLoading = false
-                        }
+                function onPlayerReady(event) {
+                    event.target.playVideo();
+                }
+
+                function onPlayerStateChange(event) {
+                    if (event.data === YT.PlayerState.ENDED || event.data === YT.PlayerState.PAUSED) {
+                        player.playVideo();
                     }
+                }
+            </script>
+        </body>
+        </html>
+    """.trimIndent()
+            
+            // WebView config tuned for YouTube embeds
+            settings.apply {
+                javaScriptEnabled = true
+                domStorageEnabled = true
+                mediaPlaybackRequiresUserGesture = false
+                allowFileAccess = false
+                allowContentAccess = false
+                javaScriptCanOpenWindowsAutomatically = false
+                setSupportMultipleWindows(false)
+                cacheMode = WebSettings.LOAD_DEFAULT
+                setLayerType(WebView.LAYER_TYPE_HARDWARE, null)
+                userAgentString = "$userAgentString Chrome/123"
+            }
 
-                    // Set WebChromeClient to capture events
-                    webChromeClient = WebChromeClient()
+            webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    super.onPageFinished(view, url)
+                    isLoading = false
+                }
 
-                    // Load the custom HTML with embedded YouTube player
-                    loadDataWithBaseURL(
-                        "https://www.youtube.com",
-                        customHtml,
-                        "text/html",
-                        "UTF-8",
-                        null
-                    )
+                override fun shouldOverrideUrlLoading(
+                    view: WebView?,
+                    request: WebResourceRequest?
+                ): Boolean {
+                    // block navigation out of the embed
+                    return true
                 }
             }
+
+            webChromeClient = WebChromeClient()
+
+            // Load the player
+            loadDataWithBaseURL(
+                "https://www.youtube-nocookie.com",
+                customHtml,
+                "text/html",
+                "UTF-8",
+                null
+            )
+        }
+    }
+
+    // --- Cleanup on Compose disposal ---
+    DisposableEffect(Unit) {
+        onDispose {
+            webView.apply {
+                stopLoading()
+                clearHistory()
+                removeAllViews()
+                destroy()
+            }
+        }
+    }
+
+    Box(modifier = modifier) {
+        AndroidView(
+            factory = { webView },
+            modifier = Modifier.fillMaxSize()
         )
 
-        // Loading indicator
+        // ✅ Loading shimmer / thumbnail overlay
         if (isLoading) {
             Box(
-                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerLowest),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surfaceContainerLowest),
+                contentAlignment = Alignment.Center
             ) {
-                /*ShimmerContainer(
-                    modifier = Modifier.fillMaxSize(),
-                    shimmer = Shimmer.Resonate(
-                        baseColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                        highlightColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                    )
-                )*/
                 ShimmerContainer(
-                    modifier = Modifier.fillMaxSize().zIndex(2f),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .zIndex(2f),
                     shimmer = Shimmer.Resonate(
                         baseColor = Color.Transparent,
                         highlightColor = MaterialTheme.colorScheme.surfaceContainerHighest
@@ -182,32 +200,25 @@ fun GameplayPreview(
             }
         }
 
-        // Clickable overlay to open YouTube app
+        // ✅ Clickable overlay to open YouTube app
         Box(
             modifier = Modifier
                 .matchParentSize()
                 .clickable {
-                    context.startActivity(OpenLinkIntent(videoId))
+                    context.startActivity(openLinkIntent(videoId))
                 }
         )
-
-        // Clean up WebView resources when component is disposed
-        DisposableEffect(Unit) {
-            onDispose {
-                // Nothing specific to clean up here as Compose will handle the WebView lifecycle
-            }
-        }
     }
 }
 
-fun OpenLinkIntent(videoId: String): Intent {
-    return Intent(Intent.ACTION_VIEW, "https://youtu.be/$videoId".toUri())
-}
+// --- 8️⃣ Helpers ---
+fun openLinkIntent(videoId: String): Intent =
+    Intent(Intent.ACTION_VIEW, "https://youtu.be/$videoId".toUri())
 
 @Composable
 fun GameplayPreviewThumbnail(videoId: String, modifier: Modifier = Modifier) {
     CoilImage(
-        imageModel = { "http://img.youtube.com/vi/$videoId/maxresdefault.jpg" },
+        imageModel = { "https://img.youtube.com/vi/$videoId/maxresdefault.jpg" },
         modifier = modifier
             .zIndex(1f)
             .fillMaxSize(),
