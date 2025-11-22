@@ -234,7 +234,7 @@ fun SettingsScreen(
                         modifier = Modifier.settingsCard(),
                         headlineContent = {
                             Text(
-                                text = "Linked to @meninocoiso",
+                                text = "Linked to @${displayUser.username}",
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         },

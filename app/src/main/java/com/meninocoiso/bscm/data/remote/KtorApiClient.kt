@@ -108,7 +108,8 @@ class KtorApiClient @Inject constructor(
         // Check the response status first
         when (response.status) {
             HttpStatusCode.OK -> {
-                return response.body<List<Chart>>()
+                val body = response.body<Pair<List<Chart>, Int>>()
+                return body.first
             }
             HttpStatusCode.TooManyRequests -> {
                 val errorResponse = response.body<ApiError>()
