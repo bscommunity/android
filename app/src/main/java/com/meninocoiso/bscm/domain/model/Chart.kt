@@ -33,7 +33,6 @@ data class Chart(
     @ColumnInfo(name = "is_liked") override val isLiked: Boolean = false,
     @ColumnInfo(name = "is_favorited") override val isFavorited: Boolean = false,
     @ColumnInfo(name = "is_installed") override val isInstalled: Boolean? = false,
-    @ColumnInfo(name = "is_local_placeholder", defaultValue = "0") val isLocalPlaceholder: Boolean = false,
     
     @ColumnInfo(name = "latest_version") val latestVersion: Version,
     @ColumnInfo(name = "available_version") var availableVersion: Version? = null,

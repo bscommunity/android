@@ -1,6 +1,5 @@
 package com.meninocoiso.bscm.presentation.ui.components.preview
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,7 +30,6 @@ fun ChartPreview(
     chart: Chart,
     modifier: Modifier = Modifier,
     isLocal: Boolean = false,
-    showLocalWarning: Boolean = false,
     isDisabled: Boolean = false,
     onDisabled: () -> Unit = {},
     onNavigateToDetails: () -> Unit
@@ -83,11 +80,6 @@ fun ChartPreview(
                                 text = "v${chart.latestVersion.index}"
                             )
                         }
-                        if (showLocalWarning) {
-                            LocalPlaceholderBadge(
-                                text = stringResource(R.string.local_chart_incomplete_badge)
-                            )
-                        }
                     } else {
                         Row(
                             modifier = Modifier
@@ -110,33 +102,15 @@ fun ChartPreview(
                     }
                     Text(style = MaterialTheme.typography.labelMedium, text = chart.artist)
                 }
-                val primaryContributor = chart.contributors.firstOrNull()?.user?.username
-                    ?: stringResource(R.string.unknown_author)
                 PreviewAuthors(
                     contentString = stringResource(
                         R.string.chart_by,
-                        primaryContributor
-                    ),
+                        chart.contributors[0].user.username
+                    ), 
                     authors = chart.contributors
                 )
                 if (!isLocal && chart.isInstalled == true) PreviewInstalledTag()
             }
         }
     }
-}
-
-@Composable
-private fun LocalPlaceholderBadge(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier
-            .padding(top = 4.dp)
-            .background(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-                shape = RoundedCornerShape(8.dp)
-            )
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-    )
 }

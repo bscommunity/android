@@ -68,7 +68,6 @@ fun LazyListScope.localContentSection(
             ChartPreview(
                 chart = chart,
                 onNavigateToDetails = { onNavigateToDetails(chart) },
-                showLocalWarning = chart.isLocalPlaceholder,
                 isLocal = true,
             )
         }

@@ -5,7 +5,6 @@ import androidx.room.Room
 import com.meninocoiso.bscm.data.local.AppDatabase
 import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
-import com.meninocoiso.bscm.data.local.migrations.MIGRATION_21_22
 import com.meninocoiso.bscm.data.repository.ChartRepositoryLocal
 import com.meninocoiso.bscm.domain.repository.ChartRepository
 import dagger.Module
@@ -52,7 +51,6 @@ object DatabaseModule {
             AppDatabase::class.java,
             "local_database"
         )
-            .addMigrations(MIGRATION_21_22)
             .fallbackToDestructiveMigration(false)
             .build()
     }
