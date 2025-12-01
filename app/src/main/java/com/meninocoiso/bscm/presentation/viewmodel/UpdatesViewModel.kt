@@ -27,6 +27,12 @@ class UpdatesViewModel @Inject constructor(
 
     private val _updateState = MutableStateFlow<ChartState>(ChartState.Loading)
     val updateState: StateFlow<ChartState> = _updateState.asStateFlow()
+    
+    /*val _folderExists = MutableStateFlow(false)
+    val folderExists: StateFlow<Boolean> = _folderExists.asStateFlow()
+    
+    val hasStoragePermission = MutableStateFlow(false)
+    val _storagePermissionChecked = MutableStateFlow(false)*/
 
     init {
         viewModelScope.launch {

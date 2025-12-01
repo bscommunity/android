@@ -12,14 +12,14 @@
 
     <!-- Base theme for SplashScreen -->
     <style name="NightAdjusted.Theme.Splash" parent="Theme.SplashScreen">
-        <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
+        <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
     </style>
 
     <!-- Theme used in the manifest for Splash -->
     <style name="Theme.bscm.Splash" parent="NightAdjusted.Theme.Splash">
         <!-- Instead of using the icon with background, use only the foreground -->
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_splash</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
         <item name="postSplashScreenTheme">@style/Theme.bscm</item>
     </style>
 </resources>

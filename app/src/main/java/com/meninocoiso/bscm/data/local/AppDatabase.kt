@@ -14,7 +14,7 @@ import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.domain.serialization.Converters
 
 @Database(
-    version = 21,
+    version = 22,
     entities = [
         Chart::class,
         Version::class,

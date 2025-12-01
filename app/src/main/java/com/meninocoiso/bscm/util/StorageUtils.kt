@@ -56,8 +56,8 @@ object StorageUtils {
             try {
                 // Check if the folder exists
                 if (!checkIfExists(folderUri, context)) {
-                    Log.e(TAG, "Invalid Document URI")
-                    return false
+                    Log.e(TAG, "Invalid Document URI, folder does not exist")
+                    throw IllegalStateException("Folder does not exist")
                 }
 
                 // Check if the permission is still valid
