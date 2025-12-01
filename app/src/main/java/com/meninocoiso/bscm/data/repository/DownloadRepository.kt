@@ -1,6 +1,7 @@
 package com.meninocoiso.bscm.data.repository
 
 import DownloadEvent
+import android.content.Context
 import android.content.res.Resources.NotFoundException
 import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.manager.DownloadManager
@@ -8,6 +9,8 @@ import com.meninocoiso.bscm.data.manager.FetchResult
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
 import com.meninocoiso.bscm.util.StorageUtils
+import com.meninocoiso.bscm.util.StorageUtils.BEATSTAR_URI
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.io.IOException
@@ -20,8 +23,8 @@ private const val TAG = "DownloadRepository"
 class DownloadRepository @Inject constructor(
     private val downloadManager: DownloadManager,
     private val chartManager: ChartManager,
-    private val cacheRepository: CacheRepository,
-    private val downloadServiceMonitor: DownloadServiceMonitor
+    private val downloadServiceMonitor: DownloadServiceMonitor,
+    @param:ApplicationContext private val context: Context,
 ) {
     val downloadEvents: SharedFlow<DownloadEvent> = downloadServiceMonitor.observeDownload()
     
@@ -40,7 +43,7 @@ class DownloadRepository @Inject constructor(
         onDownloadProgress: (Float) -> Unit = {},
         onExtractProgress: (Float) -> Unit = {}
     ) {
-        val folderUri = cacheRepository.getFolderUri()
+        val folderUri = StorageUtils.getFolderUri(context, BEATSTAR_URI)
             ?: throw IllegalStateException("Could not access or create beatstar folder")
 
         val folderName = StorageUtils.getChartFolderName(chartId)
@@ -83,7 +86,7 @@ class DownloadRepository @Inject constructor(
 
     suspend fun deleteChart(chartId: String) {
         val folderName = StorageUtils.getChartFolderName(chartId)
-        val destinationFolderUri = cacheRepository.getFolderUri()
+        val destinationFolderUri = StorageUtils.getFolderUri(context, BEATSTAR_URI)
             ?: throw IllegalStateException("Could not access or create beatstar folder")
 
         try {

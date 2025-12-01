@@ -35,6 +35,7 @@ import com.meninocoiso.bscm.presentation.ui.components.dialog.StoragePermissionD
 import com.meninocoiso.bscm.presentation.viewmodel.ContentState
 import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.bscm.util.StorageUtils
+import com.meninocoiso.bscm.util.StorageUtils.BEATSTAR_URI
 import kotlinx.coroutines.launch
 
 @Composable
@@ -48,11 +49,11 @@ fun DownloadButton(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    suspend fun startDownload() {
+    fun startDownload() {
         // Check for storage permission
         val hasStoragePermission = StorageUtils.checkStoragePermission(
-            contentViewModel::getFolderUri,
-            context
+            context = context,
+            folderUri = BEATSTAR_URI
         )
 
         if (!hasStoragePermission) {
@@ -138,7 +139,6 @@ fun DownloadButton(
     // Show storage permission dialog if needed
     if (showStoragePermissionDialog) {
         StoragePermissionDialog(
-            setFolderUri = (contentViewModel::setFolderUri),
             onPermissionGranted = {
                 Log.d("DownloadButton", "Storage permission granted")
                 

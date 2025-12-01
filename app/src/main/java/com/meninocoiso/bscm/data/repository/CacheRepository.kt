@@ -1,8 +1,6 @@
 package com.meninocoiso.bscm.data.repository
 
-import android.net.Uri
 import android.util.Log
-import androidx.core.net.toUri
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -29,10 +27,9 @@ class CacheRepository @Inject constructor(
 ) {
     companion object CacheKeys {
         val SEARCH_HISTORY = stringPreferencesKey("search_history")
-        val FOLDER_URI = stringPreferencesKey("folder_uri")
-        val LATEST_WORKSHOP_SORT = stringPreferencesKey("latest_workshop_sort")
+        val WORKSHOP_SORT = stringPreferencesKey("workshop_sort")
         val USER_JSON = stringPreferencesKey("user_json")
-        val CONTRIBUTORS_JSON = stringPreferencesKey("contributors_json") // Added key
+        val CONTRIBUTORS_JSON = stringPreferencesKey("contributors_json")
     }
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -61,25 +58,13 @@ class CacheRepository @Inject constructor(
         val serializedSongs = dataStore.data.first()[SEARCH_HISTORY] ?: ""
         return if (serializedSongs.isNotEmpty()) serializedSongs.split("|") else emptyList()
     }
-
-    suspend fun setFolderUri(uri: String) =
-        dataStore.edit { it[FOLDER_URI] = uri }
-
-    suspend fun getFolderUri(): Uri? {
-        val folderUri = dataStore.data.first()[FOLDER_URI]
-        return if (folderUri != null && folderUri.isNotEmpty()) {
-            folderUri.toUri()
-        } else {
-            null
-        }
-    }
-
+    
     suspend fun getLatestWorkshopSort(): SortOption? {
-        return dataStore.data.first()[LATEST_WORKSHOP_SORT]?.let { SortOption.valueOf(it) }
+        return dataStore.data.first()[WORKSHOP_SORT]?.let { SortOption.valueOf(it) }
     }
 
     suspend fun setLatestWorkshopSort(sort: String) {
-        dataStore.edit { it[LATEST_WORKSHOP_SORT] = sort }
+        dataStore.edit { it[WORKSHOP_SORT] = sort }
     }
 
     // -------------------- User cache -------------------------
@@ -122,9 +107,7 @@ class CacheRepository @Inject constructor(
 
     private fun mapCache(preferences: Preferences): Cache = Cache(
         searchHistory = preferences[SEARCH_HISTORY]?.split("|") ?: emptyList(),
-        folderUri = preferences[FOLDER_URI]
-            ?: Cache().folderUri,
-        latestWorkshopSort = preferences[LATEST_WORKSHOP_SORT]?.let { SortOption.valueOf(it) }
+        latestWorkshopSort = preferences[WORKSHOP_SORT]?.let { SortOption.valueOf(it) }
             ?: Cache().latestWorkshopSort,
         user = preferences[USER_JSON]?.let { encoded ->
             try {

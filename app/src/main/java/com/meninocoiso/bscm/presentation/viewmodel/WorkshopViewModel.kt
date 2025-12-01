@@ -1,5 +1,6 @@
 package com.meninocoiso.bscm.presentation.viewmodel
 
+import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.text.input.TextFieldState
@@ -20,7 +21,10 @@ import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.util.StorageUtils
+import com.meninocoiso.bscm.util.StorageUtils.BEATSTAR_URI
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -46,7 +50,8 @@ private const val SUGGESTION_DEBOUNCE_MILLIS = 600L
 class WorkshopViewModel @Inject constructor(
     private val chartManager: ChartManager,
     private val cacheRepository: CacheRepository,
-    settingsRepository: SettingsRepository,
+    private val settingsRepository: SettingsRepository,
+    @param:ApplicationContext private val context: Context
 ) : ViewModel() {
     val isExplicitAllowed: Flow<Boolean> = settingsRepository.settingsFlow
         .map { it.allowExplicitContent }
@@ -109,7 +114,7 @@ class WorkshopViewModel @Inject constructor(
             currentSortOption = cacheRepository.getLatestWorkshopSort() ?: SortOption.LAST_UPDATED
 
             // Load cached charts first
-            val rootUri = cacheRepository.getFolderUri()
+            val rootUri = StorageUtils.getFolderUri(context, BEATSTAR_URI)
             chartManager.loadCachedCharts(currentSortOption, rootUri)
 
             // Then fetch fresh data

@@ -122,9 +122,9 @@ class ChartManager @Inject constructor(
             // This edge case is very specific but can happen if the user changes storage permissions
             // We could simply allow the error in background, but clearing the cache ensures it won't
             // error again while the user don't re-selects the folder
-            coroutineScope.launch {
+            /*coroutineScope.launch {
                 cacheRepository.setFolderUri("")
-            }
+            }*/
 
             return chartsToVerify
         }

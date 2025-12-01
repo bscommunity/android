@@ -2,20 +2,17 @@ package com.meninocoiso.bscm.presentation.viewmodel
 
 import DownloadEvent
 import android.content.Context
-import android.net.Uri
 import android.util.Log
-import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.data.repository.CacheRepository
-import com.meninocoiso.bscm.domain.repository.ChartRepository
 import com.meninocoiso.bscm.data.repository.DownloadRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.ErrorType
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.internal.Settings
+import com.meninocoiso.bscm.domain.repository.ChartRepository
 import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -45,7 +42,6 @@ class ContentViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val downloadServiceMonitor: DownloadServiceMonitor,
     private val downloadRepository: DownloadRepository,
-    private val cacheRepository: CacheRepository,
     private val settingsRepository: SettingsRepository,
     @param:Named("Local") private val localChartRepository: ChartRepository,
 ) : ViewModel() {
@@ -59,10 +55,6 @@ class ContentViewModel @Inject constructor(
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
     val events: SharedFlow<DownloadEvent> = _events.asSharedFlow()
-
-    // Cache for folder URI to reduce repository calls
-    private var cachedFolderUri: Uri? = null
-    private val folderUriLock = Mutex()
 
     // Track operation status to prevent concurrent operations on same chart
     private val chartOperations = mutableMapOf<String, String>()
@@ -193,7 +185,7 @@ class ContentViewModel @Inject constructor(
     }
 
     /**
-     * Downloads a chart with improved error handling and duplicate prevention
+     * Downloads a chart
      */
     fun downloadChart(chart: Chart) {
         val chartId = chart.id
@@ -248,7 +240,7 @@ class ContentViewModel @Inject constructor(
 
 
     /**
-     * Deletes a chart with improved error handling and validation
+     * Deletes a chart
      */
     fun deleteChart(
         chart: Chart,
@@ -324,93 +316,6 @@ class ContentViewModel @Inject constructor(
                 initialValue = _contentStates.value[chartId] ?: ContentState.Idle
             )
     }
-
-    /**
-     * Gets all content states for batch operations
-     */
-    fun getAllContentStates(): StateFlow<Map<String, ContentState>> = contentStates
-
-    /**
-     * Folder URI handling with caching and improved error handling
-     */
-    suspend fun getFolderUri(): Uri? {
-        return folderUriLock.withLock {
-            try {
-                cachedFolderUri ?: cacheRepository.getFolderUri()?.also { uri ->
-                    // Validate URI is still accessible
-                    if (isUriAccessible(uri)) {
-                        cachedFolderUri = uri
-                    } else {
-                        Log.w(TAG, "Cached folder URI is no longer accessible")
-                        cacheRepository.setFolderUri("") // Clear invalid URI
-                        return@withLock null
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error getting folder URI", e)
-                null
-            }
-        }
-    }
-
-    suspend fun setFolderUri(uri: Uri) {
-        folderUriLock.withLock {
-            try {
-                if (isUriAccessible(uri)) {
-                    cachedFolderUri = uri
-                    cacheRepository.setFolderUri(uri.toString())
-                    Log.d(TAG, "Folder URI updated successfully")
-                } else {
-                    throw IllegalArgumentException("Provided URI is not accessible")
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error setting folder URI", e)
-                throw e
-            }
-        }
-    }
-
-    /**
-     * Validates that a URI is still accessible
-     */
-    private fun isUriAccessible(uri: Uri): Boolean {
-        return try {
-            val documentFile = DocumentFile.fromTreeUri(context, uri)
-            documentFile?.exists() == true && documentFile.canWrite()
-        } catch (e: Exception) {
-            Log.w(TAG, "URI accessibility check failed", e)
-            false
-        }
-    }
-
-    /**
-     * Clears the cached folder URI (useful when permissions are revoked)
-     */
-    suspend fun clearFolderUriCache() {
-        folderUriLock.withLock {
-            cachedFolderUri = null
-        }
-    }
-
-    /**
-     * Gets statistics about download operations
-     */
-    suspend fun getDownloadStatistics(): DownloadStatistics {
-        val states = _contentStates.value
-        return DownloadStatistics(
-            totalCharts = states.size,
-            installedCharts = states.values.count { it is ContentState.Installed },
-            downloadingCharts = states.values.count { it is ContentState.Downloading },
-            extractingCharts = states.values.count { it is ContentState.Extracting },
-            errorCharts = states.values.count { it is ContentState.Error },
-            activeDownloads = downloadServiceMonitor.getActiveDownloads().size
-        )
-    }
-
-    /*override fun onCleared() {
-        super.onCleared()
-        Log.d(TAG, "ContentViewModel cleared")
-    }*/
 }
 
 /**
@@ -428,15 +333,3 @@ sealed class ContentState {
     ) : ContentState()
     data class Installed(val chartId: String) : ContentState()
 }
-
-/**
- * Data class for download statistics
- */
-data class DownloadStatistics(
-    val totalCharts: Int,
-    val installedCharts: Int,
-    val downloadingCharts: Int,
-    val extractingCharts: Int,
-    val errorCharts: Int,
-    val activeDownloads: Int
-)

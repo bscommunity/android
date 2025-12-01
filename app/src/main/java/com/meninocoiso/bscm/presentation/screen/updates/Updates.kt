@@ -59,7 +59,7 @@ fun UpdatesScreen(
 	val horizontalPagerState = rememberPagerState {
 		updatesTabsItems.size
 	}
-
+    
 	// Scroll (horizontally) to the correct section
 	LaunchedEffect(section) {
 		println("UpdatesScreen LaunchedEffect: section = $section")
