@@ -23,6 +23,7 @@ fun LazyListScope.localContentSection(
     state: ChartState,
     charts: List<Chart>,
     onNavigateToDetails: (Chart) -> Unit,
+    onShowDeleteDialog: (chartId: String) -> Unit,
 ) {
     item {
         Section(
@@ -67,7 +68,7 @@ fun LazyListScope.localContentSection(
         items(charts) { chart ->
             ChartPreview(
                 chart = chart,
-                onNavigateToDetails = { onNavigateToDetails(chart) },
+                onPress = { if (chart.contentId != null) onNavigateToDetails(chart) else onShowDeleteDialog(chart.id) },
                 isLocal = true,
             )
         }

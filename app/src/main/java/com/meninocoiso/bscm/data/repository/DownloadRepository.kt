@@ -31,39 +31,37 @@ class DownloadRepository @Inject constructor(
     /**
      * Downloads and extracts a chart to the beatstar folder
      * @param url URL of the chart zip file
-     * @param chartId ID of the chart
+     * @param contentId ID of the chart
      * @param operation Operation type (INSTALL or UPDATE)
      * @param onDownloadProgress Callback for download progress
      * @param onExtractProgress Callback for extraction progress
      */
     suspend fun downloadChart(
         url: String,
-        chartId: String,
+        contentId: String,
         operation: OperationOption,
         onDownloadProgress: (Float) -> Unit = {},
         onExtractProgress: (Float) -> Unit = {}
     ) {
         val folderUri = StorageUtils.getFolderUri(context, BEATSTAR_URI)
             ?: throw IllegalStateException("Could not access or create beatstar folder")
-
-        val folderName = StorageUtils.getChartFolderName(chartId)
-
+        
         // Download the zip file to cache
         val downloadedFile = downloadManager.downloadFileToCache(
             url,
-            folderName,
+            contentId,
             "zip",
             onDownloadProgress
         )
         
         // Notify server about the download (this should not block)
-        chartManager.postAnalytics(chartId, operation)
+        chartManager.postAnalytics(contentId, operation)
         
         // Extract the zip file to the beatstar folder
         try {
             downloadManager.extractZipToFolder(
                 downloadedFile,
-                folderName,
+                contentId,
                 folderUri,
                 listOf("songs"),
                 onExtractProgress
@@ -77,7 +75,7 @@ class DownloadRepository @Inject constructor(
         }
 
         // Update the chart list
-        chartManager.updateChart(chartId, operation).first().let {
+        chartManager.updateChart(contentId, operation).first().let {
             if (it is FetchResult.Error) {
                 throw Exception(it.message)
             }

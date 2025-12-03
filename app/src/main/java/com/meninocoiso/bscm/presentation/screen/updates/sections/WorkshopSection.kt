@@ -25,6 +25,7 @@ import com.meninocoiso.bscm.presentation.navigation.OnSnackbar
 import com.meninocoiso.bscm.presentation.navigation.show
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
+import com.meninocoiso.bscm.presentation.ui.components.dialog.ConfirmationDialog
 import com.meninocoiso.bscm.presentation.ui.components.updates.localContentSection
 import com.meninocoiso.bscm.presentation.ui.components.updates.remoteSection
 import com.meninocoiso.bscm.presentation.ui.modifiers.fabScrollObserver
@@ -70,12 +71,14 @@ internal fun WorkshopSection(
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
 
     val itemsUpdating = remember { mutableStateListOf<String>() }
+    
+    var chartToDeleteId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         contentViewModel.events.collect { event ->
             when (event) {
                 is DownloadEvent.Complete -> {
-                    itemsUpdating.remove(event.chartId)
+                    itemsUpdating.remove(event.id)
                     onSnackbar.show(context.getString(R.string.update_complete))
                 }
 
@@ -126,6 +129,7 @@ internal fun WorkshopSection(
                 state = cacheState,
                 charts = localCharts,
                 onNavigateToDetails = onNavigateToDetails,
+                onShowDeleteDialog = { chartId -> chartToDeleteId = chartId },
             )
         }
     } else {
@@ -136,6 +140,18 @@ internal fun WorkshopSection(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(bottom = 36.dp)
+        )
+    }
+
+    if (chartToDeleteId != null) {
+        ConfirmationDialog(
+            onDismiss = { chartToDeleteId = null },
+            onConfirm = {
+                contentViewModel.deleteChart(chartToDeleteId!!)
+                chartToDeleteId = null
+            },
+            title = stringResource(R.string.remove_history_item, chartToDeleteId!!),
+            message = "Are you sure you want to remove this chart from your local content? This action cannot be undone."
         )
     }
 }

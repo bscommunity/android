@@ -114,7 +114,7 @@ fun ThemePreview(
                     ),*/
                     authors = theme.contributors
                 )
-                if (!isLocal && theme.isInstalled == true) PreviewInstalledTag()
+                if (!isLocal && theme.isInstalled == true) PreviewInstalledTag(false)
             }
         }
     }

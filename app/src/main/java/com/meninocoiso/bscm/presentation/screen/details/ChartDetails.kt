@@ -190,27 +190,29 @@ fun ChartDetailsScreen(
                 actions = {
                     // Dropdown menu for more options
                     DropdownMenuUI {
-                        DropdownMenuItem(
-                            contentPadding = DropdownItemPadding,
-                            text = { Text(stringResource(R.string.share)) },
-                            leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
-                            onClick = {
-                                shareChartLink(context, chart.contentId)
-                            }
-                        )
-                        DropdownMenuItem(
-                            contentPadding = DropdownItemPadding,
-                            text = { Text(stringResource(R.string.report)) },
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(R.drawable.rounded_flag_24),
-                                    contentDescription = null
-                                )
-                            },
-                            onClick = {
-                                currentDialog = CurrentDialog.Report
-                            }
-                        )
+                        if (chart.contentId != null) {
+                            DropdownMenuItem(
+                                contentPadding = DropdownItemPadding,
+                                text = { Text(stringResource(R.string.share)) },
+                                leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
+                                onClick = {
+                                    shareChartLink(context, chart.contentId)
+                                }
+                            )
+                            DropdownMenuItem(
+                                contentPadding = DropdownItemPadding,
+                                text = { Text(stringResource(R.string.report)) },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.rounded_flag_24),
+                                        contentDescription = null
+                                    )
+                                },
+                                onClick = {
+                                    currentDialog = CurrentDialog.Report
+                                }
+                            )
+                        }
                         if (chartState == ContentState.Installed(chart.id)) {
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,
@@ -239,15 +241,19 @@ fun ChartDetailsScreen(
         bottomBar = {
             BottomAppBar(
                 actions = {
-                    IconButton(onClick = { currentDialog = CurrentDialog.ListenTrack }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.baseline_artist_24),
-                            contentDescription = stringResource(R.string.listen_to_track),
-                        )
+                    if (chart.trackUrls.isNotEmpty()) {
+                        IconButton(onClick = { currentDialog = CurrentDialog.ListenTrack }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_artist_24),
+                                contentDescription = stringResource(R.string.listen_to_track),
+                            )
+                        }
                     }
                     
-                    OfflineFavoriteButton(chart.contentId, chart.isLiked)
-                    OfflineLikeButton(chart.contentId, chart.isLiked)
+                    if (chart.contentId != null) {
+                        OfflineFavoriteButton(chart.contentId, chart.isLiked)
+                        OfflineLikeButton(chart.contentId, chart.isLiked)
+                    }
                 },
                 floatingActionButton = {
                     DownloadButton(
@@ -281,70 +287,84 @@ fun ChartDetailsScreen(
             )
 
             // Credits
-            PreviewContributors(chart.contributors)
+            if (chart.contributors.isNotEmpty()) {
+                PreviewContributors(chart.contributors)
+            }
 
             // Stats
             Section(title = stringResource(R.string.stats)) {
                 Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                    StatListItem(
-                        title = "~${StringUtils.toDurationString(chart.latestVersion.duration)}",
-                        icon = R.drawable.outline_access_time_24
-                    )
-                    StatListItem(
-                        title = pluralStringResource(
-                            R.plurals.notes_amount,
-                            chart.latestVersion.notesAmount,
-                            chart.latestVersion.notesAmount
-                        ),
-                        icon = R.drawable.rounded_music_note_24
-                    )
-                    /*StatListItem(
-                        title = pluralStringResource(
-                            R.plurals.effects_amount,
-                            chart.latestVersion.effectsAmount,
-                            chart.latestVersion.effectsAmount
-                        ),
-                        icon = R.drawable.rounded_blur_medium_24
-                    )*/
-                    StatListItem(
-                        title = pluralStringResource(
-                            R.plurals.downloads_amount,
-                            chart.latestVersion.downloadsAmount,
-                            chart.latestVersion.downloadsAmount
-                        ),
-                        icon = R.drawable.rounded_download_24
-                    )
-                    StatListItem(
-                        title = stringResource(R.string.updated_at, lastUpdated),
-                        icon = R.drawable.rounded_calendar_today_24
-                    )
+                    if (chart.latestVersion.duration > 0) {
+                        StatListItem(
+                            title = "~${StringUtils.toDurationString(chart.latestVersion.duration)}",
+                            icon = R.drawable.outline_access_time_24
+                        )
+                    }
+                    if (chart.latestVersion.notesAmount > 0) {
+                        StatListItem(
+                            title = pluralStringResource(
+                                R.plurals.notes_amount,
+                                chart.latestVersion.notesAmount,
+                                chart.latestVersion.notesAmount
+                            ),
+                            icon = R.drawable.rounded_music_note_24
+                        )
+                    }
+                    if (chart.latestVersion.effectsAmount > 0) {
+                        StatListItem(
+                            title = pluralStringResource(
+                                R.plurals.effects_amount,
+                                chart.latestVersion.effectsAmount,
+                                chart.latestVersion.effectsAmount
+                            ),
+                            icon = R.drawable.rounded_blur_medium_24
+                        )
+                    }
+                    if (chart.downloadsSum > 0) {
+                        StatListItem(
+                            title = pluralStringResource(
+                                R.plurals.downloads_amount,
+                                chart.downloadsSum,
+                                chart.downloadsSum
+                            ),
+                            icon = R.drawable.rounded_download_24
+                        )
+                    }
+                    if (chart.contentId != null) {
+                        StatListItem(
+                            title = stringResource(R.string.updated_at, lastUpdated),
+                            icon = R.drawable.rounded_calendar_today_24
+                        )
+                    }
                 }
             }
 
             // Known Issues
-            Section(title = stringResource(R.string.known_issues)) {
-                Box(modifier = Modifier.padding(16.dp)) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 16.dp),
-                        horizontalAlignment = Alignment.Start,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        if (chart.latestVersion.knownIssues.isEmpty()) {
-                            Text(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .align(Alignment.CenterHorizontally),
-                                text = stringResource(R.string.no_known_issues),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        } else {
-                            chart.latestVersion.knownIssues.forEach {
+            if (chart.contentId != null) {
+                Section(title = stringResource(R.string.known_issues)) {
+                    Box(modifier = Modifier.padding(16.dp)) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 16.dp),
+                            horizontalAlignment = Alignment.Start,
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            if (chart.latestVersion.knownIssues.isEmpty()) {
                                 Text(
-                                    text = "•   ${it.description}",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .align(Alignment.CenterHorizontally),
+                                    text = stringResource(R.string.no_known_issues),
                                     style = MaterialTheme.typography.bodyLarge
                                 )
+                            } else {
+                                chart.latestVersion.knownIssues.forEach {
+                                    Text(
+                                        text = "•   ${it.description}",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                }
                             }
                         }
                     }

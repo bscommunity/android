@@ -100,7 +100,7 @@ fun TourPassPreview(
                         tourPass.contributors[0].user.username
                     ),*/
                     authors = tourPass.contributors)
-                if (!isLocal && tourPass.isInstalled == true) PreviewInstalledTag()
+                if (!isLocal && tourPass.isInstalled == true) PreviewInstalledTag(false)
             }
         }
     }

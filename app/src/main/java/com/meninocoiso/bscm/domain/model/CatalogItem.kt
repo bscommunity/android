@@ -7,7 +7,7 @@ import java.time.LocalDateTime
 @Serializable
 sealed interface CatalogItem {
     val id: String
-    val contentId: String
+    val contentId: String?
     val coverUrl: String
     val isFeatured: Boolean
 

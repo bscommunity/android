@@ -30,6 +30,21 @@ class Converters {
 
     // Chart
     private val json = Json { ignoreUnknownKeys = true }
+    
+    // String List converters
+    @TypeConverter
+    fun fromStringList(strings: List<String>): String {
+        return json.encodeToString(strings)
+    }
+    
+    @TypeConverter
+    fun toStringList(stringsString: String): List<String> {
+        return if (stringsString.isBlank()) {
+            emptyList()
+        } else {
+            json.decodeFromString(stringsString)
+        }
+    }
 
     // StreamingLink
     @TypeConverter

@@ -20,7 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun PreviewInstalledTag() {
+fun PreviewInstalledTag(isLocal: Boolean) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(150.dp))
@@ -39,7 +39,7 @@ fun PreviewInstalledTag() {
             )
             Text(
                 style = MaterialTheme.typography.bodySmall,
-                text = "Installed",
+                text = if (isLocal) "Local" else "Installed",
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

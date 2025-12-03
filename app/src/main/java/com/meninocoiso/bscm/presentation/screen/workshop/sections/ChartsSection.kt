@@ -156,9 +156,9 @@ internal fun ChartsSection(
                                         onNavigateToSettings()
                                     })
                             },
-                            onNavigateToDetails = {
+                            onPress = {
                                 onNavigateToDetails(chart)
-                            },
+                            }
                         )
                     }
 

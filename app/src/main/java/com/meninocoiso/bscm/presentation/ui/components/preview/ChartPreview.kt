@@ -32,7 +32,7 @@ fun ChartPreview(
     isLocal: Boolean = false,
     isDisabled: Boolean = false,
     onDisabled: () -> Unit = {},
-    onNavigateToDetails: () -> Unit
+    onPress: () -> Unit
 ) {
     Box(
         modifier = modifier
@@ -47,7 +47,7 @@ fun ChartPreview(
                     onDisabled()
                     return@debouncedClickable
                 }
-                onNavigateToDetails()
+                onPress()
             })
     ) {
         Row(
@@ -102,14 +102,16 @@ fun ChartPreview(
                     }
                     Text(style = MaterialTheme.typography.labelMedium, text = chart.artist)
                 }
-                PreviewAuthors(
-                    contentString = stringResource(
-                        R.string.chart_by,
-                        chart.contributors[0].user.username
-                    ), 
-                    authors = chart.contributors
-                )
-                if (!isLocal && chart.isInstalled == true) PreviewInstalledTag()
+                if (chart.contributors.isNotEmpty()) {
+                    PreviewAuthors(
+                        contentString = stringResource(
+                            R.string.chart_by,
+                            chart.contributors[0].user.username
+                        ),
+                        authors = chart.contributors
+                    )
+                }
+                if (isLocal || chart.isInstalled == true) PreviewInstalledTag(isLocal)
             }
         }
     }
