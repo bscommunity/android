@@ -59,6 +59,8 @@ internal fun WorkshopSection(
         onPermissionGranted = {
             Log.d("WorkshopSection", "Storage permission granted for Beatstar folder")
             hasStoragePermission = true
+            // Rescan local charts after permission is granted
+            viewModel.scanLocalCharts()
         },
         onInvalidSelection = { onSnackbar.show(context.getString(R.string.incorrect_storage_permission)) }
     )
@@ -71,8 +73,7 @@ internal fun WorkshopSection(
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
 
     val itemsUpdating = remember { mutableStateListOf<String>() }
-    
-    var chartToDeleteId by remember { mutableStateOf<String?>(null) }
+    val showLocalItemDialog = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         contentViewModel.events.collect { event ->
@@ -129,7 +130,7 @@ internal fun WorkshopSection(
                 state = cacheState,
                 charts = localCharts,
                 onNavigateToDetails = onNavigateToDetails,
-                onShowDeleteDialog = { chartId -> chartToDeleteId = chartId },
+                onShowLocalItemDialog = { showLocalItemDialog.value = true },
             )
         }
     } else {
@@ -143,15 +144,11 @@ internal fun WorkshopSection(
         )
     }
 
-    if (chartToDeleteId != null) {
+    if (showLocalItemDialog.value) {
         ConfirmationDialog(
-            onDismiss = { chartToDeleteId = null },
-            onConfirm = {
-                contentViewModel.deleteChart(chartToDeleteId!!)
-                chartToDeleteId = null
-            },
-            title = stringResource(R.string.remove_history_item, chartToDeleteId!!),
-            message = "Are you sure you want to remove this chart from your local content? This action cannot be undone."
+            onDismiss = { showLocalItemDialog.value = false },
+            title = "Local item",
+            message = "This chart was added manually and is not managed by the app.\nYou'll need to update or remove it manually."
         )
     }
 }

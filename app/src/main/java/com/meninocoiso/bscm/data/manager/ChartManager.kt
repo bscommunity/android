@@ -5,13 +5,18 @@ import android.net.Uri
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.data.remote.dto.ContributorUserDto
 import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.di.ApplicationScope
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.OperationOption
+import com.meninocoiso.bscm.domain.enums.Role
 import com.meninocoiso.bscm.domain.enums.SortOption
+import com.meninocoiso.bscm.domain.enums.StreamingPlatform
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.Contributor
+import com.meninocoiso.bscm.domain.model.StreamingLink
 import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.domain.repository.ChartRepository
 import com.meninocoiso.bscm.util.StorageUtils
@@ -65,11 +70,19 @@ private data class ExternalChartInfo(
     val title: String,
     val artist: String,
     val id : String,
-    val contentId: String? = null,
     val difficulty: Int? = null,
     val bpm: Double? = null,
     val maxScore: Int? = null,
     val type: String? = null,
+    val contentId: String? = null,
+    val duration: Float? = null,
+    val notes: Int? = null,
+    val effects: Int? = null,
+    val contributors: String? = null,
+    val publishedAt: Long? = null,
+    val streaming: String? = null,
+    val cover: String? = null,
+    val gameplay: String? = null
 )
 
 @Serializable
@@ -129,17 +142,20 @@ class ChartManager @Inject constructor(
     private val _cacheState = MutableStateFlow<ChartState>(ChartState.Loading)
     val cacheState: StateFlow<ChartState> = _cacheState.asStateFlow()
 
+    private val _feedState = MutableStateFlow<ChartState>(ChartState.Loading)
+    val feedState: StateFlow<ChartState> = _feedState.asStateFlow()
+
     var currentSearchQuery: String = ""
         private set
 
     // Derived flows for different chart collections
     val memoryCharts: Flow<List<Chart>> = combine(feedOrder, charts) { order, chartMap ->
         if (order.isEmpty()) {
-            chartMap.values.toList()
+            // Don't show local-only charts in feed
+            chartMap.values.filter { !isLocalOnlyChart(it) }
         } else {
-            val feedCharts = order.mapNotNull { chartMap[it] }
-            val installedOnly = chartMap.values.filter { it.isInstalled == true && it.id !in order }
-            feedCharts + installedOnly
+            // Only show charts from feed order, don't append local-only charts
+            order.mapNotNull { chartMap[it] }
         }
     }
 
@@ -155,9 +171,12 @@ class ChartManager @Inject constructor(
         searchIds.mapNotNull { chartMap[it] }
     }
 
-    fun updateState(newState: ChartState) {
-        // Log.d(TAG, "Updating cache state to $newState")
+    fun updateCacheState(newState: ChartState) {
         _cacheState.value = newState
+    }
+
+    fun updateFeedState(newState: ChartState) {
+        _feedState.value = newState
     }
 
     fun getChartsLength(): Int = _charts.value.size
@@ -187,11 +206,9 @@ class ChartManager @Inject constructor(
                 }
 
                 val orphanCharts = hydrateMissingInstalledCharts(missingEntries)
+                // Don't persist local-only charts to database, just keep them in memory
                 if (orphanCharts.isNotEmpty()) {
-                    val insertResult = localChartRepository.insertCharts(orphanCharts).first()
-                    if (insertResult.isFailure) {
-                        Log.e(TAG, "Failed to insert orphan charts", insertResult.exceptionOrNull())
-                    }
+                    Log.d(TAG, "Found ${orphanCharts.size} local-only charts, keeping in memory only")
                 }
 
                 InstalledSyncResult(updatedCharts, orphanCharts)
@@ -246,6 +263,53 @@ class ChartManager @Inject constructor(
     }
 
     /**
+     * Scans local storage for installed charts and loads them into memory
+     * This is independent from cached charts and remote fetch operations
+     */
+    suspend fun scanLocalCharts(rootUri: Uri) {
+        try {
+            Log.d(TAG, "Scanning local storage for installed charts")
+            
+            val installedEntries = scanInstalledChartEntries(rootUri)
+            if (installedEntries.isEmpty()) {
+                Log.d(TAG, "No installed charts found in local storage")
+                return
+            }
+
+            // Get all current charts from memory
+            val currentCharts = _charts.value.values.toList()
+            
+            // Sync installed status for existing charts
+            val updatedCharts = currentCharts.map { chart ->
+                val isInstalled = chart.id in installedEntries.keys
+                if (chart.isInstalled == isInstalled) chart else chart.copy(isInstalled = isInstalled)
+            }
+            
+            // Persist changes to database (only for non-local charts)
+            persistInstalledChanges(currentCharts, updatedCharts)
+            
+            // Update memory with synced charts
+            upsertCharts(updatedCharts)
+
+            // Find orphan charts (installed but not in memory)
+            val existingIds = currentCharts.map { it.id }.toSet()
+            val missingEntries = installedEntries.filterKeys { id -> id !in existingIds }
+            
+            if (missingEntries.isNotEmpty()) {
+                val orphanCharts = hydrateMissingInstalledCharts(missingEntries)
+                if (orphanCharts.isNotEmpty()) {
+                    Log.d(TAG, "Found ${orphanCharts.size} local-only charts")
+                    addChartsWithoutAffectingFeed(orphanCharts)
+                }
+            }
+            
+            Log.d(TAG, "Successfully scanned local storage")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error scanning local charts", e)
+        }
+    }
+
+    /**
      * Fetches charts in a feed-style format from remote source
      */
     fun fetchFeedCharts(
@@ -296,8 +360,11 @@ class ChartManager @Inject constructor(
                 }
 
                 // Update local storage in background with the sanitized charts currently in memory
+                // Filter out local-only charts from being cached in the database
                 if (remoteCharts.isNotEmpty()) {
-                    val chartsToPersist = remoteCharts.mapNotNull { _charts.value[it.id] }
+                    val chartsToPersist = remoteCharts
+                        .mapNotNull { _charts.value[it.id] }
+                        .filterNot { isLocalOnlyChart(it) }
                     coroutineScope.launch {
                         localChartRepository.updateCharts(chartsToPersist).first()
                         Log.d(TAG, "Persisted ${chartsToPersist.size} charts in local storage")
@@ -385,10 +452,10 @@ class ChartManager @Inject constructor(
     fun checkForUpdates(): Flow<FetchResult<List<Chart>>> = flow {
         emit(FetchResult.Loading)
 
-        val installedCharts = _charts.value.values.filter { it.isInstalled == true }
+        val installedCharts = _charts.value.values.filter { it.isInstalled == true && !isLocalOnlyChart(it) }
 
         if (installedCharts.isEmpty()) {
-            emit(FetchResult.Success(emptyList<Chart>()))
+            emit(FetchResult.Success(emptyList()))
             return@flow
         }
 
@@ -620,7 +687,12 @@ class ChartManager @Inject constructor(
 
         val changedCharts = updatedCharts.mapIndexedNotNull { index, updated ->
             val original = originalCharts[index]
-            if (original.isInstalled != updated.isInstalled) updated else null
+            // Don't persist local-only charts to database
+            if (original.isInstalled != updated.isInstalled && !isLocalOnlyChart(updated)) {
+                updated
+            } else {
+                null
+            }
         }
 
         if (changedCharts.isNotEmpty()) {
@@ -639,20 +711,22 @@ class ChartManager @Inject constructor(
             album = null,
             genre = null,
             colors = config.songTemplate.colorGradient.map { it.color },
-            trackUrls = emptyList(),
+            trackUrls = parseStreamingLinks(info.streaming),
             trackPreviewUrl = null,
             id = info.id,
             contentId = info.contentId,
-            coverUrl = "",
+            coverUrl = info.cover ?: "",
             isFeatured = false,
             downloadsSum = 0,
-            latestPublishedAt = now,
+            latestPublishedAt = info.publishedAt?.let { 
+                LocalDateTime.ofEpochSecond(it, 0, java.time.ZoneOffset.UTC) 
+            } ?: now,
             isLiked = false,
             isFavorited = false,
             isInstalled = true,
             latestVersion = createPlaceholderVersion(info.id, info),
             availableVersion = null,
-            contributors = emptyList(),
+            contributors = parseContributors(info.contributors, info.id),
         )
     }
 
@@ -666,18 +740,20 @@ class ChartManager @Inject constructor(
             id = -chartId.hashCode().toLong(),
             chartId = chartId,
             index = 1,
-            duration = 0f,
-            notesAmount = 0,
-            effectsAmount = 0,
+            duration = info.duration ?: 0f,
+            notesAmount = info.notes ?: 0,
+            effectsAmount = info.effects ?: 0,
             bpm = info.bpm?.toInt() ?: 0,
             difficulty = mapDifficulty(info.difficulty),
             isDeluxe = info.type.equals("Promode", ignoreCase = true),
             isExplicit = false,
             bundleUrl = "",
-            previewUrl = null,
+            previewUrl = info.gameplay,
             downloadsAmount = 0,
             knownIssues = emptyList(),
-            publishedAt = now
+            publishedAt = info.publishedAt?.let { 
+                LocalDateTime.ofEpochSecond(it, 0, java.time.ZoneOffset.UTC) 
+            } ?: now
         )
     }
 
@@ -687,6 +763,145 @@ class ChartManager @Inject constructor(
             1 -> Difficulty.EXTREME
             else -> Difficulty.NORMAL
         }
+    }
+
+    /**
+     * Parse streaming links from serialized format: "platformId|path||platformId|path||..."
+     * Platform IDs: 0=SPOTIFY, 1=APPLE_MUSIC, 2=YOUTUBE_MUSIC, 3=DEEZER, 4=TIDAL, 5=AMAZON_MUSIC, 6=SOUNDCLOUD, 7=LAST_FM
+     */
+    private fun parseStreamingLinks(streaming: String?): List<StreamingLink> {
+        if (streaming.isNullOrBlank()) return emptyList()
+        
+        return try {
+            streaming.split("||")
+                .filter { it.isNotBlank() }
+                .mapNotNull { item ->
+                    val parts = item.split("|", limit = 2)
+                    if (parts.size == 2) {
+                        val platformId = parts[0].toIntOrNull()
+                        val path = parts[1]
+                        
+                        val platform = when (platformId) {
+                            0 -> StreamingPlatform.SPOTIFY
+                            1 -> StreamingPlatform.APPLE_MUSIC
+                            2 -> StreamingPlatform.YOUTUBE_MUSIC
+                            3 -> StreamingPlatform.DEEZER
+                            4 -> StreamingPlatform.TIDAL
+                            5 -> StreamingPlatform.AMAZON_MUSIC
+                            6 -> StreamingPlatform.SOUNDCLOUD
+                            7 -> StreamingPlatform.LAST_FM
+                            else -> null
+                        }
+                        
+                        if (platform != null && path.isNotBlank()) {
+                            // Construct full URL from path
+                            val fullUrl = constructStreamingUrl(platform, path)
+                            StreamingLink(platform = platform, url = fullUrl)
+                        } else {
+                            null
+                        }
+                    } else {
+                        null
+                    }
+                }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing streaming links: $streaming", e)
+            emptyList()
+        }
+    }
+
+    /**
+     * Construct full URL from platform and path.
+     * If path already contains protocol or domain, use as-is, otherwise prepend base URL.
+     */
+    private fun constructStreamingUrl(platform: com.meninocoiso.bscm.domain.enums.StreamingPlatform, path: String): String {
+        // If path already has protocol or looks like a full URL, use as-is
+        if (path.startsWith("http://") || path.startsWith("https://") || path.contains("://")) {
+            return path
+        }
+        
+        // If path contains a domain (has dots and no slash before first dot), add protocol
+        if (path.contains(".") && !path.substringBefore(".").contains("/")) {
+            return "https://$path"
+        }
+        
+        // Otherwise, construct from base URL
+        val baseUrl = when (platform) {
+            StreamingPlatform.SPOTIFY -> "https://open.spotify.com"
+            StreamingPlatform.APPLE_MUSIC -> "https://music.apple.com"
+            StreamingPlatform.YOUTUBE_MUSIC -> "https://music.youtube.com"
+            StreamingPlatform.DEEZER -> "https://www.deezer.com"
+            StreamingPlatform.TIDAL -> "https://listen.tidal.com"
+            StreamingPlatform.AMAZON_MUSIC -> "https://music.amazon.com"
+            StreamingPlatform.SOUNDCLOUD -> "https://soundcloud.com"
+            StreamingPlatform.LAST_FM -> "https://www.last.fm"
+        }
+        
+        return "$baseUrl/$path"
+    }
+
+    /**
+     * Parse contributors from serialized format: "userId|username|imageUrl|role1,role2||userId|username|imageUrl|role1,role2||..."
+     * Role IDs: 0=AUTHOR, 1=CHART, 2=AUDIO, 3=REVISION, 4=EFFECTS, 5=SYNC, 6=GAMEPLAY
+     */
+    private fun parseContributors(contributors: String?, chartId: String): List<Contributor> {
+        if (contributors.isNullOrBlank()) return emptyList()
+        
+        return try {
+            contributors.split("||")
+                .filter { it.isNotBlank() }
+                .mapNotNull { item ->
+                    val parts = item.split("|", limit = 3)
+                    if (parts.size >= 2) {
+                        val username = parts[0]
+                        val imageUrl = parts[1].takeIf { it.isNotBlank() }
+                        val rolesStr = parts.getOrNull(2)
+                        
+                        val roles = rolesStr?.split(",")
+                            ?.mapNotNull { roleId ->
+                                when (roleId.toIntOrNull()) {
+                                    0 -> Role.AUTHOR
+                                    1 -> Role.CHART
+                                    2 -> Role.AUDIO
+                                    3 -> Role.REVISION
+                                    4 -> Role.EFFECTS
+                                    5 -> Role.SYNC
+                                    6 -> Role.GAMEPLAY
+                                    else -> null
+                                }
+                            } ?: emptyList()
+                        
+                        if (username.isNotBlank()) {
+                            Contributor(
+                                user = ContributorUserDto(
+                                    id = username,
+                                    username = username,
+                                    imageUrl = imageUrl,
+                                    createdAt = null
+                                ),
+                                chartId = chartId,
+                                roles = roles,
+                                joinedAt = LocalDateTime.now()
+                            )
+                        } else {
+                            null
+                        }
+                    } else {
+                        null
+                    }
+                }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing contributors: $contributors", e)
+            emptyList()
+        }
+    }
+
+    /**
+     * Checks if a chart is local-only (inserted manually)
+     * Local-only charts have null contentId
+     */
+    private fun isLocalOnlyChart(chart: Chart): Boolean {
+        return chart.contentId == null
     }
 
     private fun updateChartInMemory(chart: Chart) {
@@ -715,6 +930,36 @@ class ChartManager @Inject constructor(
     }
 
     private fun replaceFeedCharts(charts: List<Chart>) {
+        // Get IDs of charts being replaced
+        val newFeedIds = charts.map { it.id }.toSet()
+        val currentChartMap = _charts.value
+        
+        // Find charts that are in memory but not in the new feed and not installed
+        val chartsToRemove = currentChartMap.values.filter { chart ->
+            chart.id !in newFeedIds && chart.isInstalled != true && !isLocalOnlyChart(chart)
+        }
+        
+        // Remove stale charts from database
+        if (chartsToRemove.isNotEmpty()) {
+            Log.d(TAG, "Removing ${chartsToRemove.size} stale non-installed charts from cache")
+            
+            coroutineScope.launch {
+                try {
+                    localChartRepository.deleteCharts(chartsToRemove).first()
+                    Log.d(TAG, "Successfully removed ${chartsToRemove.size} charts from database")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to remove stale charts from database", e)
+                }
+            }
+            
+            // Remove from memory immediately
+            val updatedMap = currentChartMap.toMutableMap().apply {
+                chartsToRemove.forEach { remove(it.id) }
+            }
+            _charts.value = updatedMap
+        }
+        
+        // Upsert new charts and update feed order
         upsertCharts(charts)
         _feedOrder.value = charts.map { it.id }
         applyCacheLimit()

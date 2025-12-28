@@ -33,8 +33,8 @@ fun ConfirmationDialogPreview(
 
 @Composable
 fun ConfirmationDialog(
-    onDismiss: () -> Unit = {},
-    onConfirm: () -> Unit,
+    onDismiss: (() -> Unit) = {},
+    onConfirm: (() -> Unit)? = null,
     title: String = stringResource(R.string.confirmation_title),
     message: String = stringResource(R.string.confirmation_description),
 ) {
@@ -52,13 +52,14 @@ fun ConfirmationDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick = {
-                    onConfirm()
-                    onDismiss()
+            if (onConfirm != null) {
+                Button(
+                    onClick = {
+                        onConfirm()
+                    }
+                ) {
+                    Text(text = stringResource(R.string.confirm))
                 }
-            ) {
-                Text(text = stringResource(R.string.confirm))
             }
         }
     )

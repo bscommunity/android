@@ -18,13 +18,13 @@ data class Chart(
     val track: String,
     val album: String?,
     val genre: Genre?,
-    val colors: List<String>,
+    val colors: List<String>? = null,
     @ColumnInfo(name = "track_urls") val trackUrls: List<StreamingLink>,
     @ColumnInfo(name = "track_preview_url") val trackPreviewUrl: String? = null,
 
     @PrimaryKey @ColumnInfo(name = "id") override val id: String,
     @ColumnInfo(name = "content_id") override val contentId: String? = null,
-    // Charts without a content_id were downloaded externally
+    // Charts without a content_id were downloaded outside bscm's workshop
     
     @ColumnInfo(name = "cover_url") override val coverUrl: String,
     @ColumnInfo(name = "is_featured") override val isFeatured: Boolean,

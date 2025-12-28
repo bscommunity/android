@@ -79,7 +79,7 @@ class KtorApiClient @Inject constructor(
             // url("https://api-cyb1.onrender.com")
             url {
                 protocol = URLProtocol.HTTP
-                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.7"
+                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.9"
                 port = 8080
             }
             contentType(KtorContentType.Application.Json)
@@ -106,21 +106,28 @@ class KtorApiClient @Inject constructor(
                 parameters.append("offset", offset.toString())
             }
         }
+        
+        Log.d(TAG, "getFeedCharts: Response status=${response.status}, response: ${response.body<String>()}")
 
         // Check the response status first
         when (response.status) {
             HttpStatusCode.OK -> {
-                val body = response.body<List<Chart>>()
-                return body
+                val body = response.body<Pair<List<Chart>, Int?>>()
+                return body.first
+            }
+            HttpStatusCode.RequestTimeout -> {
+                Log.e(TAG, "Request timed out")
+                throw Exception("Request timed out. Please try again later.")
             }
             HttpStatusCode.TooManyRequests -> {
                 val errorResponse = response.body<ApiError>()
-                // throw Exception("Rate limited: ${errorResponse.message}")
+                Log.e(TAG, "Rate limit exceeded: ${errorResponse.error}")
                 throw Exception(errorResponse.error)
             }
             else -> {
                 // Handle other error cases
                 val errorResponse = try {
+                    Log.e(TAG, "Error response body: ${response.body<String>()}")
                     response.body<ApiError>()
                 } catch (e: Exception) {
                     ApiError("Unknown error occurred")

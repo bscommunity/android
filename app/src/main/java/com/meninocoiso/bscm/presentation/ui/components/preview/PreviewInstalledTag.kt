@@ -32,11 +32,13 @@ fun PreviewInstalledTag(isLocal: Boolean) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                modifier = Modifier.size(16.dp),
-                imageVector = Icons.Default.Check,
-                contentDescription = null
-            )
+            if (!isLocal) {
+                Icon(
+                    modifier = Modifier.size(16.dp),
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null
+                )
+            }
             Text(
                 style = MaterialTheme.typography.bodySmall,
                 text = if (isLocal) "Local" else "Installed",

@@ -102,23 +102,31 @@ class WorkshopViewModel @Inject constructor(
         // Load search history
         getSearchHistory()
 
-        // Observe ChartManager state
+        // Observe ChartManager feed state (separate from cache state used by updates)
         viewModelScope.launch {
-            chartManager.cacheState.collect { state ->
+            chartManager.feedState.collect { state ->
                 _workshopState.value = state
             }
         }
 
-        // Initialize by loading cached charts, then fetch fresh data
+        // Initialize by loading cached charts and local charts independently, then fetch fresh data
         viewModelScope.launch {
             currentSortOption = cacheRepository.getLatestWorkshopSort() ?: SortOption.LAST_UPDATED
 
-            // Load cached charts first
+            // Set initial feed state to loading
+            chartManager.updateFeedState(ChartState.Loading)
+
+            // Load cached charts first (without syncing installed status)
+            chartManager.loadCachedCharts(currentSortOption, null)
+
+            // Load local charts independently if permission is available
             val rootUri = StorageUtils.getFolderUri(context, BEATSTAR_URI)
-            chartManager.loadCachedCharts(currentSortOption, rootUri)
+            if (rootUri != null) {
+                chartManager.scanLocalCharts(rootUri)
+            }
 
             // Then fetch fresh data
-            fetchFeedCharts(true)
+            fetchFeedCharts(false) // Don't show loading again, we already set it above
 
             // Observe scroll state for pagination
             observeScrollState()
@@ -141,7 +149,7 @@ class WorkshopViewModel @Inject constructor(
             hasMoreData = true
 
             if (showLoading) {
-                chartManager.updateState(ChartState.Loading)
+                chartManager.updateFeedState(ChartState.Loading)
             }
 
             chartManager.fetchFeedCharts(
@@ -153,13 +161,13 @@ class WorkshopViewModel @Inject constructor(
                 when (result) {
                     is FetchResult.Success -> {
                         hasMoreData = result.data.size >= BATCH_SIZE
-                        chartManager.updateState(ChartState.Success)
+                        chartManager.updateFeedState(ChartState.Success)
                     }
                     is FetchResult.Error -> {
                         if (showLoading && chartManager.getChartsLength() > 0) {
                             _events.emit(FetchEvent.Error(result.message))
                         }
-                        chartManager.updateState(ChartState.Error)
+                        chartManager.updateFeedState(ChartState.Error)
                     }
                     FetchResult.Loading -> {
                         // Already handled above
@@ -186,7 +194,7 @@ class WorkshopViewModel @Inject constructor(
             Log.d(TAG, "Searching for charts with query: $query")
 
             // Show loading indicator
-            chartManager.updateState(ChartState.Loading)
+            chartManager.updateFeedState(ChartState.Loading)
 
             // Reset pagination
             currentSearchPage = 0
@@ -211,10 +219,10 @@ class WorkshopViewModel @Inject constructor(
                 when (result) {
                     is FetchResult.Success -> {
                         hasMoreData = result.data.size >= BATCH_SIZE
-                        chartManager.updateState(ChartState.Success)
+                        chartManager.updateFeedState(ChartState.Success)
                     }
                     is FetchResult.Error -> {
-                        chartManager.updateState(ChartState.Error)
+                        chartManager.updateFeedState(ChartState.Error)
                         _events.emit(FetchEvent.Error(result.message))
                     }
                     FetchResult.Loading -> {

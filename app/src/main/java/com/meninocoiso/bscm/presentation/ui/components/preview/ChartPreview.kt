@@ -13,12 +13,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.toColorInt
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
+import com.meninocoiso.bscm.presentation.ui.components.layout.GradientPlaceholder
 import com.meninocoiso.bscm.presentation.ui.modifiers.debouncedClickable
 import com.meninocoiso.bscm.util.PreviewUtils.localContainer
 import com.meninocoiso.bscm.util.PreviewUtils.titleContent
@@ -30,6 +33,7 @@ fun ChartPreview(
     chart: Chart,
     modifier: Modifier = Modifier,
     isLocal: Boolean = false,
+    isOffline: Boolean = false,
     isDisabled: Boolean = false,
     onDisabled: () -> Unit = {},
     onPress: () -> Unit
@@ -56,11 +60,20 @@ fun ChartPreview(
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            CoverArt(
-                difficulty = chart.latestVersion.difficulty,
-                url = chart.coverUrl,
-                borderRadius = if (isLocal) 8.dp else 0.dp,
-            )
+            if (chart.coverUrl.isEmpty() && chart.colors?.isNotEmpty() == true) {
+                GradientPlaceholder(
+                    colors = chart.colors.map {
+                        Color("#$it".toColorInt())
+                    },
+                    borderRadius = if (isLocal) 8.dp else 0.dp,
+                )
+            } else {
+                CoverArt(
+                    difficulty = chart.latestVersion.difficulty,
+                    url = chart.coverUrl,
+                    borderRadius = if (isLocal) 8.dp else 0.dp,
+                )
+            }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column {
                     if (isLocal) {
@@ -111,7 +124,7 @@ fun ChartPreview(
                         authors = chart.contributors
                     )
                 }
-                if (isLocal || chart.isInstalled == true) PreviewInstalledTag(isLocal)
+                if (isOffline || chart.isInstalled == true) PreviewInstalledTag(isOffline)
             }
         }
     }
