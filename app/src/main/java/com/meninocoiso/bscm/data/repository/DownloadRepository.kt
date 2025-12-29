@@ -5,8 +5,8 @@ import android.content.Context
 import android.content.res.Resources.NotFoundException
 import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.manager.DownloadManager
-import com.meninocoiso.bscm.data.manager.FetchResult
 import com.meninocoiso.bscm.domain.enums.OperationOption
+import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
 import com.meninocoiso.bscm.util.StorageUtils
 import com.meninocoiso.bscm.util.StorageUtils.BEATSTAR_URI
@@ -76,7 +76,7 @@ class DownloadRepository @Inject constructor(
 
         // Update the chart list
         chartManager.updateChart(contentId, operation).first().let {
-            if (it is FetchResult.Error) {
+            if (it is ContentResult.Error) {
                 throw Exception(it.message)
             }
         }
@@ -99,7 +99,7 @@ class DownloadRepository @Inject constructor(
 
         // Update the chart list
         chartManager.updateChart(chartId, OperationOption.DELETE).first().let {
-            if (it is FetchResult.Error) {
+            if (it is ContentResult.Error) {
                 throw Exception(it.message)
             }
         }

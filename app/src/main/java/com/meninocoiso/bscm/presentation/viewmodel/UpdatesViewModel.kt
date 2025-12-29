@@ -4,8 +4,8 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.data.manager.ChartManager
-import com.meninocoiso.bscm.data.manager.ChartState
-import com.meninocoiso.bscm.data.manager.FetchResult
+import com.meninocoiso.bscm.domain.result.ContentState
+import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.util.StorageUtils
 import com.meninocoiso.bscm.util.StorageUtils.BEATSTAR_URI
@@ -30,8 +30,8 @@ class UpdatesViewModel @Inject constructor(
 
     val cacheState = chartManager.cacheState
 
-    private val _updateState = MutableStateFlow<ChartState>(ChartState.Loading)
-    val updateState: StateFlow<ChartState> = _updateState.asStateFlow()
+    private val _updateState = MutableStateFlow<ContentState>(ContentState.Loading)
+    val updateState: StateFlow<ContentState> = _updateState.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -47,19 +47,19 @@ class UpdatesViewModel @Inject constructor(
         viewModelScope.launch {
             // If we want to show loading cacheState, update the UI
             if (showLoading) {
-                _updateState.value = ChartState.Loading
+                _updateState.value = ContentState.Loading
             }
 
             // Check for updates
             chartManager.checkForUpdates().collect { result ->
                 when (result) {
-                    is FetchResult.Success -> {
-                        _updateState.value = ChartState.Success
+                    is ContentResult.Success -> {
+                        _updateState.value = ContentState.Success
                     }
-                    is FetchResult.Error -> {
-                        _updateState.value = ChartState.Error
+                    is ContentResult.Error -> {
+                        _updateState.value = ContentState.Error
                     }
-                    FetchResult.Loading -> {
+                    ContentResult.Loading -> {
                         // Already handled above if showLoading is true
                     }
                 }

@@ -7,6 +7,9 @@ import com.meninocoiso.bscm.data.repository.ChartRepositoryRemote
 import com.meninocoiso.bscm.domain.repository.UserRepository
 import com.meninocoiso.bscm.data.repository.UserRepositoryRemote
 import com.meninocoiso.bscm.data.security.AuthInterceptor
+import com.meninocoiso.bscm.domain.repository.ContentRepository
+import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.data.repository.ChartContentRepositoryRemote
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -37,6 +40,13 @@ object NetworkModule {
     fun provideChartRepository(
         apiClient: ApiClient
     ): ChartRepository = ChartRepositoryRemote(apiClient)
+
+    @Provides
+    @Singleton
+    @Named("Remote")
+    fun provideChartContentRepositoryRemote(
+        adapter: ChartContentRepositoryRemote
+    ): ContentRepository<Chart> = adapter
 
     @Provides
     @Singleton

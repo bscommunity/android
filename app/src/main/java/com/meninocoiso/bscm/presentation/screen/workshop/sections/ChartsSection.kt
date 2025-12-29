@@ -27,8 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.data.manager.ChartState
-import com.meninocoiso.bscm.data.manager.FetchEvent
+import com.meninocoiso.bscm.domain.result.ContentEvent
+import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.navigation.OnSnackbar
 import com.meninocoiso.bscm.presentation.navigation.show
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
@@ -64,13 +64,14 @@ internal fun ChartsSection(
         feedCharts
     }
 
-    val workshopState by viewModel.workshopState.collectAsStateWithLifecycle(initialValue = ChartState.Loading)
+    val workshopState by viewModel.workshopState.collectAsStateWithLifecycle(initialValue = ContentState.Loading)
 
     // Collect events for snackbar
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
+            println("ChartsSection received event: $event")
             when (event) {
-                is FetchEvent.Error -> {
+                is ContentEvent.Error -> {
                     println("Triggering snackbar: ${event.message}")
                     onSnackbar.show(event.message)
                 }
@@ -86,15 +87,15 @@ internal fun ChartsSection(
         contentAlignment = Alignment.TopCenter,
     ) {
         // If no cache or on search mode, show loading or error status on full page
-        if (feedCharts.isEmpty() || hasActiveQuery && workshopState !is ChartState.Success) {
+        if (feedCharts.isEmpty() || hasActiveQuery && workshopState !is ContentState.Success) {
             when (workshopState) {
-                is ChartState.Loading -> {
+                is ContentState.Loading -> {
                     Box(Modifier.fillMaxSize(), Alignment.Center) {
                         CircularProgressIndicator(Modifier.size(36.dp))
                     }
                 }
 
-                is ChartState.Error -> {
+                is ContentState.Error -> {
                     StatusMessageUI(
                         title = stringResource(R.string.something_went_wrong),
                         message = stringResource(R.string.check_connection),
@@ -119,7 +120,7 @@ internal fun ChartsSection(
         } else {
             // We have charts to display - show them with pull-to-refresh
             PullToRefreshBox(
-                isRefreshing = workshopState is ChartState.Loading,
+                isRefreshing = workshopState is ContentState.Loading,
                 onRefresh = { viewModel.fetchFeedCharts() }
             ) {
                 SectionWrapper(
@@ -144,7 +145,7 @@ internal fun ChartsSection(
                         )
                     }
 
-                    itemsIndexed(charts) { index, chart ->
+                    itemsIndexed(charts) { _, chart ->
                         ChartPreview(
                             chart = chart,
                             isDisabled = chart.latestVersion.isExplicit && !isExplicitAllowed.value,

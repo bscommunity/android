@@ -5,13 +5,21 @@ import androidx.room.Room
 import com.meninocoiso.bscm.data.local.AppDatabase
 import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
+import com.meninocoiso.bscm.data.manager.ContentManager
+import com.meninocoiso.bscm.data.manager.ContentMemoryStore
+import com.meninocoiso.bscm.data.repository.ChartContentRepositoryLocal
 import com.meninocoiso.bscm.data.repository.ChartRepositoryLocal
+import com.meninocoiso.bscm.data.service.ContentCacheManager
+import com.meninocoiso.bscm.data.service.FeedOrchestrator
+import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.repository.ChartRepository
+import com.meninocoiso.bscm.domain.repository.ContentRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
 import javax.inject.Named
 import javax.inject.Singleton
 
@@ -36,6 +44,38 @@ object DatabaseModule {
     fun provideLocalChartRepository(
         chartDao: ChartDao
     ): ChartRepository = ChartRepositoryLocal(chartDao)
+
+    @Provides
+    @Singleton
+    @Named("Local")
+    fun provideChartContentRepositoryLocal(
+        adapter: ChartContentRepositoryLocal
+    ): ContentRepository<Chart> = adapter
+
+    @Provides
+    @Singleton
+    fun provideFeedOrchestrator(cacheManager: ContentCacheManager): FeedOrchestrator<Chart> = FeedOrchestrator(cacheManager)
+
+    @Provides
+    @Singleton
+    fun provideContentMemoryStore(feedOrchestrator: FeedOrchestrator<Chart>): ContentMemoryStore<Chart> =
+        ContentMemoryStore(feedOrchestrator)
+
+    @Provides
+    @Singleton
+    fun provideChartContentManager(
+        @ApplicationContext context: Context,
+        @Named("Remote") remote: ContentRepository<Chart>,
+        @Named("Local") local: ContentRepository<Chart>,
+        memoryStore: ContentMemoryStore<Chart>,
+        @ApplicationScope coroutineScope: CoroutineScope
+    ): ContentManager<Chart> = ContentManager(
+        context = context,
+        remoteRepository = remote,
+        localRepository = local,
+        memoryStore = memoryStore,
+        coroutineScope = coroutineScope
+    )
 
     /**
      * Provides a singleton instance of AppDatabase.

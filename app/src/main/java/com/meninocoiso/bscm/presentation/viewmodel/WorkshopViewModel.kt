@@ -12,15 +12,15 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.data.manager.ChartManager
-import com.meninocoiso.bscm.data.manager.ChartState
-import com.meninocoiso.bscm.data.manager.FetchEvent
-import com.meninocoiso.bscm.data.manager.FetchResult
 import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.result.ContentEvent
+import com.meninocoiso.bscm.domain.result.ContentResult
+import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.util.StorageUtils
 import com.meninocoiso.bscm.util.StorageUtils.BEATSTAR_URI
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -60,11 +60,11 @@ class WorkshopViewModel @Inject constructor(
     val feedCharts: Flow<List<Chart>> = chartManager.memoryCharts
     val searchCharts: Flow<List<Chart>> = chartManager.searchCharts
 
-    private val _workshopState = MutableStateFlow<ChartState>(ChartState.Loading)
-    val workshopState: SharedFlow<ChartState> = _workshopState.asStateFlow()
+    private val _workshopState = MutableStateFlow<ContentState>(ContentState.Loading)
+    val workshopState: SharedFlow<ContentState> = _workshopState.asStateFlow()
 
-    private val _events = MutableSharedFlow<FetchEvent>()
-    val events: SharedFlow<FetchEvent> = _events.asSharedFlow()
+    private val _events = MutableSharedFlow<ContentEvent>()
+    val events: SharedFlow<ContentEvent> = _events.asSharedFlow()
 
     // Pagination
     val listState = LazyListState()
@@ -114,7 +114,7 @@ class WorkshopViewModel @Inject constructor(
             currentSortOption = cacheRepository.getLatestWorkshopSort() ?: SortOption.LAST_UPDATED
 
             // Set initial feed state to loading
-            chartManager.updateFeedState(ChartState.Loading)
+            chartManager.updateFeedState(ContentState.Loading)
 
             // Load cached charts first (without syncing installed status)
             chartManager.loadCachedCharts(currentSortOption, null)
@@ -149,7 +149,7 @@ class WorkshopViewModel @Inject constructor(
             hasMoreData = true
 
             if (showLoading) {
-                chartManager.updateFeedState(ChartState.Loading)
+                chartManager.updateFeedState(ContentState.Loading)
             }
 
             chartManager.fetchFeedCharts(
@@ -159,17 +159,19 @@ class WorkshopViewModel @Inject constructor(
                 offset = 0
             ).collect { result ->
                 when (result) {
-                    is FetchResult.Success -> {
+                    is ContentResult.Success -> {
                         hasMoreData = result.data.size >= BATCH_SIZE
-                        chartManager.updateFeedState(ChartState.Success)
+                        chartManager.updateFeedState(ContentState.Success)
+                        Log.d(TAG, "Fetched ${result.data.size} feed charts")
                     }
-                    is FetchResult.Error -> {
+                    is ContentResult.Error -> {
                         if (showLoading && chartManager.getChartsLength() > 0) {
-                            _events.emit(FetchEvent.Error(result.message))
+                            _events.emit(ContentEvent.Error(result.message))
                         }
-                        chartManager.updateFeedState(ChartState.Error)
+                        chartManager.updateFeedState(ContentState.Error)
+                        Log.e(TAG, "Error fetching feed charts: ${result.message}")
                     }
-                    FetchResult.Loading -> {
+                    ContentResult.Loading -> {
                         // Already handled above
                     }
                 }
@@ -194,7 +196,7 @@ class WorkshopViewModel @Inject constructor(
             Log.d(TAG, "Searching for charts with query: $query")
 
             // Show loading indicator
-            chartManager.updateFeedState(ChartState.Loading)
+            chartManager.updateFeedState(ContentState.Loading)
 
             // Reset pagination
             currentSearchPage = 0
@@ -217,15 +219,15 @@ class WorkshopViewModel @Inject constructor(
                 offset = 0
             ).collect { result ->
                 when (result) {
-                    is FetchResult.Success -> {
+                    is ContentResult.Success -> {
                         hasMoreData = result.data.size >= BATCH_SIZE
-                        chartManager.updateFeedState(ChartState.Success)
+                        chartManager.updateFeedState(ContentState.Success)
                     }
-                    is FetchResult.Error -> {
-                        chartManager.updateFeedState(ChartState.Error)
-                        _events.emit(FetchEvent.Error(result.message))
+                    is ContentResult.Error -> {
+                        chartManager.updateFeedState(ContentState.Error)
+                        _events.emit(ContentEvent.Error(result.message))
                     }
-                    FetchResult.Loading -> {
+                    ContentResult.Loading -> {
                         // No-op
                     }
                 }
@@ -341,17 +343,17 @@ class WorkshopViewModel @Inject constructor(
 
             flowToCollect.collect { result ->
                 when (result) {
-                    is FetchResult.Success -> {
+                    is ContentResult.Success -> {
                         if (result.data.isEmpty() || result.data.size < BATCH_SIZE) {
                             hasMoreData = false
                         }
                         isLoadingMore = false
                     }
-                    is FetchResult.Error -> {
-                        _events.emit(FetchEvent.Error(result.message))
+                    is ContentResult.Error -> {
+                        _events.emit(ContentEvent.Error(result.message))
                         isLoadingMore = false
                     }
-                    FetchResult.Loading -> {
+                    ContentResult.Loading -> {
                         // No-op
                     }
                 }

@@ -14,13 +14,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.data.manager.ChartState
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.ui.components.layout.Section
 import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
 
 fun LazyListScope.localContentSection(
-    state: ChartState,
+    state: ContentState,
     charts: List<Chart>,
     onNavigateToDetails: (Chart) -> Unit,
     onShowLocalItemDialog: () -> Unit,
@@ -28,7 +28,7 @@ fun LazyListScope.localContentSection(
     item {
         Section(
             title = when (state) {
-                is ChartState.Success -> {
+                is ContentState.Success -> {
                     if (charts.isNotEmpty()) {
                         stringResource(R.string.downloaded, charts.size)
                     } else null
@@ -36,12 +36,12 @@ fun LazyListScope.localContentSection(
                 else -> null
             },
             thickness = when (state) {
-                is ChartState.Success -> if (charts.isNotEmpty()) 1.dp else 0.dp
+                is ContentState.Success -> if (charts.isNotEmpty()) 1.dp else 0.dp
                 else -> 0.dp
             },
         ) {
             when (state) {
-                is ChartState.Loading -> {
+                is ContentState.Loading -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -64,7 +64,7 @@ fun LazyListScope.localContentSection(
         }
     }
 
-    if (state !is ChartState.Loading && charts.isNotEmpty()) {
+    if (state !is ContentState.Loading && charts.isNotEmpty()) {
         items(charts) { chart ->
             ChartPreview(
                 chart = chart,
