@@ -82,14 +82,13 @@ class DownloadRepository @Inject constructor(
         }
     }
 
-    suspend fun deleteChart(chartId: String) {
-        val folderName = StorageUtils.getChartFolderName(chartId)
+    suspend fun deleteChart(contentId: String) {
         val destinationFolderUri = StorageUtils.getFolderUri(context, BEATSTAR_URI)
             ?: throw IllegalStateException("Could not access or create beatstar folder")
 
         try {
             downloadManager.deleteFolderFromUri(
-                folderName,
+                StorageUtils.getChartFolderName(contentId),
                 destinationFolderUri,
                 listOf("songs"),
             )
@@ -98,7 +97,7 @@ class DownloadRepository @Inject constructor(
         }
 
         // Update the chart list
-        chartManager.updateChart(chartId, OperationOption.DELETE).first().let {
+        chartManager.updateChart(contentId, OperationOption.DELETE).first().let {
             if (it is ContentResult.Error) {
                 throw Exception(it.message)
             }

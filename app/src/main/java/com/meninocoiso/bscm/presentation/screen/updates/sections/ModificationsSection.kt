@@ -11,7 +11,7 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 
 @Composable
-internal fun InstallationsSection(
+internal fun ModificationsSection(
     nestedScrollConnection: NestedScrollConnection,
 ) {
     Box(

@@ -115,17 +115,6 @@ class ContentViewModel @Inject constructor(
             }
         }
     }
-    
-    fun deleteChart(contentId: String) {
-        viewModelScope.launch {
-            try {
-                downloadRepository.deleteChart(contentId)
-                Log.d(TAG, "Chart deleted successfully: $contentId")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to delete chart: $contentId", e)
-            }
-        }
-    }
 
     private suspend fun handleDownloadEvent(event: DownloadEvent) {
         val contentId = event.id
@@ -258,7 +247,12 @@ class ContentViewModel @Inject constructor(
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        val contentId = chart.id
+        val contentId = chart.contentId
+
+        if (contentId.isNullOrBlank()) {
+            onError("Only charts downloaded via the app can be deleted.")
+            return
+        }
 
         viewModelScope.launch {
             try {
@@ -278,13 +272,6 @@ class ContentViewModel @Inject constructor(
                     return@launch
                 }
 
-                // Update the chart in local database first
-                val updateResult = localChartRepository
-                    .updateChart(contentId, OperationOption.DELETE)
-                    .first()
-
-                updateResult.getOrThrow() // Will throw if update failed
-
                 // Delete the actual chart files
                 try {
                     downloadRepository.deleteChart(contentId)
@@ -292,6 +279,13 @@ class ContentViewModel @Inject constructor(
                     Log.w(TAG, "Failed to delete chart files, but database was updated", e)
                     // Continue - the database update is more important
                 }
+
+                // Update the chart in local database
+                val updateResult = localChartRepository
+                    .updateChart(contentId, OperationOption.DELETE)
+                    .first()
+
+                updateResult.getOrThrow() // Will throw if update failed
 
                 // Reset the state and clear operation
                 updateState(contentId, ContentState.Idle)

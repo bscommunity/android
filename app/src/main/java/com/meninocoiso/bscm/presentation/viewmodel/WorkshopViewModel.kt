@@ -117,9 +117,9 @@ class WorkshopViewModel @Inject constructor(
             chartManager.updateFeedState(ContentState.Loading)
 
             // Load cached charts first (without syncing installed status)
-            chartManager.loadCachedCharts(currentSortOption, null)
+            chartManager.loadCachedCharts(currentSortOption)
 
-            // Load local charts independently if permission is available
+            // Load local/external charts independently if permission is available
             val rootUri = StorageUtils.getFolderUri(context, BEATSTAR_URI)
             if (rootUri != null) {
                 chartManager.scanLocalCharts(rootUri)

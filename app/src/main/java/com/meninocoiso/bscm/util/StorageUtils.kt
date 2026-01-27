@@ -31,9 +31,9 @@ object StorageUtils {
         ?: throw IOException("Failed to create/access subfolder: $name")
     }
 
-    fun getChartFolderName(chartId: String): String {
+    fun getChartFolderName(contentId: String): String {
         // Last 4 numbers from the chart ID
-        return "bscm_" + chartId.takeLast(4)
+        return "bscm_$contentId"
     }
 
     fun checkIfExists(uri: Uri, context: Context): Boolean {

@@ -35,9 +35,9 @@ private const val TAG = "ChartManager"
 @Singleton
 class ChartManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
+    @param:ApplicationScope private val coroutineScope: CoroutineScope,
     @param:Named("Remote") private val remoteChartRepository: ChartRepository,
     @param:Named("Local") private val localChartRepository: ChartRepository,
-    @param:ApplicationScope private val coroutineScope: CoroutineScope,
     private val chartStorageScanner: ChartStorageScanner,
     private val chartPlaceholderFactory: ChartPlaceholderFactory,
     private val memoryStore: ContentMemoryStore<Chart>,
@@ -65,11 +65,8 @@ class ChartManager @Inject constructor(
         contentManager.updateFeedState(newState)
     }
 
-    suspend fun loadCachedCharts(sortBy: SortOption, rootUri: Uri? = null) {
+    suspend fun loadCachedCharts(sortBy: SortOption) {
         contentManager.loadCachedContent(sortBy)
-        if (rootUri != null) {
-            syncInstalledCharts(rootUri)
-        }
     }
 
     suspend fun scanLocalCharts(rootUri: Uri) {
@@ -164,6 +161,8 @@ class ChartManager @Inject constructor(
                     OperationOption.DELETE -> existing.copy(isInstalled = false)
                 }
                 memoryStore.upsertContent(listOf(updated)) { it.id }
+                // Persist the updated chart state to the local database
+                coroutineScope.launch { localChartRepository.updateCharts(listOf(updated)).first() }
                 emit(ContentResult.Success(memoryStore.content.value.values.toList()))
             },
             onFailure = { err -> emit(ContentResult.Error(context.getString(R.string.failed_to_update), err)) }
@@ -191,13 +190,16 @@ class ChartManager @Inject constructor(
             val current = memoryStore.content.value.values.toList()
             val updatedCharts = current.map { chart ->
                 val isInstalled = chart.id in installedEntries.keys
+                Log.d(TAG, "Chart ${chart.id} installed status: ${chart.isInstalled} -> $isInstalled")
                 if (chart.isInstalled == isInstalled) chart else chart.copy(isInstalled = isInstalled)
             }
             persistInstalledChanges(current, updatedCharts)
             memoryStore.upsertContent(updatedCharts) { it.id }
 
             val existingIds = current.map { it.id }.toSet()
+            Log.d(TAG, "Sync installed charts: found ${installedEntries.size} installed, ${existingIds.size} existing in memory")
             val missingEntries = installedEntries.filterKeys { it !in existingIds }
+            Log.d(TAG, "Found ${missingEntries.size} missing installed charts to hydrate")
             if (missingEntries.isNotEmpty()) {
                 val orphan = hydrateMissingInstalledCharts(missingEntries)
                 if (orphan.isNotEmpty()) memoryStore.addWithoutAffectingFeed(orphan, getId = { it.id })

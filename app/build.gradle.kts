@@ -69,8 +69,8 @@ android {
 	}
 
 	compileOptions {
-		sourceCompatibility = JavaVersion.VERSION_11
-		targetCompatibility = JavaVersion.VERSION_11
+		sourceCompatibility = JavaVersion.VERSION_17
+		targetCompatibility = JavaVersion.VERSION_17
 
 		// Enable core library desugaring
 		isCoreLibraryDesugaringEnabled = false
@@ -98,6 +98,10 @@ android {
             version = "3.22.1"
         }
     }
+}
+
+kotlin {
+    jvmToolchain(17)
 }
 
 dependencies {
@@ -163,13 +167,6 @@ dependencies {
 	debugImplementation(libs.androidx.ui.test.manifest)
 
 	implementation(libs.androidxBrowser)
-}
-
-// Java Toolchain Configuration
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(11)
-	}
 }
 
 // Exclude unnecessary annotations

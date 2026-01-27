@@ -36,7 +36,7 @@ import com.meninocoiso.bscm.util.StorageUtils.BEATSTAR_URI
 import com.meninocoiso.bscm.util.StorageUtils.INITIAL_URL
 
 @Composable
-internal fun WorkshopSection(
+internal fun ContentSection(
     viewModel: UpdatesViewModel,
     onNavigateToDetails: OnNavigateToDetails,
     onSnackbar: OnSnackbar,
@@ -69,8 +69,8 @@ internal fun WorkshopSection(
     val updatesCharts by viewModel.updatesAvailable.collectAsStateWithLifecycle(initialValue = emptyList())
     val localCharts by viewModel.localCharts.collectAsStateWithLifecycle(initialValue = emptyList())
 
-    val cacheState by viewModel.cacheState.collectAsStateWithLifecycle()
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
+    val cacheState by viewModel.cacheState.collectAsStateWithLifecycle()
 
     val itemsUpdating = remember { mutableStateListOf<String>() }
     val showLocalItemDialog = remember { mutableStateOf(false) }

@@ -37,11 +37,13 @@ class ChartStorageScanner @Inject constructor(
                     if (!folder.isDirectory) return@forEach
                     val infoFile = folder.findFile("info.json") ?: return@forEach
                     val configFile = folder.findFile("config.json") ?: return@forEach
-
+                    
                     val metadata = metadataParser.parseMetadata(infoFile)
                     val config = readExternalChartConfig(configFile)
                     val chartId = metadata?.id
 
+                    Log.d(TAG, "Found chart folder: ${folder.name} - id: $chartId")
+                    
                     if (!chartId.isNullOrBlank()) {
                         entries[chartId] = InstalledContentEntry(
                             contentId = chartId,
