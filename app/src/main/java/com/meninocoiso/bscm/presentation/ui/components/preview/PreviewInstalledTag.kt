@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,11 +20,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun PreviewInstalledTag(isDuplicate: Boolean? = null) {
-    val label = if (isDuplicate == null) {
+fun PreviewInstalledTag(isInstalled: Boolean) {
+    val label = if (isInstalled == true) {
         "Installed"
-    } else if (isDuplicate) {
-        "Duplicate"
     } else {
         "External"
     }
@@ -41,16 +38,10 @@ fun PreviewInstalledTag(isDuplicate: Boolean? = null) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (isDuplicate == null) {
+            if (isInstalled == null) {
                 Icon(
                     modifier = Modifier.size(16.dp),
                     imageVector = Icons.Default.Check,
-                    contentDescription = null
-                )
-            } else if (isDuplicate) {
-                Icon(
-                    modifier = Modifier.size(16.dp),
-                    imageVector = Icons.Default.Warning,
                     contentDescription = null
                 )
             }

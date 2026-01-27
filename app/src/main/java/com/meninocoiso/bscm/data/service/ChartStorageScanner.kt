@@ -28,9 +28,9 @@ class ChartStorageScanner @Inject constructor(
     private val json = Json { ignoreUnknownKeys = true }
     private val ioDispatcher = Dispatchers.IO
 
-    override suspend fun scanInstalledContent(rootUri: Uri): Map<String, List<InstalledContentEntry<ExternalContentMetadata>>> {
+    override suspend fun scanInstalledContent(rootUri: Uri): Map<String, InstalledContentEntry<ExternalContentMetadata>> {
         return withContext(ioDispatcher) {
-            val entries = mutableMapOf<String, MutableList<InstalledContentEntry<ExternalContentMetadata>>>()
+            val entries = mutableMapOf<String, InstalledContentEntry<ExternalContentMetadata>>()
             try {
                 val destination = StorageUtils.getFolder(rootUri, listOf("songs"), context)
                 destination.listFiles().forEach { folder ->
@@ -45,13 +45,11 @@ class ChartStorageScanner @Inject constructor(
                     Log.d(TAG, "Found chart folder: ${folder.name} - id: $chartId")
 
                     if (!chartId.isNullOrBlank()) {
-                        entries.getOrPut(chartId) { mutableListOf() }.add(
-                            InstalledContentEntry(
-                                contentId = chartId,
-                                metadata = metadata,
-                                config = config,
-                                folder = folder
-                            )
+                        entries[chartId] = InstalledContentEntry(
+                            contentId = chartId,
+                            metadata = metadata,
+                            config = config,
+                            folder = folder
                         )
                     }
                 }
@@ -59,7 +57,7 @@ class ChartStorageScanner @Inject constructor(
                 Log.e(TAG, "Unable to scan installed charts", e)
                 entries.clear()
             }
-            entries.mapValues { it.value.toList() }
+            entries.toMap()
         }
     }
 
@@ -75,3 +73,4 @@ class ChartStorageScanner @Inject constructor(
         }
     }
 }
+

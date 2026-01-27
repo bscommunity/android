@@ -32,8 +32,7 @@ import com.meninocoiso.bscm.util.StringUtils
 fun ChartPreview(
     chart: Chart,
     modifier: Modifier = Modifier,
-    isInstalled: Boolean = false,
-    isDuplicate: Boolean? = false,
+    isInstalled: Boolean? = null,
     isDisabled: Boolean = false,
     onDisabled: () -> Unit = {},
     onPress: () -> Unit
@@ -41,10 +40,10 @@ fun ChartPreview(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .localContainer(isInstalled)
+            .localContainer(isInstalled != null)
             .graphicsLayer {
                 alpha =
-                    if ((chart.isInstalled == true || isDisabled) && !isInstalled) 0.5f else 1f
+                    if (isInstalled == true || isDisabled) 0.5f else 1f
             }
             .debouncedClickable(onClick = {
                 if (isDisabled) {
@@ -65,18 +64,18 @@ fun ChartPreview(
                     colors = chart.colors.map {
                         Color("#$it".toColorInt())
                     },
-                    borderRadius = if (isInstalled) 8.dp else 0.dp,
+                    borderRadius = if (isInstalled == true) 8.dp else 0.dp,
                 )
             } else {
                 CoverArt(
                     difficulty = chart.latestVersion.difficulty,
                     url = chart.coverUrl,
-                    borderRadius = if (isInstalled) 8.dp else 0.dp,
+                    borderRadius = if (isInstalled == true) 8.dp else 0.dp,
                 )
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column {
-                    if (isInstalled) {
+                    if (isInstalled == true) {
                         FlowRow(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -124,7 +123,7 @@ fun ChartPreview(
                         authors = chart.contributors
                     )
                 }
-                if (isDuplicate != null || chart.isInstalled == true) PreviewInstalledTag(isDuplicate)
+                if (isInstalled != null) PreviewInstalledTag(isInstalled)
             }
         }
     }

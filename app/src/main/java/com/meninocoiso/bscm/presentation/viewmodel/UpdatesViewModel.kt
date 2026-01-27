@@ -27,7 +27,6 @@ class UpdatesViewModel @Inject constructor(
 ) : ViewModel() {
     val pendingUpdateCharts: Flow<List<Chart>> = chartManager.pendingUpdateCharts
     val installedCharts: Flow<List<Chart>> = chartManager.installedCharts
-    val duplicateInstalledIds: StateFlow<Set<String>> = chartManager.duplicateInstalledIds
 
     val cacheState = chartManager.cacheState
 

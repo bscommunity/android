@@ -68,7 +68,6 @@ internal fun ContentSection(
     // Collect the direct flows as states
     val pendingUpdateCharts by viewModel.pendingUpdateCharts.collectAsStateWithLifecycle(initialValue = emptyList())
     val installedCharts by viewModel.installedCharts.collectAsStateWithLifecycle(initialValue = emptyList())
-    val duplicateInstalledIds by viewModel.duplicateInstalledIds.collectAsStateWithLifecycle(initialValue = emptySet())
 
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
     val cacheState by viewModel.cacheState.collectAsStateWithLifecycle()
@@ -130,7 +129,6 @@ internal fun ContentSection(
             localContentSection(
                 state = cacheState,
                 charts = installedCharts,
-                duplicateChartsIds = duplicateInstalledIds,
                 onNavigateToDetails = onNavigateToDetails,
                 onShowLocalItemDialog = { showLocalItemDialog.value = true },
             )
