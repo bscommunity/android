@@ -15,15 +15,13 @@ import com.meninocoiso.bscm.presentation.ui.components.rememberBurstDotsModule
 import com.meninocoiso.bscm.presentation.ui.components.rememberIconScaleModule
 import com.meninocoiso.bscm.presentation.ui.components.rememberRingModule
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun InteractionButton(
     activeIconResId: Int,
     inactiveIconResId: Int,
     defaultValue: Boolean = false,
-    onClick: () -> Unit = {},
+    onClick: (isActive: Boolean) -> Unit = {},
 ) {
     var isActive by remember { mutableStateOf(defaultValue) }
 
@@ -43,11 +41,12 @@ fun InteractionButton(
         isActive = isActive,
         onClick = {
             isActive = !isActive
-            debounceJob?.cancel()
+            /*debounceJob?.cancel()
             debounceJob = scope.launch {
                 delay(1000L)
                 onClick()
-            }
+            }*/
+            onClick(isActive)
         },
         animations = listOfNotNull(
             burstAnimation,

@@ -26,13 +26,16 @@ import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,13 +85,14 @@ fun WorkshopSearchBar(
     val haptics = LocalHapticFeedback.current
     var historyItemToDelete by remember { mutableStateOf<String?>(null) }
 
-    /*var isFilterSheetOpen by rememberSaveable {
-		mutableStateOf(false)
-	}
+    val filterSheetState = rememberModalBottomSheetState()
+    var showFilterSheet by rememberSaveable {
+        mutableStateOf(false)
+    }
 
-	val filtersList = remember {
-		mutableStateListOf<String>()
-	}*/
+    val filtersList = remember {
+        mutableStateListOf<String>()
+    }
 
     LaunchedEffect(searchBarState.currentValue) {
         if (searchBarState.currentValue == SearchBarValue.Expanded) {
@@ -136,7 +140,14 @@ fun WorkshopSearchBar(
                         Icon(Icons.Default.Search, contentDescription = null)
                     }
                 },
-                /*trailingIcon = { Icon(Icons.Default.MoreVert, contentDescription = null) },*/
+                trailingIcon = {
+                    IconButton(onClick = { showFilterSheet = true }) {
+                        Icon(
+                            painter = painterResource(R.drawable.outline_filter_alt_24),
+                            contentDescription = null
+                        )
+                    }
+                },
             )
         }
 
@@ -237,19 +248,20 @@ fun WorkshopSearchBar(
             message = stringResource(R.string.remove_history_item_description)
         )
     }
-    /*if (isFilterSheetOpen) {
-		WorkshopFilterBottomSheet(
-			filtersList = filtersList,
-			sheetState = filterSheetState,
-			onDismissRequest = {
-				isFilterSheetOpen = false
-			},
-			onClose = {
-				/*scope.launch { filterSheetState.hide() }.invokeOnCompletion {
-					if (!filterSheetState.isVisible) {
-						isFilterSheetOpen = false
-					}
-				}*/
-			})
-	}*/
+    if (showFilterSheet) {
+        WorkshopFilterBottomSheet(
+            filtersList = filtersList,
+            sheetState = filterSheetState,
+            onDismissRequest = {
+                showFilterSheet = false
+            },
+            onClose = {
+                scope.launch { filterSheetState.hide() }.invokeOnCompletion {
+                    if (!filterSheetState.isVisible) {
+                        showFilterSheet = false
+                    }
+                }
+            }
+        )
+    }
 }

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -23,7 +22,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -117,7 +118,8 @@ fun ChartDetailsScreen(
                 is DownloadEvent.Error ->
                     snackbarHostState.showSnackbar(context.getString(R.string.error, event.message))
 
-                else -> { /* Other events don't need UI feedback */ }
+                else -> { /* Other events don't need UI feedback */
+                }
             }
         }
     }
@@ -164,12 +166,7 @@ fun ChartDetailsScreen(
     val lastUpdated = StringUtils.toRelativeString(chart.latestVersion.publishedAt)
 
     Scaffold(
-        snackbarHost = {
-            SwipeableSnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier.imePadding()
-            )
-        },
+        snackbarHost = { SwipeableSnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 modifier = Modifier.padding(horizontal = 8.dp),
@@ -259,8 +256,28 @@ fun ChartDetailsScreen(
                             R.drawable.baseline_bookmark_24,
                             R.drawable.rounded_bookmark_24,
                             chart.isFavorited
-                        ) {
-                            contentViewModel.processInteraction()
+                        ) { isActive ->
+                            if (!isActive) {
+                                snackbarHostState.currentSnackbarData?.dismiss()
+                            } else {
+                                scope.launch {
+                                    val result = snackbarHostState.showSnackbar(
+                                        "Added to Favorites",
+                                        "Manage",
+                                        duration = SnackbarDuration.Short
+                                    )
+
+                                    when (result) {
+                                        SnackbarResult.ActionPerformed -> {
+                                            /* Handle snackbar action performed */
+                                        }
+
+                                        SnackbarResult.Dismissed -> {
+                                            /* Handle snackbar dismissed */
+                                        }
+                                    }
+                                }
+                            }
                         }
                         InteractionButton(
                             R.drawable.baseline_favorite_24,
@@ -271,7 +288,6 @@ fun ChartDetailsScreen(
                                 chart.contentId,
                                 !chart.isFavorited
                             )*/
-                            contentViewModel.processInteraction()
                         }
                     }
                 },

@@ -1,5 +1,7 @@
 package com.meninocoiso.bscm.presentation.ui.components.workshop
 
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
@@ -82,7 +85,7 @@ fun WorkshopFilterBottomSheet(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(top = 12.dp, bottom = 12.dp, start = 16.dp, end = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -102,8 +105,12 @@ fun WorkshopFilterBottomSheet(
         ) {
             CollapsableSection(
                 modifier = Modifier.collapsableSection(),
-                header = { trigger, _ ->
-                    CollapsableSectionHeader(stringResource(R.string.awarded), trigger)
+                header = { trigger, interactionSource ->
+                    CollapsableSectionHeader(
+                        stringResource(R.string.awarded),
+                        trigger,
+                        interactionSource
+                    )
                 }
             ) {
                 ExtendedFilterChip(
@@ -151,8 +158,12 @@ fun WorkshopFilterBottomSheet(
             }
             CollapsableSection(
                 modifier = Modifier.collapsableSection(),
-                header = { trigger, _ ->
-                    CollapsableSectionHeader(stringResource(R.string.difficulty), trigger)
+                header = { trigger, interactionSource ->
+                    CollapsableSectionHeader(
+                        stringResource(R.string.difficulty),
+                        trigger,
+                        interactionSource
+                    )
                 }
             ) {
                 difficultiesList.forEach {
@@ -167,8 +178,12 @@ fun WorkshopFilterBottomSheet(
             }
             CollapsableSection(
                 modifier = Modifier.collapsableSection(),
-                header = { trigger, _ ->
-                    CollapsableSectionHeader(stringResource(R.string.genre), trigger)
+                header = { trigger, interactionSource ->
+                    CollapsableSectionHeader(
+                        stringResource(R.string.genre),
+                        trigger,
+                        interactionSource
+                    )
                 }
             ) {
                 genresList.forEach {
@@ -191,8 +206,12 @@ fun WorkshopFilterBottomSheet(
             }
             CollapsableSection(
                 modifier = Modifier.collapsableSection(),
-                header = { trigger, _ ->
-                    CollapsableSectionHeader(stringResource(R.string.version), trigger)
+                header = { trigger, interactionSource ->
+                    CollapsableSectionHeader(
+                        stringResource(R.string.version),
+                        trigger,
+                        interactionSource
+                    )
                 }
             ) {
                 ExtendedFilterChip(
@@ -220,10 +239,16 @@ private fun Modifier.collapsableSection(): Modifier {
 }
 
 @Composable
-private fun CollapsableSectionHeader(title: String, content: @Composable (() -> Unit)) {
+private fun CollapsableSectionHeader(
+    title: String,
+    content: @Composable (() -> Unit),
+    interactionSource: MutableInteractionSource
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .indication(interactionSource, ripple())
+            .collapsableSection()
             .padding(vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
