@@ -71,7 +71,7 @@ fun LazyListScope.remoteSection(
                         )
                     }
                 }
-                is ContentState.Success -> {
+                is ContentState.Success, is ContentState.Warning -> {
                     if (charts.isEmpty()) {
                         UpdatesPanel {
                             Text(text = stringResource(R.string.no_updates_available))

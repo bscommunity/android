@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -124,6 +125,16 @@ internal fun ContentSection(
                     itemsUpdating = itemsUpdating,
                     contentViewModel = contentViewModel,
                 )
+            }
+
+            item {
+                Column() {
+                    Text(
+                        text = stringResource(R.string.duplicate_charts_detected),
+                        modifier = Modifier.padding(start = 32.dp, top = 16.dp, bottom = 8.dp),
+                        style = androidx.compose.material3.MaterialTheme.typography.labelLarge
+                    )
+                }
             }
 
             localContentSection(

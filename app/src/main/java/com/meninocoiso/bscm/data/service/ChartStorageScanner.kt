@@ -28,7 +28,9 @@ class ChartStorageScanner @Inject constructor(
     private val json = Json { ignoreUnknownKeys = true }
     private val ioDispatcher = Dispatchers.IO
 
-    override suspend fun scanInstalledContent(rootUri: Uri): Map<String, InstalledContentEntry<ExternalContentMetadata>> {
+    override suspend fun scanInstalledContent(rootUri: Uri): Pair<Map<String, InstalledContentEntry<ExternalContentMetadata>>, Int> {
+        var totalCharts = 0
+
         return withContext(ioDispatcher) {
             val entries = mutableMapOf<String, InstalledContentEntry<ExternalContentMetadata>>()
             try {
@@ -45,6 +47,8 @@ class ChartStorageScanner @Inject constructor(
                     Log.d(TAG, "Found chart folder: ${folder.name} - id: $chartId")
                     
                     if (!chartId.isNullOrBlank()) {
+                        totalCharts++
+
                         entries[chartId] = InstalledContentEntry(
                             contentId = chartId,
                             metadata = metadata,
@@ -57,7 +61,8 @@ class ChartStorageScanner @Inject constructor(
                 Log.e(TAG, "Unable to scan installed charts", e)
                 entries.clear()
             }
-            entries.toMap()
+
+            Pair(entries, totalCharts)
         }
     }
 

@@ -306,7 +306,8 @@
     <string name="error_extraction_failed">Couldn\'t extract downloaded files.</string>
     <string name="error_download_failed">Download couldn\'t be completed.</string>
     <string name="unknown_error">Something went wrong.</string>
-    
+    <string name="duplicate_charts_detected">It seems you have duplicate charts downloaded. Please delete the duplicates to avoid issues.</string>
+
     <!-- ⚙️ Operation States -->
     <string name="operation_in_progress">This action is already in progress.</string>
     <string name="cannot_delete_during_download">You can\'t delete a chart while it\'s downloading or extracting.</string>
