@@ -1,115 +1,121 @@
 package com.meninocoiso.bscm.data.service
 
 import android.util.Log
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 
 private const val TAG = "FeedOrchestrator"
 
 /**
- * Generic orchestrator for managing feed updates and cache
+ * Result of a feed operation containing the updated state.
+ * Allows [ContentMemoryStore] to apply state changes and trigger callbacks.
+ */
+data class FeedUpdateResult<T>(
+    val updatedContent: Map<String, T>,
+    val updatedFeedOrder: List<String>,
+    val staleContent: List<T> = emptyList()
+)
+
+/**
+ * Pure logic service for managing feed updates with cache limiting.
+ * Returns updated state instead of mutating external StateFlows.
  */
 class FeedOrchestrator<T> @Inject constructor(
     private val cacheManager: ContentCacheManager
 ) {
 
-    fun replaceFeedContent(
+    /**
+     * Computes the result of replacing feed content.
+     * Removes stale non-installed items and applies cache limits.
+     */
+    fun computeReplaceFeed(
         newContent: List<T>,
-        contentMap: StateFlow<Map<String, T>>,
-        feedOrder: StateFlow<List<String>>,
-        updateContentMap: (Map<String, T>) -> Unit,
-        updateFeedOrder: (List<String>) -> Unit,
+        currentContent: Map<String, T>,
+        // currentFeedOrder unused, removed
         getId: (T) -> String,
-        isInstalled: (T) -> Boolean,
-        onStaleRemove: (List<T>) -> Unit = {},
-        coroutineScope: CoroutineScope
-    ) {
+        isInstalled: (T) -> Boolean
+    ): FeedUpdateResult<T> {
         val newFeedIds = newContent.map { getId(it) }.toSet()
-        val currentChartMap = contentMap.value
 
-        // Find content that is in memory but not in the new feed and not installed
-        val contentToRemove = currentChartMap.values.filter { content ->
+        // Find stale non-installed content
+        val contentToRemove = currentContent.values.filter { content ->
             getId(content) !in newFeedIds && !isInstalled(content)
         }
 
-        // Remove stale content from database
+        // Start with current content, remove stale items, then upsert new items
+        var updatedMap = currentContent.toMutableMap()
         if (contentToRemove.isNotEmpty()) {
             Log.d(TAG, "Removing ${contentToRemove.size} stale non-installed items from cache")
-            onStaleRemove(contentToRemove)
-
-            // Remove from memory immediately
-            val updatedMap = currentChartMap.toMutableMap().apply {
-                contentToRemove.forEach { remove(getId(it)) }
-            }
-            updateContentMap(updatedMap)
+            contentToRemove.forEach { updatedMap.remove(getId(it)) }
         }
 
-        // Upsert new content and update feed order
-        upsertContent(newContent, contentMap, updateContentMap, getId)
-        updateFeedOrder(newContent.map { getId(it) })
-        
+        // Upsert new content
+        newContent.forEach { content -> updatedMap[getId(content)] = content }
+
         // Apply cache limit
+        var feedOrder = newContent.map { getId(it) }
         val (limitedOrder, limitedMap) = cacheManager.applyCacheLimit(
-            feedOrder.value,
-            contentMap.value,
+            feedOrder,
+            updatedMap,
             isInstalled
         )
-        updateFeedOrder(limitedOrder)
-        updateContentMap(limitedMap)
+
+        return FeedUpdateResult(
+            updatedContent = limitedMap,
+            updatedFeedOrder = limitedOrder,
+            staleContent = contentToRemove
+        )
     }
 
-    fun appendFeedContent(
+    /**
+     * Computes the result of appending content to the feed.
+     * Applies cache limits after appending.
+     */
+    fun computeAppendFeed(
         newContent: List<T>,
-        contentMap: StateFlow<Map<String, T>>,
-        feedOrder: StateFlow<List<String>>,
-        updateContentMap: (Map<String, T>) -> Unit,
-        updateFeedOrder: (List<String>) -> Unit,
+        currentContent: Map<String, T>,
+        currentFeedOrder: List<String>,
         getId: (T) -> String,
         isInstalled: (T) -> Boolean
-    ) {
-        if (newContent.isEmpty()) return
+    ): FeedUpdateResult<T> {
+        if (newContent.isEmpty()) {
+            return FeedUpdateResult(currentContent, currentFeedOrder)
+        }
 
-        upsertContent(newContent, contentMap, updateContentMap, getId)
+        // Upsert new content
+        val updatedMap = currentContent.toMutableMap().apply {
+            newContent.forEach { content -> put(getId(content), content) }
+        }
+
+        // Append to feed order and remove duplicates
         val appendIds = newContent.map { getId(it) }
-        if (appendIds.isNotEmpty()) {
-            val updated = (feedOrder.value + appendIds).distinct()
-            updateFeedOrder(updated)
-            
-            // Apply cache limit
-            val (limitedOrder, limitedMap) = cacheManager.applyCacheLimit(
-                updated,
-                contentMap.value,
-                isInstalled
-            )
-            updateFeedOrder(limitedOrder)
-            updateContentMap(limitedMap)
-        }
+        val updatedOrder = (currentFeedOrder + appendIds).distinct()
+
+        // Apply cache limit
+        val (limitedOrder, limitedMap) = cacheManager.applyCacheLimit(
+            updatedOrder,
+            updatedMap,
+            isInstalled
+        )
+
+        return FeedUpdateResult(
+            updatedContent = limitedMap,
+            updatedFeedOrder = limitedOrder
+        )
     }
 
-    fun addContentWithoutAffectingFeed(
+    /**
+     * Computes upsert of content without affecting feed order.
+     * Used for search results and other non-feed content.
+     */
+    fun computeUpsertContent(
         newContent: List<T>,
-        contentMap: StateFlow<Map<String, T>>,
-        updateContentMap: (Map<String, T>) -> Unit,
+        currentContent: Map<String, T>,
         getId: (T) -> String
-    ) {
-        upsertContent(newContent, contentMap, updateContentMap, getId)
-    }
+    ): Map<String, T> {
+        if (newContent.isEmpty()) return currentContent
 
-    private fun upsertContent(
-        newContent: List<T>,
-        contentMap: StateFlow<Map<String, T>>,
-        updateContentMap: (Map<String, T>) -> Unit,
-        getId: (T) -> String
-    ) {
-        if (newContent.isEmpty()) return
-
-        val updated = contentMap.value.toMutableMap().apply {
-            newContent.forEach { content ->
-                put(getId(content), content)
-            }
+        return currentContent.toMutableMap().apply {
+            newContent.forEach { content -> put(getId(content), content) }
         }
-        updateContentMap(updated)
     }
 }
-

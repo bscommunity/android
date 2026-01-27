@@ -46,16 +46,18 @@ class ChartManager @Inject constructor(
     val cacheState: StateFlow<ContentState> = contentManager.cacheState
     val feedState: StateFlow<ContentState> = contentManager.feedState
 
-    val memoryCharts: Flow<List<Chart>> = contentManager.memoryContent
-    val installedCharts: Flow<List<Chart>> = memoryStore.content.map { it.values.filter { chart -> chart.isInstalled == true } }
-    val chartsWithUpdates: Flow<List<Chart>> = memoryStore.content.map { chartMap ->
-        chartMap.values.filter { it.isInstalled == true && it.availableVersion != null }
+    val feedCharts: Flow<List<Chart>> = contentManager.feedContent.map { charts ->
+        charts.filterNot { chart -> chart.isInstalled == true }
     }
-    val searchCharts: Flow<List<Chart>> = combine(memoryStore.searchResults, memoryStore.content) { ids, map ->
+    val installedCharts: Flow<List<Chart>> = contentManager.installedContent
+    val pendingUpdateCharts: Flow<List<Chart>> = installedCharts.map { chartList ->
+        chartList.filter { it.availableVersion != null }
+    }
+    val searchCharts: Flow<List<Chart>> = combine(memoryStore.searchResultIds, memoryStore.contentById) { ids, map ->
         ids.mapNotNull { map[it] }
     }
 
-    fun getChartsLength(): Int = memoryStore.content.value.size
+    fun getChartsLength(): Int = memoryStore.contentById.value.size
 
     fun updateCacheState(newState: ContentState) {
         contentManager.updateCacheState(newState)
@@ -103,7 +105,7 @@ class ChartManager @Inject constructor(
         remoteResult.fold(
             onSuccess = { charts ->
                 memoryStore.addWithoutAffectingFeed(charts, getId = { it.id })
-                val newIds = if (offset == 0) charts.map { it.id } else memoryStore.searchResults.value + charts.map { it.id }
+                val newIds = if (offset == 0) charts.map { it.id } else memoryStore.searchResultIds.value + charts.map { it.id }
                 memoryStore.setSearchResults(newIds)
                 emit(ContentResult.Success(charts))
             },
@@ -113,7 +115,7 @@ class ChartManager @Inject constructor(
 
     fun checkForUpdates(): Flow<ContentResult<List<Chart>>> = flow {
         emit(ContentResult.Loading)
-        val installed = memoryStore.content.value.values.filter { it.isInstalled == true && !isLocalOnlyChart(it) }
+        val installed = memoryStore.contentById.value.values.filter { it.isInstalled == true && !isLocalOnlyChart(it) }
         if (installed.isEmpty()) {
             emit(ContentResult.Success(emptyList()))
             return@flow
@@ -139,7 +141,7 @@ class ChartManager @Inject constructor(
     }
 
     fun updateChart(chartId: String, operation: OperationOption): Flow<ContentResult<List<Chart>>> = flow {
-        val existing = memoryStore.content.value[chartId]
+        val existing = memoryStore.contentById.value[chartId]
         if (existing == null) {
             emit(ContentResult.Error(context.getString(R.string.chart_not_found)))
             return@flow
@@ -163,7 +165,7 @@ class ChartManager @Inject constructor(
                 memoryStore.upsertContent(listOf(updated)) { it.id }
                 // Persist the updated chart state to the local database
                 coroutineScope.launch { localChartRepository.updateCharts(listOf(updated)).first() }
-                emit(ContentResult.Success(memoryStore.content.value.values.toList()))
+                emit(ContentResult.Success(memoryStore.contentById.value.values.toList()))
             },
             onFailure = { err -> emit(ContentResult.Error(context.getString(R.string.failed_to_update), err)) }
         )
@@ -187,7 +189,7 @@ class ChartManager @Inject constructor(
             val installedEntries = chartStorageScanner.scanInstalledContent(rootUri)
             if (installedEntries.isEmpty()) return
 
-            val current = memoryStore.content.value.values.toList()
+            val current = memoryStore.contentById.value.values.toList()
             val updatedCharts = current.map { chart ->
                 val isInstalled = chart.id in installedEntries.keys
                 Log.d(TAG, "Chart ${chart.id} installed status: ${chart.isInstalled} -> $isInstalled")

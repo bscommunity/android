@@ -4,7 +4,7 @@ import android.util.Log
 import javax.inject.Inject
 
 private const val TAG = "ContentCacheManager"
-private const val MAX_CACHED_CONTENT = 50
+private const val MAX_FEED_CACHE_ITEMS = 50
 
 /**
  * Generic cache manager for limiting stored content
@@ -31,11 +31,11 @@ class ContentCacheManager @Inject constructor() {
             contentMap[id]?.let { !isInstalledPredicate(it) } ?: false
         }
 
-        if (nonInstalledFeedIds.size <= MAX_CACHED_CONTENT) {
+        if (nonInstalledFeedIds.size <= MAX_FEED_CACHE_ITEMS) {
             return Pair(feedIds, contentMap)
         }
 
-        val idsToKeep = nonInstalledFeedIds.take(MAX_CACHED_CONTENT)
+        val idsToKeep = nonInstalledFeedIds.take(MAX_FEED_CACHE_ITEMS)
         val keepSet = idsToKeep.toSet()
         val idsToDrop = nonInstalledFeedIds.filterNot { it in keepSet }
 
@@ -57,4 +57,3 @@ class ContentCacheManager @Inject constructor() {
         return Pair(updatedOrder, updatedMap)
     }
 }
-

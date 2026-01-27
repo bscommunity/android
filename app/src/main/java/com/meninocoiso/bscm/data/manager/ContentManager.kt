@@ -39,8 +39,8 @@ class ContentManager<T : CatalogItem> @Inject constructor(
     private val _feedState = MutableStateFlow<ContentState>(ContentState.Loading)
     val feedState: StateFlow<ContentState> = _feedState.asStateFlow()
 
-    val memoryContent: Flow<List<T>> = memoryStore.feedOrder.combineWith(memoryStore.content)
-    val installedContent: Flow<List<T>> = memoryStore.content.mapValuesList { it.isInstalled == true }
+    val feedContent: Flow<List<T>> = memoryStore.feedOrderIds.combineWith(memoryStore.contentById)
+    val installedContent: Flow<List<T>> = memoryStore.contentById.mapValuesList { it.isInstalled == true }
 
     fun updateCacheState(newState: ContentState) { _cacheState.value = newState }
     fun updateFeedState(newState: ContentState) { _feedState.value = newState }
@@ -73,6 +73,18 @@ class ContentManager<T : CatalogItem> @Inject constructor(
         limit: Int = 10,
         offset: Int = 0,
     ): Flow<ContentResult<List<T>>> = flow {
+        // We leave this to the caller (e.g WorkshopViewModel) to set before invoking fetch
+        // _feedState.value = ContentState.Loading
+
+        if (!forceRefresh && offset == 0 && memoryStore.hasFeedItems()) {
+            val cachedFeed = memoryStore.currentFeedItems()
+            if (cachedFeed.isNotEmpty()) {
+                _feedState.value = ContentState.Success
+                emit(ContentResult.Success(cachedFeed))
+                return@flow
+            }
+        }
+
         emit(ContentResult.Loading)
         val remoteResult = remoteRepository.getSorted(sortBy, limit, offset).first()
         remoteResult.fold(
@@ -92,13 +104,16 @@ class ContentManager<T : CatalogItem> @Inject constructor(
                     memoryStore.appendFeed(items, getId = { it.id }, isInstalled = { it.isInstalled == true })
                 }
                 coroutineScope.launch { localRepository.update(items).first() }
+                _feedState.value = ContentState.Success
                 emit(ContentResult.Success(items))
             },
             onFailure = { err ->
+                _feedState.value = ContentState.Error
                 emit(ContentResult.Error(err.message ?: context.getString(R.string.failed_to_fetch_feed_charts), err))
             }
         )
     }.catch { e ->
+        _feedState.value = ContentState.Error
         emit(ContentResult.Error(context.getString(R.string.failed_to_fetch_feed_charts), e))
     }
 
@@ -117,7 +132,7 @@ class ContentManager<T : CatalogItem> @Inject constructor(
         remoteResult.fold(
             onSuccess = { items ->
                 memoryStore.addWithoutAffectingFeed(items, getId = { it.id })
-                val newIds = if (offset == 0) items.map { it.id } else memoryStore.searchResults.value + items.map { it.id }
+                val newIds = if (offset == 0) items.map { it.id } else memoryStore.searchResultIds.value + items.map { it.id }
                 memoryStore.setSearchResults(newIds)
                 emit(ContentResult.Success(items))
             },
@@ -135,4 +150,3 @@ private fun <T> StateFlow<List<String>>.combineWith(
 
 private fun <T> StateFlow<Map<String, T>>.mapValuesList(predicate: (T) -> Boolean): Flow<List<T>> =
     this.map { values -> values.values.filter(predicate) }
-

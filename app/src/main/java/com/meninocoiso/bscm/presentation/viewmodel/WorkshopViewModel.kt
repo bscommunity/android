@@ -57,7 +57,7 @@ class WorkshopViewModel @Inject constructor(
         .map { it.allowExplicitContent }
 
     // Updated to use the new ChartManager flows
-    val feedCharts: Flow<List<Chart>> = chartManager.memoryCharts
+    val feedCharts: Flow<List<Chart>> = chartManager.feedCharts
     val searchCharts: Flow<List<Chart>> = chartManager.searchCharts
 
     private val _workshopState = MutableStateFlow<ContentState>(ContentState.Loading)
