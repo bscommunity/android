@@ -7,54 +7,74 @@ private const val TAG = "ContentCacheManager"
 private const val MAX_CACHED_CONTENT = 50
 
 /**
- * Generic cache manager for limiting stored content
+ * Manages cache limits for content storage.
+ *
+ * **Strategy:** Keep all installed items, remove oldest non-installed items when cache exceeds limit.
+ *
+ * Rationale:
+ * - Installed items must be kept (user has explicitly installed them)
+ * - Non-installed items are cached for quick access but can be pruned
+ * - Keep newest non-installed items (most likely to be re-accessed)
+ * - Remove oldest non-installed items first (least likely to be needed)
+ *
+ * **Atomicity:** Works with complete lists to avoid partial state.
  */
 class ContentCacheManager @Inject constructor() {
 
     /**
-     * Apply cache limit to keep memory usage reasonable
-     * @param feedIds Current feed order
-     * @param contentMap Current content map
-     * @param isInstalledPredicate Function to check if content is installed
-     * @return Pair of (updatedFeedIds, updatedContentMap)
+     * Apply cache limit to prevent unbounded memory growth.
+     *
+     * **Algorithm:**
+     * 1. Count non-installed items (these are the only ones we can remove)
+     * 2. If under limit, return unchanged
+     * 3. If over limit, keep newest N items, remove oldest M items
+     * 4. Preserve all installed items regardless of count
+     *
+     * **Complexity:** O(n) where n = list size (single pass)
+     * **Memory:** O(k) where k = items to remove
+     * **Result:** List with cache limit applied, preserving order
+     *
+     * @param items Current items in feed order
+     * @param isInstalledPredicate Function to check if item is installed
+     * @return List with cache limit applied (same order, potentially fewer items)
      */
     fun <T> applyCacheLimit(
-        feedIds: List<String>,
-        contentMap: Map<String, T>,
+        items: List<T>,
         isInstalledPredicate: (T) -> Boolean
-    ): Pair<List<String>, Map<String, T>> {
-        if (contentMap.isEmpty()) {
-            return Pair(feedIds, contentMap)
-        }
+    ): List<T> {
+        if (items.isEmpty()) return items
 
-        val nonInstalledFeedIds = feedIds.filter { id ->
-            contentMap[id]?.let { !isInstalledPredicate(it) } ?: false
-        }
+        // Partition items into installed and non-installed, preserving order
+        val installed = mutableListOf<T>()
+        val nonInstalled = mutableListOf<T>()
 
-        if (nonInstalledFeedIds.size <= MAX_CACHED_CONTENT) {
-            return Pair(feedIds, contentMap)
-        }
-
-        val idsToKeep = nonInstalledFeedIds.take(MAX_CACHED_CONTENT)
-        val keepSet = idsToKeep.toSet()
-        val idsToDrop = nonInstalledFeedIds.filterNot { it in keepSet }
-
-        if (idsToDrop.isEmpty()) {
-            return Pair(feedIds, contentMap)
-        }
-
-        val updatedOrder = feedIds.filterNot { it in idsToDrop }
-        val updatedMap = contentMap.toMutableMap().apply {
-            idsToDrop.forEach { id ->
-                val content = this[id]
-                if (content?.let { !isInstalledPredicate(it) } == true) {
-                    remove(id)
-                }
+        for (item in items) {
+            if (isInstalledPredicate(item)) {
+                installed.add(item)
+            } else {
+                nonInstalled.add(item)
             }
         }
 
-        Log.d(TAG, "Applied cache limit: keeping ${idsToKeep.size} non-installed items")
-        return Pair(updatedOrder, updatedMap)
+        // If non-installed items are within limit, keep everything
+        if (nonInstalled.size <= MAX_CACHED_CONTENT) {
+            return items
+        }
+
+        // Over limit: keep newest non-installed items, remove oldest
+        val nonInstalledToKeep = nonInstalled.takeLast(MAX_CACHED_CONTENT)
+
+        // Rebuild list with all installed items and kept non-installed items, preserving original order
+        val result = items.filter { item ->
+            isInstalledPredicate(item) || item in nonInstalledToKeep
+        }
+
+        val removed = items.size - result.size
+        if (removed > 0) {
+            Log.d(TAG, "Applied cache limit: removed $removed items, keeping ${result.size}")
+        }
+
+        return result
     }
 }
 

@@ -21,7 +21,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -47,14 +46,21 @@ class ChartManager @Inject constructor(
     val feedState: StateFlow<ContentState> = contentManager.feedState
 
     val memoryCharts: Flow<List<Chart>> = contentManager.memoryContent
-    val installedCharts: Flow<List<Chart>> = memoryStore.content.map { it.values.filter { chart -> chart.isInstalled == true } }
-    val chartsWithUpdates: Flow<List<Chart>> = memoryStore.content.map { chartMap ->
-        chartMap.values.filter { it.isInstalled == true && it.availableVersion != null }
-    }
-    val searchCharts: Flow<List<Chart>> = combine(memoryStore.searchResults, memoryStore.content) { ids, map ->
-        ids.mapNotNull { map[it] }
+    val installedCharts: Flow<List<Chart>> = contentManager.installedContent
+    val updatePendingCharts: Flow<List<Chart>> = installedCharts.map { charts ->
+        charts.filter { it.availableVersion != null }
     }
 
+    /**
+     * Search results flow - displays items matching current search query.
+     * Derived from memoryStore.searchResults which combines search IDs with main content.
+     */
+    val searchCharts: Flow<List<Chart>> = memoryStore.searchResults
+
+    /**
+     * Get current number of charts in memory store.
+     * Single source of truth is content list.
+     */
     fun getChartsLength(): Int = memoryStore.content.value.size
 
     fun updateCacheState(newState: ContentState) {
@@ -103,8 +109,15 @@ class ChartManager @Inject constructor(
         remoteResult.fold(
             onSuccess = { charts ->
                 memoryStore.addWithoutAffectingFeed(charts, getId = { it.id })
-                val newIds = if (offset == 0) charts.map { it.id } else memoryStore.searchResults.value + charts.map { it.id }
-                memoryStore.setSearchResults(newIds)
+                // Update search results based on pagination
+                val chartIds = charts.map { it.id }
+                if (offset == 0) {
+                    // First page: replace search results
+                    memoryStore.setSearchResults(chartIds)
+                } else {
+                    // Pagination: append to search results
+                    memoryStore.appendSearchResults(chartIds)
+                }
                 emit(ContentResult.Success(charts))
             },
             onFailure = { err -> emit(ContentResult.Error(context.getString(R.string.search_failed), err)) }
@@ -113,7 +126,7 @@ class ChartManager @Inject constructor(
 
     fun checkForUpdates(): Flow<ContentResult<List<Chart>>> = flow {
         emit(ContentResult.Loading)
-        val installed = memoryStore.content.value.values.filter { it.isInstalled == true && !isLocalOnlyChart(it) }
+        val installed = memoryStore.content.value.filter { it.isInstalled == true && !isLocalOnlyChart(it) }
         if (installed.isEmpty()) {
             emit(ContentResult.Success(emptyList()))
             return@flow
@@ -139,7 +152,7 @@ class ChartManager @Inject constructor(
     }
 
     fun updateChart(chartId: String, operation: OperationOption): Flow<ContentResult<List<Chart>>> = flow {
-        val existing = memoryStore.content.value[chartId]
+        val existing = memoryStore.content.value.find { it.id == chartId }
         if (existing == null) {
             emit(ContentResult.Error(context.getString(R.string.chart_not_found)))
             return@flow
@@ -163,7 +176,7 @@ class ChartManager @Inject constructor(
                 memoryStore.upsertContent(listOf(updated)) { it.id }
                 // Persist the updated chart state to the local database
                 coroutineScope.launch { localChartRepository.updateCharts(listOf(updated)).first() }
-                emit(ContentResult.Success(memoryStore.content.value.values.toList()))
+                emit(ContentResult.Success(memoryStore.content.value))
             },
             onFailure = { err -> emit(ContentResult.Error(context.getString(R.string.failed_to_update), err)) }
         )
@@ -187,7 +200,7 @@ class ChartManager @Inject constructor(
             val installedEntries = chartStorageScanner.scanInstalledContent(rootUri)
             if (installedEntries.isEmpty()) return
 
-            val current = memoryStore.content.value.values.toList()
+            val current = memoryStore.content.value
             val updatedCharts = current.map { chart ->
                 val isInstalled = chart.id in installedEntries.keys
                 Log.d(TAG, "Chart ${chart.id} installed status: ${chart.isInstalled} -> $isInstalled")
