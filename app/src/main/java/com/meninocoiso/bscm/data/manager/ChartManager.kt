@@ -184,13 +184,8 @@ class ChartManager @Inject constructor(
 
     private suspend fun syncInstalledCharts(rootUri: Uri) {
         try {
-            val (installedEntries, totalCharts) = chartStorageScanner.scanInstalledContent(rootUri)
+            val installedEntries = chartStorageScanner.scanInstalledContent(rootUri)
             if (installedEntries.isEmpty()) return
-
-            if (totalCharts < installedEntries.size) {
-                Log.w(TAG, "Detected duplicate chart IDs during scan: total folders $totalCharts, unique IDs ${installedEntries.size}")
-                updateCacheState(ContentState.Warning(context.getString(R.string.duplicate_charts_detected)))
-            }
 
             val current = memoryStore.content.value.values.toList()
             val updatedCharts = current.map { chart ->
