@@ -4,9 +4,9 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.data.manager.ChartManager
-import com.meninocoiso.bscm.domain.result.ContentState
-import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.result.ContentResult
+import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.util.StorageUtils
 import com.meninocoiso.bscm.util.StorageUtils.BEATSTAR_URI
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,8 +25,9 @@ class UpdatesViewModel @Inject constructor(
     private val chartManager: ChartManager,
     @param:ApplicationContext private val context: Context
 ) : ViewModel() {
-    val updatesAvailable: Flow<List<Chart>> = chartManager.pendingUpdateCharts
-    val localCharts: Flow<List<Chart>> = chartManager.installedCharts
+    val pendingUpdateCharts: Flow<List<Chart>> = chartManager.pendingUpdateCharts
+    val installedCharts: Flow<List<Chart>> = chartManager.installedCharts
+    val duplicateInstalledIds: StateFlow<Set<String>> = chartManager.duplicateInstalledIds
 
     val cacheState = chartManager.cacheState
 

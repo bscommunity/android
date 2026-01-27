@@ -32,8 +32,8 @@ import com.meninocoiso.bscm.util.StringUtils
 fun ChartPreview(
     chart: Chart,
     modifier: Modifier = Modifier,
-    isLocal: Boolean = false,
-    isOffline: Boolean = false,
+    isInstalled: Boolean = false,
+    isDuplicate: Boolean? = false,
     isDisabled: Boolean = false,
     onDisabled: () -> Unit = {},
     onPress: () -> Unit
@@ -41,10 +41,10 @@ fun ChartPreview(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .localContainer(isLocal)
+            .localContainer(isInstalled)
             .graphicsLayer {
                 alpha =
-                    if ((chart.isInstalled == true || isDisabled) && !isLocal) 0.5f else 1f
+                    if ((chart.isInstalled == true || isDisabled) && !isInstalled) 0.5f else 1f
             }
             .debouncedClickable(onClick = {
                 if (isDisabled) {
@@ -65,18 +65,18 @@ fun ChartPreview(
                     colors = chart.colors.map {
                         Color("#$it".toColorInt())
                     },
-                    borderRadius = if (isLocal) 8.dp else 0.dp,
+                    borderRadius = if (isInstalled) 8.dp else 0.dp,
                 )
             } else {
                 CoverArt(
                     difficulty = chart.latestVersion.difficulty,
                     url = chart.coverUrl,
-                    borderRadius = if (isLocal) 8.dp else 0.dp,
+                    borderRadius = if (isInstalled) 8.dp else 0.dp,
                 )
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column {
-                    if (isLocal) {
+                    if (isInstalled) {
                         FlowRow(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -124,7 +124,7 @@ fun ChartPreview(
                         authors = chart.contributors
                     )
                 }
-                if (isOffline || chart.isInstalled == true) PreviewInstalledTag(isOffline)
+                if (isDuplicate != null || chart.isInstalled == true) PreviewInstalledTag(isDuplicate)
             }
         }
     }

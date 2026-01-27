@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,7 +21,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun PreviewInstalledTag(isLocal: Boolean) {
+fun PreviewInstalledTag(isDuplicate: Boolean? = null) {
+    val label = if (isDuplicate == null) {
+        "Installed"
+    } else if (isDuplicate) {
+        "Duplicate"
+    } else {
+        "External"
+    }
+
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(150.dp))
@@ -32,16 +41,22 @@ fun PreviewInstalledTag(isLocal: Boolean) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (!isLocal) {
+            if (isDuplicate == null) {
                 Icon(
                     modifier = Modifier.size(16.dp),
                     imageVector = Icons.Default.Check,
                     contentDescription = null
                 )
+            } else if (isDuplicate) {
+                Icon(
+                    modifier = Modifier.size(16.dp),
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null
+                )
             }
             Text(
                 style = MaterialTheme.typography.bodySmall,
-                text = if (isLocal) "Local" else "Installed",
+                text = label,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

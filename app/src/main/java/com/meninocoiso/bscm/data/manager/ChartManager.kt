@@ -25,6 +25,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Named
@@ -45,6 +47,9 @@ class ChartManager @Inject constructor(
 ) {
     val cacheState: StateFlow<ContentState> = contentManager.cacheState
     val feedState: StateFlow<ContentState> = contentManager.feedState
+
+    private val _duplicateInstalledIds = MutableStateFlow<Set<String>>(emptySet())
+    val duplicateInstalledIds: StateFlow<Set<String>> = _duplicateInstalledIds.asStateFlow()
 
     val feedCharts: Flow<List<Chart>> = contentManager.feedContent.map { charts ->
         charts.filterNot { chart -> chart.isInstalled == true }
@@ -187,6 +192,7 @@ class ChartManager @Inject constructor(
     private suspend fun syncInstalledCharts(rootUri: Uri) {
         try {
             val installedEntries = chartStorageScanner.scanInstalledContent(rootUri)
+            _duplicateInstalledIds.value = installedEntries.filterValues { it.size > 1 }.keys
             if (installedEntries.isEmpty()) return
 
             val current = memoryStore.contentById.value.values.toList()
@@ -208,23 +214,26 @@ class ChartManager @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error syncing installed charts", e)
+            _duplicateInstalledIds.value = emptySet()
         }
     }
 
     private fun hydrateMissingInstalledCharts(
-        entries: Map<String, com.meninocoiso.bscm.data.model.InstalledContentEntry<ExternalContentMetadata>>
+        entries: Map<String, List<com.meninocoiso.bscm.data.model.InstalledContentEntry<ExternalContentMetadata>>>
     ): List<Chart> {
         if (entries.isEmpty()) return emptyList()
         val hydrated = mutableListOf<Chart>()
-        for ((chartId, entry) in entries) {
-            try {
-                val metadata = entry.metadata
-                val config = entry.config
-                if (metadata != null && config is ExternalContentConfig) {
-                    hydrated.add(chartPlaceholderFactory.createPlaceholderChart(metadata, config))
+        for ((chartId, entryList) in entries) {
+            entryList.forEach { entry ->
+                try {
+                    val metadata = entry.metadata
+                    val config = entry.config
+                    if (metadata != null && config is ExternalContentConfig) {
+                        hydrated.add(chartPlaceholderFactory.createPlaceholderChart(metadata, config))
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to hydrate chart $chartId", e)
                 }
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to hydrate chart $chartId", e)
             }
         }
         return hydrated

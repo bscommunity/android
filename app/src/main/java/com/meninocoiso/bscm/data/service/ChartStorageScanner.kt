@@ -28,28 +28,30 @@ class ChartStorageScanner @Inject constructor(
     private val json = Json { ignoreUnknownKeys = true }
     private val ioDispatcher = Dispatchers.IO
 
-    override suspend fun scanInstalledContent(rootUri: Uri): Map<String, InstalledContentEntry<ExternalContentMetadata>> {
+    override suspend fun scanInstalledContent(rootUri: Uri): Map<String, List<InstalledContentEntry<ExternalContentMetadata>>> {
         return withContext(ioDispatcher) {
-            val entries = mutableMapOf<String, InstalledContentEntry<ExternalContentMetadata>>()
+            val entries = mutableMapOf<String, MutableList<InstalledContentEntry<ExternalContentMetadata>>>()
             try {
                 val destination = StorageUtils.getFolder(rootUri, listOf("songs"), context)
                 destination.listFiles().forEach { folder ->
                     if (!folder.isDirectory) return@forEach
                     val infoFile = folder.findFile("info.json") ?: return@forEach
                     val configFile = folder.findFile("config.json") ?: return@forEach
-                    
+
                     val metadata = metadataParser.parseMetadata(infoFile)
                     val config = readExternalChartConfig(configFile)
                     val chartId = metadata?.id
 
                     Log.d(TAG, "Found chart folder: ${folder.name} - id: $chartId")
-                    
+
                     if (!chartId.isNullOrBlank()) {
-                        entries[chartId] = InstalledContentEntry(
-                            contentId = chartId,
-                            metadata = metadata,
-                            config = config,
-                            folder = folder
+                        entries.getOrPut(chartId) { mutableListOf() }.add(
+                            InstalledContentEntry(
+                                contentId = chartId,
+                                metadata = metadata,
+                                config = config,
+                                folder = folder
+                            )
                         )
                     }
                 }
@@ -57,7 +59,7 @@ class ChartStorageScanner @Inject constructor(
                 Log.e(TAG, "Unable to scan installed charts", e)
                 entries.clear()
             }
-            entries.toMap()
+            entries.mapValues { it.value.toList() }
         }
     }
 
@@ -73,4 +75,3 @@ class ChartStorageScanner @Inject constructor(
         }
     }
 }
-

@@ -66,8 +66,9 @@ internal fun ContentSection(
     )
 
     // Collect the direct flows as states
-    val updatesCharts by viewModel.updatesAvailable.collectAsStateWithLifecycle(initialValue = emptyList())
-    val localCharts by viewModel.localCharts.collectAsStateWithLifecycle(initialValue = emptyList())
+    val pendingUpdateCharts by viewModel.pendingUpdateCharts.collectAsStateWithLifecycle(initialValue = emptyList())
+    val installedCharts by viewModel.installedCharts.collectAsStateWithLifecycle(initialValue = emptyList())
+    val duplicateInstalledIds by viewModel.duplicateInstalledIds.collectAsStateWithLifecycle(initialValue = emptySet())
 
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
     val cacheState by viewModel.cacheState.collectAsStateWithLifecycle()
@@ -107,7 +108,7 @@ internal fun ContentSection(
                     .padding(bottom = 36.dp)
             )
         }
-    } else if (updatesCharts.isNotEmpty() || localCharts.isNotEmpty()) {
+    } else if (pendingUpdateCharts.isNotEmpty() || installedCharts.isNotEmpty()) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -116,10 +117,10 @@ internal fun ContentSection(
                     onFabStateChange(shouldExtend)
                 },
         ) {
-            if (localCharts.isNotEmpty()) {
+            if (installedCharts.isNotEmpty()) {
                 remoteSection(
                     state = updateState,
-                    charts = updatesCharts,
+                    charts = pendingUpdateCharts,
                     onFetchUpdates = { viewModel.checkForUpdates() },
                     itemsUpdating = itemsUpdating,
                     contentViewModel = contentViewModel,
@@ -128,7 +129,8 @@ internal fun ContentSection(
 
             localContentSection(
                 state = cacheState,
-                charts = localCharts,
+                charts = installedCharts,
+                duplicateChartsIds = duplicateInstalledIds,
                 onNavigateToDetails = onNavigateToDetails,
                 onShowLocalItemDialog = { showLocalItemDialog.value = true },
             )

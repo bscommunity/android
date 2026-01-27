@@ -22,6 +22,7 @@ import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
 fun LazyListScope.localContentSection(
     state: ContentState,
     charts: List<Chart>,
+    duplicateChartsIds: Set<String>,
     onNavigateToDetails: (Chart) -> Unit,
     onShowLocalItemDialog: () -> Unit,
 ) {
@@ -66,11 +67,16 @@ fun LazyListScope.localContentSection(
 
     if (state !is ContentState.Loading && charts.isNotEmpty()) {
         items(charts) { chart ->
+            val duplicateFlag = when {
+                duplicateChartsIds.contains(chart.id) -> true
+                chart.contentId == null -> false
+                else -> null
+            }
             ChartPreview(
                 chart = chart,
                 onPress = { if (chart.contentId != null) onNavigateToDetails(chart) else onShowLocalItemDialog() },
-                isLocal = true,
-                isOffline = chart.contentId == null,
+                isInstalled = true,
+                isDuplicate = duplicateFlag,
             )
         }
 
