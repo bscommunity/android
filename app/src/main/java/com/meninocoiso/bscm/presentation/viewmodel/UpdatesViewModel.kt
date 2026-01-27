@@ -25,7 +25,7 @@ class UpdatesViewModel @Inject constructor(
     private val chartManager: ChartManager,
     @param:ApplicationContext private val context: Context
 ) : ViewModel() {
-    val updatesAvailable: Flow<List<Chart>> = chartManager.updatePendingCharts
+    val updatesAvailable: Flow<List<Chart>> = chartManager.chartsWithUpdates
     val localCharts: Flow<List<Chart>> = chartManager.installedCharts
 
     val cacheState = chartManager.cacheState
