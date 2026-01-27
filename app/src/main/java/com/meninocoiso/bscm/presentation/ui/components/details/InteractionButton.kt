@@ -5,9 +5,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.ui.components.AnimatedIcon
 import com.meninocoiso.bscm.presentation.ui.components.BurstDotsConfig
 import com.meninocoiso.bscm.presentation.ui.components.BurstIconButton
@@ -15,15 +14,21 @@ import com.meninocoiso.bscm.presentation.ui.components.RingConfig
 import com.meninocoiso.bscm.presentation.ui.components.rememberBurstDotsModule
 import com.meninocoiso.bscm.presentation.ui.components.rememberIconScaleModule
 import com.meninocoiso.bscm.presentation.ui.components.rememberRingModule
-import com.meninocoiso.bscm.presentation.viewmodel.InteractionViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
-fun OfflineFavoriteButton(
-    contentId: String,
+fun InteractionButton(
+    activeIconResId: Int,
+    inactiveIconResId: Int,
     defaultValue: Boolean = false,
-    viewModel: InteractionViewModel = hiltViewModel()
+    onClick: () -> Unit = {},
 ) {
-    var isFavorite by remember { mutableStateOf(defaultValue) }
+    var isActive by remember { mutableStateOf(defaultValue) }
+
+    val scope = rememberCoroutineScope()
+    var debounceJob by remember { mutableStateOf<Job?>(null) }
 
     val (burstAnimation, burstVisual) = rememberBurstDotsModule(
         config = BurstDotsConfig(color = MaterialTheme.colorScheme.primary)
@@ -34,9 +39,16 @@ fun OfflineFavoriteButton(
     val (iconScale, iconScaleAnimation) = rememberIconScaleModule()
 
     BurstIconButton(
-        enabled = false,
-        isActive = isFavorite,
-        onClick = { isFavorite = !isFavorite },
+        enabled = true,
+        isActive = isActive,
+        onClick = {
+            isActive = !isActive
+            debounceJob?.cancel()
+            debounceJob = scope.launch {
+                delay(1000L)
+                onClick()
+            }
+        },
         animations = listOfNotNull(
             burstAnimation,
             ringAnimation,
@@ -48,9 +60,9 @@ fun OfflineFavoriteButton(
         ),
     ) {
         AnimatedIcon(
-            isActive = isFavorite,
-            activeIconResId = R.drawable.baseline_bookmark_24,
-            inactiveIconResId = R.drawable.rounded_bookmark_24,
+            isActive = isActive,
+            activeIconResId = activeIconResId,
+            inactiveIconResId = inactiveIconResId,
             activeColor = MaterialTheme.colorScheme.primary,
             inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant,
             iconScale = iconScale

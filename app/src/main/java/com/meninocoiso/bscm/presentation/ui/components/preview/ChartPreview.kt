@@ -105,11 +105,14 @@ fun ChartPreview(
                                 chart.latestVersion.isExplicit,
                                 chart.latestVersion.isDeluxe
                             )
-                            Text(
-                                modifier = Modifier.padding(start = 8.dp),
-                                style = MaterialTheme.typography.labelMedium,
-                                text = StringUtils.toRelativeString(chart.latestVersion.publishedAt)
-                            )
+                            // Don't show publish date for external charts
+                            if (isInstalled == null || isInstalled) {
+                                Text(
+                                    modifier = Modifier.padding(start = 8.dp),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    text = StringUtils.toRelativeString(chart.latestVersion.publishedAt)
+                                )
+                            }
                         }
                     }
                     Text(style = MaterialTheme.typography.labelMedium, text = chart.artist)

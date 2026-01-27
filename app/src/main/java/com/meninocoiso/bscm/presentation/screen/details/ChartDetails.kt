@@ -49,8 +49,7 @@ import com.meninocoiso.bscm.presentation.ui.components.CarouselItem
 import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
 import com.meninocoiso.bscm.presentation.ui.components.MediaCarousel
 import com.meninocoiso.bscm.presentation.ui.components.details.DownloadButton
-import com.meninocoiso.bscm.presentation.ui.components.details.OfflineFavoriteButton
-import com.meninocoiso.bscm.presentation.ui.components.details.OfflineLikeButton
+import com.meninocoiso.bscm.presentation.ui.components.details.InteractionButton
 import com.meninocoiso.bscm.presentation.ui.components.details.StatListItem
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ConfirmationDialog
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ListenTrackDialog
@@ -194,7 +193,12 @@ fun ChartDetailsScreen(
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,
                                 text = { Text(stringResource(R.string.share)) },
-                                leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Outlined.Share,
+                                        contentDescription = null
+                                    )
+                                },
                                 onClick = {
                                     shareChartLink(context, chart.contentId)
                                 }
@@ -249,10 +253,26 @@ fun ChartDetailsScreen(
                             )
                         }
                     }
-                    
+
                     if (chart.contentId != null) {
-                        OfflineFavoriteButton(chart.contentId, chart.isLiked)
-                        OfflineLikeButton(chart.contentId, chart.isLiked)
+                        InteractionButton(
+                            R.drawable.baseline_bookmark_24,
+                            R.drawable.rounded_bookmark_24,
+                            chart.isFavorited
+                        ) {
+                            contentViewModel.processInteraction()
+                        }
+                        InteractionButton(
+                            R.drawable.baseline_favorite_24,
+                            R.drawable.rounded_favorite_24,
+                            chart.isLiked
+                        ) {
+                            /*contentViewModel.setChartFavoriteStatus(
+                                chart.contentId,
+                                !chart.isFavorited
+                            )*/
+                            contentViewModel.processInteraction()
+                        }
                     }
                 },
                 floatingActionButton = {

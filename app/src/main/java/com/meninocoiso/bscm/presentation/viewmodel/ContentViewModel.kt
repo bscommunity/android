@@ -309,6 +309,10 @@ class ContentViewModel @Inject constructor(
         }
     }
 
+    fun processInteraction() {
+        Log.d(TAG, "User interaction processed")
+    }
+
     /**
      * Get chart state efficiently - reusing the existing StateFlow
      */
