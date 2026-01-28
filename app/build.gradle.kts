@@ -1,6 +1,5 @@
 plugins {
 	alias(libs.plugins.android.application)
-	alias(libs.plugins.jetbrains.kotlin.android)
 	alias(libs.plugins.kotlin.serialization)
 	alias(libs.plugins.kotlin.parcelize)
 	alias(libs.plugins.ksp)
@@ -79,6 +78,7 @@ android {
 	buildFeatures {
 		compose = true
 		buildConfig = true
+        resValues = true
 	}
 
 	composeOptions {
@@ -91,7 +91,6 @@ android {
 		}
 	}
 
-	buildToolsVersion = "35.0.0"
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
@@ -101,7 +100,9 @@ android {
 }
 
 kotlin {
-    jvmToolchain(17)
+    compilerOptions {
+        languageVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0
+    }
 }
 
 dependencies {
