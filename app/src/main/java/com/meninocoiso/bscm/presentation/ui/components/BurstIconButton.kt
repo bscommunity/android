@@ -26,6 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 
 /**
@@ -234,7 +235,7 @@ fun BurstIconButton(
         if (hapticFeedback) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
         scope.launch {
             animations.map { anim -> scope.launch { anim(scope) } }
-                .forEach { it.join() }
+                .joinAll()
         }
     }
 

@@ -184,7 +184,7 @@ fun SettingsScreen(
                                     )
                                     .roundedPolygonClip()
                                     .clickable(
-                                        onClick = { /*onNavigateToProfile(displayUser)*/ },
+                                        onClick = { onNavigateToProfile(displayUser) },
                                         indication = ripple(
                                             bounded = true,
                                             radius = Dp.Unspecified,
