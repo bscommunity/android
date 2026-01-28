@@ -27,6 +27,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,6 +50,7 @@ import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.presentation.ui.components.CarouselItem
 import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
 import com.meninocoiso.bscm.presentation.ui.components.MediaCarousel
+import com.meninocoiso.bscm.presentation.ui.components.details.CollectionBottomSheet
 import com.meninocoiso.bscm.presentation.ui.components.details.DownloadButton
 import com.meninocoiso.bscm.presentation.ui.components.details.InteractionButton
 import com.meninocoiso.bscm.presentation.ui.components.details.StatListItem
@@ -104,6 +106,12 @@ fun ChartDetailsScreen(
 
     // Single source of truth for dialogs, saved across config changes
     var currentDialog by rememberSaveable { mutableStateOf(CurrentDialog.None) }
+
+    // Collection sheet state
+    val collectionSheetState = rememberModalBottomSheetState()
+    var showCollectionSheet by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     // Manage download events
     LaunchedEffect(Unit) {
@@ -270,6 +278,7 @@ fun ChartDetailsScreen(
                                     when (result) {
                                         SnackbarResult.ActionPerformed -> {
                                             /* Handle snackbar action performed */
+                                            showCollectionSheet = true
                                         }
 
                                         SnackbarResult.Dismissed -> {
@@ -431,6 +440,20 @@ fun ChartDetailsScreen(
                 )
             }
         }
+    }
+
+    if (showCollectionSheet) {
+        CollectionBottomSheet(
+            sheetState = collectionSheetState,
+            onDismissRequest = { showCollectionSheet = false },
+            onClose = {
+                scope.launch { collectionSheetState.hide() }.invokeOnCompletion {
+                    if (!collectionSheetState.isVisible) {
+                        showCollectionSheet = false
+                    }
+                }
+            }
+        )
     }
 }
 
