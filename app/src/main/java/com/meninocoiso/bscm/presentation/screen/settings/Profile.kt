@@ -1,7 +1,9 @@
 package com.meninocoiso.bscm.presentation.screen.settings
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -53,6 +55,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.meninocoiso.bscm.R
@@ -70,6 +73,7 @@ import com.meninocoiso.bscm.presentation.screen.details.DropdownItemPadding
 import com.meninocoiso.bscm.presentation.ui.components.ContentFilterOption
 import com.meninocoiso.bscm.presentation.ui.components.ContentFilterUI
 import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
+import com.meninocoiso.bscm.presentation.ui.components.SegmentedButtonUI
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
 import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonClip
@@ -209,16 +213,16 @@ val placeholderLibraryItems = listOf<CatalogItem>(
 fun ProfileScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
+    userId: String,
     user: User,
     onReturn: () -> Unit,
-    // profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     val coroutineScope = rememberCoroutineScope()
 
     val scrollBehavior =
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
-    val isOwner = false
+    val isOwner = userId == user.id
     val tabItems = if (isOwner) getOwnerTabItems() else getProfileTabItems()
 
     val horizontalPagerState = rememberPagerState { tabItems.size }
@@ -247,31 +251,33 @@ fun ProfileScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { }) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                            contentDescription = stringResource(R.string.share)
-                        )
-                    }
-                    DropdownMenuUI {
-                        // Add menu items here
-                        DropdownMenuItem(
-                            contentPadding = DropdownItemPadding,
-                            text = { Text(stringResource(R.string.report)) },
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(R.drawable.rounded_flag_24),
-                                    contentDescription = null
-                                )
-                            },
-                            onClick = {
-                                // Handle report action
-                            }
-                        )
+                    if (isOwner) {
+                        IconButton(onClick = { }) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = stringResource(R.string.share)
+                            )
+                        }
+                        /*DropdownMenuUI {
+                            // Add menu items here
+                            DropdownMenuItem(
+                                contentPadding = DropdownItemPadding,
+                                text = { Text(stringResource(R.string.report)) },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.rounded_flag_24),
+                                        contentDescription = null
+                                    )
+                                },
+                                onClick = {
+                                    // Handle report action
+                                }
+                            )
+                        }*/
                     }
                 },
                 title = {
-                    Text("@meninocoiso", style = MaterialTheme.typography.headlineMedium)
+                    Text("@${user.username}", style = MaterialTheme.typography.headlineMedium)
                 },
                 scrollBehavior = scrollBehavior
             )
@@ -353,46 +359,48 @@ fun ProfileScreen(
             }
 
             // Actions
-            item {
-                Row(
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Button(
-                        onClick = { /* Navigate to message user */ },
-                        modifier = Modifier.weight(1f)
+            if (!isOwner) {
+                item {
+                    Row(
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Icon(
-                            modifier = Modifier.size(20.dp),
-                            painter = painterResource(R.drawable.rounded_stars_24),
-                            contentDescription = null
-                        )
-                        Text(modifier = Modifier.padding(start = 8.dp), text = "Follow")
-                    }
-                    IconButton(
-                        onClick = {}, colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(20.dp),
-                            imageVector = Icons.Outlined.Share,
-                            contentDescription = null
-                        )
-                    }
-                    IconButton(
-                        onClick = {}, colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(20.dp),
-                            painter = painterResource(R.drawable.rounded_flag_24),
-                            contentDescription = null
-                        )
+                        Button(
+                            onClick = { /* Navigate to message user */ },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                modifier = Modifier.size(20.dp),
+                                painter = painterResource(R.drawable.rounded_stars_24),
+                                contentDescription = null
+                            )
+                            Text(modifier = Modifier.padding(start = 8.dp), text = "Follow")
+                        }
+                        IconButton(
+                            onClick = {}, colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        ) {
+                            Icon(
+                                modifier = Modifier.size(20.dp),
+                                imageVector = Icons.Outlined.Share,
+                                contentDescription = null
+                            )
+                        }
+                        IconButton(
+                            onClick = {}, colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        ) {
+                            Icon(
+                                modifier = Modifier.size(20.dp),
+                                painter = painterResource(R.drawable.rounded_flag_24),
+                                contentDescription = null
+                            )
+                        }
                     }
                 }
             }
@@ -441,15 +449,29 @@ fun ProfileScreen(
                     beyondViewportPageCount = 1 // Keep the next page in memory
                 ) { index ->
                     when (index) {
-                        0 -> ProfileActivity(
-                            items = placeholderActivityItems,
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        0 -> if (isOwner) {
+                            ProfileLikes(
+                                items = placeholderLibraryItems,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            ProfileActivity(
+                                items = placeholderActivityItems,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
 
-                        1 -> ProfileLibrary(
-                            items = placeholderLibraryItems,
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        1 -> if (isOwner) {
+                            ProfileCollections(
+                                items = placeholderLibraryItems,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            ProfileLibrary(
+                                items = placeholderLibraryItems,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     }
                 }
             }
@@ -604,6 +626,91 @@ fun ProfileLibrary(items: List<CatalogItem>, modifier: Modifier = Modifier) {
 }
 
 @Composable
+fun ProfileLikes(items: List<CatalogItem>, modifier: Modifier = Modifier) {
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            SegmentedButtonUI(options = listOf("Charts", "Tour Passes", "Themes"), onSelected = {})
+        }
+        items(items.size) { index ->
+            when (val item = items[index]) {
+                is Chart -> {
+                    ChartPreview(
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp),
+                        chart = item,
+                        isSecondary = true,
+                        onPress = { /* Navigate to chart details */ }
+                    )
+                }
+
+                else -> { /* Handle other content types if necessary */
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ProfileCollections(items: List<CatalogItem>, modifier: Modifier = Modifier) {
+    val chartsCount = items.filter { it is Chart }.size
+    val tourPassesCount = items.filter { it is TourPass }.size
+    val themesCount = items.filter { it is Theme }.size
+
+    LazyColumn( modifier = modifier) {
+        item {
+            ContentFilterUI(
+                options = listOf(
+                    ContentFilterOption(
+                        id = 0,
+                        title = "All",
+                        count = items.size
+                    ),
+                    ContentFilterOption(
+                        id = 1,
+                        title = "Collections",
+                        count = 4
+                    ),
+                    ContentFilterOption(
+                        id = 2,
+                        title = "Charts",
+                        count = chartsCount
+                    ),
+                    ContentFilterOption(
+                        id = 3,
+                        title = "Tour Passes",
+                        count = tourPassesCount
+                    ),
+                    ContentFilterOption(
+                        id = 4,
+                        title = "Themes",
+                        count = themesCount
+                    )
+                ),
+                onClick = { /* Handle filter option click */ }
+            )
+        }
+        items(items.size) { index ->
+            when (val item = items[index]) {
+                is Chart -> {
+                    ChartPreview(
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp),
+                        chart = item,
+                        isSecondary = true,
+                        onPress = { /* Navigate to chart details */ }
+                    )
+                }
+
+                else -> { /* Handle other content types if necessary */
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun BoxScope.ProfileIndicator(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
@@ -627,3 +734,35 @@ fun BoxScope.ProfileIndicator(modifier: Modifier = Modifier) {
         )
     }
 }
+
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
+@Preview(showBackground = true)
+@Composable
+fun ProfileScreenPreview() {
+    MaterialTheme {
+        SharedTransitionLayout {
+            AnimatedContent(
+                targetState = true,
+                label = "profile_preview"
+            ) { _ ->
+                ProfileScreen(
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedContentScope = this@AnimatedContent,
+                    userId = "preview_user_id",
+                    user = User(
+                        id = "preview_user_id",
+                        username = "meninocoiso",
+                        email = "user@example.com",
+                        avatarUrl = null,
+                        bannerUrl = null,
+                        accentColor = 0xFF6200EE,
+                        discordId = null,
+                        createdAt = LocalDateTime.now()
+                    ),
+                    onReturn = {}
+                )
+            }
+        }
+    }
+}
+
