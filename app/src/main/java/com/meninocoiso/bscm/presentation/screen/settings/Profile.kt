@@ -56,9 +56,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.data.remote.dto.ContributorUserDto
 import com.meninocoiso.bscm.domain.enums.Difficulty
+import com.meninocoiso.bscm.domain.enums.Role
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.Contributor
 import com.meninocoiso.bscm.domain.model.Theme
 import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.model.User
@@ -145,7 +148,41 @@ val placeholderChart = Chart(
         publishedAt = LocalDateTime.now()
     ),
     availableVersion = null,
-    contributors = listOf(),
+    contributors = listOf(
+        Contributor(
+            user = ContributorUserDto(
+                id = "user_placeholder_id",
+                username = "ContribuidorExemplo",
+                imageUrl = null,
+                createdAt = LocalDateTime.now()
+            ),
+            chartId = "placeholder_chart_id",
+            roles = listOf(Role.AUDIO),
+            joinedAt = LocalDateTime.now()
+        ),
+        Contributor(
+            user = ContributorUserDto(
+                id = "user_placeholder_id",
+                username = "meumano2",
+                imageUrl = null,
+                createdAt = LocalDateTime.now()
+            ),
+            chartId = "placeholder_chart_id",
+            roles = listOf(Role.AUDIO),
+            joinedAt = LocalDateTime.now()
+        ),
+        Contributor(
+            user = ContributorUserDto(
+                id = "user_placeholder_id",
+                username = "ala3alalalala3",
+                imageUrl = null,
+                createdAt = LocalDateTime.now()
+            ),
+            chartId = "placeholder_chart_id",
+            roles = listOf(Role.AUDIO),
+            joinedAt = LocalDateTime.now()
+        )
+    ),
 )
 
 val placeholderActivityItems = listOf(
