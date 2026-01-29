@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.bscm.presentation.ui.modifiers.debouncedClickable
-import com.meninocoiso.bscm.util.PreviewUtils.localContainer
 import com.meninocoiso.bscm.util.PreviewUtils.titleContent
 import com.meninocoiso.bscm.util.StringUtils
 
@@ -35,7 +34,6 @@ fun TourPassPreview(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .localContainer(isLocal)
             .graphicsLayer {
                 alpha = if ((tourPass.isInstalled == true || isDisabled) && !isLocal) 0.5f else 1f
             }

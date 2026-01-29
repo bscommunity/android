@@ -33,6 +33,7 @@ fun LazyListScope.localContentSection(
                         stringResource(R.string.downloaded, charts.size)
                     } else null
                 }
+
                 else -> null
             },
             thickness = when (state) {
@@ -67,7 +68,9 @@ fun LazyListScope.localContentSection(
     if (state !is ContentState.Loading && charts.isNotEmpty()) {
         items(charts) { chart ->
             ChartPreview(
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
                 chart = chart,
+                isSecondary = true,
                 onPress = { if (chart.contentId != null) onNavigateToDetails(chart) else onShowLocalItemDialog() },
                 isInstalled = chart.contentId != null
             )
@@ -76,7 +79,7 @@ fun LazyListScope.localContentSection(
         item {
             Spacer(modifier = Modifier.padding(bottom = 24.dp))
         }
-        
+
         /*item { LocalDownloadsSectionTitle("Tour Passes") }*/
         /*item { LocalDownloadsSectionTitle("Themes") }*/
     }

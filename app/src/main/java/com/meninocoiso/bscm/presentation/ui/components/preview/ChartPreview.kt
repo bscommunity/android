@@ -23,7 +23,7 @@ import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.bscm.presentation.ui.components.layout.GradientPlaceholder
 import com.meninocoiso.bscm.presentation.ui.modifiers.debouncedClickable
-import com.meninocoiso.bscm.util.PreviewUtils.localContainer
+import com.meninocoiso.bscm.util.PreviewUtils.secondaryContainer
 import com.meninocoiso.bscm.util.PreviewUtils.titleContent
 import com.meninocoiso.bscm.util.StringUtils
 
@@ -32,6 +32,7 @@ import com.meninocoiso.bscm.util.StringUtils
 fun ChartPreview(
     chart: Chart,
     modifier: Modifier = Modifier,
+    isSecondary: Boolean = false,
     isInstalled: Boolean? = null,
     isDisabled: Boolean = false,
     onDisabled: () -> Unit = {},
@@ -39,8 +40,7 @@ fun ChartPreview(
 ) {
     Box(
         modifier = modifier
-            .fillMaxWidth()
-            .localContainer(isInstalled != null)
+            .secondaryContainer(isSecondary)
             .graphicsLayer {
                 alpha =
                     if (isInstalled == true || isDisabled) 0.5f else 1f
@@ -64,13 +64,13 @@ fun ChartPreview(
                     colors = chart.colors.map {
                         Color("#$it".toColorInt())
                     },
-                    borderRadius = if (isInstalled == true) 8.dp else 0.dp,
+                    borderRadius = if (isInstalled == true || isSecondary) 8.dp else 0.dp,
                 )
             } else {
                 CoverArt(
                     difficulty = chart.latestVersion.difficulty,
                     url = chart.coverUrl,
-                    borderRadius = if (isInstalled == true) 8.dp else 0.dp,
+                    borderRadius = if (isInstalled == true || isSecondary) 8.dp else 0.dp,
                 )
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -105,7 +105,7 @@ fun ChartPreview(
                                 chart.latestVersion.isExplicit,
                                 chart.latestVersion.isDeluxe
                             )
-                            // Don't show publish date for external charts
+                            // Don't show publish date for external charts (isInstalled == false)
                             if (isInstalled == null || isInstalled) {
                                 Text(
                                     modifier = Modifier.padding(start = 8.dp),

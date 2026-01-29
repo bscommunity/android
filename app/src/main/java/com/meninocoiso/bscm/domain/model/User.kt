@@ -1,8 +1,8 @@
 package com.meninocoiso.bscm.domain.model
 
+import LocalDateTimeSerializer
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
-import LocalDateTimeSerializer
 import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
 
@@ -13,6 +13,7 @@ data class User(
     val username: String,
     val email: String?,
     val imageUrl: String?,
+    val bannerUrl: String?,
     val discordId: String?,
     @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime

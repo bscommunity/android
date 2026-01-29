@@ -24,7 +24,6 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Theme
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.bscm.presentation.ui.modifiers.debouncedClickable
-import com.meninocoiso.bscm.util.PreviewUtils.localContainer
 import com.meninocoiso.bscm.util.PreviewUtils.titleContent
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -40,7 +39,6 @@ fun ThemePreview(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .localContainer(isLocal)
             .graphicsLayer {
                 alpha = if ((theme.isInstalled == true || isDisabled) && !isLocal) 0.5f else 1f
             }

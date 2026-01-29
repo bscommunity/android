@@ -5,34 +5,46 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumTopAppBar
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,24 +53,107 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.domain.enums.Difficulty
+import com.meninocoiso.bscm.domain.model.CatalogItem
+import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.User
+import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.presentation.screen.details.DropdownItemPadding
 import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
+import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
 import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonClip
 import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonShape
-import com.meninocoiso.bscm.presentation.viewmodel.ProfileViewModel
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import java.time.LocalDateTime
+import java.util.Date
 
 @Serializable
 data class Profile(val user: User)
+
+data class ProfileTabItem(val contentDescription: String, val iconResId: Int)
+
+@Composable
+fun getOwnerTabItems(): List<ProfileTabItem> {
+    return listOf(
+        ProfileTabItem(
+            contentDescription = "Likes",
+            iconResId = R.drawable.rounded_favorite_24
+        ),
+        ProfileTabItem(
+            contentDescription = "Collections",
+            iconResId = R.drawable.rounded_bookmark_24
+        )
+    )
+}
+
+@Composable
+fun getProfileTabItems(): List<ProfileTabItem> {
+    return listOf(
+        ProfileTabItem(
+            contentDescription = "Recent activity",
+            iconResId = R.drawable.rounded_search_activity_24
+        ),
+        ProfileTabItem(
+            contentDescription = "User content",
+            iconResId = R.drawable.outline_library_music_24
+        )
+    )
+}
+
+data class ActivityItem(val date: Date, val content: List<CatalogItem>)
+
+val placeholderChart = Chart(
+    id = "placeholder_id",
+    contentId = "share_placeholder",
+    artist = "Artista Fictício",
+    track = "Música Exemplo",
+    album = "Álbum Exemplo",
+    genre = null,
+    coverUrl = "",
+    trackUrls = emptyList(),
+    trackPreviewUrl = "",
+    isFeatured = false,
+    isInstalled = false,
+    downloadsSum = 0,
+    latestPublishedAt = LocalDateTime.now(),
+    latestVersion = Version(
+        id = 1L,
+        chartId = "placeholder_chart_id",
+        index = 1,
+        duration = 180f,
+        notesAmount = 1000,
+        effectsAmount = 50,
+        bpm = 128,
+        difficulty = Difficulty.NORMAL,
+        isDeluxe = false,
+        isExplicit = false,
+        bundleUrl = "",
+        previewUrl = null,
+        downloadsAmount = 0,
+        knownIssues = emptyList(),
+        publishedAt = LocalDateTime.now()
+    ),
+    availableVersion = null,
+    contributors = emptyList(),
+)
+
+val placeholderActivityItems = listOf(
+    ActivityItem(
+        date = Date(),
+        content = listOf(placeholderChart, placeholderChart, placeholderChart)
+    ),
+    ActivityItem(
+        date = Date(),
+        content = listOf(placeholderChart, placeholderChart)
+    )
+)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
@@ -67,18 +162,24 @@ fun ProfileScreen(
     animatedContentScope: AnimatedContentScope,
     user: User,
     onReturn: () -> Unit,
-    profileViewModel: ProfileViewModel = hiltViewModel()
+    // profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
+    val coroutineScope = rememberCoroutineScope()
+
     val scrollBehavior =
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
+    val isOwner = false
+    val tabItems = if (isOwner) getOwnerTabItems() else getProfileTabItems()
+
+    val horizontalPagerState = rememberPagerState { tabItems.size }
+
     Scaffold(
         modifier = Modifier
-            .nestedScroll(scrollBehavior.nestedScrollConnection)
-            .fillMaxSize(),
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             MediumTopAppBar(
-                modifier = Modifier.padding(horizontal = 8.dp),
                 navigationIcon = {
                     IconButton(
                         modifier = Modifier
@@ -139,7 +240,7 @@ fun ProfileScreen(
                         .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    when (null) {
+                    when (user.bannerUrl) {
                         null -> Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -150,7 +251,7 @@ fun ProfileScreen(
                         )
 
                         else -> CoilImage(
-                            imageModel = { user.imageUrl },
+                            imageModel = { user.bannerUrl },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .size(180.dp)
@@ -198,137 +299,201 @@ fun ProfileScreen(
                 }
             }
 
-            // Stats
+            // Actions
             item {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    ProfileStatItem(
-                        icon = R.drawable.rounded_history_24,
-                        label = "Member since June 2023",
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(16.dp)
-                    )
-                    ProfileStatDivider()
-                    ProfileStatItem(
-                        icon = R.drawable.rounded_favorite_24,
-                        label = "+500 liked charts",
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(16.dp)
-                    )
-                    ProfileStatDivider()
-                    ProfileStatItem(
-                        icon = R.drawable.rounded_bookmark_24,
-                        label = "+20 favorite charts",
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(16.dp)
-                    )
+                    Button(
+                        onClick = { /* Navigate to message user */ },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(20.dp),
+                            painter = painterResource(R.drawable.rounded_stars_24),
+                            contentDescription = null
+                        )
+                        Text(modifier = Modifier.padding(start = 8.dp), text = "Follow")
+                    }
+                    IconButton(
+                        onClick = {}, colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(20.dp),
+                            imageVector = Icons.Outlined.Share,
+                            contentDescription = null
+                        )
+                    }
+                    IconButton(
+                        onClick = {}, colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(20.dp),
+                            painter = painterResource(R.drawable.rounded_flag_24),
+                            contentDescription = null
+                        )
+                    }
+                }
+            }
+
+            stickyHeader {
+                PrimaryTabRow(
+                    selectedTabIndex = horizontalPagerState.currentPage,
+                    contentColor = MaterialTheme.colorScheme.onBackground,
+                    indicator = {
+                        SecondaryIndicator(
+                            Modifier.tabIndicatorOffset(
+                                horizontalPagerState.currentPage,
+                                matchContentSize = false
+                            )
+                        )
+                    }
+                ) {
+                    tabItems.forEachIndexed { index, item ->
+                        Tab(
+                            modifier = Modifier.height(56.dp),
+                            selected = horizontalPagerState.currentPage == index,
+                            onClick = {
+                                coroutineScope.launch {
+                                    horizontalPagerState.scrollToPage(index)
+                                }
+                            },
+                            icon = {
+                                Icon(
+                                    painter = painterResource(item.iconResId),
+                                    contentDescription = item.contentDescription
+                                )
+                            }
+                        )
+                    }
                 }
             }
 
             // Recent activity
             item {
-                Row(
+                HorizontalPager(
+                    state = horizontalPagerState,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable(onClick = { /* Navigate to recent activity */ })
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        "Recent activity",
-                        style = MaterialTheme.typography.titleLarge,
-                    )
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = null
-                    )
+                        .height(800.dp),
+                    key = { it }, // Recompose the pager when the page changes
+                    beyondViewportPageCount = 1 // Keep the next page in memory
+                ) { index ->
+                    when (index) {
+                        0 -> ProfileActivity(
+                            items = placeholderActivityItems,
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                        1 -> ProfileLibrary(modifier = Modifier.fillMaxSize())
+                    }
                 }
             }
-
-            // List of recent activity
-            /*items(10) {
-                ChartPreview(
-                    Chart(
-                        id = "placeholder_id",
-                        shareId = "share_placeholder",
-                        artist = "Artista Fictício",
-                        track = "Música Exemplo",
-                        album = "Álbum Exemplo",
-                        genre = null,
-                        coverUrl = "",
-                        trackUrls = emptyList(),
-                        trackPreviewUrl = "",
-                        isFeatured = false,
-                        isInstalled = false,
-                        downloadsSum = 0,
-                        latestPublishedAt = LocalDateTime.now(),
-                        latestVersion = Version(
-                            id = 1L,
-                            chartId = "placeholder_chart_id",
-                            index = 1,
-                            duration = 180f,
-                            notesAmount = 1000,
-                            effectsAmount = 50,
-                            bpm = 128,
-                            difficulty = Difficulty.NORMAL,
-                            isDeluxe = false,
-                            isExplicit = false,
-                            bundleUrl = "",
-                            previewUrl = null,
-                            downloadsAmount = 0,
-                            knownIssues = emptyList(),
-                            publishedAt = LocalDateTime.now()
-                        ),
-                        availableVersion = null,
-                        contributors = emptyList(),
-                    ),
-                    onNavigateToDetails = { *//* Navigate to chart details *//* }
-                )
-            }*/
         }
     }
 }
 
 @Composable
-fun ProfileStatItem(
-    icon: Int,
-    label: String,
-    modifier: Modifier = Modifier
-) {
-    Column(
+fun ProfileActivity(items: List<ActivityItem>, modifier: Modifier = Modifier) {
+    LazyColumn(
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.Top
     ) {
-        Icon(
-            painter = painterResource(icon),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            maxLines = 2
-        )
+        items(items.size) { index ->
+            val item = items[index]
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Timeline indicator
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Top,
+                    modifier = Modifier
+                        .width(72.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .background(
+                                MaterialTheme.colorScheme.onSecondaryContainer,
+                                shape = RoundedCornerShape(99.dp)
+                            )
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(2.dp)
+                            .fillMaxHeight()
+                            .background(MaterialTheme.colorScheme.onSecondaryContainer)
+                    )
+                }
+
+                // Content
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        "@meninocoiso liked ${item.content.size} charts",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        "5 days ago",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    // Chart previews
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        item.content.forEach { chart ->
+                            when (chart) {
+                                is Chart -> {
+                                    ChartPreview(
+                                        chart = chart,
+                                        isSecondary = true,
+                                        onPress = { /* Navigate to chart details */ }
+                                    )
+                                }
+
+                                else -> { /* Handle other content types if necessary */
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
 @Composable
-fun ProfileStatDivider() {
+fun ProfileLibrary(modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier
-            .padding(vertical = 8.dp)
-            .size(width = 1.dp, height = 36.dp)
-            .clip(RoundedCornerShape(50))
-            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-    )
+        modifier = modifier
+            .fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text("User Library", style = MaterialTheme.typography.headlineMedium)
+    }
 }
 
 @Composable
