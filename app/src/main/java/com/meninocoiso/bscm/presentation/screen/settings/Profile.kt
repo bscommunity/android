@@ -59,9 +59,13 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.Theme
+import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.presentation.screen.details.DropdownItemPadding
+import com.meninocoiso.bscm.presentation.ui.components.ContentFilterOption
+import com.meninocoiso.bscm.presentation.ui.components.ContentFilterUI
 import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
@@ -141,7 +145,7 @@ val placeholderChart = Chart(
         publishedAt = LocalDateTime.now()
     ),
     availableVersion = null,
-    contributors = emptyList(),
+    contributors = listOf(),
 )
 
 val placeholderActivityItems = listOf(
@@ -153,6 +157,14 @@ val placeholderActivityItems = listOf(
         date = Date(),
         content = listOf(placeholderChart, placeholderChart)
     )
+)
+
+val placeholderLibraryItems = listOf<CatalogItem>(
+    placeholderChart,
+    placeholderChart,
+    placeholderChart,
+    placeholderChart,
+    placeholderChart,
 )
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
@@ -363,7 +375,7 @@ fun ProfileScreen(
                             selected = horizontalPagerState.currentPage == index,
                             onClick = {
                                 coroutineScope.launch {
-                                    horizontalPagerState.scrollToPage(index)
+                                    horizontalPagerState.animateScrollToPage(index)
                                 }
                             },
                             icon = {
@@ -393,7 +405,10 @@ fun ProfileScreen(
                             modifier = Modifier.fillMaxSize()
                         )
 
-                        1 -> ProfileLibrary(modifier = Modifier.fillMaxSize())
+                        1 -> ProfileLibrary(
+                            items = placeholderLibraryItems,
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
                 }
             }
@@ -460,7 +475,9 @@ fun ProfileActivity(items: List<ActivityItem>, modifier: Modifier = Modifier) {
 
                     // Chart previews
                     Column(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         horizontalAlignment = Alignment.Start
                     ) {
@@ -486,13 +503,62 @@ fun ProfileActivity(items: List<ActivityItem>, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun ProfileLibrary(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .fillMaxSize(),
-        contentAlignment = Alignment.Center
+fun ProfileLibrary(items: List<CatalogItem>, modifier: Modifier = Modifier) {
+    val chartsCount = items.filter { it is Chart }.size
+    val tourPassesCount = items.filter { it is TourPass }.size
+    val themesCount = items.filter { it is Theme }.size
+
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("User Library", style = MaterialTheme.typography.headlineMedium)
+        item {
+            ContentFilterUI(
+                options = listOf(
+                    ContentFilterOption(
+                        id = 0,
+                        title = "All",
+                        count = items.size
+                    ),
+                    ContentFilterOption(
+                        id = 1,
+                        title = "Collections",
+                        count = 4
+                    ),
+                    ContentFilterOption(
+                        id = 2,
+                        title = "Charts",
+                        count = chartsCount
+                    ),
+                    ContentFilterOption(
+                        id = 3,
+                        title = "Tour Passes",
+                        count = tourPassesCount
+                    ),
+                    ContentFilterOption(
+                        id = 4,
+                        title = "Themes",
+                        count = themesCount
+                    )
+                ),
+                onClick = { /* Handle filter option click */ }
+            )
+        }
+        items(items.size) { index ->
+            when (val item = items[index]) {
+                is Chart -> {
+                    ChartPreview(
+                        chart = item,
+                        isSecondary = true,
+                        onPress = { /* Navigate to chart details */ }
+                    )
+                }
+
+                else -> { /* Handle other content types if necessary */
+                }
+            }
+        }
     }
 }
 
