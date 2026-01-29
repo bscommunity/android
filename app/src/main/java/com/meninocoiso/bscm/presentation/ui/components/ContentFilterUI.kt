@@ -2,6 +2,7 @@ package com.meninocoiso.bscm.presentation.ui.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,17 +27,19 @@ data class ContentFilterOption(
 
 @Composable
 fun ContentFilterUI(
+    modifier: Modifier = Modifier,
     options: List<ContentFilterOption>,
     onClick: (Int) -> Unit
 ) {
     var currentSelected by remember { mutableIntStateOf(0) }
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .horizontalScroll(
-                rememberScrollState())
-            .padding(horizontal = 8.dp),
+                rememberScrollState()
+            )
+            .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.Start
     ) {
         options.forEach { option ->
@@ -51,11 +54,14 @@ fun ContentFilterUI(
                             }
                         }
                     )
-                    .clickable {
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) {
                         currentSelected = option.id
                         onClick(option.id)
                     }
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .padding(horizontal = 12.dp, vertical = 20.dp),
                 text = "${option.title} ${option.count}",
                 style = MaterialTheme.typography.labelLarge,
             )

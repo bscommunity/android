@@ -48,6 +48,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
@@ -295,7 +296,11 @@ fun ProfileScreen(
                                 .fillMaxWidth()
                                 .size(180.dp)
                                 .clip(RoundedCornerShape(28.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .background(
+                                    if (user.accentColor != null) Color(
+                                        user.accentColor or 0xFF000000.toInt().toLong()
+                                    ) else MaterialTheme.colorScheme.surfaceVariant
+                                )
                                 .zIndex(1f)
                         )
 
@@ -315,7 +320,7 @@ fun ProfileScreen(
 
                     with(sharedTransitionScope) {
                         Avatar(
-                            url = user.imageUrl,
+                            url = user.avatarUrl,
                             size = 96.dp,
                             modifier = Modifier
                                 .align(Alignment.BottomStart)
@@ -547,8 +552,7 @@ fun ProfileLibrary(items: List<CatalogItem>, modifier: Modifier = Modifier) {
 
     LazyColumn(
         modifier = modifier,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        // verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
             ContentFilterUI(
@@ -586,6 +590,7 @@ fun ProfileLibrary(items: List<CatalogItem>, modifier: Modifier = Modifier) {
             when (val item = items[index]) {
                 is Chart -> {
                     ChartPreview(
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
                         chart = item,
                         isSecondary = true,
                         onPress = { /* Navigate to chart details */ }

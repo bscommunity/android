@@ -12,8 +12,9 @@ data class User(
     val id: String,
     val username: String,
     val email: String?,
-    val imageUrl: String?,
+    val avatarUrl: String?,
     val bannerUrl: String?,
+    val accentColor: Long?,
     val discordId: String?,
     @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime

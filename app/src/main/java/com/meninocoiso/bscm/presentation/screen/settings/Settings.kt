@@ -110,6 +110,7 @@ fun SettingsScreen(
 
     // Seed cached user only once while restoring
     LaunchedEffect(cacheUser) {
+        println("Image url: ${cacheUser?.avatarUrl}")
         authViewModel.seedCachedUser(cacheUser)
     }
 
@@ -170,7 +171,7 @@ fun SettingsScreen(
                     ) {
                         with(sharedTransitionScope) {
                             Avatar(
-                                url = displayUser.imageUrl,
+                                url = displayUser.avatarUrl,
                                 size = 128.dp,
                                 modifier = Modifier
                                     .sharedElement(
