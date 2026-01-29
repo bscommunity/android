@@ -23,12 +23,12 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
-import com.meninocoiso.bscm.presentation.viewmodel.ContentState
+import com.meninocoiso.bscm.domain.state.DownloadState
 
 @Composable
 internal fun UpdateListItem(
     chart: Chart,
-    contentState: ContentState,
+    downloadState: DownloadState,
     onUpdateClick: () -> Unit
 ) {
     ListItem(
@@ -67,21 +67,21 @@ internal fun UpdateListItem(
         trailingContent = {
             IconButton(
                 onClick = onUpdateClick,
-                enabled = contentState !is ContentState.Downloading && 
-                        contentState !is ContentState.Extracting,
+                enabled = downloadState !is DownloadState.Downloading &&
+                        downloadState !is DownloadState.Extracting,
                 colors = IconButtonDefaults.iconButtonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     disabledContainerColor = Color.Transparent,
                 )
             ) {
-                when(contentState) {
-                    is ContentState.Downloading, is ContentState.Extracting -> {
+                when(downloadState) {
+                    is DownloadState.Downloading, is DownloadState.Extracting -> {
                         CircularProgressIndicator(
                             progress = {
-                                when(contentState) {
-                                    is ContentState.Downloading -> contentState.progress
-                                    is ContentState.Extracting -> contentState.progress
+                                when(downloadState) {
+                                    is DownloadState.Downloading -> downloadState.progress
+                                    is DownloadState.Extracting -> downloadState.progress
                                     else -> 0f
                                 }
                             },
@@ -89,7 +89,7 @@ internal fun UpdateListItem(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    is ContentState.Error -> {
+                    is DownloadState.Error -> {
                         Icon(
                             painter = painterResource(id = R.drawable.rounded_error_24),
                             contentDescription = null

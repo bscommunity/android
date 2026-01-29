@@ -90,7 +90,7 @@ fun LazyListScope.remoteSection(
 
     if (state is ContentState.Success && charts.isNotEmpty()) {
         items(charts) { chart ->
-            val contentState by contentViewModel.getContentState(chart.id)
+            val contentState by contentViewModel.getDownloadState(chart.id)
                 .collectAsStateWithLifecycle()
 
             UpdateListItem(
@@ -99,7 +99,7 @@ fun LazyListScope.remoteSection(
                     itemsUpdating.add(chart.id)
                     contentViewModel.downloadChart(chart)
                 },
-                contentState = contentState
+                downloadState = contentState
             )
         }
     }

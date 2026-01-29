@@ -1,11 +1,11 @@
 package com.meninocoiso.bscm.domain.model
 
-import LocalDateTimeSerializer
 import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.meninocoiso.bscm.domain.enums.Genre
+import com.meninocoiso.bscm.domain.serialization.LocalDateTimeSerializer
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 import java.time.LocalDateTime

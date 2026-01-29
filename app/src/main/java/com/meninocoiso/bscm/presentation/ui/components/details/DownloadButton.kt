@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.presentation.ui.components.dialog.StoragePermissionDialog
-import com.meninocoiso.bscm.presentation.viewmodel.ContentState
+import com.meninocoiso.bscm.domain.state.DownloadState
 import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.bscm.util.StorageUtils
 import com.meninocoiso.bscm.util.StorageUtils.BEATSTAR_URI
@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun DownloadButton(
     chart: Chart,
-    contentState: ContentState,
+    downloadState: DownloadState,
     contentViewModel: ContentViewModel,
 ) {
     var showStoragePermissionDialog by remember { mutableStateOf(false) }
@@ -74,9 +74,9 @@ fun DownloadButton(
         ),
         modifier = Modifier
             .sizeIn(minWidth = 56.dp, minHeight = 56.dp),
-        enabled = contentState is ContentState.Idle ||
-                contentState is ContentState.Error ||
-                (contentState is ContentState.Installed && chart.availableVersion != null),
+        enabled = downloadState is DownloadState.Idle ||
+                downloadState is DownloadState.Error ||
+                (downloadState is DownloadState.Installed && chart.availableVersion != null),
         onClick = {
             coroutineScope.launch {
                 startDownload()
@@ -87,18 +87,18 @@ fun DownloadButton(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            when (contentState) {
-                is ContentState.Idle -> Icon(
+            when (downloadState) {
+                is DownloadState.Idle -> Icon(
                     painter = painterResource(id = R.drawable.rounded_download_24),
                     contentDescription = stringResource(R.string.download_chart)
                 )
 
-                is ContentState.Downloading, is ContentState.Extracting -> CircularProgressIndicator(
+                is DownloadState.Downloading, is DownloadState.Extracting -> CircularProgressIndicator(
                     modifier = Modifier.size(16.dp),
                     strokeWidth = 2.dp
                 )
 
-                is ContentState.Installed -> {
+                is DownloadState.Installed -> {
                     if (chart.availableVersion != null) {
                         Icon(
                             painter = painterResource(id = R.drawable.rounded_download_24),
@@ -112,17 +112,17 @@ fun DownloadButton(
                     }
                 }
 
-                is ContentState.Error -> Icon(
+                is DownloadState.Error -> Icon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = stringResource(R.string.download_failed)
                 )
             }
             Text(
-                text = when (contentState) {
-                    is ContentState.Idle -> stringResource(R.string.download)
-                    is ContentState.Downloading -> stringResource(R.string.downloading)
-                    is ContentState.Extracting -> stringResource(R.string.extracting)
-                    is ContentState.Installed -> {
+                text = when (downloadState) {
+                    is DownloadState.Idle -> stringResource(R.string.download)
+                    is DownloadState.Downloading -> stringResource(R.string.downloading)
+                    is DownloadState.Extracting -> stringResource(R.string.extracting)
+                    is DownloadState.Installed -> {
                         if (chart.availableVersion != null) {
                             stringResource(R.string.update)
                         } else {
@@ -130,7 +130,7 @@ fun DownloadButton(
                         }
                     }
 
-                    is ContentState.Error -> stringResource(R.string.try_again)
+                    is DownloadState.Error -> stringResource(R.string.try_again)
                 }
             )
         }

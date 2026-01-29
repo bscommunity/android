@@ -1,15 +1,14 @@
 package com.meninocoiso.bscm.presentation.viewmodel
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.meninocoiso.bscm.data.repository.CacheRepository
+import com.meninocoiso.bscm.domain.repository.ChartRepository
+import com.meninocoiso.bscm.domain.result.ContentState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
+import javax.inject.Named
 
 private const val TAG = "ProfileViewModel"
 
@@ -19,14 +18,11 @@ private const val TAG = "ProfileViewModel"
  */
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    @param:ApplicationContext private val context: Context,
-    private val cacheRepository: CacheRepository
+    @param:Named("Remote") private val remoteChartRepository: ChartRepository,
+    @param:Named("Local") private val localChartRepository: ChartRepository,
 ) : ViewModel() {
-    val cacheUser = cacheRepository.cacheFlow.map { 
-        it.user
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = null
-    )
+    private val _profileState = MutableStateFlow<ContentState>(ContentState.Loading)
+    val profileState: SharedFlow<ContentState> = _profileState.asStateFlow()
+
+
 }

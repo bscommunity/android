@@ -43,7 +43,7 @@ class CryptoManager @Inject constructor(
     }
     
     /**
-     * Criptografa dados usando AES-GCM via Tink
+     * Encrypts data using AES-GCM via Tink
      */
     fun encrypt(data: String): String {
         return try {
@@ -55,7 +55,7 @@ class CryptoManager @Inject constructor(
     }
     
     /**
-     * Descriptografa dados usando AES-GCM via Tink
+     * Decrypt data using AES-GCM via Tink
      */
     fun decrypt(encryptedData: String): String {
         return try {
@@ -66,18 +66,6 @@ class CryptoManager @Inject constructor(
             throw RuntimeException("Falha ao descriptografar dados", e)
         } catch (e: IllegalArgumentException) {
             throw RuntimeException("Dados criptografados inválidos", e)
-        }
-    }
-    
-    /**
-     * Verifica se os dados podem ser descriptografados (validação de integridade)
-     */
-    fun isValidEncryptedData(encryptedData: String): Boolean {
-        return try {
-            decrypt(encryptedData)
-            true
-        } catch (e: Exception) {
-            false
         }
     }
 }

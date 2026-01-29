@@ -60,7 +60,7 @@ import com.meninocoiso.bscm.presentation.ui.components.dialog.ReportDialog
 import com.meninocoiso.bscm.presentation.ui.components.layout.Section
 import com.meninocoiso.bscm.presentation.ui.components.layout.SwipeableSnackbarHost
 import com.meninocoiso.bscm.presentation.ui.components.preview.PreviewContributors
-import com.meninocoiso.bscm.presentation.viewmodel.ContentState
+import com.meninocoiso.bscm.domain.state.DownloadState
 import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.bscm.util.LinkingUtils.shareChartLink
 import com.meninocoiso.bscm.util.StringUtils
@@ -97,7 +97,7 @@ fun ChartDetailsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Combine states to reduce recompositions
-    val chartState by contentViewModel.getContentState(chart.id)
+    val chartState by contentViewModel.getDownloadState(chart.id)
         .collectAsStateWithLifecycle()
 
     // UI State
@@ -222,7 +222,7 @@ fun ChartDetailsScreen(
                                 }
                             )
                         }
-                        if (chartState == ContentState.Installed(chart.id)) {
+                        if (chartState == DownloadState.Installed(chart.id)) {
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,
                                 text = { Text(stringResource(R.string.delete_chart)) },
@@ -303,7 +303,7 @@ fun ChartDetailsScreen(
                 floatingActionButton = {
                     DownloadButton(
                         chart = chart,
-                        contentState = chartState,
+                        downloadState = chartState,
                         contentViewModel = contentViewModel,
                     )
                 }
@@ -425,14 +425,14 @@ fun ChartDetailsScreen(
                 .fillMaxSize(),
             contentAlignment = Alignment.BottomCenter
         ) {
-            if (chartState is ContentState.Downloading ||
-                chartState is ContentState.Extracting
+            if (chartState is DownloadState.Downloading ||
+                chartState is DownloadState.Extracting
             ) {
                 LinearProgressIndicator(
                     progress = {
                         when (val state = chartState) {
-                            is ContentState.Downloading -> state.progress
-                            is ContentState.Extracting -> state.progress
+                            is DownloadState.Downloading -> state.progress
+                            is DownloadState.Extracting -> state.progress
                             else -> 100f
                         }
                     },

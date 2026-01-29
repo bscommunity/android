@@ -1,7 +1,7 @@
 package com.meninocoiso.bscm.domain.model
 
-import LocalDateTimeSerializer
 import android.os.Parcelable
+import com.meninocoiso.bscm.domain.serialization.LocalDateTimeSerializer
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 import java.time.LocalDateTime

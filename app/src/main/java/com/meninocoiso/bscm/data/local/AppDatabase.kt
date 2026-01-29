@@ -11,7 +11,7 @@ import com.meninocoiso.bscm.domain.model.StreamingLink
 import com.meninocoiso.bscm.domain.model.Theme
 import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.model.Version
-import com.meninocoiso.bscm.domain.serialization.Converters
+import com.meninocoiso.bscm.domain.serialization.RoomSerializers
 
 @Database(
     version = 24,
@@ -25,7 +25,7 @@ import com.meninocoiso.bscm.domain.serialization.Converters
     ],
     exportSchema = false
 )
-@TypeConverters(Converters::class)
+@TypeConverters(RoomSerializers::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun chartDao(): ChartDao
     abstract fun interactionQueueDao(): InteractionQueueDao

@@ -27,13 +27,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.meninocoiso.bscm.domain.enums.ThemePreference
+import com.meninocoiso.bscm.domain.state.MainActivityState
 import com.meninocoiso.bscm.presentation.navigation.MainNav
 import com.meninocoiso.bscm.presentation.ui.components.dialog.NotificationsPermissionDialog
 import com.meninocoiso.bscm.presentation.ui.theme.BeatstarCommunityTheme
 import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
-import com.meninocoiso.bscm.presentation.viewmodel.MainActivityUiState
-import com.meninocoiso.bscm.presentation.viewmodel.MainActivityUiState.Loading
-import com.meninocoiso.bscm.presentation.viewmodel.MainActivityUiState.Success
+import com.meninocoiso.bscm.domain.state.MainActivityState.Loading
+import com.meninocoiso.bscm.domain.state.MainActivityState.Success
 import com.meninocoiso.bscm.presentation.viewmodel.MainActivityViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Job
@@ -93,7 +93,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 })
 
-        var uiState: MainActivityUiState by mutableStateOf(Loading)
+        var uiState: MainActivityState by mutableStateOf(Loading)
 
         // Update the uiState
         lifecycleScope.launch {
@@ -287,7 +287,7 @@ class MainActivity : AppCompatActivity() {
  */
 @Composable
 private fun shouldUseDynamicTheming(
-    uiState: MainActivityUiState,
+    uiState: MainActivityState,
 ): Boolean = when (uiState) {
     Loading -> true
     is Success -> uiState.settings.useDynamicColors
@@ -299,7 +299,7 @@ private fun shouldUseDynamicTheming(
  */
 @Composable
 private fun shouldUseDarkTheme(
-    uiState: MainActivityUiState,
+    uiState: MainActivityState,
 ): Boolean = when (uiState) {
     Loading -> isSystemInDarkTheme()
     is Success -> when (uiState.settings.theme) {

@@ -31,7 +31,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,6 +43,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -69,10 +69,9 @@ import com.meninocoiso.bscm.domain.model.Theme
 import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.Version
-import com.meninocoiso.bscm.presentation.screen.details.DropdownItemPadding
+import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.ui.components.ContentFilterOption
 import com.meninocoiso.bscm.presentation.ui.components.ContentFilterUI
-import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
 import com.meninocoiso.bscm.presentation.ui.components.SegmentedButtonUI
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
@@ -571,54 +570,59 @@ fun ProfileLibrary(items: List<CatalogItem>, modifier: Modifier = Modifier) {
     val tourPassesCount = items.filter { it is TourPass }.size
     val themesCount = items.filter { it is Theme }.size
 
-    LazyColumn(
-        modifier = modifier,
-        // verticalArrangement = Arrangement.spacedBy(12.dp)
+    PullToRefreshBox(
+        isRefreshing = false,
+        onRefresh = { /*fetchUserLibrary()*/ }
     ) {
-        item {
-            ContentFilterUI(
-                options = listOf(
-                    ContentFilterOption(
-                        id = 0,
-                        title = "All",
-                        count = items.size
+        LazyColumn(
+            modifier = modifier,
+            // verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item {
+                ContentFilterUI(
+                    options = listOf(
+                        ContentFilterOption(
+                            id = 0,
+                            title = "All",
+                            count = items.size
+                        ),
+                        ContentFilterOption(
+                            id = 1,
+                            title = "Collections",
+                            count = 4
+                        ),
+                        ContentFilterOption(
+                            id = 2,
+                            title = "Charts",
+                            count = chartsCount
+                        ),
+                        ContentFilterOption(
+                            id = 3,
+                            title = "Tour Passes",
+                            count = tourPassesCount
+                        ),
+                        ContentFilterOption(
+                            id = 4,
+                            title = "Themes",
+                            count = themesCount
+                        )
                     ),
-                    ContentFilterOption(
-                        id = 1,
-                        title = "Collections",
-                        count = 4
-                    ),
-                    ContentFilterOption(
-                        id = 2,
-                        title = "Charts",
-                        count = chartsCount
-                    ),
-                    ContentFilterOption(
-                        id = 3,
-                        title = "Tour Passes",
-                        count = tourPassesCount
-                    ),
-                    ContentFilterOption(
-                        id = 4,
-                        title = "Themes",
-                        count = themesCount
-                    )
-                ),
-                onClick = { /* Handle filter option click */ }
-            )
-        }
-        items(items.size) { index ->
-            when (val item = items[index]) {
-                is Chart -> {
-                    ChartPreview(
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
-                        chart = item,
-                        isSecondary = true,
-                        onPress = { /* Navigate to chart details */ }
-                    )
-                }
+                    onClick = { /* Handle filter option click */ }
+                )
+            }
+            items(items.size) { index ->
+                when (val item = items[index]) {
+                    is Chart -> {
+                        ChartPreview(
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                            chart = item,
+                            isSecondary = true,
+                            onPress = { /* Navigate to chart details */ }
+                        )
+                    }
 
-                else -> { /* Handle other content types if necessary */
+                    else -> { /* Handle other content types if necessary */
+                    }
                 }
             }
         }

@@ -1,8 +1,8 @@
 package com.meninocoiso.bscm.domain.model
 
-import LocalDateTimeSerializer
+import com.meninocoiso.bscm.domain.serialization.LocalDateTimeSerializer
+import com.meninocoiso.bscm.domain.serialization.UUIDSerializer
 import kotlinx.serialization.Serializable
-import org.bscm.serialization.UUIDSerializer
 import java.time.LocalDateTime
 import java.util.UUID
 

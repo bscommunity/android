@@ -11,7 +11,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.repository.AppUpdateRepository
-import com.meninocoiso.bscm.presentation.viewmodel.AppUpdateState
+import com.meninocoiso.bscm.domain.state.AppUpdateState
 import dagger.hilt.android.AndroidEntryPoint
 import jakarta.inject.Inject
 import kotlinx.coroutines.CoroutineScope

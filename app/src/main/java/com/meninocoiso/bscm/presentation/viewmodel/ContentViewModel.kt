@@ -13,6 +13,7 @@ import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.internal.Settings
 import com.meninocoiso.bscm.domain.repository.ChartRepository
+import com.meninocoiso.bscm.domain.state.DownloadState
 import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -46,8 +47,8 @@ class ContentViewModel @Inject constructor(
     @param:Named("Local") private val localChartRepository: ChartRepository,
 ) : ViewModel() {
 
-    private val _contentStates = MutableStateFlow<Map<String, ContentState>>(emptyMap())
-    private val contentStates: StateFlow<Map<String, ContentState>> = _contentStates.asStateFlow()
+    private val _downloadStates = MutableStateFlow<Map<String, DownloadState>>(emptyMap())
+    private val downloadStates: StateFlow<Map<String, DownloadState>> = _downloadStates.asStateFlow()
 
     // Event flow for one-time notifications
     private val _events = MutableSharedFlow<DownloadEvent>(
@@ -94,20 +95,20 @@ class ContentViewModel @Inject constructor(
                         // Check what type of download is active
                         val activeDownloads = downloadServiceMonitor.getActiveDownloads()
                         if (chart.id in activeDownloads) {
-                            ContentState.Downloading(chart.id, 0f) // Will be updated by events
+                            DownloadState.Downloading(chart.id, 0f) // Will be updated by events
                         } else {
-                            ContentState.Idle
+                            DownloadState.Idle
                         }
                     }
-                    isInstalled -> ContentState.Installed(chart.id)
-                    else -> ContentState.Idle
+                    isInstalled -> DownloadState.Installed(chart.id)
+                    else -> DownloadState.Idle
                 }
 
                 updateState(chart.id, state)
                 // Log.d(TAG, "Status checked for chart ${chart.id}: $state")
             } catch (e: Exception) {
                 Log.e(TAG, "Error checking chart status for ${chart.id}", e)
-                updateState(chart.id, ContentState.Error(
+                updateState(chart.id, DownloadState.Error(
                     chart.id,
                     "Failed to check chart status",
                     ErrorType.UNKNOWN
@@ -123,23 +124,23 @@ class ContentViewModel @Inject constructor(
             // Update the state based on the event
             when (event) {
                 is DownloadEvent.Started ->
-                    updateState(contentId, ContentState.Downloading(contentId, 0f))
+                    updateState(contentId, DownloadState.Downloading(contentId, 0f))
 
                 is DownloadEvent.Progress ->
-                    updateState(contentId, ContentState.Downloading(contentId, event.progress))
+                    updateState(contentId, DownloadState.Downloading(contentId, event.progress))
 
                 is DownloadEvent.Extracting ->
-                    updateState(contentId, ContentState.Extracting(contentId, event.progress))
+                    updateState(contentId, DownloadState.Extracting(contentId, event.progress))
 
                 is DownloadEvent.Complete -> {
-                    updateState(contentId, ContentState.Installed(contentId))
+                    updateState(contentId, DownloadState.Installed(contentId))
                     emitEvent(event)
                     // Clear any pending operations
                     clearChartOperation(contentId)
                 }
 
                 is DownloadEvent.Error -> {
-                    updateState(contentId, ContentState.Error(contentId, event.message, event.type))
+                    updateState(contentId, DownloadState.Error(contentId, event.message, event.type))
                     emitEvent(event)
                     // Clear any pending operations
                     clearChartOperation(contentId)
@@ -176,8 +177,8 @@ class ContentViewModel @Inject constructor(
     }
 
     // Update state efficiently with .update
-    private fun updateState(contentId: String, state: ContentState) {
-        _contentStates.update { currentStates ->
+    private fun updateState(contentId: String, state: DownloadState) {
+        _downloadStates.update { currentStates ->
             currentStates.toMutableMap().apply {
                 this[contentId] = state
             }
@@ -195,7 +196,7 @@ class ContentViewModel @Inject constructor(
                 // Check if operation is already in progress
                 if (!setChartOperation(contentId, "download")) {
                     Log.w(TAG, "Download operation already in progress for chart: $contentId")
-                    updateState(contentId, ContentState.Error(
+                    updateState(contentId, DownloadState.Error(
                         contentId,
                         context.getString(R.string.operation_in_progress),
                         ErrorType.DOWNLOAD_ERROR
@@ -204,7 +205,7 @@ class ContentViewModel @Inject constructor(
                 }
 
                 // Update state immediately for UI feedback
-                updateState(contentId, ContentState.Downloading(contentId, 0f))
+                updateState(contentId, DownloadState.Downloading(contentId, 0f))
 
                 // Validate chart data
                 val version = chart.availableVersion ?: chart.latestVersion
@@ -232,7 +233,7 @@ class ContentViewModel @Inject constructor(
                     else -> context.getString(R.string.failed_to_start_download)
                 }
 
-                updateState(contentId, ContentState.Error(contentId, errorMessage, ErrorType.DOWNLOAD_ERROR))
+                updateState(contentId, DownloadState.Error(contentId, errorMessage, ErrorType.DOWNLOAD_ERROR))
                 emitEvent(DownloadEvent.Error(contentId, errorMessage, ErrorType.DOWNLOAD_ERROR))
             }
         }
@@ -264,8 +265,8 @@ class ContentViewModel @Inject constructor(
                 }
 
                 // Validate chart state
-                val currentState = _contentStates.value[contentId]
-                if (currentState is ContentState.Downloading || currentState is ContentState.Extracting) {
+                val currentState = _downloadStates.value[contentId]
+                if (currentState is DownloadState.Downloading || currentState is DownloadState.Extracting) {
                     clearChartOperation(contentId)
                     val errorMsg = context.getString(R.string.cannot_delete_during_download)
                     onError(errorMsg)
@@ -288,7 +289,7 @@ class ContentViewModel @Inject constructor(
                 updateResult.getOrThrow() // Will throw if update failed
 
                 // Reset the state and clear operation
-                updateState(contentId, ContentState.Idle)
+                updateState(contentId, DownloadState.Idle)
                 clearChartOperation(contentId)
 
                 Log.d(TAG, "Chart deleted successfully: $contentId")
@@ -309,36 +310,13 @@ class ContentViewModel @Inject constructor(
         }
     }
 
-    fun processInteraction() {
-        Log.d(TAG, "User interaction processed")
-    }
-
-    /**
-     * Get chart state efficiently - reusing the existing StateFlow
-     */
-    fun getContentState(contentId: String): StateFlow<ContentState> {
-        return contentStates
-            .map { it[contentId] ?: ContentState.Idle }
+    fun getDownloadState(contentId: String): StateFlow<DownloadState> {
+        return downloadStates
+            .map { it[contentId] ?: DownloadState.Idle }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.Lazily,
-                initialValue = _contentStates.value[contentId] ?: ContentState.Idle
+                initialValue = _downloadStates.value[contentId] ?: DownloadState.Idle
             )
     }
-}
-
-/**
- * Enhanced ContentState with better error information
- */
-sealed class ContentState {
-    data object Idle : ContentState()
-    data class Downloading(val contentId: String, val progress: Float) : ContentState()
-    data class Extracting(val contentId: String, val progress: Float) : ContentState()
-    data class Error(
-        val contentId: String,
-        val message: String,
-        val type: ErrorType? = null,
-        val timestamp: Long = System.currentTimeMillis()
-    ) : ContentState()
-    data class Installed(val contentId: String) : ContentState()
 }

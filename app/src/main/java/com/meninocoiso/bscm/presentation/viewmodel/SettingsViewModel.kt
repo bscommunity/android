@@ -12,6 +12,7 @@ import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.ThemePreference
 import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
 import com.meninocoiso.bscm.domain.model.internal.Settings
+import com.meninocoiso.bscm.domain.state.AppUpdateState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -26,16 +27,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
-
-sealed class AppUpdateState {
-    data object Idle : AppUpdateState()
-    data object UpToDate : AppUpdateState()
-    data object Checking : AppUpdateState()
-    data class Downloading(val progress: Float) : AppUpdateState()
-    data class UpdateAvailable(val version: String) : AppUpdateState()
-    data class ReadyToInstall(val apkFile: File) : AppUpdateState()
-    data class Error(val message: String) : AppUpdateState()
-}
 
 private const val TAG = "SettingsViewModel"
 
