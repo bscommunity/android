@@ -48,7 +48,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
@@ -230,6 +229,10 @@ fun ProfileScreen(
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             MediumTopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.background
+                ),
                 navigationIcon = {
                     IconButton(
                         modifier = Modifier
@@ -296,11 +299,7 @@ fun ProfileScreen(
                                 .fillMaxWidth()
                                 .size(180.dp)
                                 .clip(RoundedCornerShape(28.dp))
-                                .background(
-                                    if (user.accentColor != null) Color(
-                                        user.accentColor or 0xFF000000.toInt().toLong()
-                                    ) else MaterialTheme.colorScheme.surfaceVariant
-                                )
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
                                 .zIndex(1f)
                         )
 

@@ -1,18 +1,20 @@
 package com.meninocoiso.bscm.di
 
+import android.content.Context
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.KtorApiClient
-import com.meninocoiso.bscm.domain.repository.ChartRepository
+import com.meninocoiso.bscm.data.repository.ChartContentRepositoryRemote
 import com.meninocoiso.bscm.data.repository.ChartRepositoryRemote
-import com.meninocoiso.bscm.domain.repository.UserRepository
 import com.meninocoiso.bscm.data.repository.UserRepositoryRemote
 import com.meninocoiso.bscm.data.security.AuthInterceptor
-import com.meninocoiso.bscm.domain.repository.ContentRepository
 import com.meninocoiso.bscm.domain.model.Chart
-import com.meninocoiso.bscm.data.repository.ChartContentRepositoryRemote
+import com.meninocoiso.bscm.domain.repository.ChartRepository
+import com.meninocoiso.bscm.domain.repository.ContentRepository
+import com.meninocoiso.bscm.domain.repository.UserRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
@@ -25,8 +27,9 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideApiClient(
+        @ApplicationContext context: Context,
         interceptor: AuthInterceptor
-    ): ApiClient = KtorApiClient(interceptor)
+    ): ApiClient = KtorApiClient(context, interceptor)
 
     @Provides
     @Singleton

@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun PreviewInstalledTag(isInstalled: Boolean) {
-    val label = if (isInstalled == true) {
+    val label = if (isInstalled) {
         "Installed"
     } else {
         "External"
@@ -38,7 +38,7 @@ fun PreviewInstalledTag(isInstalled: Boolean) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (isInstalled == null) {
+            if (isInstalled) {
                 Icon(
                     modifier = Modifier.size(16.dp),
                     imageVector = Icons.Default.Check,

@@ -73,7 +73,6 @@ class DownloadManager @Inject constructor(
                 }
 
                 val responseBody = response.body
-                    ?: throw DownloadException("Empty response body")
 
                 val contentLength = responseBody.contentLength()
                 Log.d(TAG, "Content length: $contentLength bytes")

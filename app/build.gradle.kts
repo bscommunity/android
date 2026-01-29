@@ -4,7 +4,7 @@ plugins {
 	alias(libs.plugins.kotlin.parcelize)
 	alias(libs.plugins.ksp)
 	alias(libs.plugins.hilt)
-	alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
@@ -12,6 +12,7 @@ android {
 	compileSdk = 36
 
 	androidResources {
+        // Enable per-app locale configurations
 		generateLocaleConfig = true
 	}
 	
@@ -27,14 +28,6 @@ android {
 		versionName = "0.2.3-beta"
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-		vectorDrawables {
-			useSupportLibrary = true
-		}
-        externalNativeBuild {
-            cmake {
-                cppFlags += ""
-            }
-        }
     }
 
 	signingConfigs {
@@ -81,26 +74,11 @@ android {
         resValues = true
 	}
 
-	composeOptions {
-		kotlinCompilerExtensionVersion = "1.5.1"
-	}
-
 	packaging {
 		resources {
 			excludes += "/META-INF/{AL2.0,LGPL2.1}"
 		}
 	}
-
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
-        }
-    }
-}
-
-kotlin {
-    compilerOptions {}
 }
 
 dependencies {

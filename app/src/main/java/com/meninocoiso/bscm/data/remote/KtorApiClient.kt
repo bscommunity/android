@@ -1,5 +1,6 @@
 package com.meninocoiso.bscm.data.remote
 
+import android.content.Context
 import android.util.Log
 import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionRequest
 import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionItemRequest
@@ -47,6 +48,7 @@ private const val TAG = "KtorApiClient"
 data class ApiError(val error: String)
 
 class KtorApiClient @Inject constructor(
+    private val context: Context,
     private val interceptor: AuthInterceptor
 ) : ApiClient {
     private val client = HttpClient(Android) {
@@ -71,8 +73,9 @@ class KtorApiClient @Inject constructor(
         }
 
         // Add authorization header if token is available
-        install(AuthPlugin) { 
+        install(AuthPlugin) {
             authInterceptor = interceptor
+            context = this@KtorApiClient.context
         }
         
         defaultRequest {

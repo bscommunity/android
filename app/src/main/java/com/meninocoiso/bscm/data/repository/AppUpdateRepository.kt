@@ -143,8 +143,7 @@ class AppUpdateRepository @Inject constructor(
                 throw IOException("API request failed with code ${response.code}")
             }
 
-            val responseBody = response.body?.string()
-                ?: throw IOException("Empty response body")
+            val responseBody = response.body.string()
 
             // Parse the JSON response
             val release = json.decodeFromString<GitHubRelease>(responseBody)
