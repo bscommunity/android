@@ -22,6 +22,8 @@ import com.meninocoiso.bscm.presentation.screen.details.ChartDetails
 import com.meninocoiso.bscm.presentation.screen.details.ChartDetailsRoute
 import com.meninocoiso.bscm.presentation.screen.details.ChartDetailsScreen
 import com.meninocoiso.bscm.presentation.screen.details.DeepLinkChartDetails
+import com.meninocoiso.bscm.presentation.screen.settings.Collection
+import com.meninocoiso.bscm.presentation.screen.settings.CollectionScreen
 import com.meninocoiso.bscm.presentation.screen.settings.Profile
 import com.meninocoiso.bscm.presentation.screen.settings.ProfileScreen
 import kotlinx.serialization.Serializable
@@ -42,6 +44,20 @@ fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean, cacheUser: User?) {
         SharedTransitionLayout {
             val navController = rememberNavController()
             val bottomNavController = rememberNavController()
+
+            val onNavigateToDetails = { chart: Chart ->
+                navController.navigate(route = ChartDetails(chart = chart)) {
+                    // Prevent users from opening multiple details screens
+                    launchSingleTop = true
+                }
+            }
+
+            val onNavigateToCollection = { collectionId: String ->
+                navController.navigate(route = Collection(collectionId = collectionId)) {
+                    // Prevent users from opening multiple collection screens
+                    launchSingleTop = true
+                }
+            }
 
             NavHost(
                 navController = navController,
@@ -91,7 +107,27 @@ fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean, cacheUser: User?) {
                         this@SharedTransitionLayout,
                         this,
                         user = profile.user,
-                        userId = "12312313123123"/*profile.user.id*/,
+                        userId = profile.user.id,
+                        onNavigateToDetails = { chart ->
+                            onNavigateToDetails(chart)
+                        },
+                        onNavigateToCollection = { collectionId ->
+                            onNavigateToCollection(collectionId)
+                        },
+                        onReturn = {
+                            navController.navigateUp()
+                        }
+                    )
+                }
+
+                // Collection screen
+                composable<Collection> { backStackEntry ->
+                    val collection: Collection = backStackEntry.toRoute()
+                    CollectionScreen(
+                        collectionId = collection.collectionId,
+                        onNavigateToDetails = { chart ->
+                            onNavigateToDetails(chart)
+                        },
                         onReturn = {
                             navController.navigateUp()
                         }

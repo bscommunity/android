@@ -9,50 +9,56 @@ import com.meninocoiso.bscm.presentation.ui.components.ContentFilterOption
 import com.meninocoiso.bscm.presentation.ui.components.ContentFilterUI
 
 @Composable
-fun CatalogFilters(items: List<CatalogItem>, collectionsAmount: Int? = null, onFilterSelected: (Int) -> Unit) {
+fun CatalogFilters(
+    items: List<CatalogItem>,
+    collectionsAmount: Int? = null,
+    currentSelected: Int = 0,
+    onFilterSelected: (Int) -> Unit
+) {
     val chartsCount = items.filter { it is Chart }.size
     val tourPassesCount = items.filter { it is TourPass }.size
     val themesCount = items.filter { it is Theme }.size
-
-    /*
-    * ContentFilterOption(
-                id = 1,
-                title = "Collections",
-                count = collectionsAmount
-            ),*/
 
     val options = mutableListOf(
         ContentFilterOption(
             id = 0,
             title = "All",
-            count = items.size
+            count = items.size,
+            disabled = items.isEmpty()
         ),
         ContentFilterOption(
             id = 2,
             title = "Charts",
-            count = chartsCount
+            count = chartsCount,
+            disabled = chartsCount == 0
         ),
         ContentFilterOption(
             id = 3,
             title = "Tour Passes",
-            count = tourPassesCount
+            count = tourPassesCount,
+            disabled = tourPassesCount == 0
         ),
         ContentFilterOption(
             id = 4,
             title = "Themes",
-            count = themesCount
+            count = themesCount,
+            disabled = themesCount == 0
         )
     )
 
     if (collectionsAmount != null) {
-        options.add(1, ContentFilterOption(
-            id = 1,
-            title = "Collections",
-            count = collectionsAmount
-        ))
+        options.add(
+            1, ContentFilterOption(
+                id = 1,
+                title = "Collections",
+                count = collectionsAmount,
+                disabled = collectionsAmount == 0
+            )
+        )
     }
 
     ContentFilterUI(
+        currentSelected = currentSelected,
         options = options,
         onClick = { onFilterSelected(it) }
     )

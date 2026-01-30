@@ -11,10 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
@@ -22,17 +19,17 @@ import androidx.compose.ui.unit.dp
 data class ContentFilterOption(
     val id: Int,
     val title: String,
-    val count: Int
+    val count: Int,
+    val disabled: Boolean = false,
 )
 
 @Composable
 fun ContentFilterUI(
     modifier: Modifier = Modifier,
+    currentSelected: Int = 0,
     options: List<ContentFilterOption>,
-    onClick: (Int) -> Unit
+    onClick: (Int) -> Unit,
 ) {
-    var currentSelected by remember { mutableIntStateOf(0) }
-
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -46,7 +43,7 @@ fun ContentFilterUI(
             Text(
                 modifier = Modifier
                     .then(
-                        if (currentSelected == option.id) {
+                        if (currentSelected == option.id && !option.disabled) {
                             Modifier
                         } else {
                             Modifier.graphicsLayer {
@@ -58,8 +55,9 @@ fun ContentFilterUI(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
                     ) {
-                        currentSelected = option.id
-                        onClick(option.id)
+                        if (!option.disabled) {
+                            onClick(option.id)
+                        }
                     }
                     .padding(horizontal = 12.dp, vertical = 20.dp),
                 text = "${option.title} ${option.count}",

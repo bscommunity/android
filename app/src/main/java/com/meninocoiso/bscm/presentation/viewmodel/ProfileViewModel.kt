@@ -9,7 +9,6 @@ import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.Contributor
 import com.meninocoiso.bscm.domain.model.Version
-import com.meninocoiso.bscm.domain.repository.ChartRepository
 import com.meninocoiso.bscm.domain.result.ContentState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +19,6 @@ import java.time.LocalDateTime
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
-import javax.inject.Named
 
 private const val TAG = "ProfileViewModel"
 
@@ -157,8 +155,8 @@ val placeholderCollections = listOf(
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    @param:Named("Remote") private val remoteChartRepository: ChartRepository,
-    @param:Named("Local") private val localChartRepository: ChartRepository,
+    /*@param:Named("Remote") private val remoteChartRepository: ChartRepository,
+    @param:Named("Local") private val localChartRepository: ChartRepository,*/
 ) : ViewModel() {
     // Activity = all last 25 content interactions (likes, comments, new follows, new content from followed users)
     // Library = all content created by the user, sorted by upload date

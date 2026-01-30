@@ -69,6 +69,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.result.ContentState
+import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileActivity
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileCollections
@@ -127,6 +128,8 @@ fun ProfileScreen(
     userId: String,
     user: User,
     onReturn: () -> Unit,
+    onNavigateToDetails: OnNavigateToDetails,
+    onNavigateToCollection: (collectionId: String) -> Unit = {},
     profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -245,6 +248,7 @@ fun ProfileScreen(
                                     emptyList(),
                                     section1State,
                                     { profileViewModel.fetchUserLikes() },
+                                    onNavigateToDetails,
                                     Modifier.fillMaxSize()
                                 )
                             } else {
@@ -258,16 +262,19 @@ fun ProfileScreen(
 
                             1 -> if (isOwner) {
                                 ProfileCollections(
+                                    Modifier.fillMaxSize(),
                                     collectionContent,
                                     section2State,
                                     { profileViewModel.fetchProfileActivity(userId) },
-                                    Modifier.fillMaxSize()
+                                    onNavigateToDetails,
+                                    onNavigateToCollection,
                                 )
                             } else {
                                 ProfileLibrary(
                                     placeholderLibraryItems,
                                     section2State,
                                     { profileViewModel.fetchProfileLibrary(userId) },
+                                    onNavigateToDetails,
                                     Modifier.fillMaxSize()
                                 )
                             }
@@ -464,7 +471,9 @@ fun ProfileScreenPreview() {
                         discordId = null,
                         createdAt = LocalDateTime.now()
                     ),
-                    onReturn = {}
+                    onReturn = {},
+                    onNavigateToDetails = {},
+                    onNavigateToCollection = {},
                 )
             }
         }

@@ -2,6 +2,7 @@ package com.meninocoiso.bscm.presentation.screen.settings
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -9,12 +10,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -24,11 +24,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
+import com.meninocoiso.bscm.presentation.ui.components.ButtonUI
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.profile.CatalogFilters
 import com.meninocoiso.bscm.presentation.ui.components.profile.contentList
@@ -42,6 +43,7 @@ data class Collection(val collectionId: String)
 @Composable
 fun CollectionScreen(
     collectionId: String,
+    onNavigateToDetails: OnNavigateToDetails,
     onReturn: () -> Unit,
     // collectionViewModel: ProfileViewModel = hiltViewModel()
 ) {
@@ -57,7 +59,7 @@ fun CollectionScreen(
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            MediumTopAppBar(
+            LargeTopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     scrolledContainerColor = MaterialTheme.colorScheme.background
@@ -84,16 +86,16 @@ fun CollectionScreen(
                     }
                 },
                 title = {
-                    Text(collection.name, style = MaterialTheme.typography.headlineSmall)
-                    Button(
-                        onClick = { /* Navigate to edit collection */ },
-                        modifier = Modifier.padding(16.dp)
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalAlignment = Alignment.Start
                     ) {
-                        Icon(
-                            painter = painterResource(R.drawable.outline_settings_24),
-                            contentDescription = null
+                        Text(collection.name, style = MaterialTheme.typography.headlineSmall)
+                        ButtonUI(
+                            text = "Manage collection",
+                            icon = R.drawable.outline_settings_24,
+                            onClick = { /* Navigate to edit collection */ },
                         )
-                        Text("Manage collection")
                     }
                 },
                 scrollBehavior = scrollBehavior
@@ -101,7 +103,7 @@ fun CollectionScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        if (collection.items.isNullOrEmpty()) {
+        if (collection.items.isEmpty()) {
             StatusMessageUI(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -122,7 +124,7 @@ fun CollectionScreen(
                         items = collection.items,
                         onFilterSelected = { /* Handle filter selection */ })
                 }
-                contentList(items = collection.items)
+                contentList(items = collection.items, onNavigateToDetails = onNavigateToDetails)
             }
         }
     }
@@ -133,7 +135,11 @@ fun CollectionScreen(
 @Composable
 fun CollectionScreenPreview() {
     MaterialTheme {
-
+        CollectionScreen(
+            collectionId = "collectionId",
+            onNavigateToDetails = { },
+            onReturn = {}
+        )
     }
 }
 

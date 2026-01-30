@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.result.ContentState
+import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.SegmentedButtonUI
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 
@@ -18,6 +19,7 @@ fun ProfileLikes(
     items: List<CatalogItem>,
     state: ContentState,
     onFetch: () -> Unit,
+    onNavigateToDetails: OnNavigateToDetails,
     modifier: Modifier = Modifier
 ) {
     BaseContainer(
@@ -42,7 +44,7 @@ fun ProfileLikes(
                     options = listOf("Charts", "Tour Passes", "Themes"),
                     onSelected = {})
             }
-            contentList(items)
+            contentList(items, onNavigateToDetails)
         }
     }
 }

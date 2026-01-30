@@ -1,20 +1,28 @@
 package com.meninocoiso.bscm.presentation.ui.components.preview
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Collection
@@ -29,40 +37,53 @@ fun CollectionPreview(
     modifier: Modifier = Modifier,
     onPress: () -> Unit
 ) {
-    Box(modifier = modifier.debouncedClickable(onClick = { onPress() })) {
+    Box(
+        modifier = modifier
+            .height(200.dp)
+            .fillMaxWidth()
+            .clip(
+                RoundedCornerShape(16.dp)
+            )
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .debouncedClickable(onClick = { onPress() }),
+        contentAlignment = Alignment.BottomStart
+    ) {
         if (collection.coverUrl != null) {
             CoverArt(
                 modifier = Modifier.fillMaxSize(),
+                width = Dp.Unspecified,
+                height = Dp.Unspecified,
                 url = collection.coverUrl,
             )
-        } else {
-            LinearGradient(
-                modifier = Modifier.fillMaxSize(),
-                colors = listOf(
-                    Color.Black.copy(alpha = 0f),    // 0%
-                    Color.Black.copy(alpha = 0.65f)  // 65%
-                )
-            )
         }
-        Column(
-            modifier = modifier
-                .debouncedClickable(onClick = { onPress() })
+        LinearGradient(
+            modifier = Modifier.fillMaxSize().rotate(90f),
+            size = null,
+            colors = listOf(
+                Color.Black.copy(alpha = 0f),    // 0%
+                Color.Black.copy(alpha = 0.65f)  // 65%
+            )
+        )
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .fillMaxWidth()
                 .padding(16.dp)
-                .fillMaxWidth(),
-            verticalArrangement = Arrangement.Bottom,
         ) {
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = collection.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+            Text(
+                text = collection.name,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onBackground,
+                overflow = TextOverflow.Ellipsis,
+                maxLines = 1
+            )
+            if (!collection.isPublic) {
+                Icon(
+                    modifier = Modifier.size(24.dp),
+                    tint = MaterialTheme.colorScheme.onBackground,
+                    painter = painterResource(R.drawable.rounded_lock_24),
+                    contentDescription = null
                 )
-                if (!collection.isPublic) {
-                    Icon(painter = painterResource(R.drawable.rounded_lock_24), contentDescription = null)
-                }
             }
         }
     }

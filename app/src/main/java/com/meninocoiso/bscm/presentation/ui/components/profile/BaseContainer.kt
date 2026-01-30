@@ -16,6 +16,7 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.result.ContentState
+import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
 
@@ -52,6 +53,7 @@ fun BaseContainer(
 
         else -> {
             PullToRefreshBox(
+                modifier = Modifier.fillMaxSize(),
                 isRefreshing = state is ContentState.Loading,
                 onRefresh = onRetry
             ) {
@@ -62,7 +64,8 @@ fun BaseContainer(
 }
 
 fun LazyListScope.contentList(
-    items: List<CatalogItem>
+    items: List<CatalogItem>,
+    onNavigateToDetails: OnNavigateToDetails
 ) {
     items(items.size) { index ->
         when (val item = items[index]) {
@@ -75,7 +78,7 @@ fun LazyListScope.contentList(
                     ),
                     chart = item,
                     isSecondary = true,
-                    onPress = { /* Navigate to chart details */ }
+                    onPress = { onNavigateToDetails(item) }
                 )
             }
 
