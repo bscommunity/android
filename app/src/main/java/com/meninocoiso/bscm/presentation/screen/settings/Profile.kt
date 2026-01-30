@@ -9,16 +9,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -40,16 +43,25 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -66,6 +78,8 @@ import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileLikes
 import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonClip
 import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonShape
 import com.meninocoiso.bscm.presentation.viewmodel.ProfileViewModel
+import com.meninocoiso.bscm.presentation.viewmodel.placeholderActivityItems
+import com.meninocoiso.bscm.presentation.viewmodel.placeholderLibraryItems
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
 import kotlinx.coroutines.launch
@@ -135,6 +149,12 @@ fun ProfileScreen(
 
     val collectionContent by profileViewModel.collectionContent.collectAsStateWithLifecycle()
 
+    // Track header scroll offset
+    val headerScrollState = rememberScrollState()
+    var headerHeightPx by remember { mutableFloatStateOf(0f) }
+    val tabRowHeight = 56.dp
+    val tabRowHeightPx = with(LocalDensity.current) { tabRowHeight.toPx() }
+
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
@@ -147,8 +167,7 @@ fun ProfileScreen(
                 ),
                 navigationIcon = {
                     IconButton(
-                        modifier = Modifier
-                            .padding(end = 12.dp),
+                        modifier = Modifier.padding(end = 12.dp),
                         onClick = { onReturn() }
                     ) {
                         Icon(
@@ -166,22 +185,6 @@ fun ProfileScreen(
                                 contentDescription = stringResource(R.string.share)
                             )
                         }
-                        /*DropdownMenuUI {
-                            // Add menu items here
-                            DropdownMenuItem(
-                                contentPadding = DropdownItemPadding,
-                                text = { Text(stringResource(R.string.report)) },
-                                leadingIcon = {
-                                    Icon(
-                                        painter = painterResource(R.drawable.rounded_flag_24),
-                                        contentDescription = null
-                                    )
-                                },
-                                onClick = {
-                                    // Handle report action
-                                }
-                            )
-                        }*/
                     }
                 },
                 title = {
@@ -190,133 +193,221 @@ fun ProfileScreen(
                 scrollBehavior = scrollBehavior
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets.statusBars
     ) { innerPadding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .padding(innerPadding)
         ) {
-            // Banner
-            item {
+            // HorizontalPager - fills entire space and sits behind everything
+            HorizontalPager(
+                state = horizontalPagerState,
+                modifier = Modifier.fillMaxSize(),
+                key = { it },
+                beyondViewportPageCount = 1
+            ) { index ->
+                val nestedScrollConnection = remember {
+                    object : NestedScrollConnection {
+                        override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                            val delta = available.y
+                            val newOffset = (headerScrollState.value - delta).coerceIn(0f, headerHeightPx)
+                            val consumed = headerScrollState.value - newOffset
+
+                            coroutineScope.launch {
+                                headerScrollState.scrollTo(newOffset.toInt())
+                            }
+
+                            return Offset(0f, consumed)
+                        }
+                    }
+                }
+
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
+                        .fillMaxSize()
+                        .nestedScroll(nestedScrollConnection)
                 ) {
-                    when (user.bannerUrl) {
-                        null -> Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .size(180.dp)
-                                .clip(RoundedCornerShape(28.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .zIndex(1f)
-                        )
-
-                        else -> CoilImage(
-                            imageModel = { user.bannerUrl },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .size(180.dp)
-                                .clip(RoundedCornerShape(28.dp))
-                                .zIndex(1f),
-                            imageOptions = ImageOptions(
-                                contentScale = ContentScale.Crop,
-                                alignment = Alignment.Center,
-                            ),
-                        )
+                    // Add top padding to account for header + tabs
+                    val topPadding = with(LocalDensity.current) {
+                        (headerHeightPx - headerScrollState.value).toDp() + tabRowHeight
                     }
 
-                    with(sharedTransitionScope) {
-                        Avatar(
-                            url = user.avatarUrl,
-                            size = 96.dp,
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .offset(x = 16.dp, y = (-16).dp)
-                                .zIndex(1f)
-                                .sharedElement(
-                                    sharedTransitionScope.rememberSharedContentState(key = "profile_image"),
-                                    animatedVisibilityScope = animatedContentScope
-                                )
-                                .border(
-                                    width = 2.dp,
-                                    color = MaterialTheme.colorScheme.outline,
-                                    shape = roundedPolygonShape()
-                                )
-                                .roundedPolygonClip(),
-                        )
-                        ProfileIndicator(
-                            modifier = Modifier
-                                .sharedElement(
-                                    sharedTransitionScope.rememberSharedContentState(key = "profile_icon"),
-                                    animatedVisibilityScope = animatedContentScope
-                                )
-                                .graphicsLayer(
-                                    alpha = 0f,
-                                    scaleX = 0f,
-                                    scaleY = 0f
-                                )
-                        )
-                    }
-                }
-            }
-
-            // Actions
-            if (!isOwner) {
-                item {
-                    Row(
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = topPadding)
                     ) {
-                        Button(
-                            onClick = { /* Navigate to message user */ },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(
-                                modifier = Modifier.size(20.dp),
-                                painter = painterResource(R.drawable.rounded_stars_24),
-                                contentDescription = null
-                            )
-                            Text(modifier = Modifier.padding(start = 8.dp), text = "Follow")
-                        }
-                        IconButton(
-                            onClick = {}, colors = IconButtonDefaults.iconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            )
-                        ) {
-                            Icon(
-                                modifier = Modifier.size(20.dp),
-                                imageVector = Icons.Outlined.Share,
-                                contentDescription = null
-                            )
-                        }
-                        IconButton(
-                            onClick = {}, colors = IconButtonDefaults.iconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            )
-                        ) {
-                            Icon(
-                                modifier = Modifier.size(20.dp),
-                                painter = painterResource(R.drawable.rounded_flag_24),
-                                contentDescription = null
-                            )
+                        when (index) {
+                            0 -> if (isOwner) {
+                                ProfileLikes(
+                                    emptyList(),
+                                    section1State,
+                                    { profileViewModel.fetchUserLikes() },
+                                    Modifier.fillMaxSize()
+                                )
+                            } else {
+                                ProfileActivity(
+                                    placeholderActivityItems,
+                                    section1State,
+                                    { profileViewModel.fetchProfileActivity(userId) },
+                                    Modifier.fillMaxSize()
+                                )
+                            }
+
+                            1 -> if (isOwner) {
+                                ProfileCollections(
+                                    collectionContent,
+                                    section2State,
+                                    { profileViewModel.fetchProfileActivity(userId) },
+                                    Modifier.fillMaxSize()
+                                )
+                            } else {
+                                ProfileLibrary(
+                                    placeholderLibraryItems,
+                                    section2State,
+                                    { profileViewModel.fetchProfileLibrary(userId) },
+                                    Modifier.fillMaxSize()
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            stickyHeader {
+            // Header and TabRow overlay on top
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Collapsible Header - this scrolls up
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset { IntOffset(0, -headerScrollState.value) }
+                        .onSizeChanged { size ->
+                            headerHeightPx = size.height.toFloat()
+                        }
+                ) {
+                    // Banner
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        when (user.bannerUrl) {
+                            null -> Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .size(180.dp)
+                                    .clip(RoundedCornerShape(28.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    .zIndex(1f)
+                            )
+
+                            else -> CoilImage(
+                                imageModel = { user.bannerUrl },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .size(180.dp)
+                                    .clip(RoundedCornerShape(28.dp))
+                                    .zIndex(1f),
+                                imageOptions = ImageOptions(
+                                    contentScale = ContentScale.Crop,
+                                    alignment = Alignment.Center,
+                                ),
+                            )
+                        }
+
+                        with(sharedTransitionScope) {
+                            Avatar(
+                                url = user.avatarUrl,
+                                size = 96.dp,
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .offset(x = 16.dp, y = (-16).dp)
+                                    .zIndex(1f)
+                                    .sharedElement(
+                                        sharedTransitionScope.rememberSharedContentState(key = "profile_image"),
+                                        animatedVisibilityScope = animatedContentScope
+                                    )
+                                    .border(
+                                        width = 2.dp,
+                                        color = MaterialTheme.colorScheme.outline,
+                                        shape = roundedPolygonShape()
+                                    )
+                                    .roundedPolygonClip(),
+                            )
+                            ProfileIndicator(
+                                modifier = Modifier
+                                    .sharedElement(
+                                        sharedTransitionScope.rememberSharedContentState(key = "profile_icon"),
+                                        animatedVisibilityScope = animatedContentScope
+                                    )
+                                    .graphicsLayer(
+                                        alpha = 0f,
+                                        scaleX = 0f,
+                                        scaleY = 0f
+                                    )
+                            )
+                        }
+                    }
+
+                    // Actions
+                    if (!isOwner) {
+                        Row(
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Button(
+                                onClick = { /* Navigate to message user */ },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    modifier = Modifier.size(20.dp),
+                                    painter = painterResource(R.drawable.rounded_stars_24),
+                                    contentDescription = null
+                                )
+                                Text(modifier = Modifier.padding(start = 8.dp), text = "Follow")
+                            }
+                            IconButton(
+                                onClick = {}, colors = IconButtonDefaults.iconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                )
+                            ) {
+                                Icon(
+                                    modifier = Modifier.size(20.dp),
+                                    imageVector = Icons.Outlined.Share,
+                                    contentDescription = null
+                                )
+                            }
+                            IconButton(
+                                onClick = {}, colors = IconButtonDefaults.iconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                )
+                            ) {
+                                Icon(
+                                    modifier = Modifier.size(20.dp),
+                                    painter = painterResource(R.drawable.rounded_flag_24),
+                                    contentDescription = null
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Sticky TabRow - stays at the top, doesn't move with header
                 PrimaryTabRow(
+                    modifier = Modifier.offset {
+                        IntOffset(0, (-headerScrollState.value).coerceAtMost(0))
+                    },
                     selectedTabIndex = horizontalPagerState.currentPage,
                     contentColor = MaterialTheme.colorScheme.onBackground,
+                    containerColor = MaterialTheme.colorScheme.background,
                     indicator = {
                         SecondaryIndicator(
                             Modifier.tabIndicatorOffset(
@@ -328,7 +419,7 @@ fun ProfileScreen(
                 ) {
                     tabItems.forEachIndexed { index, item ->
                         Tab(
-                            modifier = Modifier.height(56.dp),
+                            modifier = Modifier.height(tabRowHeight),
                             selected = horizontalPagerState.currentPage == index,
                             onClick = {
                                 coroutineScope.launch {
@@ -342,51 +433,6 @@ fun ProfileScreen(
                                 )
                             }
                         )
-                    }
-                }
-            }
-
-            item {
-                HorizontalPager(
-                    state = horizontalPagerState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(800.dp),
-                    key = { it }, // Recompose the pager when the page changes
-                    beyondViewportPageCount = 1 // Keep the next page in memory
-                ) { index ->
-                    when (index) {
-                        0 -> if (isOwner) {
-                            ProfileLikes(
-                                emptyList(),
-                                section1State,
-                                { profileViewModel.fetchUserLikes() },
-                                Modifier.fillMaxSize()
-                            )
-                        } else {
-                            ProfileActivity(
-                                emptyList(),
-                                section1State,
-                                { profileViewModel.fetchProfileActivity(userId) },
-                                Modifier.fillMaxSize()
-                            )
-                        }
-
-                        1 -> if (isOwner) {
-                            ProfileCollections(
-                                collectionContent,
-                                section2State,
-                                { profileViewModel.fetchProfileActivity(userId) },
-                                Modifier.fillMaxSize()
-                            )
-                        } else {
-                            ProfileLibrary(
-                                emptyList(),
-                                section2State,
-                                { profileViewModel.fetchProfileLibrary(userId) },
-                                Modifier.fillMaxSize()
-                            )
-                        }
                     }
                 }
             }

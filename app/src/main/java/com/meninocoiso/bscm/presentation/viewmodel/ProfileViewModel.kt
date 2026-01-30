@@ -103,10 +103,22 @@ val placeholderActivityItems = listOf(
     ActivityItem(
         date = Date(),
         content = listOf(placeholderChart, placeholderChart)
+    ),
+    ActivityItem(
+        date = Date(),
+        content = listOf(placeholderChart, placeholderChart, placeholderChart)
+    ),
+    ActivityItem(
+        date = Date(),
+        content = listOf(placeholderChart, placeholderChart, placeholderChart)
     )
 )
 
 val placeholderLibraryItems = listOf<CatalogItem>(
+    placeholderChart,
+    placeholderChart,
+    placeholderChart,
+    placeholderChart,
     placeholderChart,
     placeholderChart,
     placeholderChart,
