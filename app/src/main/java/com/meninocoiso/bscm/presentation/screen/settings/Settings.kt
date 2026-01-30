@@ -78,6 +78,7 @@ import com.meninocoiso.bscm.presentation.ui.modifiers.rememberFabNestedScrollCon
 import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonClip
 import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonShape
 import com.meninocoiso.bscm.domain.state.AppUpdateState
+import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileIndicator
 import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.SettingsViewModel
 import com.meninocoiso.bscm.util.LinkingUtils

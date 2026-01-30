@@ -46,11 +46,11 @@ fun LazyListScope.remoteSection(
                 is ContentState.Error -> {
                     UpdatesPanel {
                         StatusMessageUI(
+                            modifier = Modifier.padding(16.dp),
                             title = stringResource(R.string.fetch_updates_error),
                             message = stringResource(R.string.check_connection),
                             icon = R.drawable.rounded_hourglass_disabled_24,
-                            size = Size.Small,
-                            modifier = Modifier.padding(16.dp)
+                            size = Size.Small
                         )
                     }
                 }

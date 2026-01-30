@@ -97,11 +97,11 @@ internal fun ChartsSection(
 
                 is ContentState.Error -> {
                     StatusMessageUI(
+                        modifier = Modifier.fillMaxSize(),
                         title = stringResource(R.string.something_went_wrong),
                         message = stringResource(R.string.check_connection),
                         icon = R.drawable.rounded_emergency_home_24,
-                        onClick = { viewModel.fetchFeedCharts() },
-                        modifier = Modifier.fillMaxSize()
+                        onClick = { viewModel.fetchFeedCharts() }
                     )
                 }
 
@@ -110,12 +110,12 @@ internal fun ChartsSection(
         } else if (hasActiveQuery && searchCharts.isEmpty()) {
             // No charts to display - show empty state
             StatusMessageUI(
+                modifier = Modifier.fillMaxSize(),
                 title = stringResource(R.string.no_charts_found),
                 message = stringResource(R.string.no_charts_found_description),
                 icon = R.drawable.outline_filter_alt_24,
                 onClick = { viewModel.clearSearch() },
-                buttonLabel = stringResource(R.string.clear_search),
-                modifier = Modifier.fillMaxSize()
+                buttonLabel = stringResource(R.string.clear_search)
             )
         } else {
             // We have charts to display - show them with pull-to-refresh

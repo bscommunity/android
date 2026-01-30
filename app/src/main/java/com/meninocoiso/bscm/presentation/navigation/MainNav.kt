@@ -91,7 +91,7 @@ fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean, cacheUser: User?) {
                         this@SharedTransitionLayout,
                         this,
                         user = profile.user,
-                        userId = profile.user.id,
+                        userId = "12312313123123"/*profile.user.id*/,
                         onReturn = {
                             navController.navigateUp()
                         }

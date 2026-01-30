@@ -61,13 +61,13 @@ fun ChartDetailsRoute(
                 is DetailsState.Error -> {
                     StatusMessageUI(
                         title = stringResource(R.string.failed_to_load_chart_details),
-                        icon = R.drawable.rounded_error_24,
                         message = (chartState as DetailsState.Error).message
                             ?: stringResource(R.string.failed_to_load_chart_details_description),
-                        buttonLabel = stringResource(R.string.retry),
+                        icon = R.drawable.rounded_error_24,
                         onClick = {
                             viewModel.fetchChartById(chartId)
                         },
+                        buttonLabel = stringResource(R.string.retry),
                     )
 
                 }

@@ -17,6 +17,7 @@ data class Collection(
     val createdAt: LocalDateTime,
     @Serializable(with = LocalDateTimeSerializer::class)
     val updatedAt: LocalDateTime,
+    val items: List<CatalogItem> = emptyList(),
+    val coverUrl: String? = null,
     val itemCount: Int = 0,
-    val items: List<CatalogItem>? = null
 )

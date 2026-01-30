@@ -21,7 +21,7 @@ import androidx.core.graphics.toColorInt
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
-import com.meninocoiso.bscm.presentation.ui.components.layout.GradientPlaceholder
+import com.meninocoiso.bscm.presentation.ui.components.layout.LinearGradient
 import com.meninocoiso.bscm.presentation.ui.modifiers.debouncedClickable
 import com.meninocoiso.bscm.util.PreviewUtils.secondaryContainer
 import com.meninocoiso.bscm.util.PreviewUtils.titleContent
@@ -60,7 +60,7 @@ fun ChartPreview(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (chart.coverUrl.isEmpty() && chart.colors?.isNotEmpty() == true) {
-                GradientPlaceholder(
+                LinearGradient(
                     colors = chart.colors.map {
                         Color("#$it".toColorInt())
                     },

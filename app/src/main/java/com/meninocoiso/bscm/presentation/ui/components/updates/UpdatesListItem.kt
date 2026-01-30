@@ -22,8 +22,8 @@ import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
-import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.bscm.domain.state.DownloadState
+import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 
 @Composable
 internal fun UpdateListItem(
@@ -103,5 +103,6 @@ internal fun UpdateListItem(
                     }
                 }
             }
-        })
+        }
+    )
 }

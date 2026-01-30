@@ -95,16 +95,16 @@ internal fun ContentSection(
     if (!hasStoragePermission) {
         Column() {
             StatusMessageUI(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 36.dp),
                 title = stringResource(R.string.storage_permission_required),
                 message = stringResource(R.string.storage_permission_required_description),
                 icon = R.drawable.rounded_folder_limited_24,
-                buttonLabel = stringResource(R.string.select_folder),
                 onClick = {
                     folderPickerLauncher.launch(INITIAL_URL)
                 },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 36.dp)
+                buttonLabel = stringResource(R.string.select_folder)
             )
         }
     } else if (pendingUpdateCharts.isNotEmpty() || installedCharts.isNotEmpty()) {
@@ -135,12 +135,12 @@ internal fun ContentSection(
         }
     } else {
         StatusMessageUI(
-            title = stringResource(R.string.empty_downloads),
-            message = stringResource(R.string.empty_downloads_description),
-            icon = R.drawable.rounded_box_24,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 36.dp)
+                .padding(bottom = 36.dp),
+            title = stringResource(R.string.empty_downloads),
+            message = stringResource(R.string.empty_downloads_description),
+            icon = R.drawable.rounded_box_24
         )
     }
 

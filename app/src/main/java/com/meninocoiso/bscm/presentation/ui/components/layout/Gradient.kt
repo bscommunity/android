@@ -12,16 +12,33 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun GradientPlaceholder(
+fun LinearGradient(
+    modifier: Modifier = Modifier,
     colors: List<Color>,
-    size: Dp = 76.dp,
+    size: Dp? = 76.dp,
     borderRadius: Dp = 0.dp
 ) {
     val brush = Brush.horizontalGradient(colors)
 
     Box(
-        modifier = Modifier
-            .requiredSize(size)
+        modifier = modifier
+            .then(if (size != null) Modifier.requiredSize(size) else Modifier)
+            .clip(shape = androidx.compose.foundation.shape.RoundedCornerShape(borderRadius))
+            .background(brush),
+    )
+}
+@Composable
+fun RadialGradient(
+    modifier: Modifier = Modifier,
+    colors: List<Color>,
+    size: Dp? = 76.dp,
+    borderRadius: Dp = 0.dp
+) {
+    val brush = Brush.radialGradient(colors)
+
+    Box(
+        modifier = modifier
+            .then(if (size != null) Modifier.requiredSize(size) else Modifier)
             .clip(shape = androidx.compose.foundation.shape.RoundedCornerShape(borderRadius))
             .background(brush),
     )

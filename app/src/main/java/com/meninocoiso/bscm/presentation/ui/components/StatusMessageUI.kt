@@ -47,17 +47,16 @@ fun StatusMessagePreviewUI() {
         title = stringResource(R.string.no_internet_connection),
         message = stringResource(R.string.no_internet_connection_description),
         icon = R.drawable.rounded_wifi_off_24,
-        onClick = {},
-        buttonLabel = stringResource(R.string.try_again)
+        onClick = {}
     )
 }
 
 @Composable
 fun StatusMessageUI(
-    title: String,
+    modifier: Modifier? = Modifier,
+    title: String? = null,
     message: String,
     icon: Int,
-    modifier: Modifier? = Modifier,
     size: Size = Size.Medium,
     onClick: (() -> Unit)? = null,
     buttonLabel: String = stringResource(R.string.try_again)
@@ -77,14 +76,16 @@ fun StatusMessageUI(
             modifier = Modifier.size(size.icon.dp),
             contentDescription = null
         )
-        Text(
-            text = title,
-            textAlign = TextAlign.Center,
-            style = size.title(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-        )
+        if (title != null) {
+            Text(
+                text = title,
+                textAlign = TextAlign.Center,
+                style = size.title(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+            )
+        }
         Text(
             text = message,
             textAlign = TextAlign.Center,

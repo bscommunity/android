@@ -89,10 +89,10 @@ internal fun TourPassesSection(
         contentAlignment = Alignment.TopCenter,
     ) {
         StatusMessageUI(
+            modifier = Modifier.zIndex(50f).fillMaxSize(),
             title = stringResource(R.string.work_in_progress),
             message = stringResource(R.string.work_in_progress_description),
-            icon = R.drawable.rounded_hourglass_24,
-            modifier = Modifier.zIndex(50f).fillMaxSize()
+            icon = R.drawable.rounded_hourglass_24
         )
         SectionWrapper(
             modifier = Modifier
