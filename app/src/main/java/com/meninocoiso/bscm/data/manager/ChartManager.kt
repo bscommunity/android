@@ -114,75 +114,23 @@ class ChartManager @Inject constructor(
         )
     }
 
-    fun updateChart(chartId: String, operation: OperationOption): Flow<ContentResult<List<Chart>>> = flow {
-        val existing = memoryStore.contentById.value[chartId]
-        if (existing == null) {
-            emit(ContentResult.Error(context.getString(R.string.chart_not_found)))
-            return@flow
-        }
-        val result = localChartRepository.updateContent(chartId, operation).first()
-        result.fold(
-            onSuccess = { success ->
-                if (!success) {
-                    emit(ContentResult.Error(context.getString(R.string.failed_to_update)))
-                    return@fold
-                }
-                val updated = when (operation) {
-                    OperationOption.INSTALL -> existing.copy(isInstalled = true)
-                    OperationOption.UPDATE -> existing.availableVersion?.let { existing.copy(latestVersion = it, availableVersion = null) }
-                        ?: run {
-                            emit(ContentResult.Error(context.getString(R.string.no_available_version)))
-                            return@fold
-                        }
-                    OperationOption.DELETE -> existing.copy(isInstalled = false)
-                }
-                memoryStore.upsertContent(listOf(updated)) { it.id }
-                coroutineScope.launch { localChartRepository.update(listOf(updated)).first() }
-                emit(ContentResult.Success(memoryStore.contentById.value.values.toList()))
-            },
-            onFailure = { err -> emit(ContentResult.Error(context.getString(R.string.failed_to_update), err)) }
-        )
-    }
-
-    fun getChart(chartId: String): Flow<ContentResult<Chart>> = flow {
-        emit(ContentResult.Loading)
-        val cached = memoryStore.contentById.value[chartId]
-        if (cached != null) {
-            emit(ContentResult.Success(cached))
-            return@flow
-        }
-        
-        val localResult = localChartRepository.getItem(chartId).first()
-        localResult.fold(
-            onSuccess = { chart ->
-                memoryStore.upsertContent(listOf(chart)) { it.id }
-                emit(ContentResult.Success(chart))
-            },
-            onFailure = {
-                val remoteResult = remoteChartRepository.getItem(chartId).first()
-                remoteResult.fold(
-                    onSuccess = { chart ->
-                        memoryStore.upsertContent(listOf(chart)) { it.id }
-                        coroutineScope.launch { localChartRepository.insert(listOf(chart)).first() }
-                        emit(ContentResult.Success(chart))
-                    },
-                    onFailure = { err -> emit(ContentResult.Error(context.getString(R.string.chart_not_found), err)) }
-                )
+    fun updateChart(chartId: String, operation: OperationOption): Flow<ContentResult<List<Chart>>> =
+        contentManager.updateContent(chartId, operation) { existing, op ->
+            when (op) {
+                OperationOption.INSTALL -> Result.success(existing.copy(isInstalled = true))
+                OperationOption.UPDATE -> existing.availableVersion?.let {
+                    Result.success(existing.copy(latestVersion = it, availableVersion = null))
+                } ?: Result.failure(IllegalStateException(context.getString(R.string.no_available_version)))
+                OperationOption.DELETE -> Result.success(existing.copy(isInstalled = false))
             }
-        )
-    }
-
-    fun getSuggestions(query: String): Flow<List<String>> = flow {
-        if (query.isBlank()) {
-            emit(emptyList())
-            return@flow
         }
-        val result = remoteChartRepository.getSuggestions(query).first()
-        emit(result.getOrElse { emptyList() })
-    }
+
+    fun getChart(chartId: String): Flow<ContentResult<Chart>> = contentManager.getItem(chartId)
+
+    fun getSuggestions(query: String): Flow<List<String>> = contentManager.getSuggestions(query)
 
     fun postAnalytics(chartId: String, operation: OperationOption) {
-        coroutineScope.launch { remoteChartRepository.postAnalytics(chartId, operation).first() }
+        coroutineScope.launch { contentManager.postAnalytics(chartId, operation).first() }
     }
 
     suspend fun scanLocalCharts(rootUri: Uri) {

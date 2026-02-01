@@ -92,31 +92,4 @@ class ChartRepositoryLocal(
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
-
-    suspend fun updateChart(chart: Chart): Flow<Result<Boolean>> = flow {
-        chartDao.update(chart)
-        Log.d(TAG, "Updated chart: ${chartDao.getChart(chart.id)}")
-        emit(Result.success(true))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
-    suspend fun deleteChart(chart: Chart): Flow<Result<Boolean>> = flow {
-        chartDao.delete(chart)
-        emit(Result.success(true))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
-    suspend fun deleteChart(id: String): Flow<Result<Boolean>> = flow {
-        val chart = chartDao.getChart(id)
-        if (chart != null) {
-            chartDao.delete(chart)
-            emit(Result.success(true))
-        } else {
-            emit(Result.failure(IllegalArgumentException("Chart with id $id not found")))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
 }

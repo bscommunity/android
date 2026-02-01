@@ -6,13 +6,14 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.repository.DownloadRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.ErrorType
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.internal.Settings
-import com.meninocoiso.bscm.domain.repository.ChartLocalRepository
+import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.state.DownloadState
 import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -43,7 +44,7 @@ class ContentViewModel @Inject constructor(
     private val downloadServiceMonitor: DownloadServiceMonitor,
     private val downloadRepository: DownloadRepository,
     private val settingsRepository: SettingsRepository,
-    private val localChartRepository: ChartLocalRepository,
+    private val chartManager: ChartManager,
 ) : ViewModel() {
 
     private val _downloadStates = MutableStateFlow<Map<String, DownloadState>>(emptyMap())
@@ -281,11 +282,13 @@ class ContentViewModel @Inject constructor(
                 }
 
                 // Update the chart in local database
-                val updateResult = localChartRepository
-                    .updateContent(contentId, OperationOption.DELETE)
+                val updateResult = chartManager
+                    .updateChart(contentId, OperationOption.DELETE)
                     .first()
 
-                updateResult.getOrThrow() // Will throw if update failed
+                if (updateResult is ContentResult.Error) {
+                    throw IllegalStateException(updateResult.message)
+                }
 
                 // Reset the state and clear operation
                 updateState(contentId, DownloadState.Idle)

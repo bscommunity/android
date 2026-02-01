@@ -13,6 +13,7 @@ import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.repository.ChartLocalRepository
 import com.meninocoiso.bscm.domain.repository.ChartQuery
+import com.meninocoiso.bscm.domain.repository.ChartRemoteRepository
 import com.meninocoiso.bscm.domain.repository.ContentFeedRepository
 import com.meninocoiso.bscm.domain.repository.ContentLocalRepository
 import dagger.Module
@@ -64,12 +65,20 @@ object DatabaseModule {
         @ApplicationContext context: Context,
         remote: ContentFeedRepository<Chart, SortOption, ChartQuery>,
         local: ContentLocalRepository<Chart, SortOption, ChartQuery>,
+        remoteItemRepository: ChartRemoteRepository,
+        localItemRepository: ChartLocalRepository,
+        suggestionsRepository: ChartRemoteRepository,
+        analyticsRepository: ChartRemoteRepository,
         memoryStore: ContentMemoryStore<Chart>,
         @ApplicationScope coroutineScope: CoroutineScope
     ): ContentManager<Chart, SortOption, ChartQuery> = ContentManager(
         context = context,
         remoteRepository = remote,
         localRepository = local,
+        remoteItemRepository = remoteItemRepository,
+        localItemRepository = localItemRepository,
+        suggestionsRepository = suggestionsRepository,
+        analyticsRepository = analyticsRepository,
         memoryStore = memoryStore,
         coroutineScope = coroutineScope
     )

@@ -3,10 +3,14 @@ package com.meninocoiso.bscm.data.manager
 import android.content.Context
 import android.util.Log
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.model.CatalogItem
+import com.meninocoiso.bscm.domain.repository.ContentAnalyticsRepository
 import com.meninocoiso.bscm.domain.repository.ContentFeedRepository
+import com.meninocoiso.bscm.domain.repository.ContentItemRepository
 import com.meninocoiso.bscm.domain.repository.ContentLocalRepository
 import com.meninocoiso.bscm.domain.repository.ContentQuery
+import com.meninocoiso.bscm.domain.repository.ContentSuggestionsRepository
 import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.ContentState
 import kotlinx.coroutines.CoroutineScope
@@ -31,6 +35,10 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
     private val context: Context,
     private val remoteRepository: ContentFeedRepository<T, S, Q>,
     private val localRepository: ContentLocalRepository<T, S, Q>,
+    private val remoteItemRepository: ContentItemRepository<T>,
+    private val localItemRepository: ContentItemRepository<T>,
+    private val suggestionsRepository: ContentSuggestionsRepository,
+    private val analyticsRepository: ContentAnalyticsRepository,
     private val memoryStore: ContentMemoryStore<T>,
     private val coroutineScope: CoroutineScope,
 ) {
@@ -47,6 +55,80 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
 
     fun updateCacheState(newState: ContentState) { _cacheState.value = newState }
     fun updateFeedState(newState: ContentState) { _feedState.value = newState }
+
+    fun getItem(id: String): Flow<ContentResult<T>> = flow {
+        emit(ContentResult.Loading)
+        val cached = memoryStore.contentById.value[id]
+        if (cached != null) {
+            emit(ContentResult.Success(cached))
+            return@flow
+        }
+
+        val localResult = localItemRepository.getItem(id).first()
+        localResult.fold(
+            onSuccess = { item ->
+                memoryStore.upsertContent(listOf(item)) { it.id }
+                emit(ContentResult.Success(item))
+            },
+            onFailure = {
+                val remoteResult = remoteItemRepository.getItem(id).first()
+                remoteResult.fold(
+                    onSuccess = { item ->
+                        memoryStore.upsertContent(listOf(item)) { it.id }
+                        coroutineScope.launch { localRepository.insert(listOf(item)).first() }
+                        emit(ContentResult.Success(item))
+                    },
+                    onFailure = { err -> emit(ContentResult.Error(context.getString(R.string.content_not_found), err)) }
+                )
+            }
+        )
+    }
+
+    fun getSuggestions(query: String): Flow<List<String>> = flow {
+        if (query.isBlank()) {
+            emit(emptyList())
+            return@flow
+        }
+        val result = suggestionsRepository.getSuggestions(query).first()
+        emit(result.getOrElse { emptyList() })
+    }
+
+    suspend fun postAnalytics(id: String, operation: OperationOption): Flow<Result<Boolean>> =
+        analyticsRepository.postAnalytics(id, operation)
+
+    fun updateContent(
+        id: String,
+        operation: OperationOption,
+        mapUpdated: (T, OperationOption) -> Result<T>
+    ): Flow<ContentResult<List<T>>> = flow {
+        val existing = memoryStore.contentById.value[id]
+        if (existing == null) {
+            emit(ContentResult.Error(context.getString(R.string.content_not_found)))
+            return@flow
+        }
+
+        val result = localRepository.updateContent(id, operation).first()
+        result.fold(
+            onSuccess = { success ->
+                if (!success) {
+                    emit(ContentResult.Error(context.getString(R.string.failed_to_update)))
+                    return@fold
+                }
+                val mapped = mapUpdated(existing, operation)
+                mapped.fold(
+                    onSuccess = { updated ->
+                        memoryStore.upsertContent(listOf(updated)) { it.id }
+                        // coroutineScope.launch { localRepository.update(listOf(updated)).first() }
+                        emit(ContentResult.Success(memoryStore.contentById.value.values.toList()))
+                    },
+                    onFailure = { err ->
+                        emit(ContentResult.Error(err.message ?: context.getString(R.string.failed_to_update), err))
+                    }
+                )
+            },
+            onFailure = { err -> emit(ContentResult.Error(context.getString(R.string.failed_to_update), err)) }
+        )
+    }
 
     suspend fun loadCachedContent(sortBy: S, limit: Int? = null, filters: Q? = null) {
         _cacheState.value = ContentState.Loading
