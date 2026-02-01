@@ -9,7 +9,7 @@ import com.meninocoiso.bscm.data.manager.ContentManager
 import com.meninocoiso.bscm.data.manager.ContentMemoryStore
 import com.meninocoiso.bscm.data.repository.ChartContentRepositoryLocal
 import com.meninocoiso.bscm.data.repository.ChartRepositoryLocal
-import com.meninocoiso.bscm.data.service.ContentCacheManager
+import com.meninocoiso.bscm.data.manager.ContentCacheManager
 import com.meninocoiso.bscm.data.service.FeedOrchestrator
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.repository.ChartRepository

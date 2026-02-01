@@ -4,10 +4,10 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
-import com.meninocoiso.bscm.data.model.InstalledContentEntry
 import com.meninocoiso.bscm.data.parser.ChartMetadataParser
 import com.meninocoiso.bscm.data.parser.ExternalContentConfig
 import com.meninocoiso.bscm.data.parser.ExternalContentMetadata
+import com.meninocoiso.bscm.domain.model.internal.InstalledContentEntry
 import com.meninocoiso.bscm.util.StorageUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers

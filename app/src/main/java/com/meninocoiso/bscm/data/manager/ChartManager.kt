@@ -14,6 +14,7 @@ import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.internal.InstalledContentEntry
 import com.meninocoiso.bscm.domain.repository.ChartRepository
 import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.ContentState
@@ -212,7 +213,7 @@ class ChartManager @Inject constructor(
     }
 
     private fun hydrateMissingInstalledCharts(
-        entries: Map<String, com.meninocoiso.bscm.data.model.InstalledContentEntry<ExternalContentMetadata>>
+        entries: Map<String, InstalledContentEntry<ExternalContentMetadata>>
     ): List<Chart> {
         if (entries.isEmpty()) return emptyList()
         val hydrated = mutableListOf<Chart>()

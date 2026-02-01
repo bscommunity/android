@@ -1,7 +1,7 @@
 package com.meninocoiso.bscm.data.parser
 
 import android.util.Log
-import com.meninocoiso.bscm.data.remote.dto.ContributorUserDto
+import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.enums.Role
 import com.meninocoiso.bscm.domain.model.Contributor
 import java.time.LocalDateTime
@@ -26,7 +26,7 @@ class ContributorParser @Inject constructor() {
                     val parts = item.split("|", limit = 3)
                     if (parts.size >= 2) {
                         val username = parts[0]
-                        val imageUrl = parts[1].takeIf { it.isNotBlank() }
+                        val avatarUrl = parts[1].takeIf { it.isNotBlank() }
                         val rolesStr = parts.getOrNull(2)
 
                         val roles = rolesStr?.split(",")
@@ -36,11 +36,10 @@ class ContributorParser @Inject constructor() {
 
                         if (username.isNotBlank()) {
                             Contributor(
-                                user = ContributorUserDto(
+                                user = SimplifiedUser(
                                     id = username,
                                     username = username,
-                                    imageUrl = imageUrl,
-                                    createdAt = null
+                                    avatarUrl = avatarUrl,
                                 ),
                                 chartId = chartId,
                                 roles = roles,

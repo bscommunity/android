@@ -5,12 +5,10 @@ import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.KtorApiClient
 import com.meninocoiso.bscm.data.repository.ChartContentRepositoryRemote
 import com.meninocoiso.bscm.data.repository.ChartRepositoryRemote
-import com.meninocoiso.bscm.data.repository.UserRepositoryRemote
 import com.meninocoiso.bscm.data.security.AuthInterceptor
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.repository.ChartRepository
 import com.meninocoiso.bscm.domain.repository.ContentRepository
-import com.meninocoiso.bscm.domain.repository.UserRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -30,12 +28,6 @@ object NetworkModule {
         @ApplicationContext context: Context,
         interceptor: AuthInterceptor
     ): ApiClient = KtorApiClient(context, interceptor)
-
-    @Provides
-    @Singleton
-    fun provideUserRepository(
-        apiClient: ApiClient
-    ): UserRepository = UserRepositoryRemote(apiClient)
 
     @Provides
     @Singleton

@@ -4,7 +4,7 @@ import android.util.Log
 import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
 import com.meninocoiso.bscm.data.local.entity.QueuedInteractionEntity
 import com.meninocoiso.bscm.data.remote.ApiClient
-import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionItemRequest
+import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionItemRequest
 import com.meninocoiso.bscm.domain.enums.ActionType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -157,7 +157,7 @@ class InteractionQueueManager @Inject constructor(
             
             // Convert to batch request format
             val batchRequest = finalInteractions.map { entity ->
-                UpdateCollectionItemRequest(
+                CreateCollectionItemRequest(
                     contentId = entity.contentId,
                     collectionId = entity.collectionId,
                     action = entity.action
@@ -167,7 +167,7 @@ class InteractionQueueManager @Inject constructor(
             Log.d(TAG, "Sending batch of ${batchRequest.size} interactions to server")
             
             // Send batch request to server
-            try {
+            /*try {
                 val success = apiClient.batchProcessInteractions(batchRequest)
                 
                 if (success) {
@@ -182,8 +182,7 @@ class InteractionQueueManager @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to send batch request", e)
                 handleRetries(finalInteractions)
-            }
-            
+            }*/
         } catch (e: Exception) {
             Log.e(TAG, "Error in processQueuedInteractions", e)
         }

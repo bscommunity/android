@@ -1,4 +1,4 @@
-package com.meninocoiso.bscm.data.service
+package com.meninocoiso.bscm.data.manager
 
 import android.util.Log
 import javax.inject.Inject

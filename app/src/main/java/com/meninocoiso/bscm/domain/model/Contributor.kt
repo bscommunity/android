@@ -3,7 +3,7 @@ package com.meninocoiso.bscm.domain.model
 import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.meninocoiso.bscm.data.remote.dto.ContributorUserDto
+import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.enums.Role
 import com.meninocoiso.bscm.domain.serialization.LocalDateTimeSerializer
 import kotlinx.parcelize.Parcelize
@@ -14,7 +14,7 @@ import java.time.LocalDateTime
 @Serializable
 @Parcelize
 data class Contributor(
-    @PrimaryKey val user: ContributorUserDto,
+    @PrimaryKey val user: SimplifiedUser,
     val chartId: String,
     val roles: List<Role>,
     @Serializable(with = LocalDateTimeSerializer::class)

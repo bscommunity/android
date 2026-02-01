@@ -1,13 +1,14 @@
 package com.meninocoiso.bscm.data.service
 
 import android.util.Log
+import com.meninocoiso.bscm.data.manager.ContentCacheManager
 import javax.inject.Inject
 
 private const val TAG = "FeedOrchestrator"
 
 /**
  * Result of a feed operation containing the updated state.
- * Allows [ContentMemoryStore] to apply state changes and trigger callbacks.
+ * Allows [com.meninocoiso.bscm.data.manager.ContentMemoryStore] to apply state changes and trigger callbacks.
  */
 data class FeedUpdateResult<T>(
     val updatedContent: Map<String, T>,

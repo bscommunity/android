@@ -1,4 +1,4 @@
-package com.meninocoiso.bscm.data.model
+package com.meninocoiso.bscm.domain.model.internal
 
 import androidx.documentfile.provider.DocumentFile
 
@@ -11,4 +11,3 @@ data class InstalledContentEntry<T> (
     val config: Any?,
     val folder: DocumentFile
 )
-

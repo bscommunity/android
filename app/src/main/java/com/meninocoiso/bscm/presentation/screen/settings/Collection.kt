@@ -28,11 +28,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.ButtonUI
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
+import com.meninocoiso.bscm.presentation.ui.components.profile.BaseContainer
 import com.meninocoiso.bscm.presentation.ui.components.profile.CatalogFilters
 import com.meninocoiso.bscm.presentation.ui.components.profile.contentList
+import com.meninocoiso.bscm.presentation.ui.components.profile.pagination
 import com.meninocoiso.bscm.presentation.viewmodel.placeholderCollection
 import kotlinx.serialization.Serializable
 
@@ -53,6 +56,7 @@ fun CollectionScreen(
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
     val collection = placeholderCollection
+    val isLoadingMore = false
 
     Scaffold(
         modifier = Modifier
@@ -91,11 +95,6 @@ fun CollectionScreen(
                         horizontalAlignment = Alignment.Start
                     ) {
                         Text(collection.name, style = MaterialTheme.typography.headlineSmall)
-                        ButtonUI(
-                            text = "Manage collection",
-                            icon = R.drawable.outline_settings_24,
-                            onClick = { /* Navigate to edit collection */ },
-                        )
                     }
                 },
                 scrollBehavior = scrollBehavior
@@ -103,28 +102,44 @@ fun CollectionScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        if (collection.items.isEmpty()) {
-            StatusMessageUI(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                icon = R.drawable.rounded_error_24,
-                message = "This collection is empty."
-            )
-        } else {
+        BaseContainer(
+            isEmpty = collection.items.isEmpty(),
+            state = ContentState.Success,
+            onRetry = { /* Retry loading collection */ },
+            empty = {
+                StatusMessageUI(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 48.dp),
+                    message = "No content in this collection",
+                    icon = R.drawable.outline_library_music_24
+                )
+            }
+        ) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .padding(innerPadding),
                 verticalArrangement = Arrangement.Top,
-                horizontalAlignment = Alignment.CenterHorizontally,
+                horizontalAlignment = Alignment.Start,
             ) {
-                stickyHeader {
+                item {
+                    ButtonUI(
+                        text = "Manage collection",
+                        icon = R.drawable.outline_settings_24,
+                        onClick = { /* Navigate to edit collection */ },
+                        modifier = Modifier
+                            .padding(start = 16.dp)
+                    )
+                }
+                item {
                     CatalogFilters(
                         items = collection.items,
                         onFilterSelected = { /* Handle filter selection */ })
                 }
                 contentList(items = collection.items, onNavigateToDetails = onNavigateToDetails)
+                pagination(isLoadingMore, "End of collection")
             }
         }
     }

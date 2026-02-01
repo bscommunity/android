@@ -22,24 +22,18 @@ fun CatalogFilters(
     val options = mutableListOf(
         ContentFilterOption(
             id = 0,
-            title = "All",
-            count = items.size,
-            disabled = items.isEmpty()
-        ),
-        ContentFilterOption(
-            id = 2,
             title = "Charts",
             count = chartsCount,
             disabled = chartsCount == 0
         ),
         ContentFilterOption(
-            id = 3,
+            id = 1,
             title = "Tour Passes",
             count = tourPassesCount,
             disabled = tourPassesCount == 0
         ),
         ContentFilterOption(
-            id = 4,
+            id = 2,
             title = "Themes",
             count = themesCount,
             disabled = themesCount == 0
@@ -48,8 +42,9 @@ fun CatalogFilters(
 
     if (collectionsAmount != null) {
         options.add(
-            1, ContentFilterOption(
-                id = 1,
+            options.size - 1,
+            ContentFilterOption(
+                id = 3,
                 title = "Collections",
                 count = collectionsAmount,
                 disabled = collectionsAmount == 0

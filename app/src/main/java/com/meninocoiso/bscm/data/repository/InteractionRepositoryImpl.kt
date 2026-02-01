@@ -1,7 +1,7 @@
 package com.meninocoiso.bscm.data.repository
 
 import com.meninocoiso.bscm.data.remote.ApiClient
-import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionItemRequest
+import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionItemRequest
 import com.meninocoiso.bscm.domain.enums.ActionType
 import com.meninocoiso.bscm.domain.repository.InteractionRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -28,7 +28,7 @@ class InteractionRepositoryImpl @Inject constructor(
     private val apiClient: ApiClient,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : InteractionRepository {
-    private val pendingInteractions = mutableMapOf<Pair<String, String>, UpdateCollectionItemRequest>()
+    private val pendingInteractions = mutableMapOf<Pair<String, String>, CreateCollectionItemRequest>()
     private val mutex = Mutex()
     private var batchJob: Job? = null
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
@@ -36,7 +36,7 @@ class InteractionRepositoryImpl @Inject constructor(
     private fun queueInteraction(contentId: String, collectionId: String, action: ActionType) {
         scope.launch {
             mutex.withLock {
-                pendingInteractions[Pair(contentId, collectionId)] = UpdateCollectionItemRequest(contentId, collectionId, action)
+                pendingInteractions[Pair(contentId, collectionId)] = CreateCollectionItemRequest(contentId, collectionId, action)
                 if (batchJob == null || batchJob?.isCompleted == true) {
                     batchJob = scope.launch {
                         delay(BATCH_DELAY_MS)
@@ -48,14 +48,14 @@ class InteractionRepositoryImpl @Inject constructor(
     }
 
     private suspend fun sendBatch() {
-        val batch: List<UpdateCollectionItemRequest>
+        val batch: List<CreateCollectionItemRequest>
         mutex.withLock {
             batch = pendingInteractions.values.toList()
             pendingInteractions.clear()
         }
         if (batch.isNotEmpty()) {
             try {
-                apiClient.batchProcessInteractions(batch)
+                // apiClient.batchProcessInteractions(batch)
             } catch (e: Exception) {
                 // Optionally handle retry logic here
             }

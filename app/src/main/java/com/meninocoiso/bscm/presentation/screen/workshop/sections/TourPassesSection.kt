@@ -11,7 +11,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.zIndex
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.data.remote.dto.ContributorUserDto
+import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.enums.Role
 import com.meninocoiso.bscm.domain.model.Contributor
 import com.meninocoiso.bscm.domain.model.TourPass
@@ -39,7 +39,7 @@ internal fun TourPassesSection(
             charts = listOf(),
             contributors = listOf(
                 Contributor(
-                    user = ContributorUserDto(id = "1", username = "meninocoiso", imageUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
+                    user = SimplifiedUser(id = "1", username = "meninocoiso", avatarUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
                     chartId = "asdads",
                     roles = listOf(Role.GAMEPLAY),
                     joinedAt = LocalDateTime.now()
@@ -57,7 +57,7 @@ internal fun TourPassesSection(
             charts = listOf(),
             contributors = listOf(
                 Contributor(
-                    user = ContributorUserDto(id = "1", username = "meninocoiso", imageUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
+                    user = SimplifiedUser(id = "1", username = "meninocoiso", avatarUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
                     chartId = "asdads",
                     roles = listOf(Role.GAMEPLAY),
                     joinedAt = LocalDateTime.now()
@@ -75,7 +75,7 @@ internal fun TourPassesSection(
             charts = listOf(),
             contributors = listOf(
                 Contributor(
-                    user = ContributorUserDto(id = "1", username = "meninocoiso", imageUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
+                    user = SimplifiedUser(id = "1", username = "meninocoiso", avatarUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
                     chartId = "asdads",
                     roles = listOf(Role.GAMEPLAY),
                     joinedAt = LocalDateTime.now()

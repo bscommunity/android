@@ -3,7 +3,7 @@ package com.meninocoiso.bscm.data.remote
 import android.content.Context
 import android.util.Log
 import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionRequest
-import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionItemRequest
+import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionItemRequest
 import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionRequest
 import com.meninocoiso.bscm.data.security.AuthInterceptor
 import com.meninocoiso.bscm.data.security.AuthPlugin
@@ -87,14 +87,6 @@ class KtorApiClient @Inject constructor(
             }
             contentType(KtorContentType.Application.Json)
         }
-    }
-
-    override suspend fun getUsers(): List<User> {
-        return client.get("users").body()
-    }
-
-    override suspend fun getUser(id: String): User {
-        return client.get("users/$id").body()
     }
 
     override suspend fun getChart(id: String): Chart {
@@ -270,95 +262,6 @@ class KtorApiClient @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "Failed to fetch contributors", e)
             emptyList()
-        }
-    }
-
-    // Collections
-    override suspend fun getCollections(limit: Int?, offset: Int?): List<Collection> {
-        val response = client.get("collections") {
-            url {
-                limit?.let { parameters.append("limit", it.toString()) }
-                offset?.let { parameters.append("offset", it.toString()) }
-            }
-        }
-        return response.body()
-    }
-
-    override suspend fun createCollection(request: CreateCollectionRequest): Collection {
-        val response = client.post("collections") {
-            setBody(request)
-        }
-        return response.body()
-    }
-
-    override suspend fun updateCollection(collectionId: String, request: UpdateCollectionRequest): Boolean {
-        val response = client.put("collections/$collectionId") {
-            setBody(request)
-        }
-        return response.status == HttpStatusCode.OK
-    }
-
-    override suspend fun deleteCollection(collectionId: String): Boolean {
-        val response = client.delete("collections/$collectionId")
-        return response.status == HttpStatusCode.OK
-    }
-
-    // Collection Items
-    override suspend fun getCollectionItems(
-        collectionId: String,
-        category: ContentType,
-        limit: Int?,
-        offset: Int?
-    ): List<CatalogItem> {
-        val response = client.get("collections/$collectionId/items") {
-            url {
-                parameters.append("category", category.name)
-                limit?.let { parameters.append("limit", it.toString()) }
-                offset?.let { parameters.append("offset", it.toString()) }
-            }
-        }
-        return response.body()
-    }
-
-    override suspend fun addItemToCollection(collectionId: String, contentId: String): Boolean {
-        val response = client.post("collections/$collectionId/items") {
-            url {
-                parameters.append("contentId", contentId)
-            }
-        }
-        return response.status == HttpStatusCode.OK
-    }
-
-    override suspend fun removeItemFromCollection(collectionId: String, contentId: String): Boolean {
-        val response = client.delete("collections/$collectionId/items") {
-            url {
-                parameters.append("contentId", contentId)
-            }
-        }
-        return response.status == HttpStatusCode.OK
-    }
-
-    // Batch processing
-    override suspend fun batchProcessInteractions(interactions: List<UpdateCollectionItemRequest>): Boolean {
-        Log.d(TAG, "Sending batch of ${interactions.size} interactions")
-        val response = client.post("collections/batch") {
-            setBody(interactions)
-        }
-        
-        when (response.status) {
-            HttpStatusCode.OK -> {
-                Log.d(TAG, "Batch processing successful")
-                return true
-            }
-            else -> {
-                val errorResponse = try {
-                    response.body<ApiError>()
-                } catch (_: Exception) {
-                    ApiError("Batch processing failed")
-                }
-                Log.e(TAG, "Batch processing failed: ${errorResponse.error}")
-                return false
-            }
         }
     }
 }

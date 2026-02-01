@@ -1,0 +1,13 @@
+package com.meninocoiso.bscm.data.remote.dto.user
+
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class UserProfileCounts(
+    val charts: Int,
+    val likes: Int,
+    val bookmarks: Int,
+    val collections: Int,
+    val followers: Int,
+    val following: Int
+)

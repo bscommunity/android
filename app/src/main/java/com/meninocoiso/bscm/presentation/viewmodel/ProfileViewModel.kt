@@ -1,7 +1,7 @@
 package com.meninocoiso.bscm.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.meninocoiso.bscm.data.remote.dto.ContributorUserDto
+import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Role
 import com.meninocoiso.bscm.domain.model.CatalogItem
@@ -58,33 +58,30 @@ val placeholderChart = Chart(
     availableVersion = null,
     contributors = listOf(
         Contributor(
-            user = ContributorUserDto(
+            user = SimplifiedUser(
                 id = "user_placeholder_id",
                 username = "ContribuidorExemplo",
-                imageUrl = null,
-                createdAt = LocalDateTime.now()
+                avatarUrl = null,
             ),
             chartId = "placeholder_chart_id",
             roles = listOf(Role.AUDIO),
             joinedAt = LocalDateTime.now()
         ),
         Contributor(
-            user = ContributorUserDto(
+            user = SimplifiedUser(
                 id = "user_placeholder_id",
                 username = "meumano2",
-                imageUrl = null,
-                createdAt = LocalDateTime.now()
+                avatarUrl = null,
             ),
             chartId = "placeholder_chart_id",
             roles = listOf(Role.AUDIO),
             joinedAt = LocalDateTime.now()
         ),
         Contributor(
-            user = ContributorUserDto(
+            user = SimplifiedUser(
                 id = "user_placeholder_id",
                 username = "ala3alalalala3",
-                imageUrl = null,
-                createdAt = LocalDateTime.now()
+                avatarUrl = null,
             ),
             chartId = "placeholder_chart_id",
             roles = listOf(Role.AUDIO),
@@ -132,7 +129,16 @@ val placeholderCollection = Collection(
     updatedAt = LocalDateTime.now(),
     userId = UUID.randomUUID(),
     isPublic = true,
-    items = listOf(placeholderChart, placeholderChart)
+    items = listOf(
+        placeholderChart,
+        placeholderChart,
+        placeholderChart,
+        placeholderChart,
+        placeholderChart,
+        placeholderChart,
+        placeholderChart,
+        placeholderChart
+    )
 )
 
 val favoriteCollection = Collection(

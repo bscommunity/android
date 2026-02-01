@@ -4,9 +4,9 @@ import com.meninocoiso.bscm.domain.enums.ActionType
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UpdateCollectionItemRequest(
+data class CreateCollectionItemRequest(
     val contentId: String,
-    val collectionId: String, // "likes", "favorites", or a custom collection ID
+    val collectionId: String,
     val action: ActionType
 )
 
