@@ -2,19 +2,13 @@ package com.meninocoiso.bscm.data.remote
 
 import android.content.Context
 import android.util.Log
-import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionRequest
-import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionItemRequest
-import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionRequest
 import com.meninocoiso.bscm.data.security.AuthInterceptor
 import com.meninocoiso.bscm.data.security.AuthPlugin
-import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.enums.SortOption
-import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
-import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.domain.model.auth.AuthRequest
@@ -28,10 +22,8 @@ import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
-import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
@@ -93,16 +85,26 @@ class KtorApiClient @Inject constructor(
         return client.get("charts/$id").body()
     }
 
-    override suspend fun getFeedCharts(sortBy: SortOption, limit: Int?, offset: Int): List<Chart> {
-        val response = client.get("charts") {
+    override suspend fun getCharts(
+        query: String?,
+        sortBy: SortOption?,
+        difficulties: List<Difficulty>?,
+        genres: List<Genre>?,
+        limit: Int?,
+        offset: Int
+    ): List<Chart> {
+        val response = client.get("charts"){
             url {
-                parameters.append("sortBy", sortBy.toString())
+                query?.let { parameters.append("query", it) }
+                sortBy?.let { parameters.append("sortBy", it.toString()) }
+                difficulties?.let { parameters.append("difficulties", it.joinToString(",")) }
+                genres?.let { parameters.append("genres", it.joinToString(",")) }
                 limit?.let { parameters.append("limit", it.toString()) }
                 parameters.append("offset", offset.toString())
             }
         }
-        
-        Log.d(TAG, "getFeedCharts: Response status=${response.status}, response: ${response.body<String>()}")
+
+        Log.d(TAG, "getCharts: Response status=${response.status}, response: ${response.body<String>()}")
 
         // Check the response status first
         when (response.status) {
@@ -130,24 +132,6 @@ class KtorApiClient @Inject constructor(
                 throw Exception("API Error (${response.status.value}): ${errorResponse.error}")
             }
         }
-    }
-
-    override suspend fun getCharts(
-        query: String?,
-        difficulties: List<Difficulty>?,
-        genres: List<Genre>?,
-        limit: Int?,
-        offset: Int
-    ): List<Chart> {
-        return client.get("charts"){
-            url {
-                query?.let { parameters.append("query", it) }
-                difficulties?.let { parameters.append("difficulties", it.joinToString(",")) }
-                genres?.let { parameters.append("genres", it.joinToString(",")) }
-                limit?.let { parameters.append("limit", it.toString()) }
-                parameters.append("offset", offset.toString())
-            }
-        }.body()
     }
 
     override suspend fun getChartsById(ids: List<String>): List<Chart> {

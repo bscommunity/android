@@ -39,20 +39,22 @@ interface ChartDao {
     fun getSuggestions(query: String, limit: Int?): List<String>*/
 
     @Query("""
-        SELECT c.* FROM charts c
-        ORDER BY c.latest_published_at DESC
+        SELECT * FROM charts 
+        WHERE (:query IS NULL OR track LIKE '%' || :query || '%' OR artist LIKE '%' || :query || '%')
+        ORDER BY latest_published_at DESC
         LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END
         OFFSET :offset
     """)
-    fun getChartsSortedByLastUpdated(limit: Int?, offset: Int): List<Chart>
+    fun getChartsSortedByLastUpdatedWithQuery(query: String?, limit: Int?, offset: Int): List<Chart>
 
     @Query("""
-        SELECT * FROM charts
+        SELECT * FROM charts 
+        WHERE (:query IS NULL OR track LIKE '%' || :query || '%' OR artist LIKE '%' || :query || '%')
         ORDER BY downloads_sum DESC
         LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END
         OFFSET :offset
     """)
-    fun getChartsSortedByMostDownloaded(limit: Int?, offset: Int): List<Chart>
+    fun getChartsSortedByMostDownloadedWithQuery(query: String?, limit: Int?, offset: Int): List<Chart>
     
     @Query("SELECT * FROM charts WHERE track LIKE :first AND " +
             "artist LIKE :last LIMIT 1")

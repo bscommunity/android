@@ -21,6 +21,7 @@ import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.result.ContentEvent
 import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.ContentState
+import com.meninocoiso.bscm.domain.repository.ChartQuery
 import com.meninocoiso.bscm.util.StorageUtils
 import com.meninocoiso.bscm.util.StorageUtils.BEATSTAR_URI
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -213,10 +214,13 @@ class WorkshopViewModel @Inject constructor(
 
             chartManager.searchCharts(
                 query = query,
-                difficulties = difficulties,
-                genres = genres,
+                sortBy = currentSortOption,
                 limit = BATCH_SIZE,
-                offset = 0
+                offset = 0,
+                filters = ChartQuery(
+                    difficulties = difficulties,
+                    genres = genres
+                )
             ).collect { result ->
                 when (result) {
                     is ContentResult.Success -> {
@@ -334,10 +338,13 @@ class WorkshopViewModel @Inject constructor(
                 // We're in search mode
                 chartManager.searchCharts(
                     query = currentSearchQuery,
-                    difficulties = difficulties,
-                    genres = genres,
+                    sortBy = currentSortOption,
                     limit = BATCH_SIZE,
-                    offset = currentSearchPage * BATCH_SIZE
+                    offset = currentSearchPage * BATCH_SIZE,
+                    filters = ChartQuery(
+                        difficulties = difficulties,
+                        genres = genres
+                    )
                 )
             }
 

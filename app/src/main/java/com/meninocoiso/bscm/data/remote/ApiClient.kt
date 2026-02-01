@@ -14,9 +14,9 @@ import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
 
 interface ApiClient {
     suspend fun getChart(id: String): Chart
-    suspend fun getFeedCharts(sortBy: SortOption, limit: Int? = 10, offset: Int = 0): List<Chart>
     suspend fun getCharts(
         query: String?,
+        sortBy: SortOption? = null,
         difficulties: List<Difficulty>? = null,
         genres: List<Genre>? = null,
         limit: Int? = 10,

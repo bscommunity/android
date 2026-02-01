@@ -4,7 +4,9 @@ import android.content.Context
 import android.util.Log
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.CatalogItem
-import com.meninocoiso.bscm.domain.repository.ContentRepository
+import com.meninocoiso.bscm.domain.repository.ContentFeedRepository
+import com.meninocoiso.bscm.domain.repository.ContentLocalRepository
+import com.meninocoiso.bscm.domain.repository.ContentQuery
 import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.ContentState
 import kotlinx.coroutines.CoroutineScope
@@ -25,10 +27,10 @@ import javax.inject.Singleton
  * Concrete managers (e.g., charts) should delegate to this with appropriate adapters.
  */
 @Singleton
-class ContentManager<T : CatalogItem> @Inject constructor(
+class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
     private val context: Context,
-    private val remoteRepository: ContentRepository<T>,
-    private val localRepository: ContentRepository<T>,
+    private val remoteRepository: ContentFeedRepository<T, S, Q>,
+    private val localRepository: ContentLocalRepository<T, S, Q>,
     private val memoryStore: ContentMemoryStore<T>,
     private val coroutineScope: CoroutineScope,
 ) {
@@ -46,10 +48,15 @@ class ContentManager<T : CatalogItem> @Inject constructor(
     fun updateCacheState(newState: ContentState) { _cacheState.value = newState }
     fun updateFeedState(newState: ContentState) { _feedState.value = newState }
 
-    suspend fun loadCachedContent(sortBy: Any, limit: Int? = null) {
+    suspend fun loadCachedContent(sortBy: S, limit: Int? = null, filters: Q? = null) {
         _cacheState.value = ContentState.Loading
         try {
-            val cached = localRepository.getSorted(sortBy, limit = limit).first()
+            val cached = localRepository.getContent(
+                query = null,
+                sortBy = sortBy,
+                limit = limit,
+                filters = filters
+            ).first()
             cached.fold(
                 onSuccess = { list ->
                     memoryStore.replaceFeed(
@@ -69,10 +76,11 @@ class ContentManager<T : CatalogItem> @Inject constructor(
     }
 
     fun fetchFeed(
-        sortBy: Any,
+        sortBy: S,
         forceRefresh: Boolean = false,
         limit: Int = 10,
         offset: Int = 0,
+        filters: Q? = null,
     ): Flow<ContentResult<List<T>>> = flow {
         // We leave this to the caller (e.g WorkshopViewModel) to set before invoking fetch
         // _feedState.value = ContentState.Loading
@@ -87,7 +95,13 @@ class ContentManager<T : CatalogItem> @Inject constructor(
         }
 
         emit(ContentResult.Loading)
-        val remoteResult = remoteRepository.getSorted(sortBy, limit, offset).first()
+        val remoteResult = remoteRepository.getContent(
+            query = null,
+            sortBy = sortBy,
+            limit = limit,
+            offset = offset,
+            filters = filters
+        ).first()
         remoteResult.fold(
             onSuccess = { items ->
                 Log.d("ContentManager", "Fetched ${items.size} items from remote")
@@ -120,8 +134,10 @@ class ContentManager<T : CatalogItem> @Inject constructor(
 
     fun search(
         query: String,
+        sortBy: S? = null,
         limit: Int = 10,
         offset: Int = 0,
+        filters: Q? = null,
     ): Flow<ContentResult<List<T>>> = flow {
         if (query.isBlank()) {
             memoryStore.clearSearchResults()
@@ -129,7 +145,13 @@ class ContentManager<T : CatalogItem> @Inject constructor(
             return@flow
         }
         emit(ContentResult.Loading)
-        val remoteResult = remoteRepository.search(query, limit, offset).first()
+        val remoteResult = remoteRepository.getContent(
+            query = query,
+            sortBy = sortBy,
+            limit = limit,
+            offset = offset,
+            filters = filters
+        ).first()
         remoteResult.fold(
             onSuccess = { items ->
                 memoryStore.addWithoutAffectingFeed(items, getId = { it.id })

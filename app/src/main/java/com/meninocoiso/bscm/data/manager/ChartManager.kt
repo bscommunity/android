@@ -9,13 +9,13 @@ import com.meninocoiso.bscm.data.parser.ExternalContentConfig
 import com.meninocoiso.bscm.data.parser.ExternalContentMetadata
 import com.meninocoiso.bscm.data.service.ChartStorageScanner
 import com.meninocoiso.bscm.di.ApplicationScope
-import com.meninocoiso.bscm.domain.enums.Difficulty
-import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.internal.InstalledContentEntry
-import com.meninocoiso.bscm.domain.repository.ChartRepository
+import com.meninocoiso.bscm.domain.repository.ChartLocalRepository
+import com.meninocoiso.bscm.domain.repository.ChartRemoteRepository
+import com.meninocoiso.bscm.domain.repository.ChartQuery
 import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.ContentState
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import javax.inject.Named
 import javax.inject.Singleton
 
 private const val TAG = "ChartManager"
@@ -40,12 +39,12 @@ private const val TAG = "ChartManager"
 class ChartManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
     @param:ApplicationScope private val coroutineScope: CoroutineScope,
-    @param:Named("Remote") private val remoteChartRepository: ChartRepository,
-    @param:Named("Local") private val localChartRepository: ChartRepository,
+    private val remoteChartRepository: ChartRemoteRepository,
+    private val localChartRepository: ChartLocalRepository,
     private val chartStorageScanner: ChartStorageScanner,
     private val chartPlaceholderFactory: ChartPlaceholderFactory,
     private val memoryStore: ContentMemoryStore<Chart>,
-    private val contentManager: ContentManager<Chart>
+    private val contentManager: ContentManager<Chart, SortOption, ChartQuery>
 ) {
     // Expose ContentManager states
     val cacheState: StateFlow<ContentState> = contentManager.cacheState
@@ -73,14 +72,19 @@ class ChartManager @Inject constructor(
         sortBy: SortOption,
         forceRefresh: Boolean = false,
         limit: Int = 10,
-        offset: Int = 0
-    ): Flow<ContentResult<List<Chart>>> = contentManager.fetchFeed(sortBy, forceRefresh, limit, offset)
+        offset: Int = 0,
+        filters: ChartQuery? = null
+    ): Flow<ContentResult<List<Chart>>> =
+        contentManager.fetchFeed(sortBy, forceRefresh, limit, offset, filters)
 
     fun searchCharts(
         query: String,
+        sortBy: SortOption? = null,
         limit: Int = 10,
-        offset: Int = 0
-    ): Flow<ContentResult<List<Chart>>> = contentManager.search(query, limit, offset)
+        offset: Int = 0,
+        filters: ChartQuery? = null
+    ): Flow<ContentResult<List<Chart>>> =
+        contentManager.search(query, sortBy, limit, offset, filters)
 
     // Chart-specific operations that require ChartRepository methods
     fun checkForUpdates(): Flow<ContentResult<List<Chart>>> = flow {
@@ -102,7 +106,7 @@ class ChartManager @Inject constructor(
                 }
                 if (updated.isNotEmpty()) {
                     memoryStore.upsertContent(updated) { it.id }
-                    coroutineScope.launch { localChartRepository.updateCharts(updated).first() }
+                    coroutineScope.launch { localChartRepository.update(updated).first() }
                 }
                 emit(ContentResult.Success(updated))
             },
@@ -116,7 +120,7 @@ class ChartManager @Inject constructor(
             emit(ContentResult.Error(context.getString(R.string.chart_not_found)))
             return@flow
         }
-        val result = localChartRepository.updateChart(chartId, operation).first()
+        val result = localChartRepository.updateContent(chartId, operation).first()
         result.fold(
             onSuccess = { success ->
                 if (!success) {
@@ -133,7 +137,7 @@ class ChartManager @Inject constructor(
                     OperationOption.DELETE -> existing.copy(isInstalled = false)
                 }
                 memoryStore.upsertContent(listOf(updated)) { it.id }
-                coroutineScope.launch { localChartRepository.updateCharts(listOf(updated)).first() }
+                coroutineScope.launch { localChartRepository.update(listOf(updated)).first() }
                 emit(ContentResult.Success(memoryStore.contentById.value.values.toList()))
             },
             onFailure = { err -> emit(ContentResult.Error(context.getString(R.string.failed_to_update), err)) }
@@ -148,18 +152,18 @@ class ChartManager @Inject constructor(
             return@flow
         }
         
-        val localResult = localChartRepository.getChart(chartId).first()
+        val localResult = localChartRepository.getItem(chartId).first()
         localResult.fold(
             onSuccess = { chart ->
                 memoryStore.upsertContent(listOf(chart)) { it.id }
                 emit(ContentResult.Success(chart))
             },
             onFailure = {
-                val remoteResult = remoteChartRepository.getChart(chartId).first()
+                val remoteResult = remoteChartRepository.getItem(chartId).first()
                 remoteResult.fold(
                     onSuccess = { chart ->
                         memoryStore.upsertContent(listOf(chart)) { it.id }
-                        coroutineScope.launch { localChartRepository.insertCharts(listOf(chart)).first() }
+                        coroutineScope.launch { localChartRepository.insert(listOf(chart)).first() }
                         emit(ContentResult.Success(chart))
                     },
                     onFailure = { err -> emit(ContentResult.Error(context.getString(R.string.chart_not_found), err)) }
@@ -238,7 +242,7 @@ class ChartManager @Inject constructor(
             if (oldChart.isInstalled != newChart.isInstalled && !isLocalOnlyChart(newChart)) newChart else null
         }
         if (changed.isNotEmpty()) {
-            val result = localChartRepository.updateCharts(changed).first()
+            val result = localChartRepository.update(changed).first()
             if (result.isFailure) {
                 Log.e(TAG, "Failed to persist installed changes", result.exceptionOrNull())
             }

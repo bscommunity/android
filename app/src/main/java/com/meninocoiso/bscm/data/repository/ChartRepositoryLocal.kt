@@ -2,13 +2,11 @@ package com.meninocoiso.bscm.data.repository
 
 import android.util.Log
 import com.meninocoiso.bscm.data.local.dao.ChartDao
-import com.meninocoiso.bscm.domain.enums.Difficulty
-import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
-import com.meninocoiso.bscm.domain.model.Version
-import com.meninocoiso.bscm.domain.repository.ChartRepository
+import com.meninocoiso.bscm.domain.repository.ChartLocalRepository
+import com.meninocoiso.bscm.domain.repository.ChartQuery
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -21,44 +19,25 @@ private const val TAG = "ChartRepositoryLocal"
 class ChartRepositoryLocal(
     private val chartDao: ChartDao,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
-) : ChartRepository {
-    override suspend fun getCharts(
+) : ChartLocalRepository {
+    override suspend fun getContent(
         query: String?,
-        difficulties: List<Difficulty>?,
-        genres: List<Genre>?,
+        sortBy: SortOption?,
         limit: Int?,
-        offset: Int
+        offset: Int,
+        filters: ChartQuery?
     ): Flow<Result<List<Chart>>> = flow {
-        val charts = chartDao.getAll(query, limit, offset)
+        val charts = when (sortBy) {
+            SortOption.MOST_DOWNLOADED -> chartDao.getChartsSortedByMostDownloadedWithQuery(query, limit, offset)
+            SortOption.LAST_UPDATED -> chartDao.getChartsSortedByLastUpdatedWithQuery(query, limit, offset)
+            else -> chartDao.getAll(query, limit, offset)
+        }
         emit(Result.success(charts))
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
-    override suspend fun getChartsSortedBy(
-        sortBy: SortOption,
-        limit: Int?,
-        offset: Int
-    ): Flow<Result<List<Chart>>> {
-        return flow {
-            val charts = when (sortBy) {
-                SortOption.MOST_DOWNLOADED -> chartDao.getChartsSortedByMostDownloaded(limit, offset)
-                SortOption.LAST_UPDATED -> chartDao.getChartsSortedByLastUpdated(limit, offset)
-                else -> chartDao.getAll(null, limit, offset)
-            }
-            emit(Result.success(charts))
-        }.catch { e ->
-            emit(Result.failure(e))
-        }.flowOn(dispatcher)
-    }
-    
-    override suspend fun getSuggestions(query: String, limit: Int?): Flow<Result<List<String>>> = flow {
-        emit(Result.success(chartDao.getSuggestions(query, limit)))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
-    override suspend fun getChart(id: String): Flow<Result<Chart>> = flow {
+    override suspend fun getItem(id: String): Flow<Result<Chart>> = flow {
         val chart = chartDao.getChart(id)
         if (chart != null) {
             emit(Result.success(chart))
@@ -69,34 +48,31 @@ class ChartRepositoryLocal(
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
-    override suspend fun getLatestVersionsByChartIds(ids: List<String>): Flow<Result<List<Version>>> = flow {
-        emit(Result.success(chartDao.getLatestVersionsByChartIds(ids)))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
-    override suspend fun insertCharts(charts: List<Chart>): Flow<Result<Boolean>> = flow {
-        chartDao.insert(charts)
-        // Log.d(TAG, "Charts after insertion: ${chartDao.getAll()}")
+    override suspend fun insert(items: List<Chart>): Flow<Result<Boolean>> = flow {
+        chartDao.insert(items)
         emit(Result.success(true))
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
-    override suspend fun updateChart(chart: Chart): Flow<Result<Boolean>> = flow {
-        chartDao.update(chart)
-        Log.d(TAG, "Updated chart: ${chartDao.getChart(chart.id)}")
+    override suspend fun update(items: List<Chart>): Flow<Result<Boolean>> = flow {
+        chartDao.update(items)
         emit(Result.success(true))
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
-    override suspend fun updateChart(
+    override suspend fun delete(items: List<Chart>): Flow<Result<Boolean>> = flow {
+        chartDao.delete(items)
+        emit(Result.success(true))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }.flowOn(dispatcher)
+
+    override suspend fun updateContent(
         id: String,
         operation: OperationOption
     ): Flow<Result<Boolean>> = flow {
-        // Log.d(TAG, "Current chart: ${chartDao.getChart(id)}")
-
         when (operation) {
             OperationOption.INSTALL -> {
                 Log.d(TAG, "Updating data from chart with id: $id")
@@ -112,29 +88,27 @@ class ChartRepositoryLocal(
             }
         }
 
-        // Log.d(TAG, "Updated chart: ${chartDao.getChart(id)}")
         emit(Result.success(true))
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
-    override suspend fun updateCharts(charts: List<Chart>): Flow<Result<Boolean>> = flow {
-        // Log.d(TAG, "Updating charts: $charts")
-        chartDao.update(charts)
-        // Log.d(TAG, "Updated charts locally: ${chartDao.getAll()}")
+    suspend fun updateChart(chart: Chart): Flow<Result<Boolean>> = flow {
+        chartDao.update(chart)
+        Log.d(TAG, "Updated chart: ${chartDao.getChart(chart.id)}")
         emit(Result.success(true))
-    }.catch { e->
+    }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
-    override suspend fun deleteChart(chart: Chart): Flow<Result<Boolean>> = flow<Result<Boolean>> {
+    suspend fun deleteChart(chart: Chart): Flow<Result<Boolean>> = flow {
         chartDao.delete(chart)
         emit(Result.success(true))
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
-    override suspend fun deleteChart(id: String): Flow<Result<Boolean>> = flow<Result<Boolean>> {
+    suspend fun deleteChart(id: String): Flow<Result<Boolean>> = flow {
         val chart = chartDao.getChart(id)
         if (chart != null) {
             chartDao.delete(chart)
@@ -145,18 +119,4 @@ class ChartRepositoryLocal(
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
-
-    override suspend fun deleteCharts(charts: List<Chart>): Flow<Result<Boolean>> = flow<Result<Boolean>> {
-        chartDao.delete(charts)
-        emit(Result.success(true))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
-    override suspend fun postAnalytics(
-        id: String,
-        operation: OperationOption
-    ): Flow<Result<Boolean>> {
-        TODO("Not yet implemented")
-    }
 }

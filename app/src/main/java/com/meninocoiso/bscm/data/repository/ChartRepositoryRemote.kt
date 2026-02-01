@@ -1,13 +1,12 @@
 package com.meninocoiso.bscm.data.repository
 
 import com.meninocoiso.bscm.data.remote.ApiClient
-import com.meninocoiso.bscm.domain.enums.Difficulty
-import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Version
-import com.meninocoiso.bscm.domain.repository.ChartRepository
+import com.meninocoiso.bscm.domain.repository.ChartQuery
+import com.meninocoiso.bscm.domain.repository.ChartRemoteRepository
 import jakarta.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -19,15 +18,22 @@ import kotlinx.coroutines.flow.flowOn
 class ChartRepositoryRemote @Inject constructor(
     private val apiClient: ApiClient,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
-) : ChartRepository {
-    override suspend fun getCharts(
+) : ChartRemoteRepository {
+    override suspend fun getContent(
         query: String?,
-        difficulties: List<Difficulty>?,
-        genres: List<Genre>?,
+        sortBy: SortOption?,
         limit: Int?,
-        offset: Int
+        offset: Int,
+        filters: ChartQuery?
     ): Flow<Result<List<Chart>>> = flow {
-        val charts = apiClient.getCharts(query, difficulties, genres, limit, offset)
+        val charts = apiClient.getCharts(
+            query = query,
+            sortBy = sortBy,
+            difficulties = filters?.difficulties,
+            genres = filters?.genres,
+            limit = limit,
+            offset = offset
+        )
         emit(Result.success(charts))
     }.catch { e ->
         emit(Result.failure(e))
@@ -41,17 +47,6 @@ class ChartRepositoryRemote @Inject constructor(
             emit(Result.failure(e))
         }.flowOn(dispatcher)
 
-    override suspend fun getChartsSortedBy(
-        sortBy: SortOption,
-        limit: Int?,
-        offset: Int
-    ): Flow<Result<List<Chart>>> = flow {
-        val charts = apiClient.getFeedCharts(sortBy, limit, offset)
-        emit(Result.success(charts))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
     override suspend fun getSuggestions(query: String, limit: Int?): Flow<Result<List<String>>> =
         flow {
             val suggestions = apiClient.getSuggestions(query, limit)
@@ -60,7 +55,7 @@ class ChartRepositoryRemote @Inject constructor(
             emit(Result.failure(e))
         }.flowOn(dispatcher)
 
-    override suspend fun getChart(id: String): Flow<Result<Chart>> = flow {
+    override suspend fun getItem(id: String): Flow<Result<Chart>> = flow {
         val chart = apiClient.getChart(id)
         emit(Result.success(chart))
     }.catch { e ->
@@ -76,35 +71,4 @@ class ChartRepositoryRemote @Inject constructor(
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
-
-    override suspend fun insertCharts(charts: List<Chart>): Flow<Result<Boolean>> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun deleteChart(chart: Chart): Flow<Result<Boolean>> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun deleteCharts(charts: List<Chart>): Flow<Result<Boolean>> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun updateChart(chart: Chart): Flow<Result<Boolean>> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun updateChart(
-        id: String,
-        operation: OperationOption,
-    ): Flow<Result<Boolean>> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun updateCharts(charts: List<Chart>): Flow<Result<Boolean>> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun deleteChart(id: String): Flow<Result<Boolean>> {
-        TODO("Not yet implemented")
-    }
 }

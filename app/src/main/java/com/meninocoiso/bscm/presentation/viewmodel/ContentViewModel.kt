@@ -12,7 +12,7 @@ import com.meninocoiso.bscm.domain.enums.ErrorType
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.internal.Settings
-import com.meninocoiso.bscm.domain.repository.ChartRepository
+import com.meninocoiso.bscm.domain.repository.ChartLocalRepository
 import com.meninocoiso.bscm.domain.state.DownloadState
 import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,7 +34,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.io.IOException
 import javax.inject.Inject
-import javax.inject.Named
 
 private const val TAG = "ContentViewModel"
 
@@ -44,7 +43,7 @@ class ContentViewModel @Inject constructor(
     private val downloadServiceMonitor: DownloadServiceMonitor,
     private val downloadRepository: DownloadRepository,
     private val settingsRepository: SettingsRepository,
-    @param:Named("Local") private val localChartRepository: ChartRepository,
+    private val localChartRepository: ChartLocalRepository,
 ) : ViewModel() {
 
     private val _downloadStates = MutableStateFlow<Map<String, DownloadState>>(emptyMap())
@@ -283,7 +282,7 @@ class ContentViewModel @Inject constructor(
 
                 // Update the chart in local database
                 val updateResult = localChartRepository
-                    .updateChart(contentId, OperationOption.DELETE)
+                    .updateContent(contentId, OperationOption.DELETE)
                     .first()
 
                 updateResult.getOrThrow() // Will throw if update failed

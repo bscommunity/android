@@ -7,19 +7,20 @@ import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
 import com.meninocoiso.bscm.data.manager.ContentManager
 import com.meninocoiso.bscm.data.manager.ContentMemoryStore
-import com.meninocoiso.bscm.data.repository.ChartContentRepositoryLocal
 import com.meninocoiso.bscm.data.repository.ChartRepositoryLocal
 import com.meninocoiso.bscm.data.service.FeedOrchestrator
+import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
-import com.meninocoiso.bscm.domain.repository.ChartRepository
-import com.meninocoiso.bscm.domain.repository.ContentRepository
+import com.meninocoiso.bscm.domain.repository.ChartLocalRepository
+import com.meninocoiso.bscm.domain.repository.ChartQuery
+import com.meninocoiso.bscm.domain.repository.ContentFeedRepository
+import com.meninocoiso.bscm.domain.repository.ContentLocalRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
-import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -35,21 +36,18 @@ object DatabaseModule {
         return appDatabase.interactionQueueDao()
     }
 
-    // Keep the old ChartRepository for ChartManager's chart-specific operations
+    // Chart local repository for chart-specific operations
     @Provides
     @Singleton
-    @Named("Local")
     fun provideLocalChartRepository(
         chartDao: ChartDao
-    ): ChartRepository = ChartRepositoryLocal(chartDao)
+    ): ChartLocalRepository = ChartRepositoryLocal(chartDao)
 
-    // ContentRepository adapter for generic operations
     @Provides
     @Singleton
-    @Named("Local")
-    fun provideChartContentRepositoryLocal(
-        adapter: ChartContentRepositoryLocal
-    ): ContentRepository<Chart> = adapter
+    fun provideChartLocalContentRepository(
+        repository: ChartLocalRepository
+    ): ContentLocalRepository<Chart, SortOption, ChartQuery> = repository
 
     @Provides
     @Singleton
@@ -64,11 +62,11 @@ object DatabaseModule {
     @Singleton
     fun provideChartContentManager(
         @ApplicationContext context: Context,
-        @Named("Remote") remote: ContentRepository<Chart>,
-        @Named("Local") local: ContentRepository<Chart>,
+        remote: ContentFeedRepository<Chart, SortOption, ChartQuery>,
+        local: ContentLocalRepository<Chart, SortOption, ChartQuery>,
         memoryStore: ContentMemoryStore<Chart>,
         @ApplicationScope coroutineScope: CoroutineScope
-    ): ContentManager<Chart> = ContentManager(
+    ): ContentManager<Chart, SortOption, ChartQuery> = ContentManager(
         context = context,
         remoteRepository = remote,
         localRepository = local,
