@@ -1,10 +1,10 @@
 package com.meninocoiso.bscm.data.service
 
 import android.util.Log
-import com.meninocoiso.bscm.data.manager.ContentCacheManager
 import javax.inject.Inject
 
 private const val TAG = "FeedOrchestrator"
+private const val MAX_FEED_CACHE_ITEMS = 50
 
 /**
  * Result of a feed operation containing the updated state.
@@ -20,9 +20,7 @@ data class FeedUpdateResult<T>(
  * Pure logic service for managing feed updates with cache limiting.
  * Returns updated state instead of mutating external StateFlows.
  */
-class FeedOrchestrator<T> @Inject constructor(
-    private val cacheManager: ContentCacheManager
-) {
+class FeedOrchestrator<T> @Inject constructor() {
 
     /**
      * Computes the result of replacing feed content.
@@ -54,7 +52,7 @@ class FeedOrchestrator<T> @Inject constructor(
 
         // Apply cache limit
         var feedOrder = newContent.map { getId(it) }
-        val (limitedOrder, limitedMap) = cacheManager.applyCacheLimit(
+        val (limitedOrder, limitedMap) = applyCacheLimit(
             feedOrder,
             updatedMap,
             isInstalled
@@ -92,7 +90,7 @@ class FeedOrchestrator<T> @Inject constructor(
         val updatedOrder = (currentFeedOrder + appendIds).distinct()
 
         // Apply cache limit
-        val (limitedOrder, limitedMap) = cacheManager.applyCacheLimit(
+        val (limitedOrder, limitedMap) = applyCacheLimit(
             updatedOrder,
             updatedMap,
             isInstalled
@@ -118,5 +116,47 @@ class FeedOrchestrator<T> @Inject constructor(
         return currentContent.toMutableMap().apply {
             newContent.forEach { content -> put(getId(content), content) }
         }
+    }
+
+    /**
+     * Apply cache limit to keep memory usage reasonable
+     */
+    private fun applyCacheLimit(
+        feedIds: List<String>,
+        contentMap: Map<String, T>,
+        isInstalledPredicate: (T) -> Boolean
+    ): Pair<List<String>, Map<String, T>> {
+        if (contentMap.isEmpty()) {
+            return Pair(feedIds, contentMap)
+        }
+
+        val nonInstalledFeedIds = feedIds.filter { id ->
+            contentMap[id]?.let { !isInstalledPredicate(it) } ?: false
+        }
+
+        if (nonInstalledFeedIds.size <= MAX_FEED_CACHE_ITEMS) {
+            return Pair(feedIds, contentMap)
+        }
+
+        val idsToKeep = nonInstalledFeedIds.take(MAX_FEED_CACHE_ITEMS)
+        val keepSet = idsToKeep.toSet()
+        val idsToDrop = nonInstalledFeedIds.filterNot { it in keepSet }
+
+        if (idsToDrop.isEmpty()) {
+            return Pair(feedIds, contentMap)
+        }
+
+        val updatedOrder = feedIds.filterNot { it in idsToDrop }
+        val updatedMap = contentMap.toMutableMap().apply {
+            idsToDrop.forEach { id ->
+                val content = this[id]
+                if (content?.let { !isInstalledPredicate(it) } == true) {
+                    remove(id)
+                }
+            }
+        }
+
+        Log.d(TAG, "Applied cache limit: keeping ${idsToKeep.size} non-installed items")
+        return Pair(updatedOrder, updatedMap)
     }
 }

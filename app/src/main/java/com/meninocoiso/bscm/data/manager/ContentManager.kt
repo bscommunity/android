@@ -41,6 +41,7 @@ class ContentManager<T : CatalogItem> @Inject constructor(
 
     val feedContent: Flow<List<T>> = memoryStore.feedOrderIds.combineWith(memoryStore.contentById)
     val installedContent: Flow<List<T>> = memoryStore.contentById.mapValuesList { it.isInstalled == true }
+    val searchContent: Flow<List<T>> = memoryStore.searchResultIds.combineWith(memoryStore.contentById)
 
     fun updateCacheState(newState: ContentState) { _cacheState.value = newState }
     fun updateFeedState(newState: ContentState) { _feedState.value = newState }

@@ -29,6 +29,7 @@ object NetworkModule {
         interceptor: AuthInterceptor
     ): ApiClient = KtorApiClient(context, interceptor)
 
+    // Keep the old ChartRepository for ChartManager's chart-specific operations
     @Provides
     @Singleton
     @Named("Remote")
@@ -36,6 +37,7 @@ object NetworkModule {
         apiClient: ApiClient
     ): ChartRepository = ChartRepositoryRemote(apiClient)
 
+    // ContentRepository adapter for generic operations
     @Provides
     @Singleton
     @Named("Remote")

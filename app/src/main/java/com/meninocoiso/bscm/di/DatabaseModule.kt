@@ -9,7 +9,6 @@ import com.meninocoiso.bscm.data.manager.ContentManager
 import com.meninocoiso.bscm.data.manager.ContentMemoryStore
 import com.meninocoiso.bscm.data.repository.ChartContentRepositoryLocal
 import com.meninocoiso.bscm.data.repository.ChartRepositoryLocal
-import com.meninocoiso.bscm.data.manager.ContentCacheManager
 import com.meninocoiso.bscm.data.service.FeedOrchestrator
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.repository.ChartRepository
@@ -26,18 +25,17 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
-    // Chart
     @Provides
     fun provideChartDao(appDatabase: AppDatabase): ChartDao {
         return appDatabase.chartDao()
     }
 
-    // Interaction Queue
     @Provides
     fun provideInteractionQueueDao(appDatabase: AppDatabase): InteractionQueueDao {
         return appDatabase.interactionQueueDao()
     }
 
+    // Keep the old ChartRepository for ChartManager's chart-specific operations
     @Provides
     @Singleton
     @Named("Local")
@@ -45,6 +43,7 @@ object DatabaseModule {
         chartDao: ChartDao
     ): ChartRepository = ChartRepositoryLocal(chartDao)
 
+    // ContentRepository adapter for generic operations
     @Provides
     @Singleton
     @Named("Local")
@@ -54,7 +53,7 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideFeedOrchestrator(cacheManager: ContentCacheManager): FeedOrchestrator<Chart> = FeedOrchestrator(cacheManager)
+    fun provideFeedOrchestrator(): FeedOrchestrator<Chart> = FeedOrchestrator()
 
     @Provides
     @Singleton

@@ -23,7 +23,6 @@ interface ChartRepository {
     ): Flow<Result<List<Chart>>>
     suspend fun getChart(id: String): Flow<Result<Chart>>
     suspend fun getSuggestions(query: String, limit: Int? = null): Flow<Result<List<String>>>
-    suspend fun getInstallStatus(id: String): Boolean
     suspend fun getLatestVersionsByChartIds(ids: List<String>): Flow<Result<List<Version>>>
     suspend fun insertCharts(charts: List<Chart>): Flow<Result<Boolean>>
     suspend fun updateChart(chart: Chart): Flow<Result<Boolean>>

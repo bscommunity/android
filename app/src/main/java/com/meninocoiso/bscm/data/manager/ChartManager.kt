@@ -22,7 +22,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -33,6 +32,10 @@ import javax.inject.Singleton
 
 private const val TAG = "ChartManager"
 
+/**
+ * Chart-specific manager that handles chart-specific operations.
+ * Delegates generic content operations to ContentManager.
+ */
 @Singleton
 class ChartManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -44,9 +47,11 @@ class ChartManager @Inject constructor(
     private val memoryStore: ContentMemoryStore<Chart>,
     private val contentManager: ContentManager<Chart>
 ) {
+    // Expose ContentManager states
     val cacheState: StateFlow<ContentState> = contentManager.cacheState
     val feedState: StateFlow<ContentState> = contentManager.feedState
 
+    // Expose ContentManager flows
     val feedCharts: Flow<List<Chart>> = contentManager.feedContent.map { charts ->
         charts.filterNot { chart -> chart.isInstalled == true }
     }
@@ -54,27 +59,15 @@ class ChartManager @Inject constructor(
     val pendingUpdateCharts: Flow<List<Chart>> = installedCharts.map { chartList ->
         chartList.filter { it.availableVersion != null }
     }
-    val searchCharts: Flow<List<Chart>> = combine(memoryStore.searchResultIds, memoryStore.contentById) { ids, map ->
-        ids.mapNotNull { map[it] }
-    }
+    val searchCharts: Flow<List<Chart>> = contentManager.searchContent
 
     fun getChartsLength(): Int = memoryStore.contentById.value.size
 
-    fun updateCacheState(newState: ContentState) {
-        contentManager.updateCacheState(newState)
-    }
+    fun updateCacheState(newState: ContentState) = contentManager.updateCacheState(newState)
+    fun updateFeedState(newState: ContentState) = contentManager.updateFeedState(newState)
 
-    fun updateFeedState(newState: ContentState) {
-        contentManager.updateFeedState(newState)
-    }
-
-    suspend fun loadCachedCharts(sortBy: SortOption) {
-        contentManager.loadCachedContent(sortBy)
-    }
-
-    suspend fun scanLocalCharts(rootUri: Uri) {
-        syncInstalledCharts(rootUri)
-    }
+    // Delegate generic operations to ContentManager
+    suspend fun loadCachedCharts(sortBy: SortOption) = contentManager.loadCachedContent(sortBy)
 
     fun fetchFeedCharts(
         sortBy: SortOption,
@@ -85,35 +78,11 @@ class ChartManager @Inject constructor(
 
     fun searchCharts(
         query: String,
-        difficulties: List<Difficulty>? = null,
-        genres: List<Genre>? = null,
         limit: Int = 10,
         offset: Int = 0
-    ): Flow<ContentResult<List<Chart>>> = flow {
-        if (query.isEmpty()) {
-            memoryStore.clearSearchResults()
-            emit(ContentResult.Success(emptyList()))
-            return@flow
-        }
-        emit(ContentResult.Loading)
-        val remoteResult = remoteChartRepository.getCharts(
-            query = query,
-            difficulties = difficulties,
-            genres = genres,
-            limit = limit,
-            offset = offset
-        ).first()
-        remoteResult.fold(
-            onSuccess = { charts ->
-                memoryStore.addWithoutAffectingFeed(charts, getId = { it.id })
-                val newIds = if (offset == 0) charts.map { it.id } else memoryStore.searchResultIds.value + charts.map { it.id }
-                memoryStore.setSearchResults(newIds)
-                emit(ContentResult.Success(charts))
-            },
-            onFailure = { err -> emit(ContentResult.Error(context.getString(R.string.search_failed), err)) }
-        )
-    }
+    ): Flow<ContentResult<List<Chart>>> = contentManager.search(query, limit, offset)
 
+    // Chart-specific operations that require ChartRepository methods
     fun checkForUpdates(): Flow<ContentResult<List<Chart>>> = flow {
         emit(ContentResult.Loading)
         val installed = memoryStore.contentById.value.values.filter { it.isInstalled == true && !isLocalOnlyChart(it) }
@@ -164,11 +133,38 @@ class ChartManager @Inject constructor(
                     OperationOption.DELETE -> existing.copy(isInstalled = false)
                 }
                 memoryStore.upsertContent(listOf(updated)) { it.id }
-                // Persist the updated chart state to the local database
                 coroutineScope.launch { localChartRepository.updateCharts(listOf(updated)).first() }
                 emit(ContentResult.Success(memoryStore.contentById.value.values.toList()))
             },
             onFailure = { err -> emit(ContentResult.Error(context.getString(R.string.failed_to_update), err)) }
+        )
+    }
+
+    fun getChart(chartId: String): Flow<ContentResult<Chart>> = flow {
+        emit(ContentResult.Loading)
+        val cached = memoryStore.contentById.value[chartId]
+        if (cached != null) {
+            emit(ContentResult.Success(cached))
+            return@flow
+        }
+        
+        val localResult = localChartRepository.getChart(chartId).first()
+        localResult.fold(
+            onSuccess = { chart ->
+                memoryStore.upsertContent(listOf(chart)) { it.id }
+                emit(ContentResult.Success(chart))
+            },
+            onFailure = {
+                val remoteResult = remoteChartRepository.getChart(chartId).first()
+                remoteResult.fold(
+                    onSuccess = { chart ->
+                        memoryStore.upsertContent(listOf(chart)) { it.id }
+                        coroutineScope.launch { localChartRepository.insertCharts(listOf(chart)).first() }
+                        emit(ContentResult.Success(chart))
+                    },
+                    onFailure = { err -> emit(ContentResult.Error(context.getString(R.string.chart_not_found), err)) }
+                )
+            }
         )
     }
 
@@ -183,6 +179,10 @@ class ChartManager @Inject constructor(
 
     fun postAnalytics(chartId: String, operation: OperationOption) {
         coroutineScope.launch { remoteChartRepository.postAnalytics(chartId, operation).first() }
+    }
+
+    suspend fun scanLocalCharts(rootUri: Uri) {
+        syncInstalledCharts(rootUri)
     }
 
     private suspend fun syncInstalledCharts(rootUri: Uri) {

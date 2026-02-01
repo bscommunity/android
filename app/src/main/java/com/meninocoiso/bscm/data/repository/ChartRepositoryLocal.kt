@@ -69,10 +69,6 @@ class ChartRepositoryLocal(
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
-    override suspend fun getInstallStatus(id: String): Boolean {
-        return chartDao.getChart(id)?.isInstalled == true
-    }
-
     override suspend fun getLatestVersionsByChartIds(ids: List<String>): Flow<Result<List<Version>>> = flow {
         emit(Result.success(chartDao.getLatestVersionsByChartIds(ids)))
     }.catch { e ->
