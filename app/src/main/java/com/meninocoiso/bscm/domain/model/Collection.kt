@@ -1,16 +1,13 @@
 package com.meninocoiso.bscm.domain.model
 
 import com.meninocoiso.bscm.domain.serialization.LocalDateTimeSerializer
-import com.meninocoiso.bscm.domain.serialization.UUIDSerializer
 import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
-import java.util.UUID
 
 @Serializable
 data class Collection(
-    val id: ULong,
-    @Serializable(with = UUIDSerializer::class)
-    val userId: UUID,
+    val id: String,
+    val userId: String,
     val name: String,
     val isPublic: Boolean,
     @Serializable(with = LocalDateTimeSerializer::class)

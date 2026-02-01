@@ -23,6 +23,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
@@ -43,6 +44,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -79,8 +81,6 @@ import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileLikes
 import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonClip
 import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonShape
 import com.meninocoiso.bscm.presentation.viewmodel.ProfileViewModel
-import com.meninocoiso.bscm.presentation.viewmodel.placeholderActivityItems
-import com.meninocoiso.bscm.presentation.viewmodel.placeholderLibraryItems
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
 import kotlinx.coroutines.launch
@@ -151,12 +151,31 @@ fun ProfileScreen(
     )
 
     val collectionContent by profileViewModel.collectionContent.collectAsStateWithLifecycle()
+    val activityContent by profileViewModel.activityContent.collectAsStateWithLifecycle()
+    val libraryContent by profileViewModel.libraryContent.collectAsStateWithLifecycle()
+    val likedContent by profileViewModel.likedContent.collectAsStateWithLifecycle()
+    val isFollowing by profileViewModel.isFollowing.collectAsStateWithLifecycle()
+    val paginationState by profileViewModel.paginationState.collectAsStateWithLifecycle()
+
+    val activityListState = rememberLazyListState()
+    val libraryListState = rememberLazyListState()
+    val likesListState = rememberLazyListState()
+    val bookmarksListState = rememberLazyListState()
+    val collectionsListState = rememberLazyListState()
 
     // Track header scroll offset
     val headerScrollState = rememberScrollState()
     var headerHeightPx by remember { mutableFloatStateOf(0f) }
     val tabRowHeight = 56.dp
     val tabRowHeightPx = with(LocalDensity.current) { tabRowHeight.toPx() }
+
+    LaunchedEffect(userId, isOwner) {
+        profileViewModel.loadProfile(userId, isOwner)
+    }
+
+    LaunchedEffect(horizontalPagerState.currentPage, userId, isOwner) {
+        profileViewModel.onTabSelected(userId, isOwner, horizontalPagerState.currentPage)
+    }
 
     Scaffold(
         modifier = Modifier
@@ -245,17 +264,25 @@ fun ProfileScreen(
                         when (index) {
                             0 -> if (isOwner) {
                                 ProfileLikes(
-                                    emptyList(),
+                                    likedContent,
                                     section1State,
-                                    { profileViewModel.fetchUserLikes() },
+                                    { profileViewModel.fetchUserLikes(reset = true) },
                                     onNavigateToDetails,
+                                    listState = likesListState,
+                                    isLoadingMore = paginationState.isLoadingMoreLikes,
+                                    hasMore = paginationState.hasMoreLikes,
+                                    onLoadMore = { profileViewModel.loadMoreLikes() },
                                     Modifier.fillMaxSize()
                                 )
                             } else {
                                 ProfileActivity(
-                                    placeholderActivityItems,
+                                    activityContent,
                                     section1State,
-                                    { profileViewModel.fetchProfileActivity(userId) },
+                                    { profileViewModel.fetchProfileActivity(userId, reset = true) },
+                                    listState = activityListState,
+                                    isLoadingMore = paginationState.isLoadingMoreActivity,
+                                    hasMore = paginationState.hasMoreActivity,
+                                    onLoadMore = { profileViewModel.loadMoreActivity(userId) },
                                     Modifier.fillMaxSize()
                                 )
                             }
@@ -265,16 +292,28 @@ fun ProfileScreen(
                                     Modifier.fillMaxSize(),
                                     collectionContent,
                                     section2State,
-                                    { profileViewModel.fetchProfileActivity(userId) },
+                                    { profileViewModel.fetchUserCollections(reset = true) },
                                     onNavigateToDetails,
                                     onNavigateToCollection,
+                                    bookmarksListState = bookmarksListState,
+                                    collectionsListState = collectionsListState,
+                                    isLoadingMoreBookmarks = paginationState.isLoadingMoreBookmarks,
+                                    hasMoreBookmarks = paginationState.hasMoreBookmarks,
+                                    onLoadMoreBookmarks = { profileViewModel.loadMoreBookmarks() },
+                                    isLoadingMoreCollections = paginationState.isLoadingMoreCollections,
+                                    hasMoreCollections = paginationState.hasMoreCollections,
+                                    onLoadMoreCollections = { profileViewModel.loadMoreCollections() },
                                 )
                             } else {
                                 ProfileLibrary(
-                                    placeholderLibraryItems,
+                                    libraryContent,
                                     section2State,
-                                    { profileViewModel.fetchProfileLibrary(userId) },
+                                    { profileViewModel.fetchProfileLibrary(userId, reset = true) },
                                     onNavigateToDetails,
+                                    listState = libraryListState,
+                                    isLoadingMore = paginationState.isLoadingMoreLibrary,
+                                    hasMore = paginationState.hasMoreLibrary,
+                                    onLoadMore = { profileViewModel.loadMoreLibrary(userId) },
                                     Modifier.fillMaxSize()
                                 )
                             }
@@ -369,7 +408,7 @@ fun ProfileScreen(
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Button(
-                                onClick = { /* Navigate to message user */ },
+                                onClick = { profileViewModel.toggleFollow(userId) },
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Icon(
@@ -377,7 +416,10 @@ fun ProfileScreen(
                                     painter = painterResource(R.drawable.rounded_stars_24),
                                     contentDescription = null
                                 )
-                                Text(modifier = Modifier.padding(start = 8.dp), text = "Follow")
+                                Text(
+                                    modifier = Modifier.padding(start = 8.dp),
+                                    text = if (isFollowing) "Seguindo" else "Seguir"
+                                )
                             }
                             IconButton(
                                 onClick = {}, colors = IconButtonDefaults.iconButtonColors(

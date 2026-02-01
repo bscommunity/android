@@ -100,33 +100,41 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
         id: String,
         operation: OperationOption,
         mapUpdated: (T, OperationOption) -> Result<T>
-    ): Flow<ContentResult<List<T>>> = flow {
+    ): Flow<ContentResult<T>> = flow {
+
+        // 1. Get from memory
         val existing = memoryStore.contentById.value[id]
-        if (existing == null) {
-            emit(ContentResult.Error(context.getString(R.string.content_not_found)))
-            return@flow
+            ?: return@flow emit(
+                ContentResult.Error(context.getString(R.string.content_not_found))
+            )
+
+        // 2. Update database (single source of truth)
+        val dbResult = localRepository.updateContent(id, operation).first()
+        if (dbResult.isFailure || dbResult.getOrNull() != true) {
+            return@flow emit(
+                ContentResult.Error(context.getString(R.string.failed_to_update), dbResult.exceptionOrNull())
+            )
         }
 
-        val result = localRepository.updateContent(id, operation).first()
-        result.fold(
-            onSuccess = { success ->
-                if (!success) {
-                    emit(ContentResult.Error(context.getString(R.string.failed_to_update)))
-                    return@fold
-                }
-                val mapped = mapUpdated(existing, operation)
-                mapped.fold(
-                    onSuccess = { updated ->
-                        memoryStore.upsertContent(listOf(updated)) { it.id }
-                        // coroutineScope.launch { localRepository.update(listOf(updated)).first() }
-                        emit(ContentResult.Success(memoryStore.contentById.value.values.toList()))
-                    },
-                    onFailure = { err ->
-                        emit(ContentResult.Error(err.message ?: context.getString(R.string.failed_to_update), err))
-                    }
+        // 3. Apply domain rules
+        val updated = mapUpdated(existing, operation)
+            .getOrElse { err ->
+                return@flow emit(
+                    ContentResult.Error(
+                        err.message ?: context.getString(R.string.failed_to_update),
+                        err
+                    )
                 )
-            },
-            onFailure = { err -> emit(ContentResult.Error(context.getString(R.string.failed_to_update), err)) }
+            }
+
+        // 4. Sync memory cache
+        memoryStore.upsertContent(listOf(updated)) { it.id }
+
+        // 5. Emit updated list
+        emit(
+            ContentResult.Success(
+                updated
+            )
         )
     }
 

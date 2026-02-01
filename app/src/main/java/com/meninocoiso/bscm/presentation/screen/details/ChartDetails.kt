@@ -62,6 +62,8 @@ import com.meninocoiso.bscm.presentation.ui.components.layout.SwipeableSnackbarH
 import com.meninocoiso.bscm.presentation.ui.components.preview.PreviewContributors
 import com.meninocoiso.bscm.domain.state.DownloadState
 import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
+import com.meninocoiso.bscm.presentation.viewmodel.CollectionViewModel
+import com.meninocoiso.bscm.presentation.viewmodel.InteractionViewModel
 import com.meninocoiso.bscm.util.LinkingUtils.shareChartLink
 import com.meninocoiso.bscm.util.StringUtils
 import kotlinx.coroutines.launch
@@ -80,15 +82,17 @@ val DropdownItemPadding = PaddingValues(
     bottom = 8.dp
 )
 
-// Remove DialogState in favor of a single enum controlling which dialog is open
-private enum class CurrentDialog { None, Report, DeleteConfirmation, ListenTrack }
+// Dialog state management
+private enum class ChartDialog { None, Report, DeleteConfirmation, ListenTrack }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChartDetailsScreen(
     chart: Chart,
     onReturn: () -> Unit,
-    contentViewModel: ContentViewModel = hiltViewModel()
+    contentViewModel: ContentViewModel = hiltViewModel(),
+    interactionViewModel: InteractionViewModel = hiltViewModel(),
+    collectionViewModel: CollectionViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
 
@@ -104,13 +108,30 @@ fun ChartDetailsScreen(
     val isGameplayVideoPreviewEnabled = contentViewModel.isGameplayVideoPreviewEnabled
         .collectAsStateWithLifecycle(initialValue = true)
 
-    // Single source of truth for dialogs, saved across config changes
-    var currentDialog by rememberSaveable { mutableStateOf(CurrentDialog.None) }
+    // Simplified dialog state management
+    var currentDialog by rememberSaveable { mutableStateOf(ChartDialog.None) }
+
+    var isBookmarked by rememberSaveable { mutableStateOf(chart.isFavorited) }
+    var isLiked by rememberSaveable { mutableStateOf(chart.isLiked) }
+
+    LaunchedEffect(chart.id) {
+        isBookmarked = chart.isFavorited
+        isLiked = chart.isLiked
+    }
 
     // Collection sheet state
     val collectionSheetState = rememberModalBottomSheetState()
     var showCollectionSheet by rememberSaveable {
         mutableStateOf(false)
+    }
+
+    val userCollections by collectionViewModel.collections.collectAsStateWithLifecycle()
+    val collectionsState by collectionViewModel.collectionsContentState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(showCollectionSheet) {
+        if (showCollectionSheet) {
+            collectionViewModel.fetchUserCollections(reset = true)
+        }
     }
 
     // Manage download events
@@ -132,43 +153,49 @@ fun ChartDetailsScreen(
         }
     }
 
-    if (currentDialog == CurrentDialog.DeleteConfirmation) {
-        ConfirmationDialog(
-            title = stringResource(R.string.delete_chart),
-            message = stringResource(R.string.delete_chart_description),
-            onDismiss = { currentDialog = CurrentDialog.None },
-            onConfirm = {
-                contentViewModel.deleteChart(
-                    chart,
-                    onSuccess = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar(context.getString(R.string.chart_deleted))
+    // Dialog management
+    when (currentDialog) {
+        ChartDialog.DeleteConfirmation -> {
+            ConfirmationDialog(
+                title = stringResource(R.string.delete_chart),
+                message = stringResource(R.string.delete_chart_description),
+                onDismiss = { currentDialog = ChartDialog.None },
+                onConfirm = {
+                    contentViewModel.deleteChart(
+                        chart,
+                        onSuccess = {
+                            scope.launch {
+                                snackbarHostState.showSnackbar(context.getString(R.string.chart_deleted))
+                            }
+                        },
+                        onError = {
+                            scope.launch {
+                                snackbarHostState.showSnackbar(context.getString(R.string.failed_to_delete_chart))
+                            }
                         }
-                    },
-                    onError = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar(context.getString(R.string.failed_to_delete_chart))
-                        }
-                    }
-                )
-            }
-        )
-    }
+                    )
+                }
+            )
+        }
 
-    if (currentDialog == CurrentDialog.Report) {
-        ReportDialog(
-            onSubmit = {
-                // Implement report functionality
-            },
-            onDismiss = { currentDialog = CurrentDialog.None },
-        )
-    }
+        ChartDialog.Report -> {
+            ReportDialog(
+                onSubmit = {
+                    // Implement report functionality
+                },
+                onDismiss = { currentDialog = ChartDialog.None },
+            )
+        }
 
-    if (currentDialog == CurrentDialog.ListenTrack) {
-        ListenTrackDialog(
-            streamingLinks = chart.trackUrls,
-            onDismiss = { currentDialog = CurrentDialog.None }
-        )
+        ChartDialog.ListenTrack -> {
+            ListenTrackDialog(
+                streamingLinks = chart.trackUrls,
+                onDismiss = { currentDialog = ChartDialog.None }
+            )
+        }
+
+        ChartDialog.None -> { /* No dialog shown */
+        }
     }
 
     val lastUpdated = StringUtils.toRelativeString(chart.latestVersion.publishedAt)
@@ -218,7 +245,7 @@ fun ChartDetailsScreen(
                                     )
                                 },
                                 onClick = {
-                                    currentDialog = CurrentDialog.Report
+                                    currentDialog = ChartDialog.Report
                                 }
                             )
                         }
@@ -233,7 +260,7 @@ fun ChartDetailsScreen(
                                     )
                                 },
                                 onClick = {
-                                    currentDialog = CurrentDialog.DeleteConfirmation
+                                    currentDialog = ChartDialog.DeleteConfirmation
                                 }
                             )
                         }
@@ -251,7 +278,7 @@ fun ChartDetailsScreen(
             BottomAppBar(
                 actions = {
                     if (chart.trackUrls.isNotEmpty()) {
-                        IconButton(onClick = { currentDialog = CurrentDialog.ListenTrack }) {
+                        IconButton(onClick = { currentDialog = ChartDialog.ListenTrack }) {
                             Icon(
                                 painter = painterResource(id = R.drawable.baseline_artist_24),
                                 contentDescription = stringResource(R.string.listen_to_track),
@@ -263,40 +290,42 @@ fun ChartDetailsScreen(
                         InteractionButton(
                             R.drawable.baseline_bookmark_24,
                             R.drawable.rounded_bookmark_24,
-                            chart.isFavorited
-                        ) { isActive ->
-                            if (!isActive) {
-                                snackbarHostState.currentSnackbarData?.dismiss()
-                            } else {
+                            isBookmarked
+                        ) { newValue ->
+                            isBookmarked = newValue
+                            if (newValue) {
+                                interactionViewModel.bookmarkContent(chart.contentId)
                                 scope.launch {
                                     val result = snackbarHostState.showSnackbar(
-                                        "Added to Favorites",
-                                        "Manage",
+                                        "Adicionado aos bookmarks",
+                                        "Mover",
                                         duration = SnackbarDuration.Short
                                     )
 
                                     when (result) {
                                         SnackbarResult.ActionPerformed -> {
-                                            /* Handle snackbar action performed */
                                             showCollectionSheet = true
                                         }
 
-                                        SnackbarResult.Dismissed -> {
-                                            /* Handle snackbar dismissed */
-                                        }
+                                        SnackbarResult.Dismissed -> Unit
                                     }
                                 }
+                            } else {
+                                interactionViewModel.unbookmarkContent(chart.contentId)
+                                snackbarHostState.currentSnackbarData?.dismiss()
                             }
                         }
                         InteractionButton(
                             R.drawable.baseline_favorite_24,
                             R.drawable.rounded_favorite_24,
-                            chart.isLiked
-                        ) {
-                            /*contentViewModel.setChartFavoriteStatus(
-                                chart.contentId,
-                                !chart.isFavorited
-                            )*/
+                            isLiked
+                        ) { newValue ->
+                            isLiked = newValue
+                            if (newValue) {
+                                interactionViewModel.likeContent(chart.contentId)
+                            } else {
+                                interactionViewModel.unlikeContent(chart.contentId)
+                            }
                         }
                     }
                 },
@@ -452,6 +481,17 @@ fun ChartDetailsScreen(
                         showCollectionSheet = false
                     }
                 }
+            },
+            collections = userCollections,
+            isLoading = collectionsState is com.meninocoiso.bscm.domain.result.ContentState.Loading,
+            onCollectionSelected = { collectionId ->
+                chart.contentId?.let { contentId ->
+                    interactionViewModel.addToCollection(contentId, collectionId)
+                }
+                showCollectionSheet = false
+            },
+            onCreateCollection = { name, isPublic ->
+                collectionViewModel.createCollection(name, isPublic)
             }
         )
     }

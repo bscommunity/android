@@ -1,211 +1,448 @@
 package com.meninocoiso.bscm.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
-import com.meninocoiso.bscm.domain.enums.Difficulty
-import com.meninocoiso.bscm.domain.enums.Role
+import androidx.lifecycle.viewModelScope
+import com.meninocoiso.bscm.data.remote.ApiClient
+import com.meninocoiso.bscm.data.remote.dto.activity.ActivityEntry
+import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
-import com.meninocoiso.bscm.domain.model.Contributor
-import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.domain.result.ContentState
+import com.meninocoiso.bscm.domain.repository.CollectionRepository
+import com.meninocoiso.bscm.domain.repository.MeRepository
+import com.meninocoiso.bscm.domain.repository.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.Date
-import java.util.UUID
 import javax.inject.Inject
 
 private const val TAG = "ProfileViewModel"
 
 data class ActivityItem(val date: Date, val content: List<CatalogItem>)
 
-val placeholderChart = Chart(
-    id = "placeholder_id",
-    contentId = "share_placeholder",
-    artist = "Artista Fictício",
-    track = "Música Exemplo",
-    album = "Álbum Exemplo",
-    genre = null,
-    coverUrl = "",
-    trackUrls = emptyList(),
-    trackPreviewUrl = "",
-    isFeatured = false,
-    isInstalled = false,
-    downloadsSum = 0,
-    latestPublishedAt = LocalDateTime.now(),
-    latestVersion = Version(
-        id = 1L,
-        chartId = "placeholder_chart_id",
-        index = 1,
-        duration = 180f,
-        notesAmount = 1000,
-        effectsAmount = 50,
-        bpm = 128,
-        difficulty = Difficulty.NORMAL,
-        isDeluxe = false,
-        isExplicit = false,
-        bundleUrl = "",
-        previewUrl = null,
-        downloadsAmount = 0,
-        knownIssues = emptyList(),
-        publishedAt = LocalDateTime.now()
-    ),
-    availableVersion = null,
-    contributors = listOf(
-        Contributor(
-            user = SimplifiedUser(
-                id = "user_placeholder_id",
-                username = "ContribuidorExemplo",
-                avatarUrl = null,
-            ),
-            chartId = "placeholder_chart_id",
-            roles = listOf(Role.AUDIO),
-            joinedAt = LocalDateTime.now()
-        ),
-        Contributor(
-            user = SimplifiedUser(
-                id = "user_placeholder_id",
-                username = "meumano2",
-                avatarUrl = null,
-            ),
-            chartId = "placeholder_chart_id",
-            roles = listOf(Role.AUDIO),
-            joinedAt = LocalDateTime.now()
-        ),
-        Contributor(
-            user = SimplifiedUser(
-                id = "user_placeholder_id",
-                username = "ala3alalalala3",
-                avatarUrl = null,
-            ),
-            chartId = "placeholder_chart_id",
-            roles = listOf(Role.AUDIO),
-            joinedAt = LocalDateTime.now()
-        )
-    ),
-)
-
-val placeholderActivityItems = listOf(
-    ActivityItem(
-        date = Date(),
-        content = listOf(placeholderChart, placeholderChart, placeholderChart)
-    ),
-    ActivityItem(
-        date = Date(),
-        content = listOf(placeholderChart, placeholderChart)
-    ),
-    ActivityItem(
-        date = Date(),
-        content = listOf(placeholderChart, placeholderChart, placeholderChart)
-    ),
-    ActivityItem(
-        date = Date(),
-        content = listOf(placeholderChart, placeholderChart, placeholderChart)
-    )
-)
-
-val placeholderLibraryItems = listOf<CatalogItem>(
-    placeholderChart,
-    placeholderChart,
-    placeholderChart,
-    placeholderChart,
-    placeholderChart,
-    placeholderChart,
-    placeholderChart,
-    placeholderChart,
-    placeholderChart,
-)
-
-val placeholderCollection = Collection(
-    id = ULong.MIN_VALUE,
-    name = "Minha Coleção Exemplo",
-    coverUrl = "https://i.imgur.com/sDP3mcd.jpeg",
-    createdAt = LocalDateTime.now(),
-    updatedAt = LocalDateTime.now(),
-    userId = UUID.randomUUID(),
-    isPublic = true,
-    items = listOf(
-        placeholderChart,
-        placeholderChart,
-        placeholderChart,
-        placeholderChart,
-        placeholderChart,
-        placeholderChart,
-        placeholderChart,
-        placeholderChart
-    )
-)
-
-val favoriteCollection = Collection(
-    id = ULong.MAX_VALUE - 1u,
-    name = "bookmarks",
-    coverUrl = "https://i.imgur.com/sDP3mcd.jpeg",
-    createdAt = LocalDateTime.now(),
-    updatedAt = LocalDateTime.now(),
-    userId = UUID.randomUUID(),
-    isPublic = false,
-    items = listOf(placeholderChart, placeholderChart)
-)
-
-val placeholderCollections = listOf(
-    favoriteCollection,
-    placeholderCollection,
-    placeholderCollection,
-    placeholderCollection
+data class ProfilePaginationState(
+    val isLoadingMoreActivity: Boolean = false,
+    val hasMoreActivity: Boolean = true,
+    val isLoadingMoreLibrary: Boolean = false,
+    val hasMoreLibrary: Boolean = true,
+    val isLoadingMoreLikes: Boolean = false,
+    val hasMoreLikes: Boolean = true,
+    val isLoadingMoreBookmarks: Boolean = false,
+    val hasMoreBookmarks: Boolean = true,
+    val isLoadingMoreCollections: Boolean = false,
+    val hasMoreCollections: Boolean = true
 )
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    /*@param:Named("Remote") private val remoteChartRepository: ChartRepository,
-    @param:Named("Local") private val localChartRepository: ChartRepository,*/
+    private val profileRepository: ProfileRepository,
+    private val meRepository: MeRepository,
+    private val collectionRepository: CollectionRepository,
+    private val apiClient: ApiClient
 ) : ViewModel() {
-    // Activity = all last 25 content interactions (likes, comments, new follows, new content from followed users)
-    // Library = all content created by the user, sorted by upload date
-    // Likes = all content liked by the user, sorted by like date
-    // Collections = all content added to collections by the user, sorted by addition date
+    private val activityPagination = PaginationState(pageSize = 20)
+    private val libraryPagination = PaginationState(pageSize = 20)
+    private val likesPagination = PaginationState(pageSize = 20)
+    private val bookmarksPagination = PaginationState(pageSize = 20)
+    private val collectionsPagination = PaginationState(pageSize = 20)
+
+    private val _isLoadingMoreActivity = MutableStateFlow(false)
+    val isLoadingMoreActivity: StateFlow<Boolean> = _isLoadingMoreActivity.asStateFlow()
+    private val _hasMoreActivity = MutableStateFlow(true)
+    val hasMoreActivity: StateFlow<Boolean> = _hasMoreActivity.asStateFlow()
+
+    private val _isLoadingMoreLibrary = MutableStateFlow(false)
+    val isLoadingMoreLibrary: StateFlow<Boolean> = _isLoadingMoreLibrary.asStateFlow()
+    private val _hasMoreLibrary = MutableStateFlow(true)
+    val hasMoreLibrary: StateFlow<Boolean> = _hasMoreLibrary.asStateFlow()
+
+    private val _isLoadingMoreLikes = MutableStateFlow(false)
+    val isLoadingMoreLikes: StateFlow<Boolean> = _isLoadingMoreLikes.asStateFlow()
+    private val _hasMoreLikes = MutableStateFlow(true)
+    val hasMoreLikes: StateFlow<Boolean> = _hasMoreLikes.asStateFlow()
+
+    private val _isLoadingMoreBookmarks = MutableStateFlow(false)
+    val isLoadingMoreBookmarks: StateFlow<Boolean> = _isLoadingMoreBookmarks.asStateFlow()
+    private val _hasMoreBookmarks = MutableStateFlow(true)
+    val hasMoreBookmarks: StateFlow<Boolean> = _hasMoreBookmarks.asStateFlow()
+
+    private val _isLoadingMoreCollections = MutableStateFlow(false)
+    val isLoadingMoreCollections: StateFlow<Boolean> = _isLoadingMoreCollections.asStateFlow()
+    private val _hasMoreCollections = MutableStateFlow(true)
+    val hasMoreCollections: StateFlow<Boolean> = _hasMoreCollections.asStateFlow()
+
+    val paginationState: StateFlow<ProfilePaginationState> = combine(
+        isLoadingMoreActivity,
+        hasMoreActivity,
+        isLoadingMoreLibrary,
+        hasMoreLibrary,
+        isLoadingMoreLikes,
+        hasMoreLikes,
+        isLoadingMoreBookmarks,
+        hasMoreBookmarks,
+        isLoadingMoreCollections,
+        hasMoreCollections
+    ) { values ->
+        ProfilePaginationState(
+            isLoadingMoreActivity = values[0],
+            hasMoreActivity = values[1],
+            isLoadingMoreLibrary = values[2],
+            hasMoreLibrary = values[3],
+            isLoadingMoreLikes = values[4],
+            hasMoreLikes = values[5],
+            isLoadingMoreBookmarks = values[6],
+            hasMoreBookmarks = values[7],
+            isLoadingMoreCollections = values[8],
+            hasMoreCollections = values[9]
+        )
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5_000),
+        ProfilePaginationState()
+    )
 
     private val _section1State = MutableStateFlow<ContentState>(ContentState.Loading)
     val section1State: SharedFlow<ContentState> = _section1State.asStateFlow()
     private val _section2State = MutableStateFlow<ContentState>(ContentState.Loading)
     val section2State: SharedFlow<ContentState> = _section2State.asStateFlow()
 
-    // Public info
-    private val _activityContent = MutableStateFlow<List<ActivityItem>>(placeholderActivityItems)
-    val activityContent = MutableStateFlow<List<ActivityItem>>(placeholderActivityItems)
+    private val _activityContent = MutableStateFlow<List<ActivityItem>>(emptyList())
+    val activityContent: StateFlow<List<ActivityItem>> = _activityContent.asStateFlow()
 
-    private val _libraryContent = MutableStateFlow<List<CatalogItem>>(placeholderLibraryItems)
-    val libraryContent = MutableStateFlow<List<CatalogItem>>(placeholderLibraryItems)
+    private val _libraryContent = MutableStateFlow<List<CatalogItem>>(emptyList())
+    val libraryContent: StateFlow<List<CatalogItem>> = _libraryContent.asStateFlow()
 
-    // Private info (logged-in user only)
     private val _likedContent = MutableStateFlow<List<CatalogItem>>(emptyList())
     val likedContent: StateFlow<List<CatalogItem>> = _likedContent.asStateFlow()
 
-    private val _collectionContent = MutableStateFlow<List<Collection>>(placeholderCollections)
-    val collectionContent = MutableStateFlow<List<Collection>>(placeholderCollections)
+    private val _collectionContent = MutableStateFlow<List<Collection>>(emptyList())
+    val collectionContent: StateFlow<List<Collection>> = _collectionContent.asStateFlow()
 
-    fun loadUserProfile(userId: String) {
-        // Implementation for loading profile data
+    private val _isFollowing = MutableStateFlow(false)
+    val isFollowing: StateFlow<Boolean> = _isFollowing.asStateFlow()
+
+    private var currentProfileId: String? = null
+    private var isOwnerProfile: Boolean = false
+    private var profileHeader: UserProfileResponse? = null
+
+    fun loadProfile(userId: String, isOwner: Boolean) {
+        if (currentProfileId == userId && isOwnerProfile == isOwner) return
+
+        currentProfileId = userId
+        isOwnerProfile = isOwner
+
+        resetAll()
+
+        viewModelScope.launch {
+            if (isOwner) {
+                meRepository.getProfile().onSuccess { header ->
+                    profileHeader = header
+                    _isFollowing.value = false
+                }
+                fetchUserLikes(reset = true)
+            } else {
+                profileRepository.getProfileHeader(userId).onSuccess { header ->
+                    profileHeader = header
+                    _isFollowing.value = header.isFollowing ?: false
+                }
+                fetchProfileActivity(userId, reset = true)
+            }
+        }
     }
 
-    fun fetchProfileActivity(userId: String) {
-        // Implementation for fetching profile activity
+    fun onTabSelected(userId: String, isOwner: Boolean, index: Int) {
+        if (isOwner) {
+            when (index) {
+                0 -> if (_likedContent.value.isEmpty()) fetchUserLikes(reset = true)
+                1 -> if (_collectionContent.value.isEmpty()) fetchUserCollections(reset = true)
+            }
+        } else {
+            when (index) {
+                0 -> if (_activityContent.value.isEmpty()) fetchProfileActivity(userId, reset = true)
+                1 -> if (_libraryContent.value.isEmpty()) fetchProfileLibrary(userId, reset = true)
+            }
+        }
     }
 
-    fun fetchProfileLibrary(userId: String) {
-        // Implementation for fetching profile library
+    fun toggleFollow(userId: String) {
+        if (isOwnerProfile) return
+
+        viewModelScope.launch {
+            val shouldFollow = !_isFollowing.value
+            val result = if (shouldFollow) {
+                profileRepository.followUser(userId)
+            } else {
+                profileRepository.unfollowUser(userId)
+            }
+            result.onSuccess {
+                _isFollowing.value = shouldFollow
+            }
+        }
     }
 
-    fun fetchUserLikes() {
-        // Implementation for fetching user likes
+    fun fetchProfileActivity(userId: String, reset: Boolean = false) {
+        viewModelScope.launch {
+            if (reset) {
+                activityPagination.reset()
+                _activityContent.value = emptyList()
+                _section1State.value = ContentState.Loading
+            }
+
+            if (activityPagination.isLoadingMore || !activityPagination.hasMore) return@launch
+
+            activityPagination.isLoadingMore = true
+            _isLoadingMoreActivity.value = true
+            val result = profileRepository.getActivity(
+                userId = userId,
+                limit = activityPagination.pageSize,
+                offset = activityPagination.nextOffset()
+            )
+
+            result.onSuccess { entries ->
+                val items = mapActivityEntries(entries)
+                val updated = if (activityPagination.currentPage == 0) items else _activityContent.value + items
+                _activityContent.value = updated
+                activityPagination.hasMore = entries.size >= activityPagination.pageSize
+                _hasMoreActivity.value = activityPagination.hasMore
+                activityPagination.advancePage()
+                _section1State.value = ContentState.Success
+            }.onFailure {
+                _section1State.value = ContentState.Error
+            }
+
+            activityPagination.isLoadingMore = false
+            _isLoadingMoreActivity.value = false
+        }
     }
 
-    // If likes were not fetched yet, fetch them
-    fun fetchUserCollections() {
-        // Implementation for fetching user collections
+    fun fetchProfileLibrary(userId: String, reset: Boolean = false) {
+        viewModelScope.launch {
+            if (reset) {
+                libraryPagination.reset()
+                _libraryContent.value = emptyList()
+                _section2State.value = ContentState.Loading
+            }
+
+            if (libraryPagination.isLoadingMore || !libraryPagination.hasMore) return@launch
+
+            libraryPagination.isLoadingMore = true
+            _isLoadingMoreLibrary.value = true
+            val result = profileRepository.getUserCharts(
+                userId = userId,
+                limit = libraryPagination.pageSize,
+                offset = libraryPagination.nextOffset()
+            )
+
+            result.onSuccess { data ->
+                val updated = if (libraryPagination.currentPage == 0) data else _libraryContent.value + data
+                _libraryContent.value = updated
+                libraryPagination.hasMore = data.size >= libraryPagination.pageSize
+                _hasMoreLibrary.value = libraryPagination.hasMore
+                libraryPagination.advancePage()
+                _section2State.value = ContentState.Success
+            }.onFailure {
+                _section2State.value = ContentState.Error
+            }
+
+            libraryPagination.isLoadingMore = false
+            _isLoadingMoreLibrary.value = false
+        }
+    }
+
+    fun fetchUserLikes(reset: Boolean = false) {
+        viewModelScope.launch {
+            if (reset) {
+                likesPagination.reset()
+                _likedContent.value = emptyList()
+                _section1State.value = ContentState.Loading
+            }
+
+            if (likesPagination.isLoadingMore || !likesPagination.hasMore) return@launch
+
+            likesPagination.isLoadingMore = true
+            _isLoadingMoreLikes.value = true
+            val result = meRepository.getLikes(
+                limit = likesPagination.pageSize,
+                offset = likesPagination.nextOffset()
+            )
+
+            result.onSuccess { data ->
+                val updated = if (likesPagination.currentPage == 0) data else _likedContent.value + data
+                _likedContent.value = updated
+                likesPagination.hasMore = data.size >= likesPagination.pageSize
+                _hasMoreLikes.value = likesPagination.hasMore
+                likesPagination.advancePage()
+                _section1State.value = ContentState.Success
+            }.onFailure {
+                _section1State.value = ContentState.Error
+            }
+
+            likesPagination.isLoadingMore = false
+            _isLoadingMoreLikes.value = false
+        }
+    }
+
+    fun fetchUserCollections(reset: Boolean = false) {
+        viewModelScope.launch {
+            if (reset) {
+                bookmarksPagination.reset()
+                collectionsPagination.reset()
+                _collectionContent.value = emptyList()
+                _section2State.value = ContentState.Loading
+            }
+
+            fetchBookmarksInternal()
+            fetchCustomCollectionsInternal()
+        }
+    }
+
+    fun loadMoreActivity(userId: String) = fetchProfileActivity(userId, reset = false)
+    fun loadMoreLibrary(userId: String) = fetchProfileLibrary(userId, reset = false)
+    fun loadMoreLikes() = fetchUserLikes(reset = false)
+    fun loadMoreBookmarks() {
+        viewModelScope.launch { fetchBookmarksInternal() }
+    }
+
+    fun loadMoreCollections() {
+        viewModelScope.launch { fetchCustomCollectionsInternal() }
+    }
+
+    private suspend fun fetchBookmarksInternal() {
+        if (bookmarksPagination.isLoadingMore || !bookmarksPagination.hasMore) return
+
+        bookmarksPagination.isLoadingMore = true
+        _isLoadingMoreBookmarks.value = true
+        val result = meRepository.getBookmarks(
+            limit = bookmarksPagination.pageSize,
+            offset = bookmarksPagination.nextOffset()
+        )
+
+        result.onSuccess { data ->
+            val updatedBookmarks = if (bookmarksPagination.currentPage == 0) data else {
+                val existing = _collectionContent.value.firstOrNull { it.id == "bookmarks" }?.items ?: emptyList()
+                existing + data
+            }
+
+            bookmarksPagination.hasMore = data.size >= bookmarksPagination.pageSize
+            _hasMoreBookmarks.value = bookmarksPagination.hasMore
+            bookmarksPagination.advancePage()
+            updateCollectionContent(updatedBookmarks = updatedBookmarks)
+            _section2State.value = ContentState.Success
+        }.onFailure {
+            _section2State.value = ContentState.Error
+        }
+
+        bookmarksPagination.isLoadingMore = false
+        _isLoadingMoreBookmarks.value = false
+    }
+
+    private suspend fun fetchCustomCollectionsInternal() {
+        if (collectionsPagination.isLoadingMore || !collectionsPagination.hasMore) return
+
+        collectionsPagination.isLoadingMore = true
+        _isLoadingMoreCollections.value = true
+        val result = collectionRepository.getUserCollections(
+            limit = collectionsPagination.pageSize,
+            offset = collectionsPagination.nextOffset()
+        )
+
+        result.onSuccess { data ->
+            val existingCustom = _collectionContent.value.filter { it.id != "bookmarks" }
+            val updatedCustom = if (collectionsPagination.currentPage == 0) data else existingCustom + data
+            collectionsPagination.hasMore = data.size >= collectionsPagination.pageSize
+            _hasMoreCollections.value = collectionsPagination.hasMore
+            collectionsPagination.advancePage()
+            updateCollectionContent(customCollections = updatedCustom)
+            _section2State.value = ContentState.Success
+        }.onFailure {
+            _section2State.value = ContentState.Error
+        }
+
+        collectionsPagination.isLoadingMore = false
+        _isLoadingMoreCollections.value = false
+    }
+
+    private fun updateCollectionContent(
+        updatedBookmarks: List<CatalogItem>? = null,
+        customCollections: List<Collection>? = null
+    ) {
+        val existing = _collectionContent.value
+        val existingBookmarks = updatedBookmarks
+            ?: existing.firstOrNull { it.id == "bookmarks" }?.items
+            ?: emptyList()
+        val existingCustom = customCollections
+            ?: existing.filter { it.id != "bookmarks" }
+
+        val userId = profileHeader?.user?.id ?: "me"
+        val bookmarksCollection = Collection(
+            id = "bookmarks",
+            userId = userId,
+            name = "bookmarks",
+            isPublic = false,
+            createdAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now(),
+            items = existingBookmarks,
+            itemCount = existingBookmarks.size
+        )
+
+        _collectionContent.value = listOf(bookmarksCollection) + existingCustom
+    }
+
+    private suspend fun mapActivityEntries(entries: List<ActivityEntry>): List<ActivityItem> {
+        val ids = entries.map { it.targetId }.distinct()
+        val charts = if (ids.isNotEmpty()) {
+            runCatching { apiClient.getChartsById(ids) }.getOrDefault(emptyList())
+        } else {
+            emptyList()
+        }
+        val chartById = charts.associateBy { it.id }
+        val chartByContentId = charts.associateBy { it.contentId ?: it.id }
+
+        return entries.mapNotNull { entry ->
+            val chart = chartById[entry.targetId] ?: chartByContentId[entry.targetId]
+            chart?.let {
+                ActivityItem(
+                    date = Date.from(entry.createdAt.atZone(ZoneId.systemDefault()).toInstant()),
+                    content = listOf(it)
+                )
+            }
+        }
+    }
+
+    private fun resetAll() {
+        activityPagination.reset()
+        libraryPagination.reset()
+        likesPagination.reset()
+        bookmarksPagination.reset()
+        collectionsPagination.reset()
+
+        _isLoadingMoreActivity.value = false
+        _hasMoreActivity.value = true
+        _isLoadingMoreLibrary.value = false
+        _hasMoreLibrary.value = true
+        _isLoadingMoreLikes.value = false
+        _hasMoreLikes.value = true
+        _isLoadingMoreBookmarks.value = false
+        _hasMoreBookmarks.value = true
+        _isLoadingMoreCollections.value = false
+        _hasMoreCollections.value = true
+
+        _activityContent.value = emptyList()
+        _libraryContent.value = emptyList()
+        _likedContent.value = emptyList()
+        _collectionContent.value = emptyList()
+
+        _section1State.value = ContentState.Loading
+        _section2State.value = ContentState.Loading
     }
 }

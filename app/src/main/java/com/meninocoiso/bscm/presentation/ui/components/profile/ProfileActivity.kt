@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,14 +28,26 @@ import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
 import com.meninocoiso.bscm.presentation.viewmodel.ActivityItem
+import com.meninocoiso.bscm.presentation.ui.components.profile.OnScrollLoadMore
 
 @Composable
 fun ProfileActivity(
     items: List<ActivityItem>,
     state: ContentState,
     onFetch: () -> Unit,
+    listState: LazyListState,
+    isLoadingMore: Boolean,
+    hasMore: Boolean,
+    onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    OnScrollLoadMore(
+        listState = listState,
+        hasMore = hasMore,
+        isLoadingMore = isLoadingMore,
+        onLoadMore = onLoadMore
+    )
+
     BaseContainer(
         isEmpty = items.isEmpty(),
         state = state,
@@ -49,6 +62,7 @@ fun ProfileActivity(
     ) {
         LazyColumn(
             modifier = modifier,
+            state = listState,
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 24.dp),
             verticalArrangement = Arrangement.Top
         ) {
@@ -128,6 +142,11 @@ fun ProfileActivity(
                     }
                 }
             }
+
+            pagination(
+                isLoadingMore = isLoadingMore,
+                message = if (hasMore) "Carregando..." else "Fim da lista"
+            )
         }
     }
 }

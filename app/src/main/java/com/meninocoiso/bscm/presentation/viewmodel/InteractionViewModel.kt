@@ -64,13 +64,20 @@ class InteractionViewModel @Inject constructor(
     suspend fun getLikeStatus(contentId: String): Flow<Result<Boolean>> {
         return interactionRepository.isContentLiked(contentId)
     }
+
+    /**
+     * Gets the bookmark status for content
+     */
+    suspend fun getBookmarkStatus(contentId: String): Flow<Result<Boolean>> {
+        return interactionRepository.isContentBookmarked(contentId)
+    }
     
     /**
      * Bookmarks content using the offline-first queue system
      */
-    fun favoriteContent(contentId: String) {
+    fun bookmarkContent(contentId: String) {
         viewModelScope.launch {
-            interactionRepository.favoriteContent(contentId)
+            interactionRepository.bookmarkContent(contentId)
                 .collect { result ->
                     result.onSuccess { 
                         updateQueueSize()
@@ -84,13 +91,45 @@ class InteractionViewModel @Inject constructor(
     /**
      * Unbookmarks content using the offline-first queue system
      */
-    fun unfavoriteContent(contentId: String) {
+    fun unbookmarkContent(contentId: String) {
         viewModelScope.launch {
-            interactionRepository.unfavoriteContent(contentId)
+            interactionRepository.unbookmarkContent(contentId)
                 .collect { result ->
                     result.onSuccess { 
                         updateQueueSize()
                     }.onFailure { error ->
+                        // Handle error if needed
+                    }
+                }
+        }
+    }
+
+    /**
+     * Adds content to a custom collection using the offline-first queue system
+     */
+    fun addToCollection(contentId: String, collectionId: String) {
+        viewModelScope.launch {
+            interactionRepository.addToCollection(contentId, collectionId)
+                .collect { result ->
+                    result.onSuccess {
+                        updateQueueSize()
+                    }.onFailure {
+                        // Handle error if needed
+                    }
+                }
+        }
+    }
+
+    /**
+     * Removes content from a custom collection using the offline-first queue system
+     */
+    fun removeFromCollection(contentId: String, collectionId: String) {
+        viewModelScope.launch {
+            interactionRepository.removeFromCollection(contentId, collectionId)
+                .collect { result ->
+                    result.onSuccess {
+                        updateQueueSize()
+                    }.onFailure {
                         // Handle error if needed
                     }
                 }

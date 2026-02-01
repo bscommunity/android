@@ -14,8 +14,8 @@ import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.internal.InstalledContentEntry
 import com.meninocoiso.bscm.domain.repository.ChartLocalRepository
-import com.meninocoiso.bscm.domain.repository.ChartRemoteRepository
 import com.meninocoiso.bscm.domain.repository.ChartQuery
+import com.meninocoiso.bscm.domain.repository.ChartRemoteRepository
 import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.ContentState
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -86,6 +86,27 @@ class ChartManager @Inject constructor(
     ): Flow<ContentResult<List<Chart>>> =
         contentManager.search(query, sortBy, limit, offset, filters)
 
+    fun updateChart(chartId: String, operation: OperationOption): Flow<ContentResult<Chart>> =
+        contentManager.updateContent(chartId, operation) { existing, op ->
+            when (op) {
+                OperationOption.INSTALL -> Result.success(existing.copy(isInstalled = true))
+
+                OperationOption.UPDATE -> existing.availableVersion?.let {
+                    Result.success(existing.copy(latestVersion = it, availableVersion = null))
+                } ?: Result.failure(IllegalStateException(context.getString(R.string.no_available_version)))
+
+                OperationOption.DELETE -> Result.success(existing.copy(isInstalled = false))
+            }
+        }
+
+    fun getChart(chartId: String): Flow<ContentResult<Chart>> = contentManager.getItem(chartId)
+
+    fun getSuggestions(query: String): Flow<List<String>> = contentManager.getSuggestions(query)
+
+    fun postAnalytics(chartId: String, operation: OperationOption) {
+        coroutineScope.launch { contentManager.postAnalytics(chartId, operation).first() }
+    }
+
     // Chart-specific operations that require ChartRepository methods
     fun checkForUpdates(): Flow<ContentResult<List<Chart>>> = flow {
         emit(ContentResult.Loading)
@@ -112,25 +133,6 @@ class ChartManager @Inject constructor(
             },
             onFailure = { err -> emit(ContentResult.Error(context.getString(R.string.failed_to_check_for_updates), err)) }
         )
-    }
-
-    fun updateChart(chartId: String, operation: OperationOption): Flow<ContentResult<List<Chart>>> =
-        contentManager.updateContent(chartId, operation) { existing, op ->
-            when (op) {
-                OperationOption.INSTALL -> Result.success(existing.copy(isInstalled = true))
-                OperationOption.UPDATE -> existing.availableVersion?.let {
-                    Result.success(existing.copy(latestVersion = it, availableVersion = null))
-                } ?: Result.failure(IllegalStateException(context.getString(R.string.no_available_version)))
-                OperationOption.DELETE -> Result.success(existing.copy(isInstalled = false))
-            }
-        }
-
-    fun getChart(chartId: String): Flow<ContentResult<Chart>> = contentManager.getItem(chartId)
-
-    fun getSuggestions(query: String): Flow<List<String>> = contentManager.getSuggestions(query)
-
-    fun postAnalytics(chartId: String, operation: OperationOption) {
-        coroutineScope.launch { contentManager.postAnalytics(chartId, operation).first() }
     }
 
     suspend fun scanLocalCharts(rootUri: Uri) {

@@ -20,19 +20,19 @@ interface InteractionRepository {
     suspend fun isContentLiked(contentId: String): Flow<Result<Boolean>>
     
     /**
-     * Queues a favorite interaction for offline-first processing
+     * Queues a bookmark interaction for offline-first processing
      */
-    suspend fun favoriteContent(contentId: String): Flow<Result<Unit>>
+    suspend fun bookmarkContent(contentId: String): Flow<Result<Unit>>
     
     /**
-     * Queues an unfavorite interaction for offline-first processing
+     * Queues an unbookmark interaction for offline-first processing
      */
-    suspend fun unfavoriteContent(contentId: String): Flow<Result<Unit>>
+    suspend fun unbookmarkContent(contentId: String): Flow<Result<Unit>>
     
     /**
-     * Checks if content is favorited (from local state or server)
+     * Checks if content is bookmarked (from local state or server)
      */
-    suspend fun isContentFavorited(contentId: String): Flow<Result<Boolean>>
+    suspend fun isContentBookmarked(contentId: String): Flow<Result<Boolean>>
     
     /**
      * Queues adding content to a custom collection

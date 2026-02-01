@@ -6,4 +6,5 @@ import kotlinx.serialization.Serializable
 data class UserProfileResponse(
     val user: SimplifiedUser,
     val counts: UserProfileCounts,
+    val isFollowing: Boolean? = null,
 )

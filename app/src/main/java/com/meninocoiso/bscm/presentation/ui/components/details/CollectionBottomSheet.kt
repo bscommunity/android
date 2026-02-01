@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.input.TextFieldLineLimits
@@ -46,6 +47,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.presentation.ui.components.SwitchUI
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 import kotlinx.coroutines.launch
@@ -55,7 +57,11 @@ import kotlinx.coroutines.launch
 fun CollectionBottomSheet(
     sheetState: SheetState,
     onDismissRequest: () -> Unit,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    collections: List<Collection>,
+    isLoading: Boolean,
+    onCollectionSelected: (collectionId: String) -> Unit,
+    onCreateCollection: (name: String, isPublic: Boolean) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
     val horizontalPagerState = rememberPagerState { 2 }
@@ -123,6 +129,9 @@ fun CollectionBottomSheet(
             ) { index ->
                 when (index) {
                     0 -> CollectionsListSection(
+                        collections = collections,
+                        isLoading = isLoading,
+                        onCollectionClick = onCollectionSelected,
                         onCreateNewCollectionClick = {
                             coroutineScope.launch {
                                 horizontalPagerState.scrollToPage(
@@ -137,6 +146,12 @@ fun CollectionBottomSheet(
                             coroutineScope.launch {
                                 horizontalPagerState.scrollToPage(0)
                             }
+                        },
+                        onSave = { name, isPublic ->
+                            onCreateCollection(name, isPublic)
+                            coroutineScope.launch {
+                                horizontalPagerState.scrollToPage(0)
+                            }
                         }
                     )
                 }
@@ -148,6 +163,8 @@ fun CollectionBottomSheet(
 @Composable
 fun CollectionsListSection(
     modifier: Modifier = Modifier,
+    collections: List<Collection>,
+    isLoading: Boolean,
     onCollectionClick: (String) -> Unit = { },
     onCreateNewCollectionClick: () -> Unit = { }
 ) {
@@ -184,13 +201,24 @@ fun CollectionsListSection(
                 Text("Criar nova coleção", style = MaterialTheme.typography.titleMedium)
             }
         }
-        items(12) {
+        if (isLoading && collections.isEmpty()) {
+            item {
+                Text(
+                    text = "Carregando coleções...",
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+
+        items(collections.size) { index ->
+            val collection = collections[index]
             CollectionItem(
-                name = "bonito.",
-                coverUrl = "https://i.imgur.com/5Hsj4tJ.jpeg",
-                isPublic = false,
-                contentCounts = Triple(24, 16, 7),
-                onClick = { onCollectionClick("bonito.") }
+                name = collection.name,
+                coverUrl = collection.coverUrl ?: "",
+                isPublic = collection.isPublic,
+                contentCounts = Triple(collection.itemCount, 0, 0),
+                onClick = { onCollectionClick(collection.id) }
             )
         }
     }
@@ -198,9 +226,11 @@ fun CollectionsListSection(
 
 @Composable
 fun CreateCollectionSection(
-    onBackClick: () -> Unit = { }
+    onBackClick: () -> Unit = { },
+    onSave: (name: String, isPublic: Boolean) -> Unit = { _, _ -> }
 ) {
     var isPublic by rememberSaveable { mutableStateOf(false) }
+    val nameState = rememberTextFieldState(initialText = "")
 
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -211,7 +241,7 @@ fun CreateCollectionSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
-            state = rememberTextFieldState(initialText = ""),
+            state = nameState,
             label = { Text("Name") },
             lineLimits = TextFieldLineLimits.SingleLine,
             supportingText = { Text("0/30") },
@@ -231,7 +261,12 @@ fun CreateCollectionSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
-            onClick = { println("Teste") }) {
+            onClick = {
+                val name = nameState.text.toString().trim()
+                if (name.isNotEmpty()) {
+                    onSave(name, isPublic)
+                }
+            }) {
             Text("Save")
         }
     }

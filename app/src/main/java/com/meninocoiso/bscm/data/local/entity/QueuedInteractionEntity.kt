@@ -9,7 +9,7 @@ data class QueuedInteractionEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val contentId: String,
-    val collectionId: String, // "likes", "favorites", or custom collection ID
+    val collectionId: String, // "likes", "bookmarks", or custom collection ID
     val action: ActionType,
     val timestamp: Long,
     val retryCount: Int = 0

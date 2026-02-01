@@ -4,11 +4,17 @@ import android.content.Context
 import android.util.Log
 import com.meninocoiso.bscm.data.security.AuthInterceptor
 import com.meninocoiso.bscm.data.security.AuthPlugin
+import com.meninocoiso.bscm.data.remote.dto.activity.ActivityEntry
+import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionItemRequest
+import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionRequest
+import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionRequest
+import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.domain.model.auth.AuthRequest
@@ -24,6 +30,8 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.post
+import io.ktor.client.request.delete
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
@@ -234,6 +242,146 @@ class KtorApiClient @Inject constructor(
                 throw Exception("User Error (${response.status.value}): ${errorResponse.error}")
             }
         }
+    }
+
+    override suspend fun getUsers(search: String?): List<User> {
+        return client.get("users") {
+            url {
+                search?.let { parameters.append("search", it) }
+            }
+        }.body()
+    }
+
+    override suspend fun getUser(id: String): User {
+        return client.get("users/$id").body()
+    }
+
+    override suspend fun getUserProfile(id: String): UserProfileResponse {
+        return client.get("users/$id").body()
+    }
+
+    override suspend fun getUserProfileByUsername(username: String): UserProfileResponse {
+        return client.get("users/username/$username").body()
+    }
+
+    override suspend fun getUserActivity(id: String, limit: Int?, offset: Int?): List<ActivityEntry> {
+        return client.get("users/$id/activity") {
+            url {
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
+            }
+        }.body()
+    }
+
+    override suspend fun getUserCharts(id: String, limit: Int?, offset: Int?): List<Chart> {
+        return client.get("users/$id/charts") {
+            url {
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
+            }
+        }.body()
+    }
+
+    override suspend fun followUser(id: String): Boolean {
+        val response = client.post("users/$id/follow")
+        return response.status == HttpStatusCode.OK
+    }
+
+    override suspend fun unfollowUser(id: String): Boolean {
+        val response = client.delete("users/$id/follow")
+        return response.status == HttpStatusCode.OK
+    }
+
+    override suspend fun getMyProfile(): UserProfileResponse {
+        return client.get("me/profile").body()
+    }
+
+    override suspend fun getMyActivity(limit: Int?, offset: Int?): List<ActivityEntry> {
+        return client.get("me/activity") {
+            url {
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
+            }
+        }.body()
+    }
+
+    override suspend fun getMyLikes(limit: Int?, offset: Int?): List<Chart> {
+        return client.get("me/likes") {
+            url {
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
+            }
+        }.body()
+    }
+
+    override suspend fun getMyBookmarks(limit: Int?, offset: Int?): List<Chart> {
+        return client.get("me/bookmarks") {
+            url {
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
+            }
+        }.body()
+    }
+
+    override suspend fun getUserCollections(limit: Int?, offset: Int?): List<Collection> {
+        return client.get("collections") {
+            url {
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
+            }
+        }.body()
+    }
+
+    override suspend fun createCollection(name: String, isPublic: Boolean): Collection {
+        return client.post("collections") {
+            setBody(CreateCollectionRequest(name = name, isPublic = isPublic))
+        }.body()
+    }
+
+    override suspend fun updateCollection(collectionId: String, name: String?, isPublic: Boolean?): Boolean {
+        val response = client.put("collections/$collectionId") {
+            setBody(UpdateCollectionRequest(name = name, isPublic = isPublic))
+        }
+        return response.status == HttpStatusCode.OK
+    }
+
+    override suspend fun deleteCollection(collectionId: String): Boolean {
+        val response = client.delete("collections/$collectionId")
+        return response.status == HttpStatusCode.OK
+    }
+
+    override suspend fun getCollectionItems(
+        collectionId: String,
+        contentType: String?,
+        limit: Int?,
+        offset: Int?
+    ): List<Chart> {
+        return client.get("collections/$collectionId/items") {
+            url {
+                contentType?.let { parameters.append("contentType", it) }
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
+            }
+        }.body()
+    }
+
+    override suspend fun addItemToCollection(collectionId: String, contentId: String): Boolean {
+        val response = client.post("collections/$collectionId/items") {
+            setBody(mapOf("contentId" to contentId))
+        }
+        return response.status == HttpStatusCode.OK
+    }
+
+    override suspend fun removeItemFromCollection(collectionId: String, contentId: String): Boolean {
+        val response = client.delete("collections/$collectionId/items/$contentId")
+        return response.status == HttpStatusCode.OK
+    }
+
+    override suspend fun batchProcessInteractions(interactions: List<CreateCollectionItemRequest>): Boolean {
+        val response = client.post("collections/batch") {
+            setBody(interactions)
+        }
+        return response.status == HttpStatusCode.OK
     }
 
     /**

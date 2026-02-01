@@ -37,11 +37,11 @@ class InteractionQueueManager @Inject constructor(
     }
     
     /**
-     * Queue a favorite/unfavorite interaction
+     * Queue a bookmark/unbookmark interaction
      */
-    suspend fun queueFavoriteInteraction(contentId: String, isFavorite: Boolean): String {
-        val action = if (isFavorite) ActionType.ADD else ActionType.REMOVE
-        return queueInteraction(contentId, "favorites", action)
+    suspend fun queueBookmarkInteraction(contentId: String, isBookmarked: Boolean): String {
+        val action = if (isBookmarked) ActionType.ADD else ActionType.REMOVE
+        return queueInteraction(contentId, "bookmarks", action)
     }
     
     /**
@@ -167,12 +167,10 @@ class InteractionQueueManager @Inject constructor(
             Log.d(TAG, "Sending batch of ${batchRequest.size} interactions to server")
             
             // Send batch request to server
-            /*try {
+            try {
                 val success = apiClient.batchProcessInteractions(batchRequest)
-                
+
                 if (success) {
-                    // Clear all processed interactions
-                    // val processedIds = finalInteractions.map { it.id }
                     queueDao.delete(finalInteractions)
                     Log.d(TAG, "Successfully processed and removed ${finalInteractions.size} interactions")
                 } else {
@@ -182,7 +180,7 @@ class InteractionQueueManager @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to send batch request", e)
                 handleRetries(finalInteractions)
-            }*/
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error in processQueuedInteractions", e)
         }

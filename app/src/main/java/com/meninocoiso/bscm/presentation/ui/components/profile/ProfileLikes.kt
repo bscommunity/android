@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -20,8 +21,19 @@ fun ProfileLikes(
     state: ContentState,
     onFetch: () -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
+    listState: LazyListState,
+    isLoadingMore: Boolean,
+    hasMore: Boolean,
+    onLoadMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    OnScrollLoadMore(
+        listState = listState,
+        hasMore = hasMore,
+        isLoadingMore = isLoadingMore,
+        onLoadMore = onLoadMore
+    )
+
     BaseContainer(
         isEmpty = items.isEmpty(),
         state = state,
@@ -36,6 +48,7 @@ fun ProfileLikes(
     ) {
         LazyColumn(
             modifier = modifier,
+            state = listState,
             contentPadding = PaddingValues(vertical = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -45,6 +58,10 @@ fun ProfileLikes(
                     onSelected = {})
             }
             contentList(items, onNavigateToDetails)
+            pagination(
+                isLoadingMore = isLoadingMore,
+                message = if (hasMore) "Carregando..." else "Fim da lista"
+            )
         }
     }
 }

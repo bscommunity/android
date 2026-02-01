@@ -5,8 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -30,6 +29,14 @@ fun ProfileCollections(
     onFetch: () -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
     onNavigateToCollection: (collectionId: String) -> Unit,
+    bookmarksListState: LazyListState,
+    collectionsListState: LazyListState,
+    isLoadingMoreBookmarks: Boolean,
+    hasMoreBookmarks: Boolean,
+    onLoadMoreBookmarks: () -> Unit,
+    isLoadingMoreCollections: Boolean,
+    hasMoreCollections: Boolean,
+    onLoadMoreCollections: () -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
     val tabItems = listOf("All", "Collections", "Charts", "Tour Passes", "Themes")
@@ -43,14 +50,19 @@ fun ProfileCollections(
     }
 
     if (bookmarksCollection == null) {
-        // Show loading or error state if necessary
+        StatusMessageUI(
+            modifier = Modifier.fillMaxWidth(),
+            message = "Nenhuma coleção encontrada",
+            icon = R.drawable.outline_library_music_24
+        )
         return
     }
 
     Column(modifier) {
+        val extraTabs = (items.size - 2).coerceAtLeast(0)
         CatalogFilters(
             bookmarksCollection.items,
-            items.size - 2,
+            extraTabs,
             currentSelected = horizontalPagerState.currentPage,
             onFilterSelected = { index ->
                 coroutineScope.launch {
@@ -72,6 +84,10 @@ fun ProfileCollections(
                         items = bookmarksCollection.items,
                         onFetch = onFetch,
                         onNavigateToDetails = onNavigateToDetails,
+                        listState = bookmarksListState,
+                        isLoadingMore = isLoadingMoreBookmarks,
+                        hasMore = hasMoreBookmarks,
+                        onLoadMore = onLoadMoreBookmarks,
                         modifier = Modifier
                             .fillMaxWidth()
                     )
@@ -79,10 +95,14 @@ fun ProfileCollections(
 
                 1 -> {
                     // Collections
-                    ProfileCollectionGrid(
+                    ProfileCollectionList(
                         items = customCollections,
                         onFetch = onFetch,
                         onNavigateToCollection = onNavigateToCollection,
+                        listState = collectionsListState,
+                        isLoadingMore = isLoadingMoreCollections,
+                        hasMore = hasMoreCollections,
+                        onLoadMore = onLoadMoreCollections,
                         modifier = Modifier
                             .fillMaxWidth()
                     )
@@ -94,6 +114,10 @@ fun ProfileCollections(
                         items = bookmarksCollection.items,
                         onFetch = onFetch,
                         onNavigateToDetails = onNavigateToDetails,
+                        listState = bookmarksListState,
+                        isLoadingMore = isLoadingMoreBookmarks,
+                        hasMore = hasMoreBookmarks,
+                        onLoadMore = onLoadMoreBookmarks,
                         modifier = Modifier
                             .fillMaxWidth()
                     )
@@ -117,9 +141,20 @@ fun ProfileCollectionTabContent(
     items: List<CatalogItem>,
     onFetch: () -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
+    listState: LazyListState,
+    isLoadingMore: Boolean,
+    hasMore: Boolean,
+    onLoadMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state = ContentState.Success
+
+    OnScrollLoadMore(
+        listState = listState,
+        hasMore = hasMore,
+        isLoadingMore = isLoadingMore,
+        onLoadMore = onLoadMore
+    )
 
     BaseContainer(
         isEmpty = items.isEmpty(),
@@ -128,25 +163,40 @@ fun ProfileCollectionTabContent(
         empty = {
             StatusMessageUI(
                 modifier = Modifier.fillMaxWidth(),
-                message = "No favorited content",
+                message = "No bookmarked content",
                 icon = R.drawable.outline_library_music_24
             )
         }
     ) {
-        LazyColumn(modifier = modifier) {
+        LazyColumn(modifier = modifier, state = listState) {
             contentList(items, onNavigateToDetails)
+            pagination(
+                isLoadingMore = isLoadingMore,
+                message = if (hasMore) "Carregando..." else "Fim da lista"
+            )
         }
     }
 }
 
 @Composable
-fun ProfileCollectionGrid(
+fun ProfileCollectionList(
     items: List<Collection>,
     onFetch: () -> Unit,
     onNavigateToCollection: (collectionId: String) -> Unit,
+    listState: LazyListState,
+    isLoadingMore: Boolean,
+    hasMore: Boolean,
+    onLoadMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state = ContentState.Success
+
+    OnScrollLoadMore(
+        listState = listState,
+        hasMore = hasMore,
+        isLoadingMore = isLoadingMore,
+        onLoadMore = onLoadMore
+    )
 
     BaseContainer(
         isEmpty = items.isEmpty(),
@@ -160,20 +210,23 @@ fun ProfileCollectionGrid(
             )
         }
     ) {
-        LazyVerticalGrid(
+        LazyColumn(
             modifier = modifier,
-            columns = GridCells.Fixed(2),
+            state = listState,
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(items.size) { index ->
                 val item = items[index]
                 CollectionPreview(
                     collection = item,
-                    onPress = { onNavigateToCollection(item.id.toString()) }
+                    onPress = { onNavigateToCollection(item.id) }
                 )
             }
+            pagination(
+                isLoadingMore = isLoadingMore,
+                message = if (hasMore) "Carregando..." else "Fim da lista"
+            )
         }
     }
 }
