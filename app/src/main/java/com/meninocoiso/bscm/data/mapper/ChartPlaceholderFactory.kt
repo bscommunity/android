@@ -1,6 +1,5 @@
 package com.meninocoiso.bscm.data.mapper
 
-import android.util.Log
 import com.meninocoiso.bscm.data.parser.ContributorParser
 import com.meninocoiso.bscm.data.parser.ExternalContentConfig
 import com.meninocoiso.bscm.data.parser.ExternalContentMetadata
@@ -56,7 +55,6 @@ class ChartPlaceholderFactory @Inject constructor(
         metadata: ExternalContentMetadata
     ): Version {
         val now = LocalDateTime.now()
-        Log.d(TAG, difficultyMapper.map(metadata.difficulty).toString())
         return Version(
             id = -chartId.hashCode().toLong(),
             chartId = chartId,

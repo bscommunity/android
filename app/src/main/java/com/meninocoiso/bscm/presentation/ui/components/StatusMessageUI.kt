@@ -20,15 +20,21 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 
-enum class Size(
+enum class StatusMessageSize(
     val icon: Int,
     val gap: Int,
     val title: @Composable () -> TextStyle,
     val message: @Composable () -> TextStyle
 ) {
-    Medium(
+    Large(
         icon = 56,
         gap = 16,
+        title = { MaterialTheme.typography.titleLarge },
+        message = { MaterialTheme.typography.bodyMedium }
+    ),
+    Medium(
+        icon = 36,
+        gap = 12,
         title = { MaterialTheme.typography.titleLarge },
         message = { MaterialTheme.typography.bodyMedium }
     ),
@@ -57,7 +63,7 @@ fun StatusMessageUI(
     title: String? = null,
     message: String,
     icon: Int,
-    size: Size = Size.Medium,
+    size: StatusMessageSize = StatusMessageSize.Large,
     onClick: (() -> Unit)? = null,
     buttonLabel: String = stringResource(R.string.try_again)
 ) {

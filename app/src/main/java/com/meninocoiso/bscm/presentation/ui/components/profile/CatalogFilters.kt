@@ -42,7 +42,7 @@ fun CatalogFilters(
 
     if (collectionsAmount != null) {
         options.add(
-            options.size - 1,
+            options.size,
             ContentFilterOption(
                 id = 3,
                 title = "Collections",

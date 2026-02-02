@@ -13,6 +13,7 @@ import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.SegmentedButtonUI
+import com.meninocoiso.bscm.presentation.ui.components.StatusMessageSize
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 
 @Composable
@@ -42,6 +43,7 @@ fun ProfileLikes(
             StatusMessageUI(
                 modifier = Modifier.fillMaxSize(),
                 message = "No liked content",
+                size = StatusMessageSize.Medium,
                 icon = R.drawable.rounded_favorite_24
             )
         }

@@ -9,6 +9,7 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
+import com.meninocoiso.bscm.presentation.ui.components.StatusMessageSize
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 
 @Composable
@@ -37,6 +38,7 @@ fun ProfileLibrary(
         empty = {
             StatusMessageUI(
                 modifier = Modifier.fillMaxSize(),
+                size = StatusMessageSize.Medium,
                 message = "No content in library",
                 icon = R.drawable.outline_library_music_24
             )

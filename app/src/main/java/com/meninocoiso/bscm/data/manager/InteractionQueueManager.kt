@@ -6,6 +6,7 @@ import com.meninocoiso.bscm.data.local.entity.QueuedInteractionEntity
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionItemRequest
 import com.meninocoiso.bscm.domain.enums.ActionType
+import com.meninocoiso.bscm.domain.enums.CollectionKind
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -33,7 +34,7 @@ class InteractionQueueManager @Inject constructor(
      */
     suspend fun queueLikeInteraction(contentId: String, isLike: Boolean): String {
         val action = if (isLike) ActionType.ADD else ActionType.REMOVE
-        return queueInteraction(contentId, "likes", action)
+        return queueInteraction(contentId, null, CollectionKind.LIKES, action)
     }
     
     /**
@@ -41,7 +42,7 @@ class InteractionQueueManager @Inject constructor(
      */
     suspend fun queueBookmarkInteraction(contentId: String, isBookmarked: Boolean): String {
         val action = if (isBookmarked) ActionType.ADD else ActionType.REMOVE
-        return queueInteraction(contentId, "bookmarks", action)
+        return queueInteraction(contentId, null, CollectionKind.BOOKMARKS, action)
     }
     
     /**
@@ -53,7 +54,7 @@ class InteractionQueueManager @Inject constructor(
         isAdd: Boolean
     ): String {
         val action = if (isAdd) ActionType.ADD else ActionType.REMOVE
-        return queueInteraction(contentId, collectionId, action)
+        return queueInteraction(contentId, collectionId, CollectionKind.USER, action)
     }
     
     /**
@@ -61,12 +62,18 @@ class InteractionQueueManager @Inject constructor(
      */
     private suspend fun queueInteraction(
         contentId: String,
-        collectionId: String,
+        collectionId: String?,
+        collectionKind: CollectionKind = CollectionKind.USER,
         action: ActionType
     ): String = withContext(Dispatchers.IO) {
+        if (collectionId == null && collectionKind == CollectionKind.USER) {
+            throw IllegalArgumentException("Collection ID must be provided for user collections")
+        }
+
         val interaction = QueuedInteractionEntity(
             contentId = contentId,
             collectionId = collectionId,
+            collectionKind = collectionKind,
             action = action,
             timestamp = System.currentTimeMillis()
         )
@@ -160,6 +167,7 @@ class InteractionQueueManager @Inject constructor(
                 CreateCollectionItemRequest(
                     contentId = entity.contentId,
                     collectionId = entity.collectionId,
+                    collectionKind = entity.collectionKind,
                     action = entity.action
                 )
             }

@@ -232,9 +232,13 @@ fun ProfileScreen(
             ) { index ->
                 val nestedScrollConnection = remember {
                     object : NestedScrollConnection {
-                        override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                        override fun onPreScroll(
+                            available: Offset,
+                            source: NestedScrollSource
+                        ): Offset {
                             val delta = available.y
-                            val newOffset = (headerScrollState.value - delta).coerceIn(0f, headerHeightPx)
+                            val newOffset =
+                                (headerScrollState.value - delta).coerceIn(0f, headerHeightPx)
                             val consumed = headerScrollState.value - newOffset
 
                             coroutineScope.launch {
@@ -252,7 +256,8 @@ fun ProfileScreen(
                         .nestedScroll(nestedScrollConnection)
                 ) {
                     // Add top padding to account for header + tabs
-                    val headerOffsetPx = (headerHeightPx - headerScrollState.value).coerceAtLeast(0f)
+                    val headerOffsetPx =
+                        (headerHeightPx - headerScrollState.value).coerceAtLeast(0f)
                     val topPadding = with(LocalDensity.current) {
                         headerOffsetPx.toDp() + tabRowHeight
                     }
@@ -290,12 +295,15 @@ fun ProfileScreen(
 
                             1 -> if (isOwner) {
                                 ProfileCollections(
-                                    Modifier.fillMaxSize(),
-                                    collectionContent,
-                                    section2State,
-                                    { profileViewModel.fetchUserCollections(reset = true) },
-                                    onNavigateToDetails,
-                                    onNavigateToCollection,
+                                    modifier = Modifier.fillMaxSize(),
+                                    items = collectionContent,
+                                    state = section2State,
+                                    onFetch = {
+                                        println("Fetching user collections")
+                                        profileViewModel.fetchUserCollections(reset = true)
+                                    },
+                                    onNavigateToDetails = onNavigateToDetails,
+                                    onNavigateToCollection = onNavigateToCollection,
                                     bookmarksListState = bookmarksListState,
                                     collectionsListState = collectionsListState,
                                     isLoadingMoreBookmarks = paginationState.isLoadingMoreBookmarks,

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityEntry
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
+import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.repository.CollectionRepository
@@ -21,7 +22,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Date
 import javax.inject.Inject
@@ -32,15 +32,15 @@ data class ActivityItem(val date: Date, val content: List<CatalogItem>)
 
 data class ProfilePaginationState(
     val isLoadingMoreActivity: Boolean = false,
-    val hasMoreActivity: Boolean = true,
+    val hasMoreActivity: Boolean = false,
     val isLoadingMoreLibrary: Boolean = false,
-    val hasMoreLibrary: Boolean = true,
+    val hasMoreLibrary: Boolean = false,
     val isLoadingMoreLikes: Boolean = false,
-    val hasMoreLikes: Boolean = true,
+    val hasMoreLikes: Boolean = false,
     val isLoadingMoreBookmarks: Boolean = false,
-    val hasMoreBookmarks: Boolean = true,
+    val hasMoreBookmarks: Boolean = false,
     val isLoadingMoreCollections: Boolean = false,
-    val hasMoreCollections: Boolean = true
+    val hasMoreCollections: Boolean = false
 )
 
 @HiltViewModel
@@ -58,27 +58,27 @@ class ProfileViewModel @Inject constructor(
 
     private val _isLoadingMoreActivity = MutableStateFlow(false)
     val isLoadingMoreActivity: StateFlow<Boolean> = _isLoadingMoreActivity.asStateFlow()
-    private val _hasMoreActivity = MutableStateFlow(true)
+    private val _hasMoreActivity = MutableStateFlow(ProfilePaginationState().hasMoreActivity)
     val hasMoreActivity: StateFlow<Boolean> = _hasMoreActivity.asStateFlow()
 
     private val _isLoadingMoreLibrary = MutableStateFlow(false)
     val isLoadingMoreLibrary: StateFlow<Boolean> = _isLoadingMoreLibrary.asStateFlow()
-    private val _hasMoreLibrary = MutableStateFlow(true)
+    private val _hasMoreLibrary = MutableStateFlow(ProfilePaginationState().hasMoreLibrary)
     val hasMoreLibrary: StateFlow<Boolean> = _hasMoreLibrary.asStateFlow()
 
     private val _isLoadingMoreLikes = MutableStateFlow(false)
     val isLoadingMoreLikes: StateFlow<Boolean> = _isLoadingMoreLikes.asStateFlow()
-    private val _hasMoreLikes = MutableStateFlow(true)
+    private val _hasMoreLikes = MutableStateFlow(ProfilePaginationState().hasMoreLikes)
     val hasMoreLikes: StateFlow<Boolean> = _hasMoreLikes.asStateFlow()
 
     private val _isLoadingMoreBookmarks = MutableStateFlow(false)
     val isLoadingMoreBookmarks: StateFlow<Boolean> = _isLoadingMoreBookmarks.asStateFlow()
-    private val _hasMoreBookmarks = MutableStateFlow(true)
+    private val _hasMoreBookmarks = MutableStateFlow(ProfilePaginationState().hasMoreBookmarks)
     val hasMoreBookmarks: StateFlow<Boolean> = _hasMoreBookmarks.asStateFlow()
 
     private val _isLoadingMoreCollections = MutableStateFlow(false)
     val isLoadingMoreCollections: StateFlow<Boolean> = _isLoadingMoreCollections.asStateFlow()
-    private val _hasMoreCollections = MutableStateFlow(true)
+    private val _hasMoreCollections = MutableStateFlow(ProfilePaginationState().hasMoreCollections)
     val hasMoreCollections: StateFlow<Boolean> = _hasMoreCollections.asStateFlow()
 
     val paginationState: StateFlow<ProfilePaginationState> = combine(
@@ -152,6 +152,7 @@ class ProfileViewModel @Inject constructor(
 
         viewModelScope.launch {
             if (isOwner) {
+                Log.d(TAG, "Fetching owner profile")
                 meRepository.getProfile().onSuccess { header ->
                     profileHeader = header
                     _isFollowing.value = false
@@ -160,6 +161,7 @@ class ProfileViewModel @Inject constructor(
                     Log.e(TAG, "Error loading owner profile for userId: $userId", it)
                 }
             } else {
+                Log.d(TAG, "Fetching profile header for userId: $userId")
                 profileRepository.getProfileHeader(userId).onSuccess { header ->
                     profileHeader = header
                     _isFollowing.value = header.isFollowing ?: false
@@ -180,6 +182,7 @@ class ProfileViewModel @Inject constructor(
      * @param index The index of the selected tab (0 for likes/activity, 1 for collections/library).
      */
     fun onTabSelected(userId: String, isOwner: Boolean, index: Int) {
+        // Log.d(TAG, "Tab selected: index=$index, isOwner=$isOwner")
         if (isOwner) {
             when (index) {
                 0 -> if (_likedContent.value.isEmpty()) fetchUserLikes(reset = true)
@@ -187,7 +190,11 @@ class ProfileViewModel @Inject constructor(
             }
         } else {
             when (index) {
-                0 -> if (_activityContent.value.isEmpty()) fetchProfileActivity(userId, reset = true)
+                0 -> if (_activityContent.value.isEmpty()) fetchProfileActivity(
+                    userId,
+                    reset = true
+                )
+
                 1 -> if (_libraryContent.value.isEmpty()) fetchProfileLibrary(userId, reset = true)
             }
         }
@@ -204,8 +211,10 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             val shouldFollow = !_isFollowing.value
             val result = if (shouldFollow) {
+                Log.d(TAG, "Following user: $userId")
                 profileRepository.followUser(userId)
             } else {
+                Log.d(TAG, "Unfollowing user: $userId")
                 profileRepository.unfollowUser(userId)
             }
             result.onSuccess {
@@ -235,6 +244,10 @@ class ProfileViewModel @Inject constructor(
 
             activityPagination.isLoadingMore = true
             _isLoadingMoreActivity.value = true
+            Log.d(
+                TAG,
+                "Fetching activity for userId: $userId, limit: ${activityPagination.pageSize}, offset: ${activityPagination.nextOffset()}"
+            )
             val result = profileRepository.getActivity(
                 userId = userId,
                 limit = activityPagination.pageSize,
@@ -243,13 +256,17 @@ class ProfileViewModel @Inject constructor(
 
             result.onSuccess { entries ->
                 val items = mapActivityEntries(entries)
-                val updated = if (activityPagination.currentPage == 0) items else _activityContent.value + items
+                val updated =
+                    if (activityPagination.currentPage == 0) items else _activityContent.value + items
                 _activityContent.value = updated
                 activityPagination.hasMore = entries.size >= activityPagination.pageSize
                 _hasMoreActivity.value = activityPagination.hasMore
                 activityPagination.advancePage()
                 _section1State.value = ContentState.Success
-                Log.d(TAG, "Fetched activity for userId: $userId, entries: ${entries.size}, total: ${updated.size}")
+                Log.d(
+                    TAG,
+                    "Fetched activity for userId: $userId, entries: ${entries.size}, total: ${updated.size}"
+                )
             }.onFailure {
                 _section1State.value = ContentState.Error
                 activityPagination.hasMore = false
@@ -281,6 +298,10 @@ class ProfileViewModel @Inject constructor(
             libraryPagination.isLoadingMore = true
             _isLoadingMoreLibrary.value = true
 
+            Log.d(
+                TAG,
+                "Fetching library for userId: $userId, limit: ${libraryPagination.pageSize}, offset: ${libraryPagination.nextOffset()}"
+            )
             val result = profileRepository.getUserCharts(
                 userId = userId,
                 limit = libraryPagination.pageSize,
@@ -288,13 +309,17 @@ class ProfileViewModel @Inject constructor(
             )
 
             result.onSuccess { data ->
-                val updated = if (libraryPagination.currentPage == 0) data else _libraryContent.value + data
+                val updated =
+                    if (libraryPagination.currentPage == 0) data else _libraryContent.value + data
                 _libraryContent.value = updated
                 libraryPagination.hasMore = data.size >= libraryPagination.pageSize
                 _hasMoreLibrary.value = libraryPagination.hasMore
                 libraryPagination.advancePage()
                 _section2State.value = ContentState.Success
-                Log.d(TAG, "Fetched library for userId: $userId, charts: ${data.size}, total: ${updated.size}")
+                Log.d(
+                    TAG,
+                    "Fetched library for userId: $userId, charts: ${data.size}, total: ${updated.size}"
+                )
             }.onFailure {
                 _section2State.value = ContentState.Error
                 libraryPagination.hasMore = false
@@ -325,13 +350,18 @@ class ProfileViewModel @Inject constructor(
             likesPagination.isLoadingMore = true
             _isLoadingMoreLikes.value = true
 
+            Log.d(
+                TAG,
+                "Fetching likes, limit: ${likesPagination.pageSize}, offset: ${likesPagination.nextOffset()}"
+            )
             val result = meRepository.getLikes(
                 limit = likesPagination.pageSize,
                 offset = likesPagination.nextOffset()
             )
 
             result.onSuccess { data ->
-                val updated = if (likesPagination.currentPage == 0) data else _likedContent.value + data
+                val updated =
+                    if (likesPagination.currentPage == 0) data else _likedContent.value + data
                 _likedContent.value = updated
                 likesPagination.hasMore = data.size >= likesPagination.pageSize
                 _hasMoreLikes.value = likesPagination.hasMore
@@ -365,6 +395,7 @@ class ProfileViewModel @Inject constructor(
                 _section2State.value = ContentState.Loading
             }
 
+            Log.d(TAG, "Fetching user collections, reset: $reset")
             fetchBookmarksInternal()
             fetchCustomCollectionsInternal()
         }
@@ -393,6 +424,7 @@ class ProfileViewModel @Inject constructor(
      * Loads more bookmarks for the current user.
      */
     fun loadMoreBookmarks() {
+        Log.d(TAG, "Loading more bookmarks")
         viewModelScope.launch { fetchBookmarksInternal() }
     }
 
@@ -400,6 +432,7 @@ class ProfileViewModel @Inject constructor(
      * Loads more collections for the current user.
      */
     fun loadMoreCollections() {
+        Log.d(TAG, "Loading more custom collections")
         viewModelScope.launch { fetchCustomCollectionsInternal() }
     }
 
@@ -411,6 +444,10 @@ class ProfileViewModel @Inject constructor(
 
         bookmarksPagination.isLoadingMore = true
         _isLoadingMoreBookmarks.value = true
+        Log.d(
+            TAG,
+            "Fetching bookmarks, limit: ${bookmarksPagination.pageSize}, offset: ${bookmarksPagination.nextOffset()}"
+        )
         val result = meRepository.getBookmarks(
             limit = bookmarksPagination.pageSize,
             offset = bookmarksPagination.nextOffset()
@@ -418,10 +455,12 @@ class ProfileViewModel @Inject constructor(
 
         result.onSuccess { data ->
             val updatedBookmarks = if (bookmarksPagination.currentPage == 0) data else {
-                val existing = _collectionContent.value.firstOrNull { it.id == "bookmarks" }?.items ?: emptyList()
+                val existing = _collectionContent.value.firstOrNull { it.id == "bookmarks" }?.items
+                    ?: emptyList()
                 existing + data
             }
 
+            Log.d("hasMore: ", "${data.size} >= ${bookmarksPagination.pageSize} - dataSize: ${data.size}")
             bookmarksPagination.hasMore = data.size >= bookmarksPagination.pageSize
             _hasMoreBookmarks.value = bookmarksPagination.hasMore
             bookmarksPagination.advancePage()
@@ -447,6 +486,10 @@ class ProfileViewModel @Inject constructor(
 
         collectionsPagination.isLoadingMore = true
         _isLoadingMoreCollections.value = true
+        Log.d(
+            TAG,
+            "Fetching custom collections, limit: ${collectionsPagination.pageSize}, offset: ${collectionsPagination.nextOffset()}"
+        )
         val result = collectionRepository.getUserCollections(
             limit = collectionsPagination.pageSize,
             offset = collectionsPagination.nextOffset()
@@ -454,7 +497,8 @@ class ProfileViewModel @Inject constructor(
 
         result.onSuccess { data ->
             val existingCustom = _collectionContent.value.filter { it.id != "bookmarks" }
-            val updatedCustom = if (collectionsPagination.currentPage == 0) data else existingCustom + data
+            val updatedCustom =
+                if (collectionsPagination.currentPage == 0) data else existingCustom + data
             collectionsPagination.hasMore = data.size >= collectionsPagination.pageSize
             _hasMoreCollections.value = collectionsPagination.hasMore
             collectionsPagination.advancePage()
@@ -482,26 +526,24 @@ class ProfileViewModel @Inject constructor(
         updatedBookmarks: List<CatalogItem>? = null,
         customCollections: List<Collection>? = null
     ) {
-        val existing = _collectionContent.value
-        val existingBookmarks = updatedBookmarks
-            ?: existing.firstOrNull { it.id == "bookmarks" }?.items
-            ?: emptyList()
-        val existingCustom = customCollections
-            ?: existing.filter { it.id != "bookmarks" }
+        val items = _collectionContent.value
+        val existingBookmarks = items.find { it.kind == CollectionKind.BOOKMARKS }
+        val existingCustom = items.filter { it.kind == CollectionKind.USER }
 
-        val userId = profileHeader?.user?.id ?: "me"
-        val bookmarksCollection = Collection(
-            id = "bookmarks",
-            userId = userId,
-            name = "bookmarks",
-            isPublic = false,
-            createdAt = LocalDateTime.now(),
-            updatedAt = LocalDateTime.now(),
-            items = existingBookmarks,
-            itemCount = existingBookmarks.size
-        )
+        if (updatedBookmarks == null && customCollections == null) return
 
-        _collectionContent.value = listOf(bookmarksCollection) + existingCustom
+        val bookmarksCollection: Collection? = when {
+            updatedBookmarks != null && existingBookmarks != null -> existingBookmarks.copy(items = updatedBookmarks)
+            else -> existingBookmarks
+        }
+
+        val customs = customCollections ?: existingCustom
+
+        val merged = mutableListOf<Collection>()
+        bookmarksCollection?.let { merged.add(it) }
+        merged.addAll(customs)
+
+        _collectionContent.value = merged
     }
 
     /**
@@ -513,6 +555,7 @@ class ProfileViewModel @Inject constructor(
     private suspend fun mapActivityEntries(entries: List<ActivityEntry>): List<ActivityItem> {
         val ids = entries.map { it.targetId }.distinct()
         val charts = if (ids.isNotEmpty()) {
+            Log.d(TAG, "Fetching charts by IDs: $ids")
             runCatching { apiClient.getChartsById(ids) }.getOrDefault(emptyList())
         } else {
             emptyList()
@@ -548,9 +591,9 @@ class ProfileViewModel @Inject constructor(
         _isLoadingMoreLikes.value = false
         _hasMoreLikes.value = true
         _isLoadingMoreBookmarks.value = false
-        _hasMoreBookmarks.value = true
+        _hasMoreBookmarks.value = false
         _isLoadingMoreCollections.value = false
-        _hasMoreCollections.value = true
+        _hasMoreCollections.value = false
 
         _activityContent.value = emptyList()
         _libraryContent.value = emptyList()

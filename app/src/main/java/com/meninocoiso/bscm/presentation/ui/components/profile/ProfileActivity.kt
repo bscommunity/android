@@ -25,10 +25,10 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.result.ContentState
+import com.meninocoiso.bscm.presentation.ui.components.StatusMessageSize
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
 import com.meninocoiso.bscm.presentation.viewmodel.ActivityItem
-import com.meninocoiso.bscm.presentation.ui.components.profile.OnScrollLoadMore
 
 @Composable
 fun ProfileActivity(
@@ -55,6 +55,7 @@ fun ProfileActivity(
         empty = {
             StatusMessageUI(
                 modifier = Modifier.fillMaxWidth(),
+                size = StatusMessageSize.Medium,
                 message = "No recent activity",
                 icon = R.drawable.rounded_update_disabled_24
             )

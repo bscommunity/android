@@ -65,6 +65,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.BuildConfig
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.User
+import com.meninocoiso.bscm.domain.state.AppUpdateState
 import com.meninocoiso.bscm.presentation.navigation.OnSnackbar
 import com.meninocoiso.bscm.presentation.navigation.show
 import com.meninocoiso.bscm.presentation.ui.components.CollapsableSection
@@ -73,12 +74,11 @@ import com.meninocoiso.bscm.presentation.ui.components.dialog.ContributorsDialog
 import com.meninocoiso.bscm.presentation.ui.components.dialog.LanguageDialog
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ThemeDialog
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
+import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileIndicator
 import com.meninocoiso.bscm.presentation.ui.modifiers.fabScrollObserver
 import com.meninocoiso.bscm.presentation.ui.modifiers.rememberFabNestedScrollConnection
 import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonClip
 import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonShape
-import com.meninocoiso.bscm.domain.state.AppUpdateState
-import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileIndicator
 import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.SettingsViewModel
 import com.meninocoiso.bscm.util.LinkingUtils
@@ -111,7 +111,6 @@ fun SettingsScreen(
 
     // Seed cached user only once while restoring
     LaunchedEffect(cacheUser) {
-        println("Image url: ${cacheUser?.avatarUrl}")
         authViewModel.seedCachedUser(cacheUser)
     }
 

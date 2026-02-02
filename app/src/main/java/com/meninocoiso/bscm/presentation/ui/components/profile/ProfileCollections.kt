@@ -14,10 +14,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
+import com.meninocoiso.bscm.presentation.ui.components.StatusMessageSize
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.preview.CollectionPreview
 import kotlinx.coroutines.launch
@@ -44,34 +46,25 @@ fun ProfileCollections(
 
     val horizontalPagerState = rememberPagerState { tabItems.size }
 
-    val bookmarksCollection = items.find { it.name == "bookmarks" }
-
-    val customCollections = items.filter {
-        it.name != "bookmarks" && it.name != "liked"
-    }
-
-    if (bookmarksCollection == null) {
-        StatusMessageUI(
-            modifier = Modifier.fillMaxSize(),
-            message = "No collections found",
-            icon = R.drawable.outline_library_music_24
-        )
-        return
-    }
+    val bookmarksCollection = items.find { it.kind == CollectionKind.BOOKMARKS }
+    val customCollections = items.filter { it.kind == CollectionKind.USER }
 
     Column(modifier) {
         val extraTabs = (items.size - 2).coerceAtLeast(0)
-        CatalogFilters(
-            bookmarksCollection.items,
-            extraTabs,
-            currentSelected = horizontalPagerState.currentPage,
-            onFilterSelected = { index ->
-                coroutineScope.launch {
-                    // Update pager when a tab is selected
-                    horizontalPagerState.animateScrollToPage(index)
-                }
-            },
-        )
+
+        if (items.isNotEmpty()) {
+            CatalogFilters(
+                items = items.flatMap { it.items },
+                collectionsAmount = extraTabs,
+                currentSelected = horizontalPagerState.currentPage,
+                onFilterSelected = { index ->
+                    coroutineScope.launch {
+                        // Update pager when a tab is selected
+                        horizontalPagerState.animateScrollToPage(index)
+                    }
+                },
+            )
+        }
 
         HorizontalPager(
             state = horizontalPagerState,
@@ -80,9 +73,10 @@ fun ProfileCollections(
         ) { index ->
             when (index) {
                 0 -> {
-                    // All
+                    // Charts
                     ProfileCollectionTabContent(
-                        items = bookmarksCollection.items,
+                        items = bookmarksCollection?.items ?: emptyList(),
+                        state = state,
                         onFetch = onFetch,
                         onNavigateToDetails = onNavigateToDetails,
                         listState = bookmarksListState,
@@ -94,31 +88,17 @@ fun ProfileCollections(
                     )
                 }
 
-                1 -> {
+                4 -> {
                     // Collections
                     ProfileCollectionList(
                         items = customCollections,
+                        state = state,
                         onFetch = onFetch,
                         onNavigateToCollection = onNavigateToCollection,
                         listState = collectionsListState,
                         isLoadingMore = isLoadingMoreCollections,
                         hasMore = hasMoreCollections,
                         onLoadMore = onLoadMoreCollections,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                    )
-                }
-
-                2 -> {
-                    // Charts
-                    ProfileCollectionTabContent(
-                        items = bookmarksCollection.items,
-                        onFetch = onFetch,
-                        onNavigateToDetails = onNavigateToDetails,
-                        listState = bookmarksListState,
-                        isLoadingMore = isLoadingMoreBookmarks,
-                        hasMore = hasMoreBookmarks,
-                        onLoadMore = onLoadMoreBookmarks,
                         modifier = Modifier
                             .fillMaxWidth()
                     )
@@ -140,6 +120,7 @@ fun ProfileCollections(
 @Composable
 fun ProfileCollectionTabContent(
     items: List<CatalogItem>,
+    state: ContentState,
     onFetch: () -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
     listState: LazyListState,
@@ -148,8 +129,6 @@ fun ProfileCollectionTabContent(
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val state = ContentState.Success
-
     OnScrollLoadMore(
         listState = listState,
         hasMore = hasMore,
@@ -164,6 +143,7 @@ fun ProfileCollectionTabContent(
         empty = {
             StatusMessageUI(
                 modifier = Modifier.fillMaxSize(),
+                size = StatusMessageSize.Medium,
                 message = "No bookmarked content",
                 icon = R.drawable.outline_library_music_24
             )
@@ -182,6 +162,7 @@ fun ProfileCollectionTabContent(
 @Composable
 fun ProfileCollectionList(
     items: List<Collection>,
+    state: ContentState,
     onFetch: () -> Unit,
     onNavigateToCollection: (collectionId: String) -> Unit,
     listState: LazyListState,
@@ -190,8 +171,6 @@ fun ProfileCollectionList(
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val state = ContentState.Success
-
     OnScrollLoadMore(
         listState = listState,
         hasMore = hasMore,

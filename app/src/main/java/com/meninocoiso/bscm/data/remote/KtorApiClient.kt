@@ -116,7 +116,7 @@ class KtorApiClient @Inject constructor(
             // url("https://api-cyb1.onrender.com")
             url {
                 protocol = URLProtocol.HTTP
-                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.4"
+                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.151.131"
                 port = 8080
             }
             contentType(KtorContentType.Application.Json)

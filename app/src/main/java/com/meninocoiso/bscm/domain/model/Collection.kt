@@ -1,5 +1,6 @@
 package com.meninocoiso.bscm.domain.model
 
+import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.serialization.LocalDateTimeSerializer
 import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
@@ -8,6 +9,7 @@ import java.time.LocalDateTime
 data class Collection(
     val id: String,
     val userId: String,
+    val kind: CollectionKind,
     val name: String,
     val isPublic: Boolean,
     @Serializable(with = LocalDateTimeSerializer::class)

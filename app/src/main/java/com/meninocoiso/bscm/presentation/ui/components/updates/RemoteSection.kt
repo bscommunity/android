@@ -18,7 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.result.ContentState
-import com.meninocoiso.bscm.presentation.ui.components.Size
+import com.meninocoiso.bscm.presentation.ui.components.StatusMessageSize
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.layout.Section
 import com.meninocoiso.bscm.presentation.ui.modifiers.shimmerLoading
@@ -50,7 +50,7 @@ fun LazyListScope.remoteSection(
                             title = stringResource(R.string.fetch_updates_error),
                             message = stringResource(R.string.check_connection),
                             icon = R.drawable.rounded_hourglass_disabled_24,
-                            size = Size.Small
+                            size = StatusMessageSize.Small
                         )
                     }
                 }
