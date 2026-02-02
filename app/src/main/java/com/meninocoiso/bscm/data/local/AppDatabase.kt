@@ -14,7 +14,7 @@ import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.domain.serialization.RoomSerializers
 
 @Database(
-    version = 24,
+    version = 25,
     entities = [
         Chart::class,
         Version::class,

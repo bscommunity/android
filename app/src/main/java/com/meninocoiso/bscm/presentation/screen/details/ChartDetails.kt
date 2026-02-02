@@ -294,8 +294,12 @@ fun ChartDetailsScreen(
                         ) { newValue ->
                             isBookmarked = newValue
                             if (newValue) {
-                                interactionViewModel.bookmarkContent(chart.contentId)
                                 scope.launch {
+                                    // Queue/send the bookmark interaction
+                                    // This ensures it's registered locally even if app closes
+                                    interactionViewModel.bookmarkContent(chart.contentId)
+
+                                    // Show snackbar after interaction is queued
                                     val result = snackbarHostState.showSnackbar(
                                         "Added to Favorites",
                                         "Manage",

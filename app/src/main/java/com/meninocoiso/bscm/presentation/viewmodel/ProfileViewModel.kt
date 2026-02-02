@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Date
 import javax.inject.Inject
@@ -454,9 +455,9 @@ class ProfileViewModel @Inject constructor(
         )
 
         result.onSuccess { data ->
+            val existingBookmarksCollection = _collectionContent.value.firstOrNull { it.kind == CollectionKind.BOOKMARKS }
+            val existing = existingBookmarksCollection?.items ?: emptyList()
             val updatedBookmarks = if (bookmarksPagination.currentPage == 0) data else {
-                val existing = _collectionContent.value.firstOrNull { it.id == "bookmarks" }?.items
-                    ?: emptyList()
                 existing + data
             }
 
@@ -496,7 +497,7 @@ class ProfileViewModel @Inject constructor(
         )
 
         result.onSuccess { data ->
-            val existingCustom = _collectionContent.value.filter { it.id != "bookmarks" }
+            val existingCustom = _collectionContent.value.filter { it.kind == CollectionKind.USER }
             val updatedCustom =
                 if (collectionsPagination.currentPage == 0) data else existingCustom + data
             collectionsPagination.hasMore = data.size >= collectionsPagination.pageSize
@@ -534,6 +535,16 @@ class ProfileViewModel @Inject constructor(
 
         val bookmarksCollection: Collection? = when {
             updatedBookmarks != null && existingBookmarks != null -> existingBookmarks.copy(items = updatedBookmarks)
+            updatedBookmarks != null -> Collection(
+                id = "bookmarks",
+                userId = currentProfileId ?: "",
+                kind = CollectionKind.BOOKMARKS,
+                name = "Bookmarks",
+                isPublic = false,
+                createdAt = LocalDateTime.now(),
+                updatedAt = LocalDateTime.now(),
+                items = updatedBookmarks
+            )
             else -> existingBookmarks
         }
 

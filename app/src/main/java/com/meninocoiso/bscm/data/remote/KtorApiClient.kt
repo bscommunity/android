@@ -116,7 +116,7 @@ class KtorApiClient @Inject constructor(
             // url("https://api-cyb1.onrender.com")
             url {
                 protocol = URLProtocol.HTTP
-                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.151.131"
+                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.9"
                 port = 8080
             }
             contentType(KtorContentType.Application.Json)
@@ -333,6 +333,26 @@ class KtorApiClient @Inject constructor(
                 offset?.let { parameters.append("offset", it.toString()) }
             }
         }.body()
+    }
+
+    override suspend fun addLike(contentId: String): Boolean {
+        val response = client.post("me/likes/$contentId")
+        return response.status.isSuccess()
+    }
+
+    override suspend fun removeLike(contentId: String): Boolean {
+        val response = client.delete("me/likes/$contentId")
+        return response.status.isSuccess()
+    }
+
+    override suspend fun addBookmark(contentId: String): Boolean {
+        val response = client.post("me/bookmarks/$contentId")
+        return response.status.isSuccess()
+    }
+
+    override suspend fun removeBookmark(contentId: String): Boolean {
+        val response = client.delete("me/bookmarks/$contentId")
+        return response.status.isSuccess()
     }
 
     override suspend fun getUserCollections(limit: Int?, offset: Int?): List<Collection> {

@@ -30,7 +30,6 @@ object InteractionModule {
     fun provideInteractionQueueManager(
         queueDao: InteractionQueueDao,
         apiClient: ApiClient,
-        @ApplicationContext context: Context
     ): InteractionQueueManager = InteractionQueueManager(queueDao, apiClient)
     
     @Provides
@@ -44,5 +43,7 @@ object InteractionModule {
     @Singleton
     fun provideInteractionRepository(
         queueManager: InteractionQueueManager,
-    ): InteractionRepository = InteractionRepositoryImpl(queueManager)
+        apiClient: ApiClient,
+        networkMonitor: NetworkConnectivityMonitor
+    ): InteractionRepository = InteractionRepositoryImpl(queueManager, apiClient, networkMonitor)
 }

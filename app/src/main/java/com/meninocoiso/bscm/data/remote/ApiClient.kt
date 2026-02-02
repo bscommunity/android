@@ -55,6 +55,10 @@ interface ApiClient {
     suspend fun getMyActivity(limit: Int? = null, offset: Int? = null): List<ActivityEntry>
     suspend fun getMyLikes(limit: Int? = null, offset: Int? = null): List<Chart>
     suspend fun getMyBookmarks(limit: Int? = null, offset: Int? = null): List<Chart>
+    suspend fun addLike(contentId: String): Boolean
+    suspend fun removeLike(contentId: String): Boolean
+    suspend fun addBookmark(contentId: String): Boolean
+    suspend fun removeBookmark(contentId: String): Boolean
 
     // Collections
     suspend fun getUserCollections(limit: Int? = null, offset: Int? = null): List<Collection>
