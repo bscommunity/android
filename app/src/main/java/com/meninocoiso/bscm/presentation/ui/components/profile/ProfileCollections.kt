@@ -3,6 +3,7 @@ package com.meninocoiso.bscm.presentation.ui.components.profile
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -51,8 +52,8 @@ fun ProfileCollections(
 
     if (bookmarksCollection == null) {
         StatusMessageUI(
-            modifier = Modifier.fillMaxWidth(),
-            message = "Nenhuma coleção encontrada",
+            modifier = Modifier.fillMaxSize(),
+            message = "No collections found",
             icon = R.drawable.outline_library_music_24
         )
         return
@@ -162,7 +163,7 @@ fun ProfileCollectionTabContent(
         onRetry = onFetch,
         empty = {
             StatusMessageUI(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxSize(),
                 message = "No bookmarked content",
                 icon = R.drawable.outline_library_music_24
             )
@@ -204,7 +205,7 @@ fun ProfileCollectionList(
         onRetry = onFetch,
         empty = {
             StatusMessageUI(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxSize(),
                 message = "No content in library",
                 icon = R.drawable.outline_library_music_24
             )

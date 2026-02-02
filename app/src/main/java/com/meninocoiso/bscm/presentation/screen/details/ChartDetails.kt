@@ -297,8 +297,8 @@ fun ChartDetailsScreen(
                                 interactionViewModel.bookmarkContent(chart.contentId)
                                 scope.launch {
                                     val result = snackbarHostState.showSnackbar(
-                                        "Adicionado aos bookmarks",
-                                        "Mover",
+                                        "Added to Favorites",
+                                        "Manage",
                                         duration = SnackbarDuration.Short
                                     )
 

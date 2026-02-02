@@ -252,8 +252,9 @@ fun ProfileScreen(
                         .nestedScroll(nestedScrollConnection)
                 ) {
                     // Add top padding to account for header + tabs
+                    val headerOffsetPx = (headerHeightPx - headerScrollState.value).coerceAtLeast(0f)
                     val topPadding = with(LocalDensity.current) {
-                        (headerHeightPx - headerScrollState.value).toDp() + tabRowHeight
+                        headerOffsetPx.toDp() + tabRowHeight
                     }
 
                     Box(

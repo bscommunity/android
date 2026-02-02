@@ -2,13 +2,15 @@ package com.meninocoiso.bscm.data.remote
 
 import android.content.Context
 import android.util.Log
-import com.meninocoiso.bscm.data.security.AuthInterceptor
-import com.meninocoiso.bscm.data.security.AuthPlugin
+import com.meninocoiso.bscm.data.manager.SecureTokenManager
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityEntry
 import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionItemRequest
 import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionRequest
 import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionRequest
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
+import com.meninocoiso.bscm.data.security.AuthInterceptor
+import com.meninocoiso.bscm.data.security.AuthPlugin
+import com.meninocoiso.bscm.data.security.TokenRefreshPlugin
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.OperationOption
@@ -25,17 +27,21 @@ import com.meninocoiso.bscm.util.DevelopmentUtils
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
+import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
-import io.ktor.client.request.delete
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import jakarta.inject.Inject
 import kotlinx.serialization.Serializable
@@ -47,10 +53,24 @@ private const val TAG = "KtorApiClient"
 @Serializable
 data class ApiError(val error: String)
 
+class ApiException(val status: HttpStatusCode, override val message: String) : Exception(message)
+
 class KtorApiClient @Inject constructor(
     private val context: Context,
-    private val interceptor: AuthInterceptor
+    private val interceptor: AuthInterceptor,
+    private val tokenManager: SecureTokenManager
 ) : ApiClient {
+
+    private val errorJson = Json {
+        ignoreUnknownKeys = true
+    }
+
+    init {
+        interceptor.setTokenRefreshCallback {
+            refreshTokens()
+        }
+    }
+
     private val client = HttpClient(Android) {
         /*install(Logging) {
             level = LogLevel.ALL
@@ -72,12 +92,26 @@ class KtorApiClient @Inject constructor(
             socketTimeoutMillis = 10000
         }
 
+        HttpResponseValidator {
+            validateResponse { response ->
+                if (response.status.value >= 400) {
+                    val message = parseErrorMessage(response)
+                    throw ApiException(response.status, message)
+                }
+            }
+        }
+
+        // Install token refresh plugin to handle 401 errors
+        install(TokenRefreshPlugin) {
+            authInterceptor = interceptor
+        }
+
         // Add authorization header if token is available
         install(AuthPlugin) {
             authInterceptor = interceptor
             context = this@KtorApiClient.context
         }
-        
+
         defaultRequest {
             // url("https://api-cyb1.onrender.com")
             url {
@@ -101,7 +135,7 @@ class KtorApiClient @Inject constructor(
         limit: Int?,
         offset: Int
     ): List<Chart> {
-        val response = client.get("charts"){
+        val body = client.get("charts"){
             url {
                 query?.let { parameters.append("query", it) }
                 sortBy?.let { parameters.append("sortBy", it.toString()) }
@@ -110,36 +144,9 @@ class KtorApiClient @Inject constructor(
                 limit?.let { parameters.append("limit", it.toString()) }
                 parameters.append("offset", offset.toString())
             }
-        }
+        }.body<Pair<List<Chart>, Int?>>()
 
-        Log.d(TAG, "getCharts: Response status=${response.status}, response: ${response.body<String>()}")
-
-        // Check the response status first
-        when (response.status) {
-            HttpStatusCode.OK -> {
-                val body = response.body<Pair<List<Chart>, Int?>>()
-                return body.first
-            }
-            HttpStatusCode.RequestTimeout -> {
-                Log.e(TAG, "Request timed out")
-                throw Exception("Request timed out. Please try again later.")
-            }
-            HttpStatusCode.TooManyRequests -> {
-                val errorResponse = response.body<ApiError>()
-                Log.e(TAG, "Rate limit exceeded: ${errorResponse.error}")
-                throw Exception(errorResponse.error)
-            }
-            else -> {
-                // Handle other error cases
-                val errorResponse = try {
-                    Log.e(TAG, "Error response body: ${response.body<String>()}")
-                    response.body<ApiError>()
-                } catch (e: Exception) {
-                    ApiError("Unknown error occurred")
-                }
-                throw Exception("API Error (${response.status.value}): ${errorResponse.error}")
-            }
-        }
+        return body.first
     }
 
     override suspend fun getChartsById(ids: List<String>): List<Chart> {
@@ -179,68 +186,73 @@ class KtorApiClient @Inject constructor(
     // Authentication methods
     override suspend fun authenticateWithDiscord(authRequest: AuthRequest): AuthResponse {
         Log.d(TAG, "authenticateWithDiscord: Sending request with code=${authRequest.code.take(10)}..., redirectUri=${authRequest.redirectUri}")
-
         val response = client.post("auth/discord") {
             setBody(authRequest)
-        }
+        }.body<AuthResponse>()
 
-        Log.d(TAG, "authenticateWithDiscord: Response status=${response.status}")
-        Log.d(TAG, "authenticateWithDiscord: Response =${response.body<String>()}")
-
-        when (response.status) {
-            HttpStatusCode.OK -> {
-                Log.d(TAG, "authenticateWithDiscord: Success")
-                return response.body<AuthResponse>()
-            }
-            else -> {
-                val errorResponse = try {
-                    val error = response.body<ApiError>()
-                    Log.e(TAG, "authenticateWithDiscord: Server error response: ${error.error}")
-                    error
-                } catch (e: Exception) {
-                    Log.e(TAG, "authenticateWithDiscord: Failed to parse error response", e)
-                    ApiError("Authentication failed - unable to parse server response")
-                }
-                throw Exception("Auth Error (${response.status.value}): ${errorResponse.error}")
-            }
-        }
+        Log.d(TAG, "authenticateWithDiscord: Success")
+        return response
     }
 
     override suspend fun refreshToken(refreshRequest: RefreshTokenRequest): AuthResponse {
-        val response = client.post("auth/refresh") {
+        return client.post("auth/refresh") {
             setBody(refreshRequest)
-        }
-
-        when (response.status) {
-            HttpStatusCode.OK -> {
-                return response.body<AuthResponse>()
-            }
-            else -> {
-                val errorResponse = try {
-                    response.body<ApiError>()
-                } catch (e: Exception) {
-                    ApiError("Token refresh failed")
-                }
-                throw Exception("Refresh Error (${response.status.value}): ${errorResponse.error}")
-            }
-        }
+        }.body()
     }
 
     override suspend fun getCurrentUser(): User {
-        val response = client.get("auth/me")
+        return client.get("auth/me").body()
+    }
 
-        when (response.status) {
-            HttpStatusCode.OK -> {
-                return response.body<User>()
+    /**
+     * Refresh the access token (single-flight handled by AuthInterceptor).
+     * Returns true if refresh was successful, false otherwise.
+     */
+    private suspend fun refreshTokens(): Boolean {
+        return try {
+            Log.d(TAG, "Attempting to refresh token")
+            val refreshToken = tokenManager.getRefreshToken()
+
+            if (refreshToken.isNullOrEmpty()) {
+                Log.e(TAG, "No refresh token available")
+                return false
             }
-            else -> {
-                val errorResponse = try {
-                    response.body<ApiError>()
-                } catch (e: Exception) {
-                    ApiError("Failed to get user info")
-                }
-                throw Exception("User Error (${response.status.value}): ${errorResponse.error}")
+
+            val request = RefreshTokenRequest(refreshToken)
+            val response = refreshToken(request)
+
+            // Save the new tokens
+            tokenManager.saveTokens(response.accessToken, response.refreshToken)
+            Log.d(TAG, "Token refreshed successfully")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Token refresh failed: ${e.message}", e)
+            // If refresh fails, clear tokens to force re-authentication
+            tokenManager.clearTokens()
+            false
+        }
+    }
+
+    private suspend fun parseErrorMessage(response: HttpResponse): String {
+        val bodyText = try {
+            response.bodyAsText()
+        } catch (_: Exception) {
+            null
+        }
+
+        if (bodyText.isNullOrBlank()) {
+            return when (response.status) {
+                HttpStatusCode.RequestTimeout -> "Request timed out. Please try again later."
+                HttpStatusCode.TooManyRequests -> "Rate limit exceeded. Please try again later."
+                HttpStatusCode.Unauthorized -> "Token is not valid or has expired"
+                else -> "HTTP ${response.status.value}"
             }
+        }
+
+        return try {
+            errorJson.decodeFromString<ApiError>(bodyText).error
+        } catch (_: Exception) {
+            bodyText
         }
     }
 
@@ -284,12 +296,12 @@ class KtorApiClient @Inject constructor(
 
     override suspend fun followUser(id: String): Boolean {
         val response = client.post("users/$id/follow")
-        return response.status == HttpStatusCode.OK
+        return response.status.isSuccess()
     }
 
     override suspend fun unfollowUser(id: String): Boolean {
         val response = client.delete("users/$id/follow")
-        return response.status == HttpStatusCode.OK
+        return response.status.isSuccess()
     }
 
     override suspend fun getMyProfile(): UserProfileResponse {
@@ -342,12 +354,12 @@ class KtorApiClient @Inject constructor(
         val response = client.put("collections/$collectionId") {
             setBody(UpdateCollectionRequest(name = name, isPublic = isPublic))
         }
-        return response.status == HttpStatusCode.OK
+        return response.status.isSuccess()
     }
 
     override suspend fun deleteCollection(collectionId: String): Boolean {
         val response = client.delete("collections/$collectionId")
-        return response.status == HttpStatusCode.OK
+        return response.status.isSuccess()
     }
 
     override suspend fun getCollectionItems(
@@ -369,19 +381,19 @@ class KtorApiClient @Inject constructor(
         val response = client.post("collections/$collectionId/items") {
             setBody(mapOf("contentId" to contentId))
         }
-        return response.status == HttpStatusCode.OK
+        return response.status.isSuccess()
     }
 
     override suspend fun removeItemFromCollection(collectionId: String, contentId: String): Boolean {
         val response = client.delete("collections/$collectionId/items/$contentId")
-        return response.status == HttpStatusCode.OK
+        return response.status.isSuccess()
     }
 
     override suspend fun batchProcessInteractions(interactions: List<CreateCollectionItemRequest>): Boolean {
         val response = client.post("collections/batch") {
             setBody(interactions)
         }
-        return response.status == HttpStatusCode.OK
+        return response.status.isSuccess()
     }
 
     /**

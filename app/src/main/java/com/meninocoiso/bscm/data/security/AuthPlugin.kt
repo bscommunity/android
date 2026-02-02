@@ -6,8 +6,6 @@ import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpClientPlugin
 import io.ktor.client.request.HttpRequestPipeline
 import io.ktor.util.AttributeKey
-import kotlinx.coroutines.runBlocking
-
 class AuthPlugin private constructor(
     private val authInterceptor: AuthInterceptor,
     private val context: Context
@@ -48,8 +46,8 @@ class AuthPlugin private constructor(
                 context.headers.append("X-Timestamp", timestamp)
                 context.headers.append("X-HMAC", hmacSignature)
 
-                // Add JWT token if available
-                val token = runBlocking { plugin.authInterceptor.getAuthToken() }
+                // Add JWT token if available - use suspend function properly
+                val token = plugin.authInterceptor.getAuthToken()
                 if (token != null) {
                     context.headers.append("Authorization", "Bearer $token")
                 }

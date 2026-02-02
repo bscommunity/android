@@ -22,13 +22,17 @@ class SecureTokenManager @Inject constructor(
     private val ACCESS_TOKEN_KEY = stringPreferencesKey("access_token")
     private val REFRESH_TOKEN_KEY = stringPreferencesKey("refresh_token")
     private val CODE_VERIFIER_KEY = stringPreferencesKey("code_verifier")
+    private val TOKEN_EXPIRY_KEY = stringPreferencesKey("token_expiry")
 
     suspend fun saveTokens(accessToken: String, refreshToken: String) {
         val encryptedAccessToken = cryptoManager.encrypt(accessToken)
         val encryptedRefreshToken = cryptoManager.encrypt(refreshToken)
+        // Set expiry to 50 minutes from now (tokens typically expire in 1 hour)
+        val expiryTime = System.currentTimeMillis() + (50 * 60 * 1000)
         context.dataStore.edit { preferences ->
             preferences[ACCESS_TOKEN_KEY] = encryptedAccessToken
             preferences[REFRESH_TOKEN_KEY] = encryptedRefreshToken
+            preferences[TOKEN_EXPIRY_KEY] = expiryTime.toString()
         }
     }
 
@@ -80,7 +84,26 @@ class SecureTokenManager @Inject constructor(
             preferences.remove(ACCESS_TOKEN_KEY)
             preferences.remove(REFRESH_TOKEN_KEY)
             preferences.remove(CODE_VERIFIER_KEY)
+            preferences.remove(TOKEN_EXPIRY_KEY)
         }
+    }
+
+    suspend fun isTokenExpired(): Boolean {
+        val expiryTimeStr = context.dataStore.data
+            .map { preferences -> preferences[TOKEN_EXPIRY_KEY] }
+            .first()
+
+        if (expiryTimeStr == null) return true
+
+        val expiryTime = expiryTimeStr.toLongOrNull() ?: return true
+        return System.currentTimeMillis() >= expiryTime
+    }
+
+    suspend fun getTokenExpiryTime(): Long? {
+        val expiryTimeStr = context.dataStore.data
+            .map { preferences -> preferences[TOKEN_EXPIRY_KEY] }
+            .first()
+        return expiryTimeStr?.toLongOrNull()
     }
 
     suspend fun isLoggedIn(): Boolean {

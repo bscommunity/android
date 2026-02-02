@@ -1,6 +1,6 @@
 package com.meninocoiso.bscm.presentation.ui.components.profile
 
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
@@ -36,7 +36,7 @@ fun ProfileLibrary(
         onRetry = onFetch,
         empty = {
             StatusMessageUI(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxSize(),
                 message = "No content in library",
                 icon = R.drawable.outline_library_music_24
             )

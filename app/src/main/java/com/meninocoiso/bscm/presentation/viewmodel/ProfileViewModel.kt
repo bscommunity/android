@@ -1,23 +1,23 @@
 package com.meninocoiso.bscm.presentation.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityEntry
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.domain.model.CatalogItem
-import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
-import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.domain.repository.CollectionRepository
 import com.meninocoiso.bscm.domain.repository.MeRepository
 import com.meninocoiso.bscm.domain.repository.ProfileRepository
+import com.meninocoiso.bscm.domain.result.ContentState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -135,6 +135,13 @@ class ProfileViewModel @Inject constructor(
     private var isOwnerProfile: Boolean = false
     private var profileHeader: UserProfileResponse? = null
 
+    /**
+     * Loads the profile for the given user ID. If it's the owner's profile, fetches from MeRepository,
+     * otherwise from ProfileRepository. Resets all states if the profile changes.
+     *
+     * @param userId The ID of the user whose profile to load.
+     * @param isOwner Whether the profile belongs to the current user.
+     */
     fun loadProfile(userId: String, isOwner: Boolean) {
         if (currentProfileId == userId && isOwnerProfile == isOwner) return
 
@@ -148,18 +155,30 @@ class ProfileViewModel @Inject constructor(
                 meRepository.getProfile().onSuccess { header ->
                     profileHeader = header
                     _isFollowing.value = false
+                    Log.d(TAG, "Owner profile loaded successfully for userId: $userId")
+                }.onFailure {
+                    Log.e(TAG, "Error loading owner profile for userId: $userId", it)
                 }
-                fetchUserLikes(reset = true)
             } else {
                 profileRepository.getProfileHeader(userId).onSuccess { header ->
                     profileHeader = header
                     _isFollowing.value = header.isFollowing ?: false
+                    Log.d(TAG, "Profile header loaded successfully for userId: $userId")
+                }.onFailure {
+                    Log.e(TAG, "Error loading profile header for userId: $userId", it)
                 }
-                fetchProfileActivity(userId, reset = true)
             }
         }
     }
 
+    /**
+     * Handles tab selection for the profile view. Depending on whether it's the owner's profile,
+     * fetches the appropriate content for the selected tab if not already loaded.
+     *
+     * @param userId The ID of the user.
+     * @param isOwner Whether the profile belongs to the current user.
+     * @param index The index of the selected tab (0 for likes/activity, 1 for collections/library).
+     */
     fun onTabSelected(userId: String, isOwner: Boolean, index: Int) {
         if (isOwner) {
             when (index) {
@@ -174,6 +193,11 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Toggles the follow status for the given user. If not the owner, follows or unfollows the user.
+     *
+     * @param userId The ID of the user to follow or unfollow.
+     */
     fun toggleFollow(userId: String) {
         if (isOwnerProfile) return
 
@@ -186,10 +210,19 @@ class ProfileViewModel @Inject constructor(
             }
             result.onSuccess {
                 _isFollowing.value = shouldFollow
+                Log.d(TAG, "Follow status toggled to $shouldFollow for userId: $userId")
+            }.onFailure {
+                Log.e(TAG, "Error toggling follow for userId: $userId", it)
             }
         }
     }
 
+    /**
+     * Fetches the activity for the given user ID with pagination support.
+     *
+     * @param userId The ID of the user whose activity to fetch.
+     * @param reset Whether to reset the pagination and content.
+     */
     fun fetchProfileActivity(userId: String, reset: Boolean = false) {
         viewModelScope.launch {
             if (reset) {
@@ -216,8 +249,12 @@ class ProfileViewModel @Inject constructor(
                 _hasMoreActivity.value = activityPagination.hasMore
                 activityPagination.advancePage()
                 _section1State.value = ContentState.Success
+                Log.d(TAG, "Fetched activity for userId: $userId, entries: ${entries.size}, total: ${updated.size}")
             }.onFailure {
                 _section1State.value = ContentState.Error
+                activityPagination.hasMore = false
+                _hasMoreActivity.value = false
+                Log.e(TAG, "Error fetching activity for userId: $userId", it)
             }
 
             activityPagination.isLoadingMore = false
@@ -225,6 +262,12 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Fetches the library (charts) for the given user ID with pagination support.
+     *
+     * @param userId The ID of the user whose library to fetch.
+     * @param reset Whether to reset the pagination and content.
+     */
     fun fetchProfileLibrary(userId: String, reset: Boolean = false) {
         viewModelScope.launch {
             if (reset) {
@@ -237,6 +280,7 @@ class ProfileViewModel @Inject constructor(
 
             libraryPagination.isLoadingMore = true
             _isLoadingMoreLibrary.value = true
+
             val result = profileRepository.getUserCharts(
                 userId = userId,
                 limit = libraryPagination.pageSize,
@@ -250,8 +294,12 @@ class ProfileViewModel @Inject constructor(
                 _hasMoreLibrary.value = libraryPagination.hasMore
                 libraryPagination.advancePage()
                 _section2State.value = ContentState.Success
+                Log.d(TAG, "Fetched library for userId: $userId, charts: ${data.size}, total: ${updated.size}")
             }.onFailure {
                 _section2State.value = ContentState.Error
+                libraryPagination.hasMore = false
+                _hasMoreLibrary.value = false
+                Log.e(TAG, "Error fetching library for userId: $userId", it)
             }
 
             libraryPagination.isLoadingMore = false
@@ -259,6 +307,11 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Fetches the user's liked content with pagination support.
+     *
+     * @param reset Whether to reset the pagination and content.
+     */
     fun fetchUserLikes(reset: Boolean = false) {
         viewModelScope.launch {
             if (reset) {
@@ -271,6 +324,7 @@ class ProfileViewModel @Inject constructor(
 
             likesPagination.isLoadingMore = true
             _isLoadingMoreLikes.value = true
+
             val result = meRepository.getLikes(
                 limit = likesPagination.pageSize,
                 offset = likesPagination.nextOffset()
@@ -283,8 +337,13 @@ class ProfileViewModel @Inject constructor(
                 _hasMoreLikes.value = likesPagination.hasMore
                 likesPagination.advancePage()
                 _section1State.value = ContentState.Success
+
+                Log.d(TAG, "Fetched likes: ${data.size}, total: ${updated.size}")
             }.onFailure {
                 _section1State.value = ContentState.Error
+                likesPagination.hasMore = false
+                _hasMoreLikes.value = false
+                Log.e(TAG, "Error fetching likes", it)
             }
 
             likesPagination.isLoadingMore = false
@@ -292,6 +351,11 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Fetches the user's collections (bookmarks and custom collections) with pagination support.
+     *
+     * @param reset Whether to reset the pagination and content.
+     */
     fun fetchUserCollections(reset: Boolean = false) {
         viewModelScope.launch {
             if (reset) {
@@ -306,17 +370,42 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Loads more activity for the given user ID.
+     *
+     * @param userId The ID of the user whose activity to load more.
+     */
     fun loadMoreActivity(userId: String) = fetchProfileActivity(userId, reset = false)
+
+    /**
+     * Loads more library for the given user ID.
+     *
+     * @param userId The ID of the user whose library to load more.
+     */
     fun loadMoreLibrary(userId: String) = fetchProfileLibrary(userId, reset = false)
+
+    /**
+     * Loads more likes for the current user.
+     */
     fun loadMoreLikes() = fetchUserLikes(reset = false)
+
+    /**
+     * Loads more bookmarks for the current user.
+     */
     fun loadMoreBookmarks() {
         viewModelScope.launch { fetchBookmarksInternal() }
     }
 
+    /**
+     * Loads more collections for the current user.
+     */
     fun loadMoreCollections() {
         viewModelScope.launch { fetchCustomCollectionsInternal() }
     }
 
+    /**
+     * Fetches bookmarks internally with pagination support.
+     */
     private suspend fun fetchBookmarksInternal() {
         if (bookmarksPagination.isLoadingMore || !bookmarksPagination.hasMore) return
 
@@ -338,14 +427,21 @@ class ProfileViewModel @Inject constructor(
             bookmarksPagination.advancePage()
             updateCollectionContent(updatedBookmarks = updatedBookmarks)
             _section2State.value = ContentState.Success
+            Log.d(TAG, "Fetched bookmarks: ${data.size}, total: ${updatedBookmarks.size}")
         }.onFailure {
             _section2State.value = ContentState.Error
+            bookmarksPagination.hasMore = false
+            _hasMoreBookmarks.value = false
+            Log.e(TAG, "Error fetching bookmarks", it)
         }
 
         bookmarksPagination.isLoadingMore = false
         _isLoadingMoreBookmarks.value = false
     }
 
+    /**
+     * Fetches custom collections internally with pagination support.
+     */
     private suspend fun fetchCustomCollectionsInternal() {
         if (collectionsPagination.isLoadingMore || !collectionsPagination.hasMore) return
 
@@ -364,14 +460,24 @@ class ProfileViewModel @Inject constructor(
             collectionsPagination.advancePage()
             updateCollectionContent(customCollections = updatedCustom)
             _section2State.value = ContentState.Success
+            Log.d(TAG, "Fetched custom collections: ${data.size}, total: ${updatedCustom.size}")
         }.onFailure {
             _section2State.value = ContentState.Error
+            collectionsPagination.hasMore = false
+            _hasMoreCollections.value = false
+            Log.e(TAG, "Error fetching custom collections", it)
         }
 
         collectionsPagination.isLoadingMore = false
         _isLoadingMoreCollections.value = false
     }
 
+    /**
+     * Updates the collection content by merging bookmarks and custom collections.
+     *
+     * @param updatedBookmarks The updated list of bookmarks.
+     * @param customCollections The updated list of custom collections.
+     */
     private fun updateCollectionContent(
         updatedBookmarks: List<CatalogItem>? = null,
         customCollections: List<Collection>? = null
@@ -398,6 +504,12 @@ class ProfileViewModel @Inject constructor(
         _collectionContent.value = listOf(bookmarksCollection) + existingCustom
     }
 
+    /**
+     * Maps activity entries to activity items by fetching corresponding charts.
+     *
+     * @param entries The list of activity entries to map.
+     * @return The list of activity items.
+     */
     private suspend fun mapActivityEntries(entries: List<ActivityEntry>): List<ActivityItem> {
         val ids = entries.map { it.targetId }.distinct()
         val charts = if (ids.isNotEmpty()) {
@@ -419,6 +531,9 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Resets all pagination states and content to their initial values.
+     */
     private fun resetAll() {
         activityPagination.reset()
         libraryPagination.reset()

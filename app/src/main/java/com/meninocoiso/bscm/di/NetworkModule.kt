@@ -1,6 +1,7 @@
 package com.meninocoiso.bscm.di
 
 import android.content.Context
+import com.meninocoiso.bscm.data.manager.SecureTokenManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.KtorApiClient
 import com.meninocoiso.bscm.data.repository.ChartRepositoryRemote
@@ -26,8 +27,9 @@ object NetworkModule {
     @Singleton
     fun provideApiClient(
         @ApplicationContext context: Context,
-        interceptor: AuthInterceptor
-    ): ApiClient = KtorApiClient(context, interceptor)
+        interceptor: AuthInterceptor,
+        tokenManager: SecureTokenManager
+    ): ApiClient = KtorApiClient(context, interceptor, tokenManager)
 
     // Chart remote repository for chart-specific operations
     @Provides
