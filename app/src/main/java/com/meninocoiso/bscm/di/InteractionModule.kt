@@ -5,6 +5,7 @@ import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
 import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.repository.InteractionRepositoryImpl
+import com.meninocoiso.bscm.data.repository.ProfileCacheRepository
 import com.meninocoiso.bscm.domain.repository.InteractionRepository
 import com.meninocoiso.bscm.monitor.NetworkConnectivityMonitor
 import com.meninocoiso.bscm.service.InteractionSyncService
@@ -44,6 +45,7 @@ object InteractionModule {
     fun provideInteractionRepository(
         queueManager: InteractionQueueManager,
         apiClient: ApiClient,
-        networkMonitor: NetworkConnectivityMonitor
-    ): InteractionRepository = InteractionRepositoryImpl(queueManager, apiClient, networkMonitor)
+        networkMonitor: NetworkConnectivityMonitor,
+        profileCacheRepository: ProfileCacheRepository
+    ): InteractionRepository = InteractionRepositoryImpl(queueManager, apiClient, networkMonitor, profileCacheRepository)
 }

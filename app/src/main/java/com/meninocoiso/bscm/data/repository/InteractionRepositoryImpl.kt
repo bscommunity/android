@@ -22,6 +22,7 @@ class InteractionRepositoryImpl @Inject constructor(
     private val queueManager: InteractionQueueManager,
     private val apiClient: ApiClient,
     private val networkMonitor: NetworkConnectivityMonitor,
+    private val profileCacheRepository: ProfileCacheRepository,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : InteractionRepository {
     /**
@@ -38,6 +39,13 @@ class InteractionRepositoryImpl @Inject constructor(
                 val success = apiClient.addLike(contentId)
                 if (success) {
                     Log.d(TAG, "Successfully liked contentId: $contentId online")
+                    // Try to fetch and add to cache
+                    try {
+                        val chart = apiClient.getChart(contentId)
+                        profileCacheRepository.addLikeToCache(chart)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to update like cache", e)
+                    }
                     emit(Result.success(Unit))
                 } else {
                     Log.d(TAG, "Queued like for contentId: $contentId due to server response")
@@ -73,6 +81,12 @@ class InteractionRepositoryImpl @Inject constructor(
                 val success = apiClient.removeLike(contentId)
                 if (success) {
                     Log.d(TAG, "Successfully unliked contentId: $contentId online")
+                    // Update cache
+                    try {
+                        profileCacheRepository.removeLikeFromCache(contentId)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to update like cache", e)
+                    }
                     emit(Result.success(Unit))
                 } else {
                     Log.d(TAG, "Queued unlike for contentId: $contentId due to server response")
@@ -126,6 +140,13 @@ class InteractionRepositoryImpl @Inject constructor(
                 val success = apiClient.addBookmark(contentId)
                 if (success) {
                     Log.d(TAG, "Successfully bookmarked contentId: $contentId online")
+                    // Try to fetch and add to cache
+                    try {
+                        val chart = apiClient.getChart(contentId)
+                        profileCacheRepository.addBookmarkToCache(chart)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to update bookmark cache", e)
+                    }
                     emit(Result.success(Unit))
                 } else {
                     Log.d(TAG, "Queued bookmark for contentId: $contentId due to server response")
@@ -161,6 +182,12 @@ class InteractionRepositoryImpl @Inject constructor(
                 val success = apiClient.removeBookmark(contentId)
                 if (success) {
                     Log.d(TAG, "Successfully unbookmarked contentId: $contentId online")
+                    // Update cache
+                    try {
+                        profileCacheRepository.removeBookmarkFromCache(contentId)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to update bookmark cache", e)
+                    }
                     emit(Result.success(Unit))
                 } else {
                     Log.d(TAG, "Queued unbookmark for contentId: $contentId due to server response")
@@ -211,6 +238,13 @@ class InteractionRepositoryImpl @Inject constructor(
     override suspend fun addToCollection(contentId: String, collectionId: String): Flow<Result<Unit>> = flow {
         Log.d(TAG, "Starting addToCollection for contentId: $contentId, collectionId: $collectionId")
         queueManager.queueCollectionInteraction(contentId, collectionId, true)
+        // Try to update cache optimistically
+        try {
+            val chart = apiClient.getChart(contentId)
+            profileCacheRepository.addItemToCollectionCache(collectionId, chart)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to update collection cache", e)
+        }
         Log.d(TAG, "Successfully queued add to collection for contentId: $contentId, collectionId: $collectionId")
         emit(Result.success(Unit))
     }.catch { e ->
@@ -229,6 +263,12 @@ class InteractionRepositoryImpl @Inject constructor(
     override suspend fun removeFromCollection(contentId: String, collectionId: String): Flow<Result<Unit>> = flow {
         Log.d(TAG, "Starting removeFromCollection for contentId: $contentId, collectionId: $collectionId")
         queueManager.queueCollectionInteraction(contentId, collectionId, false)
+        // Update cache
+        try {
+            profileCacheRepository.removeItemFromCollectionCache(collectionId, contentId)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to update collection cache", e)
+        }
         Log.d(TAG, "Successfully queued remove from collection for contentId: $contentId, collectionId: $collectionId")
         emit(Result.success(Unit))
     }.catch { e ->

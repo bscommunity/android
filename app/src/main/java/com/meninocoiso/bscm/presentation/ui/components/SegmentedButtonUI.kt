@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SegmentedButtonUI(
     options: List<String>,
+    disabled: Boolean = false,
     onSelected: (Int) -> Unit,
 ) {
     var selectedIndex by remember {
@@ -36,7 +37,8 @@ fun SegmentedButtonUI(
                     selectedIndex = if (selectedIndex != index) index else -1
                     onSelected(selectedIndex)
                 },
-                selected = index == selectedIndex
+                selected = index == selectedIndex,
+                enabled = !disabled
             ) {
                 Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }

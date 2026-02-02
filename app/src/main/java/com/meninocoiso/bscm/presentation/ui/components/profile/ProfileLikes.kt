@@ -57,7 +57,9 @@ fun ProfileLikes(
             item {
                 SegmentedButtonUI(
                     options = listOf("Charts", "Tour Passes", "Themes"),
-                    onSelected = {})
+                    disabled = true,
+                    onSelected = {}
+                )
             }
             contentList(items, onNavigateToDetails)
             pagination(
