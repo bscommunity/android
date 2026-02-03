@@ -38,6 +38,7 @@ import com.meninocoiso.bscm.presentation.viewmodel.MainActivityViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
@@ -50,8 +51,10 @@ class MainActivity : AppCompatActivity() {
     private val viewModel: MainActivityViewModel by viewModels()
     private val authViewModel: AuthViewModel by viewModels()
 
-    // State holder for deep links
-    private var pendingDeepLink by mutableStateOf<Uri?>(null)
+    private val intentFlow = MutableSharedFlow<Intent>(
+        replay = 0,
+        extraBufferCapacity = 1
+    )
 
     // Coordination state for a single in-flight OAuth flow
     // - oauthInProgress: whether we started a new OAuth flow and are still awaiting outcome
@@ -64,6 +67,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        lifecycleScope.launch {
+            intent?.let { intentFlow.emit(it) }
+        }
 
         // 1) AuthTab launcher - official AuthTab callback registration
         // This launcher is used only when we choose to use AuthTab (see startOAuth).
@@ -168,18 +175,35 @@ class MainActivity : AppCompatActivity() {
                     },
                     // Pass a lambda to start OAuth so Composables don't need to know launchers
                     startOAuth = { uri -> startOAuth(uri) },
-                    pendingDeepLink = pendingDeepLink,
-                    onDeepLinkHandled = { pendingDeepLink = null } // Clear after handling
+                    intentFlow = intentFlow,
                 )
 
                 NotificationsPermissionDialog()
             }
         }
+    }
 
-        // Handle initial intent if it's a deep link
-        intent?.data?.let { uri ->
-            if (!isOAuthCallback(uri)) {
-                pendingDeepLink = uri
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+
+        val uri = intent.data ?: return
+
+        when {
+            // OAuth has priority ONLY if a flow is active
+            oauthInProgress && isOAuthCallback(uri) -> {
+                // A deep link arrived — treat as the authoritative success signal.
+                // Clear any pending deferred cancellation and handle success.
+                handleAuthSuccess(uri)
+            }
+
+            // Otherwise: normal app deep link
+            else -> {
+                println("Received non-OAuth deep link: $uri")
+                // Emit the intent to the flow for navigation handling
+                lifecycleScope.launch {
+                    intentFlow.emit(intent)
+                }
             }
         }
     }
@@ -188,7 +212,7 @@ class MainActivity : AppCompatActivity() {
      * Called by SettingsScreen (or any UI) to start an OAuth flow for [uri].
      * This method chooses AuthTab when supported, otherwise uses a CustomTab fallback.
      */
-    fun startOAuth(uri: Uri) {
+    private fun startOAuth(uri: Uri) {
         // mark we started a flow
         oauthInProgress = true
         oauthHandled = false
@@ -221,29 +245,6 @@ class MainActivity : AppCompatActivity() {
                 if (packageName != null) setPackage(packageName)
             }
             fallbackLauncher.launch(intent)
-        }
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-
-        val uri = intent.data ?: return
-
-        when {
-            // OAuth has priority ONLY if a flow is active
-            oauthInProgress && isOAuthCallback(uri) -> {
-                // A deep link arrived — treat as the authoritative success signal.
-                // Clear any pending deferred cancellation and handle success.
-                handleAuthSuccess(uri)
-            }
-
-            // Otherwise: normal app deep link
-            else -> {
-                println("Received non-OAuth deep link: $uri")
-                // Set the pending deep link - MainNav will handle it
-                pendingDeepLink = uri
-            }
         }
     }
 

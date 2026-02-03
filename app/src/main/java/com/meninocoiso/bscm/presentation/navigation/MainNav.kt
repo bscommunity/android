@@ -1,5 +1,6 @@
 package com.meninocoiso.bscm.presentation.navigation
 
+import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -27,6 +28,7 @@ import com.meninocoiso.bscm.presentation.screen.settings.Collection
 import com.meninocoiso.bscm.presentation.screen.settings.CollectionScreen
 import com.meninocoiso.bscm.presentation.screen.settings.Profile
 import com.meninocoiso.bscm.presentation.screen.settings.ProfileScreen
+import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import kotlin.reflect.typeOf
 
@@ -35,10 +37,7 @@ object MainRoute
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun MainNav(
-    startOAuth: (Uri) -> Unit, hasUpdate: Boolean, user: User?, pendingDeepLink: Uri?,
-    onDeepLinkHandled: () -> Unit
-) {
+fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean, user: User?, intentFlow: Flow<Intent>, ) {
     val navController = rememberNavController()
     val bottomNavController = rememberNavController()
 
@@ -56,22 +55,9 @@ fun MainNav(
         }
     }
 
-    // Handle deep links when they arrive
-    LaunchedEffect(pendingDeepLink) {
-        pendingDeepLink?.let { uri ->
-            println("Handling deep link in MainNav: $uri")
-
-            // Create an Intent with the deep link URI
-            val deepLinkIntent = android.content.Intent().apply {
-                action = android.content.Intent.ACTION_VIEW
-                data = uri
-            }
-
-            // Let NavController handle it
-            navController.handleDeepLink(deepLinkIntent)
-
-            // Clear the pending deep link
-            onDeepLinkHandled()
+    LaunchedEffect(Unit) {
+        intentFlow.collect { intent ->
+            navController.handleDeepLink(intent)
         }
     }
 
