@@ -31,4 +31,7 @@ interface InteractionQueueDao {
     
     @Query("SELECT * FROM interaction_queue WHERE contentId = :contentId AND collectionId = :collectionId ORDER BY timestamp DESC LIMIT 1")
     suspend fun getLatestForContent(contentId: String, collectionId: String): QueuedInteractionEntity?
+
+    @Query("SELECT * FROM interaction_queue WHERE contentId = :contentId AND collectionKind = :collectionKind ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getLatestForContentByKind(contentId: String, collectionKind: String): QueuedInteractionEntity?
 }

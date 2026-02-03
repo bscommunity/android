@@ -15,10 +15,11 @@ interface InteractionRepository {
     suspend fun unlikeContent(contentId: String): Flow<Result<Unit>>
     
     /**
-     * Checks if content is liked (from local state or server)
+     * Checks if content is liked (from queued interactions)
+     * Returns null if no queued action, true if queued like, false if queued unlike
      */
-    suspend fun isContentLiked(contentId: String): Flow<Result<Boolean>>
-    
+    suspend fun isContentLiked(contentId: String): Flow<Result<Boolean?>>
+
     /**
      * Queues a bookmark interaction for offline-first processing
      */
@@ -30,10 +31,11 @@ interface InteractionRepository {
     suspend fun unbookmarkContent(contentId: String): Flow<Result<Unit>>
     
     /**
-     * Checks if content is bookmarked (from local state or server)
+     * Checks if content is bookmarked (from queued interactions)
+     * Returns null if no queued action, true if queued bookmark, false if queued unbookmark
      */
-    suspend fun isContentBookmarked(contentId: String): Flow<Result<Boolean>>
-    
+    suspend fun isContentBookmarked(contentId: String): Flow<Result<Boolean?>>
+
     /**
      * Queues adding content to a custom collection
      */

@@ -18,10 +18,10 @@ import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.repository.ChartQuery
 import com.meninocoiso.bscm.domain.result.ContentEvent
 import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.ContentState
-import com.meninocoiso.bscm.domain.repository.ChartQuery
 import com.meninocoiso.bscm.util.StorageUtils
 import com.meninocoiso.bscm.util.StorageUtils.BEATSTAR_URI
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -163,7 +163,7 @@ class WorkshopViewModel @Inject constructor(
                     is ContentResult.Success -> {
                         hasMoreData = result.data.size >= BATCH_SIZE
                         chartManager.updateFeedState(ContentState.Success)
-                        Log.d(TAG, "Fetched ${result.data.size} feed charts")
+                        Log.d(TAG, "Fetched ${result.data.size} feed charts: ${result.data}")
                     }
                     is ContentResult.Error -> {
                         if (showLoading && chartManager.getChartsLength() > 0) {

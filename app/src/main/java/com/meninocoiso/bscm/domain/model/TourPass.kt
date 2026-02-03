@@ -27,7 +27,7 @@ data class TourPass(
     @ColumnInfo(name = "latest_published_at") override val latestPublishedAt: LocalDateTime,
 
     @ColumnInfo(name = "is_liked") override val isLiked: Boolean = false,
-    @ColumnInfo(name = "is_favorited") override val isFavorited: Boolean = false,
+    @ColumnInfo(name = "is_bookmarked") override val isBookmarked: Boolean = false,
     @ColumnInfo(name = "is_installed") override val isInstalled: Boolean? = false,
 
     val contributors: List<Contributor>,

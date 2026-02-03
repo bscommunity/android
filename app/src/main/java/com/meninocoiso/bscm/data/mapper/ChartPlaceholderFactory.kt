@@ -42,7 +42,7 @@ class ChartPlaceholderFactory @Inject constructor(
                 LocalDateTime.ofEpochSecond(it, 0, java.time.ZoneOffset.UTC)
             } ?: now,
             isLiked = false,
-            isFavorited = false,
+            isBookmarked = false,
             isInstalled = true,
             latestVersion = createPlaceholderVersion(metadata.id, metadata),
             availableVersion = null,

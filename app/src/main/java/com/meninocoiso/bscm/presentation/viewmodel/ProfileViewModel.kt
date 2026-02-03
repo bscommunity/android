@@ -615,3 +615,4 @@ class ProfileViewModel @Inject constructor(
         _section2State.value = ContentState.Loading
     }
 }
+

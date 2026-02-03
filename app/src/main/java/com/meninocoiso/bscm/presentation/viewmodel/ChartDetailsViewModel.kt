@@ -13,54 +13,50 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private const val TAG = "ChartDetailsViewModel"
-
-// Sealed class representing the state of chart data
-sealed class DetailsState {
-    data object Loading : DetailsState()
-    data class Success(val chart: Chart) : DetailsState()
-    data class Error(val message: String?) : DetailsState()
-}
 
 @HiltViewModel
 class ChartDetailsViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val chartManager: ChartManager
 ) : ViewModel() {
-    private val _chart = MutableStateFlow<DetailsState>(DetailsState.Loading)
-    val chart: StateFlow<DetailsState> = _chart.asStateFlow()
+    private val _chart = MutableStateFlow<ContentResult<Chart>>(ContentResult.Loading)
+    val chart: StateFlow<ContentResult<Chart>> = _chart.asStateFlow()
 
     fun fetchChartById(chartId: String?) {
         if (chartId.isNullOrEmpty()) {
-            _chart.value = DetailsState.Error(context.getString(R.string.invalid_chart_id))
+            _chart.value = ContentResult.Error(context.getString(R.string.invalid_chart_id))
             return
         }
 
         viewModelScope.launch {
-            _chart.value = DetailsState.Loading
+            _chart.value = ContentResult.Loading
 
             try {
-                val result = chartManager.getChart(chartId).first()
-                when (result) {
-                    is ContentResult.Success -> {
-                        Log.d(TAG, "Chart data loaded successfully")
-                        _chart.value = DetailsState.Success(result.data)
-                    }
-                    is ContentResult.Error -> {
-                        Log.e(TAG, "Error fetching chart: ${result.message}", result.cause)
-                        _chart.value = DetailsState.Error(result.message)
-                    }
-                    is ContentResult.Loading -> {
-                        // Keep loading state
+                chartManager.getChart(chartId).collect { result ->
+                    when (result) {
+                        is ContentResult.Success -> {
+                            Log.d(TAG, "Chart data loaded successfully")
+                            _chart.value = ContentResult.Success(result.data)
+                        }
+
+                        is ContentResult.Error -> {
+                            Log.e(TAG, "Error fetching chart: ${result.message}", result.cause)
+                            _chart.value = ContentResult.Error(result.message)
+                        }
+
+                        is ContentResult.Loading -> {
+                            // Keep loading state
+                        }
                     }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error fetching data", e)
-                _chart.value = DetailsState.Error(e.message)
+                _chart.value =
+                    ContentResult.Error(e.message ?: context.getString(R.string.unknown_error), e)
             }
         }
     }

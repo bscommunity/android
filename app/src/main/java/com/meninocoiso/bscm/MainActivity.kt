@@ -28,12 +28,12 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.meninocoiso.bscm.domain.enums.ThemePreference
 import com.meninocoiso.bscm.domain.state.MainActivityState
+import com.meninocoiso.bscm.domain.state.MainActivityState.Loading
+import com.meninocoiso.bscm.domain.state.MainActivityState.Success
 import com.meninocoiso.bscm.presentation.navigation.MainNav
 import com.meninocoiso.bscm.presentation.ui.components.dialog.NotificationsPermissionDialog
 import com.meninocoiso.bscm.presentation.ui.theme.BeatstarCommunityTheme
 import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
-import com.meninocoiso.bscm.domain.state.MainActivityState.Loading
-import com.meninocoiso.bscm.domain.state.MainActivityState.Success
 import com.meninocoiso.bscm.presentation.viewmodel.MainActivityViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Job
@@ -49,6 +49,9 @@ class MainActivity : AppCompatActivity() {
 
     private val viewModel: MainActivityViewModel by viewModels()
     private val authViewModel: AuthViewModel by viewModels()
+
+    // State holder for deep links
+    private var pendingDeepLink by mutableStateOf<Uri?>(null)
 
     // Coordination state for a single in-flight OAuth flow
     // - oauthInProgress: whether we started a new OAuth flow and are still awaiting outcome
@@ -109,8 +112,8 @@ class MainActivity : AppCompatActivity() {
         // Cleanup old updates
         viewModel.cleanupOldUpdates()
 
-        // Keep the splash screen on-screen until the UI cacheState is loaded. 
-        // This condition is evaluated each time the app needs to be redrawn 
+        // Keep the splash screen on-screen until the UI cacheState is loaded.
+        // This condition is evaluated each time the app needs to be redrawn
         // so it should be fast to avoid blocking the UI.
         splashScreen.setKeepOnScreenCondition {
             when (uiState) {
@@ -159,15 +162,24 @@ class MainActivity : AppCompatActivity() {
                         Loading -> false
                         is Success -> viewModel.hasUpdate((uiState as Success).latestUpdateVersion)
                     },
-                    cacheUser = when (uiState) {
+                    user = when (uiState) {
                         Loading -> null
                         is Success -> (uiState as Success).cacheUser
                     },
                     // Pass a lambda to start OAuth so Composables don't need to know launchers
-                    startOAuth = { uri -> startOAuth(uri) }
+                    startOAuth = { uri -> startOAuth(uri) },
+                    pendingDeepLink = pendingDeepLink,
+                    onDeepLinkHandled = { pendingDeepLink = null } // Clear after handling
                 )
 
                 NotificationsPermissionDialog()
+            }
+        }
+
+        // Handle initial intent if it's a deep link
+        intent?.data?.let { uri ->
+            if (!isOAuthCallback(uri)) {
+                pendingDeepLink = uri
             }
         }
     }
@@ -214,13 +226,30 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
 
-        val data = intent.data
-        if (data != null) {
-            // A deep link arrived — treat as the authoritative success signal.
-            // Clear any pending deferred cancellation and handle success.
-            handleAuthSuccess(data)
+        val uri = intent.data ?: return
+
+        when {
+            // OAuth has priority ONLY if a flow is active
+            oauthInProgress && isOAuthCallback(uri) -> {
+                // A deep link arrived — treat as the authoritative success signal.
+                // Clear any pending deferred cancellation and handle success.
+                handleAuthSuccess(uri)
+            }
+
+            // Otherwise: normal app deep link
+            else -> {
+                println("Received non-OAuth deep link: $uri")
+                // Set the pending deep link - MainNav will handle it
+                pendingDeepLink = uri
+            }
         }
+    }
+
+    // Example: bscm://auth/callback
+    private fun isOAuthCallback(uri: Uri): Boolean {
+        return uri.host == "auth" && uri.path == "/callback"
     }
 
     /**
@@ -246,7 +275,7 @@ class MainActivity : AppCompatActivity() {
             }
             else -> {
                 // No code/error in URI - treat as cancelled by provider
-                println("OAuth callback without code or error")
+                println("Callback without code or error")
                 authViewModel.cancelPendingOAuth()
             }
         }

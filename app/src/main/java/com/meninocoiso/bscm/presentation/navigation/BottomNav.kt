@@ -24,9 +24,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.toRoute
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.UpdatesSection
-import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.User
-import com.meninocoiso.bscm.presentation.screen.details.ChartDetails
+import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.screen.settings.Profile
 import com.meninocoiso.bscm.presentation.screen.settings.SettingsScreen
 import com.meninocoiso.bscm.presentation.screen.updates.UpdatesScreen
@@ -104,6 +103,7 @@ fun BottomNav(
     animatedContentScope: AnimatedContentScope,
     bottomNavController: NavHostController,
     navController: NavHostController,
+    onNavigateToDetails: OnNavigateToDetails,
     hasUpdate: Boolean = false,
     startOAuth: (Uri) -> Unit,
     cacheUser: User? = null,
@@ -145,13 +145,6 @@ fun BottomNav(
                     onAction?.invoke()
                 }
             }
-        }
-    }
-
-    val onNavigateToDetails = { chart: Chart ->
-        navController.navigate(route = ChartDetails(chart = chart)) {
-            // Prevent users from opening multiple details screens
-            launchSingleTop = true
         }
     }
     

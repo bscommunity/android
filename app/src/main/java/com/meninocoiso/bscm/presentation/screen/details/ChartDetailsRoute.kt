@@ -16,9 +16,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.viewmodel.ChartDetailsViewModel
-import com.meninocoiso.bscm.presentation.viewmodel.DetailsState
 
 @Composable
 fun ChartDetailsRoute(
@@ -26,7 +27,7 @@ fun ChartDetailsRoute(
     onReturn: () -> Unit,
     viewModel: ChartDetailsViewModel = hiltViewModel()
 ) {
-    val chartState by viewModel.chart.collectAsStateWithLifecycle()
+    val state by viewModel.chart.collectAsStateWithLifecycle()
 
     // If we don't have a chart from typed navigation, fetch it using chartId
     LaunchedEffect(chartId) {
@@ -43,25 +44,25 @@ fun ChartDetailsRoute(
                 .fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            when (chartState) {
-                is DetailsState.Loading -> {
+            when (state) {
+                is ContentResult.Loading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
 
-                is DetailsState.Success -> {
+                is ContentResult.Success -> {
                     ChartDetailsScreen(
-                        chart = (chartState as DetailsState.Success).chart,
+                        chart = (state as ContentResult.Success<Chart>).data,
                         onReturn = onReturn
                     )
                 }
 
-                is DetailsState.Error -> {
+                is ContentResult.Error -> {
                     StatusMessageUI(
                         title = stringResource(R.string.failed_to_load_chart_details),
-                        message = (chartState as DetailsState.Error).message
+                        message = (state as ContentResult.Error).message
                             ?: stringResource(R.string.failed_to_load_chart_details_description),
                         icon = R.drawable.rounded_error_24,
                         onClick = {

@@ -42,7 +42,7 @@ class InteractionRepositoryImpl @Inject constructor(
                     // Try to fetch and add to cache
                     try {
                         val chart = apiClient.getChart(contentId)
-                        profileCacheRepository.addLikeToCache(chart)
+                        // profileCacheRepository.addLikeToCache(chart)
                     } catch (e: Exception) {
                         Log.w(TAG, "Failed to update like cache", e)
                     }
@@ -83,7 +83,7 @@ class InteractionRepositoryImpl @Inject constructor(
                     Log.d(TAG, "Successfully unliked contentId: $contentId online")
                     // Update cache
                     try {
-                        profileCacheRepository.removeLikeFromCache(contentId)
+                        // profileCacheRepository.removeLikeFromCache(contentId)
                     } catch (e: Exception) {
                         Log.w(TAG, "Failed to update like cache", e)
                     }
@@ -109,17 +109,23 @@ class InteractionRepositoryImpl @Inject constructor(
     }.flowOn(dispatcher)
 
     /**
-     * Checks if the content is liked.
-     * Returns the latest action from the queue.
+     * Checks if the content is liked based on queued interactions.
+     * Returns null if no queued action exists (meaning use the chart's original value).
+     * Returns true if there's a queued ADD action.
+     * Returns false if there's a queued REMOVE action.
      *
      * @param contentId The ID of the content to check.
-     * @return A Flow emitting Result<Boolean> where true if liked, false otherwise.
+     * @return A Flow emitting Result<Boolean?> where null means no queued override.
      */
-    override suspend fun isContentLiked(contentId: String): Flow<Result<Boolean>> = flow {
+    override suspend fun isContentLiked(contentId: String): Flow<Result<Boolean?>> = flow {
         Log.d(TAG, "Starting isContentLiked for contentId: $contentId")
-        val latest = queueManager.getLatestAction(contentId, "likes")
-        val isLiked = latest == ActionType.ADD
-        Log.d(TAG, "Content $contentId is liked: $isLiked")
+        val latest = queueManager.getLatestActionByKind(contentId, com.meninocoiso.bscm.domain.enums.CollectionKind.LIKES)
+        val isLiked = when (latest) {
+            ActionType.ADD -> true
+            ActionType.REMOVE -> false
+            null -> null // No queued action, use original value
+        }
+        Log.d(TAG, "Content $contentId queued like status: $isLiked (action: $latest)")
         emit(Result.success(isLiked))
     }.catch { e ->
         Log.e(TAG, "Failed to check if content is liked for contentId: $contentId", e)
@@ -143,7 +149,7 @@ class InteractionRepositoryImpl @Inject constructor(
                     // Try to fetch and add to cache
                     try {
                         val chart = apiClient.getChart(contentId)
-                        profileCacheRepository.addBookmarkToCache(chart)
+                        // profileCacheRepository.addBookmarkToCache(chart)
                     } catch (e: Exception) {
                         Log.w(TAG, "Failed to update bookmark cache", e)
                     }
@@ -184,7 +190,7 @@ class InteractionRepositoryImpl @Inject constructor(
                     Log.d(TAG, "Successfully unbookmarked contentId: $contentId online")
                     // Update cache
                     try {
-                        profileCacheRepository.removeBookmarkFromCache(contentId)
+                        // profileCacheRepository.removeBookmarkFromCache(contentId)
                     } catch (e: Exception) {
                         Log.w(TAG, "Failed to update bookmark cache", e)
                     }
@@ -210,17 +216,23 @@ class InteractionRepositoryImpl @Inject constructor(
     }.flowOn(dispatcher)
 
     /**
-     * Checks if the content is bookmarked.
-     * Returns the latest action from the queue.
+     * Checks if the content is bookmarked based on queued interactions.
+     * Returns null if no queued action exists (meaning use the chart's original value).
+     * Returns true if there's a queued ADD action.
+     * Returns false if there's a queued REMOVE action.
      *
      * @param contentId The ID of the content to check.
-     * @return A Flow emitting Result<Boolean> where true if bookmarked, false otherwise.
+     * @return A Flow emitting Result<Boolean?> where null means no queued override.
      */
-    override suspend fun isContentBookmarked(contentId: String): Flow<Result<Boolean>> = flow {
+    override suspend fun isContentBookmarked(contentId: String): Flow<Result<Boolean?>> = flow {
         Log.d(TAG, "Starting isContentBookmarked for contentId: $contentId")
-        val latest = queueManager.getLatestAction(contentId, "bookmarks")
-        val isBookmarked = latest == ActionType.ADD
-        Log.d(TAG, "Content $contentId is bookmarked: $isBookmarked")
+        val latest = queueManager.getLatestActionByKind(contentId, com.meninocoiso.bscm.domain.enums.CollectionKind.BOOKMARKS)
+        val isBookmarked = when (latest) {
+            ActionType.ADD -> true
+            ActionType.REMOVE -> false
+            null -> null // No queued action, use original value
+        }
+        Log.d(TAG, "Content $contentId queued bookmark status: $isBookmarked (action: $latest)")
         emit(Result.success(isBookmarked))
     }.catch { e ->
         Log.e(TAG, "Failed to check if content is bookmarked for contentId: $contentId", e)
@@ -241,7 +253,7 @@ class InteractionRepositoryImpl @Inject constructor(
         // Try to update cache optimistically
         try {
             val chart = apiClient.getChart(contentId)
-            profileCacheRepository.addItemToCollectionCache(collectionId, chart)
+            // profileCacheRepository.addItemToCollectionCache(collectionId, chart)
         } catch (e: Exception) {
             Log.w(TAG, "Failed to update collection cache", e)
         }
@@ -265,7 +277,7 @@ class InteractionRepositoryImpl @Inject constructor(
         queueManager.queueCollectionInteraction(contentId, collectionId, false)
         // Update cache
         try {
-            profileCacheRepository.removeItemFromCollectionCache(collectionId, contentId)
+            // profileCacheRepository.removeItemFromCollectionCache(collectionId, contentId)
         } catch (e: Exception) {
             Log.w(TAG, "Failed to update collection cache", e)
         }

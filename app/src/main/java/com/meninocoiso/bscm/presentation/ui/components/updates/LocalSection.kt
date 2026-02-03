@@ -16,13 +16,14 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.result.ContentState
+import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.layout.Section
 import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
 
 fun LazyListScope.localContentSection(
     state: ContentState,
     charts: List<Chart>,
-    onNavigateToDetails: (Chart) -> Unit,
+    onNavigateToDetails: OnNavigateToDetails,
     onShowLocalItemDialog: () -> Unit,
 ) {
     item {

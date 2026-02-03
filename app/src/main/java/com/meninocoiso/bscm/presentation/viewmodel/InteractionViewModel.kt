@@ -59,16 +59,18 @@ class InteractionViewModel @Inject constructor(
     }
     
     /**
-     * Gets the like status for content
+     * Gets the like status for content from queued interactions
+     * Returns null if no queued action, true if queued like, false if queued unlike
      */
-    suspend fun getLikeStatus(contentId: String): Flow<Result<Boolean>> {
+    suspend fun getLikeStatus(contentId: String): Flow<Result<Boolean?>> {
         return interactionRepository.isContentLiked(contentId)
     }
 
     /**
-     * Gets the bookmark status for content
+     * Gets the bookmark status for content from queued interactions
+     * Returns null if no queued action, true if queued bookmark, false if queued unbookmark
      */
-    suspend fun getBookmarkStatus(contentId: String): Flow<Result<Boolean>> {
+    suspend fun getBookmarkStatus(contentId: String): Flow<Result<Boolean?>> {
         return interactionRepository.isContentBookmarked(contentId)
     }
     

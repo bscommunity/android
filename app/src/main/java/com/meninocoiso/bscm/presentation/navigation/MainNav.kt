@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -34,7 +35,46 @@ object MainRoute
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean, cacheUser: User?) {
+fun MainNav(
+    startOAuth: (Uri) -> Unit, hasUpdate: Boolean, user: User?, pendingDeepLink: Uri?,
+    onDeepLinkHandled: () -> Unit
+) {
+    val navController = rememberNavController()
+    val bottomNavController = rememberNavController()
+
+    val onNavigateToDetails = { chart: Chart ->
+        navController.navigate(route = ChartDetails(chart = chart)) {
+            // Prevent users from opening multiple details screens
+            launchSingleTop = true
+        }
+    }
+
+    val onNavigateToCollection = { collectionId: String ->
+        navController.navigate(route = Collection(collectionId = collectionId)) {
+            // Prevent users from opening multiple collection screens
+            launchSingleTop = true
+        }
+    }
+
+    // Handle deep links when they arrive
+    LaunchedEffect(pendingDeepLink) {
+        pendingDeepLink?.let { uri ->
+            println("Handling deep link in MainNav: $uri")
+
+            // Create an Intent with the deep link URI
+            val deepLinkIntent = android.content.Intent().apply {
+                action = android.content.Intent.ACTION_VIEW
+                data = uri
+            }
+
+            // Let NavController handle it
+            navController.handleDeepLink(deepLinkIntent)
+
+            // Clear the pending deep link
+            onDeepLinkHandled()
+        }
+    }
+
     // Wrap the SharedTransitionLayout with a Box that paints the background to avoid white flashes
     Box(
         modifier = Modifier
@@ -42,23 +82,6 @@ fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean, cacheUser: User?) {
             .background(MaterialTheme.colorScheme.background)
     ) {
         SharedTransitionLayout {
-            val navController = rememberNavController()
-            val bottomNavController = rememberNavController()
-
-            val onNavigateToDetails = { chart: Chart ->
-                navController.navigate(route = ChartDetails(chart = chart)) {
-                    // Prevent users from opening multiple details screens
-                    launchSingleTop = true
-                }
-            }
-
-            val onNavigateToCollection = { collectionId: String ->
-                navController.navigate(route = Collection(collectionId = collectionId)) {
-                    // Prevent users from opening multiple collection screens
-                    launchSingleTop = true
-                }
-            }
-
             NavHost(
                 navController = navController,
                 startDestination = MainRoute,
@@ -138,11 +161,13 @@ fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean, cacheUser: User?) {
                     BottomNav(
                         this@SharedTransitionLayout,
                         this,
-                        bottomNavController, 
-                        navController, 
-                        hasUpdate, 
+                        bottomNavController,
+                        navController,
+                        onNavigateToDetails,
+                        hasUpdate,
                         startOAuth,
-                        cacheUser)
+                        user
+                    )
                 }
             }
         }

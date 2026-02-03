@@ -227,4 +227,13 @@ class InteractionQueueManager @Inject constructor(
         withContext(Dispatchers.IO) {
             queueDao.getLatestForContent(contentId, collectionId)?.action
         }
+
+    /**
+     * Get the latest queued action for a specific content and collection kind
+     * Used for likes and bookmarks where collectionId is null
+     */
+    suspend fun getLatestActionByKind(contentId: String, collectionKind: CollectionKind): ActionType? =
+        withContext(Dispatchers.IO) {
+            queueDao.getLatestForContentByKind(contentId, collectionKind.name)?.action
+        }
 }

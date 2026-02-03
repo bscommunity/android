@@ -111,11 +111,11 @@ fun ChartDetailsScreen(
     // Simplified dialog state management
     var currentDialog by rememberSaveable { mutableStateOf(ChartDialog.None) }
 
-    var isBookmarked by rememberSaveable { mutableStateOf(chart.isFavorited) }
+    var isBookmarked by rememberSaveable { mutableStateOf(chart.isBookmarked) }
     var isLiked by rememberSaveable { mutableStateOf(chart.isLiked) }
 
     LaunchedEffect(chart.id) {
-        isBookmarked = chart.isFavorited
+        isBookmarked = chart.isBookmarked
         isLiked = chart.isLiked
     }
 
