@@ -115,7 +115,7 @@ class AuthViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
-            authRepository.authenticateWithDiscord(code, "bscm://auth")
+            authRepository.authenticateWithDiscord(code, "bscm://auth/callback")
                 .catch { e ->
                     Log.e(TAG, "handleAuthCallback: Flow error - ${e.message}", e)
                     _snackbarEvents.emit(context.getString(R.string.error_login, e.message ?: ""))

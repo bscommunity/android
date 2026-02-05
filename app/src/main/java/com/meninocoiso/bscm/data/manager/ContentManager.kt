@@ -50,11 +50,18 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
     val feedState: StateFlow<ContentState> = _feedState.asStateFlow()
 
     val feedContent: Flow<List<T>> = memoryStore.feedOrderIds.combineWith(memoryStore.contentById)
-    val installedContent: Flow<List<T>> = memoryStore.contentById.mapValuesList { it.isInstalled == true }
-    val searchContent: Flow<List<T>> = memoryStore.searchResultIds.combineWith(memoryStore.contentById)
+    val installedContent: Flow<List<T>> =
+        memoryStore.contentById.mapValuesList { it.isInstalled == true }
+    val searchContent: Flow<List<T>> =
+        memoryStore.searchResultIds.combineWith(memoryStore.contentById)
 
-    fun updateCacheState(newState: ContentState) { _cacheState.value = newState }
-    fun updateFeedState(newState: ContentState) { _feedState.value = newState }
+    fun updateCacheState(newState: ContentState) {
+        _cacheState.value = newState
+    }
+
+    fun updateFeedState(newState: ContentState) {
+        _feedState.value = newState
+    }
 
     fun getItem(id: String): Flow<ContentResult<T>> = flow {
         emit(ContentResult.Loading)
@@ -78,7 +85,14 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
                         coroutineScope.launch { localRepository.insert(listOf(item)).first() }
                         emit(ContentResult.Success(item))
                     },
-                    onFailure = { err -> emit(ContentResult.Error(context.getString(R.string.content_not_found), err)) }
+                    onFailure = { err ->
+                        emit(
+                            ContentResult.Error(
+                                err.message ?: context.getString(R.string.content_not_found),
+                                err
+                            )
+                        )
+                    }
                 )
             }
         )
@@ -112,7 +126,10 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
         val dbResult = localRepository.updateContent(id, operation).first()
         if (dbResult.isFailure || dbResult.getOrNull() != true) {
             return@flow emit(
-                ContentResult.Error(context.getString(R.string.failed_to_update), dbResult.exceptionOrNull())
+                ContentResult.Error(
+                    context.getString(R.string.failed_to_update),
+                    dbResult.exceptionOrNull()
+                )
             )
         }
 
@@ -206,7 +223,10 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
                         coroutineScope = coroutineScope
                     )
                 } else {
-                    memoryStore.appendFeed(items, getId = { it.id }, isInstalled = { it.isInstalled == true })
+                    memoryStore.appendFeed(
+                        items,
+                        getId = { it.id },
+                        isInstalled = { it.isInstalled == true })
                 }
                 coroutineScope.launch { localRepository.update(items).first() }
                 _feedState.value = ContentState.Success
@@ -214,7 +234,11 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
             },
             onFailure = { err ->
                 _feedState.value = ContentState.Error
-                emit(ContentResult.Error(err.message ?: context.getString(R.string.failed_to_fetch_feed_charts), err))
+                emit(
+                    ContentResult.Error(
+                        err.message ?: context.getString(R.string.failed_to_fetch_feed_charts), err
+                    )
+                )
             }
         )
     }.catch { e ->
@@ -245,11 +269,19 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
         remoteResult.fold(
             onSuccess = { items ->
                 memoryStore.addWithoutAffectingFeed(items, getId = { it.id })
-                val newIds = if (offset == 0) items.map { it.id } else memoryStore.searchResultIds.value + items.map { it.id }
+                val newIds =
+                    if (offset == 0) items.map { it.id } else memoryStore.searchResultIds.value + items.map { it.id }
                 memoryStore.setSearchResults(newIds)
                 emit(ContentResult.Success(items))
             },
-            onFailure = { err -> emit(ContentResult.Error(context.getString(R.string.search_failed), err)) }
+            onFailure = { err ->
+                emit(
+                    ContentResult.Error(
+                        context.getString(R.string.search_failed),
+                        err
+                    )
+                )
+            }
         )
     }.catch { e -> emit(ContentResult.Error(context.getString(R.string.search_failed), e)) }
 }

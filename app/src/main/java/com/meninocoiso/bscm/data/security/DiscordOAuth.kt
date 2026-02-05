@@ -37,7 +37,7 @@ class DiscordOAuth @Inject constructor(
     // Obtains the OAuth2 flow url with PKCE
     suspend fun getDiscordOAuthUri(): Uri {
         val clientId = "1329849906868912259"
-        val redirectUri = "bscm://auth"
+        val redirectUri = "bscm://auth/callback"
         val scope = "identify email"
 
         // Generate verifier and challenge

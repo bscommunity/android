@@ -57,6 +57,7 @@ fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean, user: User?, intentFl
 
     LaunchedEffect(Unit) {
         intentFlow.collect { intent ->
+            // Handle deep links while the app is running
             navController.handleDeepLink(intent)
         }
     }

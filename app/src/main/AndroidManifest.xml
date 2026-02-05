@@ -116,7 +116,8 @@
 
                 <data
                     android:scheme="bscm"
-                    android:host="auth" />
+                    android:host="auth"
+                    android:path="/callback" />
             </intent-filter>
         </activity>
     </application>
