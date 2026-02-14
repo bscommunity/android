@@ -17,8 +17,11 @@ interface ChartDao {
     @Query("SELECT * FROM charts WHERE id = :id")
     fun getChart(id: String): Chart?
 
+    @Query("SELECT * FROM charts WHERE id IN (:ids)")
+    fun getChartsByIds(ids: List<String>): List<Chart>
+
     //@Query("SELECT latest_version FROM charts WHERE id IN (:ids)")
-    @Query("SELECT * from versions WHERE chart_id IN (:ids) ORDER BY `published_at` DESC")
+    @Query("SELECT * from versions WHERE chart_id IN (:ids) ORDER BY `created_at` DESC")
     fun getLatestVersionsByChartIds(ids: List<String>): List<Version>
 
     @Query("""
@@ -41,7 +44,7 @@ interface ChartDao {
     @Query("""
         SELECT * FROM charts 
         WHERE (:query IS NULL OR track LIKE '%' || :query || '%' OR artist LIKE '%' || :query || '%')
-        ORDER BY latest_published_at DESC
+        ORDER BY updated_at DESC
         LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END
         OFFSET :offset
     """)

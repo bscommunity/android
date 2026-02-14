@@ -41,9 +41,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import com.meninocoiso.bscm.data.repository.CacheRepository
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
+
+    @Inject
+    lateinit var cacheRepository: CacheRepository
 
     private lateinit var authTabLauncher: ActivityResultLauncher<Intent>
     private lateinit var fallbackLauncher: ActivityResultLauncher<Intent>
@@ -262,23 +267,43 @@ class MainActivity : AppCompatActivity() {
         oauthHandled = true
         oauthInProgress = false
 
-        // Extract code / error, route to current handling logic (keeps behaviour you already had)
-        val code = uri.getQueryParameter("code")
-        val error = uri.getQueryParameter("error")
+        // Validate state token to protect against spurious redirects
+        lifecycleScope.launch {
+            val pendingState = cacheRepository.getPendingOAuthState()
+            val incomingState = uri.getQueryParameter("state")
 
-        when {
-            code != null -> {
-                println("OAuth completed with code: $code")
-                authViewModel.handleAuthCallback(code)
+            if (!pendingState.isNullOrBlank()) {
+                if (incomingState == null || incomingState != pendingState) {
+                    // State mismatch -> ignore and log
+                    println("OAuth state mismatch: expected=$pendingState incoming=$incomingState")
+                    // Treat as error
+                    authViewModel.setError("Unexpected OAuth redirect")
+                    cacheRepository.clearPendingOAuthState()
+                    return@launch
+                }
             }
-            error != null -> {
-                authViewModel.setError(error)
+
+            // Extract code / error, route to current handling logic (keeps behaviour you already had)
+            val code = uri.getQueryParameter("code")
+            val error = uri.getQueryParameter("error")
+
+            when {
+                code != null -> {
+                    println("OAuth completed with code: $code")
+                    authViewModel.handleAuthCallback(code)
+                }
+                error != null -> {
+                    authViewModel.setError(error)
+                }
+                else -> {
+                    // No code/error in URI - treat as cancelled by provider
+                    println("Callback without code or error")
+                    authViewModel.cancelPendingOAuth()
+                }
             }
-            else -> {
-                // No code/error in URI - treat as cancelled by provider
-                println("Callback without code or error")
-                authViewModel.cancelPendingOAuth()
-            }
+
+            // clear persisted state after handling
+            cacheRepository.clearPendingOAuthState()
         }
     }
 

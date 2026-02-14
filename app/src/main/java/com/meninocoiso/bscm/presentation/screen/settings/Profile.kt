@@ -270,26 +270,32 @@ fun ProfileScreen(
                         when (index) {
                             0 -> if (isOwner) {
                                 ProfileLikes(
-                                    likedContent,
-                                    section1State,
-                                    { profileViewModel.fetchUserLikes(reset = true) },
-                                    onNavigateToDetails,
+                                    items = likedContent,
+                                    state = section1State,
+                                    onFetch = { profileViewModel.fetchUserLikes(reset = true) },
+                                    onNavigateToDetails = onNavigateToDetails,
                                     listState = likesListState,
                                     isLoadingMore = paginationState.isLoadingMoreLikes,
                                     hasMore = paginationState.hasMoreLikes,
                                     onLoadMore = { profileViewModel.loadMoreLikes() },
-                                    Modifier.fillMaxSize()
+                                    modifier = Modifier.fillMaxSize()
                                 )
                             } else {
                                 ProfileActivity(
-                                    activityContent,
-                                    section1State,
-                                    { profileViewModel.fetchProfileActivity(userId, reset = true) },
+                                    items = activityContent,
+                                    state = section1State,
+                                    onFetch = {
+                                        profileViewModel.fetchProfileActivity(
+                                            userId,
+                                            reset = true
+                                        )
+                                    },
                                     listState = activityListState,
                                     isLoadingMore = paginationState.isLoadingMoreActivity,
                                     hasMore = paginationState.hasMoreActivity,
                                     onLoadMore = { profileViewModel.loadMoreActivity(userId) },
-                                    Modifier.fillMaxSize()
+                                    onNavigateToDetails = onNavigateToDetails,
+                                    modifier = Modifier.fillMaxSize()
                                 )
                             }
 

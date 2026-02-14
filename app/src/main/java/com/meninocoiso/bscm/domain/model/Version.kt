@@ -29,5 +29,5 @@ data class Version(
     @ColumnInfo(name = "downloads_amount") val downloadsAmount: Int = 0,
     @ColumnInfo(name = "known_issues") val knownIssues: List<KnownIssue> = emptyList(),
     @Serializable(with = LocalDateTimeSerializer::class)
-    @ColumnInfo(name = "published_at") val publishedAt: LocalDateTime,
+    @ColumnInfo(name = "created_at") val createdAt: LocalDateTime,
 ) : Parcelable

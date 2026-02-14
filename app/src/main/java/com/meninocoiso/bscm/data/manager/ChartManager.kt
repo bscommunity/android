@@ -86,7 +86,9 @@ class ChartManager @Inject constructor(
     ): Flow<ContentResult<List<Chart>>> =
         contentManager.search(query, sortBy, limit, offset, filters)
 
-    fun updateChart(chartId: String, operation: OperationOption): Flow<ContentResult<Chart>> =
+    fun getChartsById(ids: List<String>): Flow<ContentResult<List<Chart>>> = contentManager.getItemsById(ids)
+
+    fun updateChartStatus(chartId: String, operation: OperationOption): Flow<ContentResult<Chart>> =
         contentManager.updateContent(chartId, operation) { existing, op ->
             when (op) {
                 OperationOption.INSTALL -> Result.success(existing.copy(isInstalled = true))
@@ -121,7 +123,7 @@ class ChartManager @Inject constructor(
                 val versionMap = versions.associateBy { it.chartId }
                 val updated = installed.mapNotNull { chart ->
                     val remoteVersion = versionMap[chart.id]
-                    if (remoteVersion != null && remoteVersion.index > chart.latestVersion.index) {
+                    if (remoteVersion != null && remoteVersion.createdAt > chart.latestVersion.createdAt) {
                         chart.copy(availableVersion = remoteVersion)
                     } else null
                 }
@@ -136,14 +138,12 @@ class ChartManager @Inject constructor(
     }
 
     suspend fun scanLocalCharts(rootUri: Uri) {
-        syncInstalledCharts(rootUri)
-    }
-
-    private suspend fun syncInstalledCharts(rootUri: Uri) {
         try {
+            // Scan local storage for installed charts
             val installedEntries = chartStorageScanner.scanInstalledContent(rootUri)
             if (installedEntries.isEmpty()) return
 
+            // Update existing charts with installed status, and persist any changes to the local repository
             val current = memoryStore.contentById.value.values.toList()
             val updatedCharts = current.map { chart ->
                 val isInstalled = chart.id in installedEntries.keys
@@ -153,6 +153,7 @@ class ChartManager @Inject constructor(
             persistInstalledChanges(current, updatedCharts)
             memoryStore.upsertContent(updatedCharts) { it.id }
 
+            // Identify any installed charts that are missing from memory and attempt to hydrate them from storage metadata
             val existingIds = current.map { it.id }.toSet()
             Log.d(TAG, "Sync installed charts: found ${installedEntries.size} installed, ${existingIds.size} existing in memory")
             val missingEntries = installedEntries.filterKeys { it !in existingIds }

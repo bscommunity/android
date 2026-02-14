@@ -35,8 +35,7 @@ internal fun ThemesSection(
             contentId = "1234567890",
             coverUrl = "https://i.imgur.com/g23iXuT.png",
             previewUrl = "https://i.imgur.com/lTPUHIN.png",
-            isFeatured = false,
-            latestPublishedAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now(),
             contributors = listOf(
                 Contributor(
                     user = SimplifiedUser(id = "1", username = "meninocoiso", avatarUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
@@ -44,7 +43,8 @@ internal fun ThemesSection(
                     roles = listOf(Role.GAMEPLAY),
                     joinedAt = LocalDateTime.now()
                 )
-            )
+            ),
+            createdAt = LocalDateTime.now()
         ),
         Theme(
             id = "1",
@@ -54,7 +54,7 @@ internal fun ThemesSection(
             coverUrl = "https://i.imgur.com/yGZjCNv.png",
             previewUrl = "https://i.imgur.com/ux3WDfi.png",
             isFeatured = false,
-            latestPublishedAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now(),
             contributors = listOf(
                 Contributor(
                     user = SimplifiedUser(id = "1", username = "meninocoiso", avatarUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
@@ -62,7 +62,8 @@ internal fun ThemesSection(
                     roles = listOf(Role.GAMEPLAY),
                     joinedAt = LocalDateTime.now()
                 )
-            )
+            ),
+            createdAt = LocalDateTime.now()
         ),
         Theme(
             id = "1",
@@ -72,7 +73,7 @@ internal fun ThemesSection(
             coverUrl = "https://i.imgur.com/7XsJ6GC.png",
             previewUrl = "https://i.imgur.com/KaiDZBH.png",
             isFeatured = false,
-            latestPublishedAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now(),
             contributors = listOf(
                 Contributor(
                     user = SimplifiedUser(id = "1", username = "meninocoiso", avatarUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
@@ -80,7 +81,8 @@ internal fun ThemesSection(
                     roles = listOf(Role.GAMEPLAY),
                     joinedAt = LocalDateTime.now()
                 )
-            )
+            ),
+            createdAt = LocalDateTime.now()
         ),
         Theme(
             id = "1",
@@ -90,7 +92,7 @@ internal fun ThemesSection(
             coverUrl = "https://i.imgur.com/QYpcMfh.png",
             previewUrl = "https://i.imgur.com/7fs2XWg.png",
             isFeatured = false,
-            latestPublishedAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now(),
             contributors = listOf(
                 Contributor(
                     user = SimplifiedUser(id = "1", username = "meninocoiso", avatarUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
@@ -98,7 +100,8 @@ internal fun ThemesSection(
                     roles = listOf(Role.GAMEPLAY),
                     joinedAt = LocalDateTime.now()
                 )
-            )
+            ),
+            createdAt = LocalDateTime.now()
         ),
     )
 
@@ -142,7 +145,7 @@ internal fun ThemesSection(
                 ThemePreview(
                     theme = theme,
                     isDisabled = true,
-                    onNavigateToDetails = {
+                    onPress = {
                         // onNavigateToDetails(chart)
                     },
                 )

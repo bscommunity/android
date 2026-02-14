@@ -13,21 +13,25 @@ class CollectionRepositoryRemote @Inject constructor(
     private val apiClient: ApiClient,
     private val profileCacheRepository: ProfileCacheRepository
 ) : CollectionRepository {
-    override suspend fun getUserCollections(limit: Int, offset: Int, useCache: Boolean): Result<List<Collection>> = runCatching {
+    override suspend fun getUserCollections(userId: String, limit: Int, offset: Int, useCache: Boolean): Result<List<Collection>> = runCatching {
         // Only use cache for first page
         if (useCache && offset == 0) {
-            profileCacheRepository.getCollections("")?.let { cached ->
+            profileCacheRepository.getCollections(userId)?.let { cached ->
                 Log.d(TAG, "Returning cached collections (${cached.size} items)")
                 return@runCatching cached
             }
         }
 
         // Fetch from API
-        val collections = apiClient.getUserCollections(limit, offset)
+        val collections = if (userId == "user") {
+            apiClient.getMyCollections(limit, offset)
+        } else {
+            apiClient.getUserCollections(userId, limit, offset)
+        }
 
         // Cache only first page
         if (offset == 0) {
-            profileCacheRepository.cacheCollections("", collections)
+            profileCacheRepository.cacheCollections(userId, collections)
         }
 
         collections

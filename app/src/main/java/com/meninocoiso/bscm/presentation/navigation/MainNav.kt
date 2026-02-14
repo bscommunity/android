@@ -16,7 +16,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
+import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.Theme
+import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.serialization.ChartParameterType
 import com.meninocoiso.bscm.domain.serialization.UserParameterType
@@ -41,10 +44,25 @@ fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean, user: User?, intentFl
     val navController = rememberNavController()
     val bottomNavController = rememberNavController()
 
-    val onNavigateToDetails = { chart: Chart ->
-        navController.navigate(route = ChartDetails(chart = chart)) {
-            // Prevent users from opening multiple details screens
-            launchSingleTop = true
+    val onNavigateToDetails = { item: CatalogItem ->
+        when (item) {
+            is Chart -> {
+                // Navigate to chart details
+                navController.navigate(route = ChartDetails(chart = item)) {
+                    // Prevent users from opening multiple details screens
+                    launchSingleTop = true
+                }
+            }
+
+            else -> {
+                // For unsupported types, open the web page as a fallback
+                val url = when (item) {
+                    is TourPass -> "https://bscm.dev/tourpass/${item.id}"
+                    is Theme -> "https://bscm.dev/theme/${item.id}"
+                    else -> null
+                }
+                url?.let { startOAuth(Uri.parse(it)) }
+            }
         }
     }
 

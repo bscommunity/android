@@ -32,21 +32,18 @@ class ChartPlaceholderFactory @Inject constructor(
             genre = null,
             colors = config.songTemplate.colorGradient.map { it.color },
             trackUrls = streamingLinkParser.parseLinks(metadata.streaming),
-            trackPreviewUrl = null,
             id = metadata.id,
             contentId = metadata.contentId,
             coverUrl = metadata.cover ?: "",
-            isFeatured = false,
             downloadsSum = 0,
-            latestPublishedAt = metadata.publishedAt?.let {
+            updatedAt = metadata.publishedAt?.let {
                 LocalDateTime.ofEpochSecond(it, 0, java.time.ZoneOffset.UTC)
             } ?: now,
-            isLiked = false,
-            isBookmarked = false,
             isInstalled = true,
             latestVersion = createPlaceholderVersion(metadata.id, metadata),
             availableVersion = null,
             contributors = contributorParser.parseContributors(metadata.contributors, metadata.id),
+            createdAt = now
         )
     }
 
@@ -70,7 +67,7 @@ class ChartPlaceholderFactory @Inject constructor(
             previewUrl = metadata.gameplay,
             downloadsAmount = 0,
             knownIssues = emptyList(),
-            publishedAt = metadata.publishedAt?.let {
+            createdAt = metadata.publishedAt?.let {
                 LocalDateTime.ofEpochSecond(it, 0, java.time.ZoneOffset.UTC)
             } ?: now
         )

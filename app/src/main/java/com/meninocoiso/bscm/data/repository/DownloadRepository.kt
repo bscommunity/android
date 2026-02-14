@@ -75,7 +75,7 @@ class DownloadRepository @Inject constructor(
         }
 
         // Update the chart list
-        chartManager.updateChart(contentId, operation).first().let {
+        chartManager.updateChartStatus(contentId, operation).first().let {
             if (it is ContentResult.Error) {
                 throw Exception(it.message)
             }
@@ -97,7 +97,7 @@ class DownloadRepository @Inject constructor(
         }
 
         // Update the chart list
-        chartManager.updateChart(contentId, OperationOption.DELETE).first().let {
+        chartManager.updateChartStatus(contentId, OperationOption.DELETE).first().let {
             if (it is ContentResult.Error) {
                 throw Exception(it.message)
             }

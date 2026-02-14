@@ -110,7 +110,7 @@ fun ChartPreview(
                                 Text(
                                     modifier = Modifier.padding(start = 8.dp),
                                     style = MaterialTheme.typography.labelMedium,
-                                    text = StringUtils.toRelativeString(chart.latestVersion.publishedAt)
+                                    text = StringUtils.toRelativeString(chart.latestVersion.createdAt)
                                 )
                             }
                         }

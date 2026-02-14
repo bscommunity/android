@@ -30,6 +30,8 @@ class CacheRepository @Inject constructor(
         val WORKSHOP_SORT = stringPreferencesKey("workshop_sort")
         val USER_JSON = stringPreferencesKey("user_json")
         val CONTRIBUTORS_JSON = stringPreferencesKey("contributors_json")
+        // OAuth pending state token (used to validate incoming OAuth redirect)
+        val OAUTH_STATE = stringPreferencesKey("oauth_state")
     }
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -103,6 +105,24 @@ class CacheRepository @Inject constructor(
                 emptyList()
             }
         } else emptyList()
+    }
+
+    // -------------------- OAuth pending state -----------------
+    suspend fun setPendingOAuthState(state: String) {
+        dataStore.edit { it[OAUTH_STATE] = state }
+    }
+
+    suspend fun getPendingOAuthState(): String? {
+        return try {
+            val prefs = dataStore.data.first()
+            prefs[OAUTH_STATE]
+        } catch (t: Throwable) {
+            null
+        }
+    }
+
+    suspend fun clearPendingOAuthState() {
+        dataStore.edit { it.remove(OAUTH_STATE) }
     }
 
     private fun mapCache(preferences: Preferences): Cache = Cache(

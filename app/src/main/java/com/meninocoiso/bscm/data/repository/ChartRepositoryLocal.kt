@@ -48,6 +48,13 @@ class ChartRepositoryLocal(
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
+    override suspend fun getItemsById(ids: List<String>): Flow<Result<List<Chart>>> = flow {
+        val charts = chartDao.getChartsByIds(ids)
+        emit(Result.success(charts))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }.flowOn(dispatcher)
+
     override suspend fun insert(items: List<Chart>): Flow<Result<Boolean>> = flow {
         chartDao.insert(items)
         emit(Result.success(true))
@@ -69,7 +76,7 @@ class ChartRepositoryLocal(
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
-    override suspend fun updateContent(
+    override suspend fun updateContentStatus(
         id: String,
         operation: OperationOption
     ): Flow<Result<Boolean>> = flow {

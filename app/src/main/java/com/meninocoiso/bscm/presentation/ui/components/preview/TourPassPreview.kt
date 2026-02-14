@@ -27,9 +27,10 @@ fun TourPassPreview(
     tourPass: TourPass,
     modifier: Modifier = Modifier,
     isLocal: Boolean = false,
+    isSecondary: Boolean = false,
     isDisabled: Boolean = false,
     onDisabled: () -> Unit = {},
-    onNavigateToDetails: () -> Unit
+    onPress: () -> Unit
 ) {
     Box(
         modifier = modifier
@@ -42,7 +43,7 @@ fun TourPassPreview(
                     onDisabled()
                     return@debouncedClickable
                 }
-                onNavigateToDetails()
+                onPress()
             })
     ) {
         Column(
@@ -70,7 +71,7 @@ fun TourPassPreview(
                             titleContent(tourPass.name, false, false)
                             Text(
                                 style = MaterialTheme.typography.labelLarge,
-                                text = StringUtils.toRelativeString(tourPass.latestPublishedAt)
+                                text = StringUtils.toRelativeString(tourPass.updatedAt)
                             )
                         }
                     } else {

@@ -3,7 +3,7 @@ package com.meninocoiso.bscm.data.remote
 import android.content.Context
 import android.util.Log
 import com.meninocoiso.bscm.data.manager.SecureTokenManager
-import com.meninocoiso.bscm.data.remote.dto.activity.ActivityEntry
+import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionItemRequest
 import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionRequest
 import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionRequest
@@ -116,7 +116,7 @@ class KtorApiClient @Inject constructor(
             // url("https://api-cyb1.onrender.com")
             url {
                 protocol = URLProtocol.HTTP
-                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.11"
+                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.4"
                 port = 8080
             }
             contentType(KtorContentType.Application.Json)
@@ -149,7 +149,7 @@ class KtorApiClient @Inject constructor(
         return body.first
     }
 
-    override suspend fun getChartsById(ids: List<String>): List<Chart> {
+    override suspend fun getChartsByIds(ids: List<String>): List<Chart> {
         return client.get("charts"){
             url {
                 parameters.append("ids", ids.joinToString(","))
@@ -276,7 +276,7 @@ class KtorApiClient @Inject constructor(
         return client.get("users/username/$username").body()
     }
 
-    override suspend fun getUserActivity(id: String, limit: Int?, offset: Int?): List<ActivityEntry> {
+    override suspend fun getUserActivity(id: String, limit: Int?, offset: Int?): List<ActivityItemResponse> {
         return client.get("users/$id/activity") {
             url {
                 limit?.let { parameters.append("limit", it.toString()) }
@@ -308,7 +308,16 @@ class KtorApiClient @Inject constructor(
         return client.get("me/profile").body()
     }
 
-    override suspend fun getMyActivity(limit: Int?, offset: Int?): List<ActivityEntry> {
+    override suspend fun getMyCollections(limit: Int?, offset: Int?): List<Collection> {
+        return client.get("me/collections") {
+            url {
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
+            }
+        }.body()
+    }
+
+    override suspend fun getMyActivity(limit: Int?, offset: Int?): List<ActivityItemResponse> {
         return client.get("me/activity") {
             url {
                 limit?.let { parameters.append("limit", it.toString()) }
@@ -355,8 +364,8 @@ class KtorApiClient @Inject constructor(
         return response.status.isSuccess()
     }
 
-    override suspend fun getUserCollections(limit: Int?, offset: Int?): List<Collection> {
-        return client.get("collections") {
+    override suspend fun getUserCollections(userId: String, limit: Int?, offset: Int?): List<Collection> {
+        return client.get("collections/$userId") {
             url {
                 limit?.let { parameters.append("limit", it.toString()) }
                 offset?.let { parameters.append("offset", it.toString()) }

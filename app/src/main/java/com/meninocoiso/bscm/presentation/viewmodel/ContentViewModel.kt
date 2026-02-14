@@ -283,7 +283,7 @@ class ContentViewModel @Inject constructor(
 
                 // Update the chart in local database
                 val updateResult = chartManager
-                    .updateChart(contentId, OperationOption.DELETE)
+                    .updateChartStatus(contentId, OperationOption.DELETE)
                     .first()
 
                 if (updateResult is ContentResult.Error) {

@@ -98,6 +98,43 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
         )
     }
 
+    fun getItemsById(ids: List<String>): Flow<ContentResult<List<T>>> = flow {
+        emit(ContentResult.Loading)
+        val cachedItems = ids.mapNotNull { memoryStore.contentById.value[it] }
+        if (cachedItems.size == ids.size) {
+            emit(ContentResult.Success(cachedItems))
+            return@flow
+        }
+
+        val localResult = localItemRepository.getItemsById(ids).first()
+        localResult.fold(
+            onSuccess = { items ->
+                Log.d("ContentManager", "Fetched ${items.size} items from local DB for IDs: $ids")
+                memoryStore.upsertContent(items) { it.id }
+                emit(ContentResult.Success(items))
+            },
+            onFailure = {
+                val remoteResult = remoteItemRepository.getItemsById(ids).first()
+                remoteResult.fold(
+                    onSuccess = { items ->
+                        Log.d("ContentManager", "Fetched ${items.size} items from remote for IDs: $ids")
+                        memoryStore.upsertContent(items) { it.id }
+                        coroutineScope.launch { localRepository.insert(items).first() }
+                        emit(ContentResult.Success(items))
+                    },
+                    onFailure = { err ->
+                        emit(
+                            ContentResult.Error(
+                                err.message ?: context.getString(R.string.content_not_found),
+                                err
+                            )
+                        )
+                    }
+                )
+            }
+        )
+    }
+
     fun getSuggestions(query: String): Flow<List<String>> = flow {
         if (query.isBlank()) {
             emit(emptyList())
@@ -123,7 +160,7 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
             )
 
         // 2. Update database (single source of truth)
-        val dbResult = localRepository.updateContent(id, operation).first()
+        val dbResult = localRepository.updateContentStatus(id, operation).first()
         if (dbResult.isFailure || dbResult.getOrNull() != true) {
             return@flow emit(
                 ContentResult.Error(

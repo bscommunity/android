@@ -33,8 +33,9 @@ fun ThemePreview(
     modifier: Modifier = Modifier,
     isLocal: Boolean = false,
     isDisabled: Boolean = false,
+    isSecondary: Boolean = false,
     onDisabled: () -> Unit = {},
-    onNavigateToDetails: () -> Unit
+    onPress: () -> Unit
 ) {
     Box(
         modifier = modifier
@@ -47,7 +48,7 @@ fun ThemePreview(
                     onDisabled()
                     return@debouncedClickable
                 }
-                onNavigateToDetails()
+                onPress()
             })
     ) {
         Column(

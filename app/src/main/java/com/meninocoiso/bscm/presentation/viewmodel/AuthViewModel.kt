@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.repository.AuthRepository
+import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.data.security.DiscordOAuth
 import com.meninocoiso.bscm.domain.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.security.SecureRandom
 import javax.inject.Inject
 
 data class AuthUiState(
@@ -36,6 +38,7 @@ private const val TAG = "AuthViewModel"
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val discordOAuth: DiscordOAuth,
+    private val cacheRepository: CacheRepository,
     @param:ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -80,7 +83,17 @@ class AuthViewModel @Inject constructor(
      */
     suspend fun startDiscordOAuth(): Uri {
         Log.d(TAG, "startDiscordOAuth: Starting OAuth process")
-        return discordOAuth.getDiscordOAuthUri()
+        // generate a random state token and persist it to validate redirects
+        val state = generateStateToken()
+        cacheRepository.setPendingOAuthState(state)
+        return discordOAuth.getDiscordOAuthUri(state)
+    }
+
+    private fun generateStateToken(): String {
+        val secureRandom = SecureRandom()
+        val bytes = ByteArray(16)
+        secureRandom.nextBytes(bytes)
+        return bytes.joinToString("") { "%02x".format(it) }
     }
     
     fun setError(message: String) {
@@ -100,6 +113,10 @@ class AuthViewModel @Inject constructor(
         }
         _uiState.update {
             it.copy(isLoading = false)
+        }
+        // clear any persisted pending state
+        viewModelScope.launch {
+            cacheRepository.clearPendingOAuthState()
         }
     }
 
@@ -135,6 +152,8 @@ class AuthViewModel @Inject constructor(
                                 )
                             }
                             _snackbarEvents.emit(context.getString(R.string.login_success, user.username))
+                            // clear persisted pending state on success
+                            cacheRepository.clearPendingOAuthState()
                         },
                         onFailure = { ex ->
                             Log.e(TAG, "handleAuthCallback: Authentication failed - ${ex.message}", ex)
@@ -142,6 +161,8 @@ class AuthViewModel @Inject constructor(
                             _uiState.update {
                                 it.copy(isLoading = false)
                             }
+                            // clear persisted pending state on failure as well
+                            cacheRepository.clearPendingOAuthState()
                         }
                     )
                 }

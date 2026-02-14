@@ -35,6 +35,7 @@ interface ContentLocalRepository<T, S, Q : ContentQuery> :
 /** Single item access. */
 interface ContentItemRepository<T> {
     suspend fun getItem(id: String): Flow<Result<T>>
+    suspend fun getItemsById(ids: List<String>): Flow<Result<List<T>>>
 }
 
 /** Suggestions/search hints for content. */
@@ -44,7 +45,7 @@ interface ContentSuggestionsRepository {
 
 /** Operations triggered by local install/update/delete actions. */
 interface ContentOperationRepository {
-    suspend fun updateContent(
+    suspend fun updateContentStatus(
         id: String,
         operation: OperationOption = OperationOption.INSTALL,
     ): Flow<Result<Boolean>>

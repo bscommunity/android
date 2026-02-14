@@ -34,8 +34,8 @@ class DiscordOAuth @Inject constructor(
         return Base64.UrlSafe.encode(hash).trimEnd('=')
     }
 
-    // Obtains the OAuth2 flow url with PKCE
-    suspend fun getDiscordOAuthUri(): Uri {
+    // Obtains the OAuth2 flow url with PKCE. Optionally include a state parameter.
+    suspend fun getDiscordOAuthUri(state: String? = null): Uri {
         val clientId = "1329849906868912259"
         val redirectUri = "bscm://auth/callback"
         val scope = "identify email"
@@ -49,16 +49,18 @@ class DiscordOAuth @Inject constructor(
         tokenManager.saveCodeVerifier(codeVerifier)
 
         // Build authorization URL with PKCE parameters
-        val authUrl: Uri = "https://discord.com/api/oauth2/authorize".toUri()
-            .buildUpon()
+        val builder = "https://discord.com/api/oauth2/authorize".toUri().buildUpon()
             .appendQueryParameter("client_id", clientId)
             .appendQueryParameter("redirect_uri", redirectUri)
             .appendQueryParameter("response_type", "code")
             .appendQueryParameter("scope", scope)
             .appendQueryParameter("code_challenge", codeChallenge)
             .appendQueryParameter("code_challenge_method", "S256")
-            .build()
-        
-        return authUrl
+
+        if (!state.isNullOrBlank()) {
+            builder.appendQueryParameter("state", state)
+        }
+
+        return builder.build()
     }
 }

@@ -23,22 +23,31 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
+import com.meninocoiso.bscm.data.remote.dto.activity.ChartActivityItem
+import com.meninocoiso.bscm.data.remote.dto.activity.ThemeActivityItem
+import com.meninocoiso.bscm.data.remote.dto.activity.TourPassActivityItem
+import com.meninocoiso.bscm.domain.enums.ActivityType
 import com.meninocoiso.bscm.domain.result.ContentState
+import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageSize
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
-import com.meninocoiso.bscm.presentation.viewmodel.ActivityItem
+import com.meninocoiso.bscm.presentation.ui.components.preview.ThemePreview
+import com.meninocoiso.bscm.presentation.ui.components.preview.TourPassPreview
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 @Composable
 fun ProfileActivity(
-    items: List<ActivityItem>,
+    items: List<ActivityItemResponse>,
     state: ContentState,
     onFetch: () -> Unit,
     listState: LazyListState,
     isLoadingMore: Boolean,
     hasMore: Boolean,
     onLoadMore: () -> Unit,
+    onNavigateToDetails: OnNavigateToDetails,
     modifier: Modifier = Modifier,
 ) {
     OnScrollLoadMore(
@@ -108,16 +117,16 @@ fun ProfileActivity(
                         horizontalAlignment = Alignment.Start
                     ) {
                         Text(
-                            "@meninocoiso liked ${item.content.size} charts",
+                            text = getActivityText(item),
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            "5 days ago",
+                            text = getRelativeTime(item.createdAt),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        // Chart previews
+                        // Content preview
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -125,18 +134,27 @@ fun ProfileActivity(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             horizontalAlignment = Alignment.Start
                         ) {
-                            item.content.forEach { chart ->
-                                when (chart) {
-                                    is Chart -> {
-                                        ChartPreview(
-                                            chart = chart,
-                                            isSecondary = true,
-                                            onPress = { /* Navigate to chart details */ }
-                                        )
-                                    }
-
-                                    else -> { /* Handle other content types if necessary */
-                                    }
+                            when (item) {
+                                is ChartActivityItem -> {
+                                    ChartPreview(
+                                        chart = item.chart,
+                                        isSecondary = true,
+                                        onPress = { onNavigateToDetails(item.chart) }
+                                    )
+                                }
+                                is ThemeActivityItem -> {
+                                    ThemePreview(
+                                        theme = item.theme,
+                                        isSecondary = true,
+                                        onPress = { onNavigateToDetails(item.theme) }
+                                    )
+                                }
+                                is TourPassActivityItem -> {
+                                    TourPassPreview(
+                                        tourPass = item.tourPass,
+                                        isSecondary = true,
+                                        onPress = { onNavigateToDetails(item.tourPass) }
+                                    )
                                 }
                             }
                         }
@@ -146,8 +164,50 @@ fun ProfileActivity(
 
             pagination(
                 isLoadingMore = isLoadingMore,
-                message = if (hasMore) "Carregando..." else "Fim da lista"
+                message = if (hasMore) "Loading..." else "End of list"
             )
         }
     }
 }
+
+/**
+ * Returns a human-readable description of the activity
+ */
+private fun getActivityText(item: ActivityItemResponse): String {
+    return when (item.type) {
+        ActivityType.CHART_CREATED -> when (item) {
+            is ChartActivityItem -> "Created chart \"${item.chart.track}\""
+            is ThemeActivityItem -> "Created theme \"${item.theme.name}\""
+            is TourPassActivityItem -> "Created tour pass \"${item.tourPass.name}\""
+        }
+        ActivityType.LIKED_CONTENT -> when (item) {
+            is ChartActivityItem -> "Liked chart \"${item.chart.track}\""
+            is ThemeActivityItem -> "Liked theme \"${item.theme.name}\""
+            is TourPassActivityItem -> "Liked tour pass \"${item.tourPass.name}\""
+        }
+        ActivityType.BOOKMARKED_CONTENT -> when (item) {
+            is ChartActivityItem -> "Bookmarked chart \"${item.chart.track}\""
+            is ThemeActivityItem -> "Bookmarked theme \"${item.theme.name}\""
+            is TourPassActivityItem -> "Bookmarked tour pass \"${item.tourPass.name}\""
+        }
+        ActivityType.FOLLOWED_USER -> "Followed a user"
+    }
+}
+
+/**
+ * Returns a relative time string (e.g., "5 days ago")
+ */
+private fun getRelativeTime(createdAt: LocalDateTime): String {
+    val now = LocalDateTime.now()
+    val days = ChronoUnit.DAYS.between(createdAt, now)
+    val hours = ChronoUnit.HOURS.between(createdAt, now)
+    val minutes = ChronoUnit.MINUTES.between(createdAt, now)
+
+    return when {
+        days > 0 -> "$days day${if (days > 1) "s" else ""} ago"
+        hours > 0 -> "$hours hour${if (hours > 1) "s" else ""} ago"
+        minutes > 0 -> "$minutes minute${if (minutes > 1) "s" else ""} ago"
+        else -> "Just now"
+    }
+}
+

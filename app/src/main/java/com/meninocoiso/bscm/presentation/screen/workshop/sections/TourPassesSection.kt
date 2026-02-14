@@ -35,7 +35,7 @@ internal fun TourPassesSection(
             contentId = "1234567890",
             coverUrl = "https://i.imgur.com/WsewcFR.jpeg",
             isFeatured = false,
-            latestPublishedAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now(),
             charts = listOf(),
             contributors = listOf(
                 Contributor(
@@ -44,7 +44,8 @@ internal fun TourPassesSection(
                     roles = listOf(Role.GAMEPLAY),
                     joinedAt = LocalDateTime.now()
                 )
-            )
+            ),
+            createdAt = LocalDateTime.now()
         ),
         TourPass(
             id = "2",
@@ -53,7 +54,7 @@ internal fun TourPassesSection(
             contentId = "123456734890",
             coverUrl = "https://i.imgur.com/jeGiroM.png",
             isFeatured = false,
-            latestPublishedAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now(),
             charts = listOf(),
             contributors = listOf(
                 Contributor(
@@ -62,7 +63,8 @@ internal fun TourPassesSection(
                     roles = listOf(Role.GAMEPLAY),
                     joinedAt = LocalDateTime.now()
                 )
-            )
+            ),
+            createdAt = LocalDateTime.now()
         ),
         TourPass(
             id = "3",
@@ -71,7 +73,7 @@ internal fun TourPassesSection(
             contentId = "123877434890",
             coverUrl = "https://i.imgur.com/HcmI0fW.jpeg",
             isFeatured = false,
-            latestPublishedAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now(),
             charts = listOf(),
             contributors = listOf(
                 Contributor(
@@ -80,7 +82,8 @@ internal fun TourPassesSection(
                     roles = listOf(Role.GAMEPLAY),
                     joinedAt = LocalDateTime.now()
                 )
-            )
+            ),
+            createdAt = LocalDateTime.now()
         )
     )
     
@@ -124,7 +127,7 @@ internal fun TourPassesSection(
                 TourPassPreview(
                     tourPass = tourPass,
                     isDisabled = true,
-                    onNavigateToDetails = {
+                    onPress = {
                         // onNavigateToDetails(chart)
                     },
                 )

@@ -1,5 +1,6 @@
 package com.meninocoiso.bscm.presentation.ui.components.profile
 
+import android.content.Context
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,6 +22,8 @@ import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
+import com.meninocoiso.bscm.util.DateUtils
+import com.meninocoiso.bscm.util.DateUtils.DateFormat
 
 @Composable
 fun BaseContainer(
@@ -97,8 +100,17 @@ fun LazyListScope.pagination(
 
 fun LazyListScope.contentList(
     items: List<CatalogItem>,
-    onNavigateToDetails: OnNavigateToDetails
+    onNavigateToDetails: OnNavigateToDetails,
+    context: Context? = null,
+    vararg formats: DateFormat = arrayOf(DateFormat.DAY)
 ) {
+    val groupedItems = if (context != null) DateUtils.groupItemsByDate(
+        context = context,
+        items = items,
+        getDate = { it.createdAt.toString() },
+        *formats
+    ) else null
+
     items(items.size) { index ->
         when (val item = items[index]) {
             is Chart -> {

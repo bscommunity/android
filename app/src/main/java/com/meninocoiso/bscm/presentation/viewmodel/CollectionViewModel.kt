@@ -3,7 +3,6 @@ package com.meninocoiso.bscm.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.domain.model.CatalogItem
-import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.repository.CollectionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -14,7 +13,7 @@ class CollectionViewModel @Inject constructor(
 	private val collectionRepository: CollectionRepository
 ) : ViewModel() {
 	// Paginated collections
-	val collectionsState = PaginatedContentState<Collection>(
+	val collectionsState = PaginatedContentState(
 		scope = viewModelScope,
 		pageSize = 20,
 		fetchPage = { limit, offset ->

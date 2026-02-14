@@ -100,9 +100,6 @@ class WorkshopViewModel @Inject constructor(
     private var currentSearchQuery by mutableStateOf("")
 
     init {
-        // Load search history
-        getSearchHistory()
-
         // Observe ChartManager feed state (separate from cache state used by updates)
         viewModelScope.launch {
             chartManager.feedState.collect { state ->
@@ -117,14 +114,8 @@ class WorkshopViewModel @Inject constructor(
             // Set initial feed state to loading
             chartManager.updateFeedState(ContentState.Loading)
 
-            // Load cached charts first (without syncing installed status)
+            // Load cached charts first (without searching for external charts yet)
             chartManager.loadCachedCharts(currentSortOption)
-
-            // Load local/external charts independently if permission is available
-            val rootUri = StorageUtils.getFolderUri(context, BEATSTAR_URI)
-            if (rootUri != null) {
-                chartManager.scanLocalCharts(rootUri)
-            }
 
             // Then fetch fresh data
             fetchFeedCharts(false) // Don't show loading again, we already set it above
@@ -132,6 +123,17 @@ class WorkshopViewModel @Inject constructor(
             // Observe scroll state for pagination
             observeScrollState()
         }
+
+        // Load local/external charts independently if permission is available
+        viewModelScope.launch {
+            val rootUri = StorageUtils.getFolderUri(context, BEATSTAR_URI)
+            if (rootUri != null) {
+                chartManager.scanLocalCharts(rootUri)
+            }
+        }
+
+        // Load search history
+        getSearchHistory()
 
         // Observe suggestions
         viewModelScope.launch {

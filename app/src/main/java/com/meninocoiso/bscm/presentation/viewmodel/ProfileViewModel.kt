@@ -3,8 +3,10 @@ package com.meninocoiso.bscm.presentation.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.meninocoiso.bscm.data.remote.ApiClient
-import com.meninocoiso.bscm.data.remote.dto.activity.ActivityEntry
+import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
+import com.meninocoiso.bscm.data.remote.dto.activity.ChartActivityItem
+import com.meninocoiso.bscm.data.remote.dto.activity.ThemeActivityItem
+import com.meninocoiso.bscm.data.remote.dto.activity.TourPassActivityItem
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.model.CatalogItem
@@ -23,39 +25,34 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
-import java.time.ZoneId
-import java.util.Date
 import javax.inject.Inject
 
 private const val TAG = "ProfileViewModel"
-
-data class ActivityItem(val date: Date, val content: List<CatalogItem>)
-
-data class ProfilePaginationState(
-    val isLoadingMoreActivity: Boolean = false,
-    val hasMoreActivity: Boolean = false,
-    val isLoadingMoreLibrary: Boolean = false,
-    val hasMoreLibrary: Boolean = false,
-    val isLoadingMoreLikes: Boolean = false,
-    val hasMoreLikes: Boolean = false,
-    val isLoadingMoreBookmarks: Boolean = false,
-    val hasMoreBookmarks: Boolean = false,
-    val isLoadingMoreCollections: Boolean = false,
-    val hasMoreCollections: Boolean = false
-)
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val meRepository: MeRepository,
-    private val collectionRepository: CollectionRepository,
-    private val apiClient: ApiClient
+    private val collectionRepository: CollectionRepository
 ) : ViewModel() {
     private val activityPagination = PaginationState(pageSize = 20)
     private val libraryPagination = PaginationState(pageSize = 20)
     private val likesPagination = PaginationState(pageSize = 20)
     private val bookmarksPagination = PaginationState(pageSize = 20)
     private val collectionsPagination = PaginationState(pageSize = 20)
+
+    data class ProfilePaginationState(
+        val isLoadingMoreActivity: Boolean = false,
+        val hasMoreActivity: Boolean = false,
+        val isLoadingMoreLibrary: Boolean = false,
+        val hasMoreLibrary: Boolean = false,
+        val isLoadingMoreLikes: Boolean = false,
+        val hasMoreLikes: Boolean = false,
+        val isLoadingMoreBookmarks: Boolean = false,
+        val hasMoreBookmarks: Boolean = false,
+        val isLoadingMoreCollections: Boolean = false,
+        val hasMoreCollections: Boolean = false
+    )
 
     private val _isLoadingMoreActivity = MutableStateFlow(false)
     val isLoadingMoreActivity: StateFlow<Boolean> = _isLoadingMoreActivity.asStateFlow()
@@ -117,8 +114,8 @@ class ProfileViewModel @Inject constructor(
     private val _section2State = MutableStateFlow<ContentState>(ContentState.Loading)
     val section2State: SharedFlow<ContentState> = _section2State.asStateFlow()
 
-    private val _activityContent = MutableStateFlow<List<ActivityItem>>(emptyList())
-    val activityContent: StateFlow<List<ActivityItem>> = _activityContent.asStateFlow()
+    private val _activityContent = MutableStateFlow<List<ActivityItemResponse>>(emptyList())
+    val activityContent: StateFlow<List<ActivityItemResponse>> = _activityContent.asStateFlow()
 
     private val _libraryContent = MutableStateFlow<List<CatalogItem>>(emptyList())
     val libraryContent: StateFlow<List<CatalogItem>> = _libraryContent.asStateFlow()
@@ -157,9 +154,9 @@ class ProfileViewModel @Inject constructor(
                 meRepository.getProfile().onSuccess { header ->
                     profileHeader = header
                     _isFollowing.value = false
-                    Log.d(TAG, "Owner profile loaded successfully for userId: $userId")
+                    Log.d(TAG, "Owner profile loaded successfully")
                 }.onFailure {
-                    Log.e(TAG, "Error loading owner profile for userId: $userId", it)
+                    Log.e(TAG, "Error loading owner profile", it)
                 }
             } else {
                 Log.d(TAG, "Fetching profile header for userId: $userId")
@@ -256,7 +253,7 @@ class ProfileViewModel @Inject constructor(
             )
 
             result.onSuccess { entries ->
-                val items = mapActivityEntries(entries)
+                val items = entries /*mapActivityEntries(entries)*/
                 val updated =
                     if (activityPagination.currentPage == 0) items else _activityContent.value + items
                 _activityContent.value = updated
@@ -419,7 +416,10 @@ class ProfileViewModel @Inject constructor(
     /**
      * Loads more likes for the current user.
      */
-    fun loadMoreLikes() = fetchUserLikes(reset = false)
+    fun loadMoreLikes() = {
+        Log.d(TAG, "Loading more likes")
+        fetchUserLikes(reset = false)
+    }
 
     /**
      * Loads more bookmarks for the current user.
@@ -537,7 +537,7 @@ class ProfileViewModel @Inject constructor(
             updatedBookmarks != null && existingBookmarks != null -> existingBookmarks.copy(items = updatedBookmarks)
             updatedBookmarks != null -> Collection(
                 id = "bookmarks",
-                userId = currentProfileId ?: "",
+                userId = currentProfileId ?: "user",
                 kind = CollectionKind.BOOKMARKS,
                 name = "Bookmarks",
                 isPublic = false,
@@ -558,29 +558,15 @@ class ProfileViewModel @Inject constructor(
     }
 
     /**
-     * Maps activity entries to activity items by fetching corresponding charts.
-     *
-     * @param entries The list of activity entries to map.
-     * @return The list of activity items.
+     * Maps activity entries to catalog items by extracting the embedded content.
+     * Supports ChartActivityItem, ThemeActivityItem, and TourPassActivityItem.
      */
-    private suspend fun mapActivityEntries(entries: List<ActivityEntry>): List<ActivityItem> {
-        val ids = entries.map { it.targetId }.distinct()
-        val charts = if (ids.isNotEmpty()) {
-            Log.d(TAG, "Fetching charts by IDs: $ids")
-            runCatching { apiClient.getChartsById(ids) }.getOrDefault(emptyList())
-        } else {
-            emptyList()
-        }
-        val chartById = charts.associateBy { it.id }
-        val chartByContentId = charts.associateBy { it.contentId ?: it.id }
-
-        return entries.mapNotNull { entry ->
-            val chart = chartById[entry.targetId] ?: chartByContentId[entry.targetId]
-            chart?.let {
-                ActivityItem(
-                    date = Date.from(entry.createdAt.atZone(ZoneId.systemDefault()).toInstant()),
-                    content = listOf(it)
-                )
+    private fun mapActivityEntries(entries: List<ActivityItemResponse>): List<CatalogItem> {
+        return entries.map { entry ->
+            when (entry) {
+                is ChartActivityItem -> entry.chart
+                is ThemeActivityItem -> entry.theme
+                is TourPassActivityItem -> entry.tourPass
             }
         }
     }
@@ -615,4 +601,3 @@ class ProfileViewModel @Inject constructor(
         _section2State.value = ContentState.Loading
     }
 }
-

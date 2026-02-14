@@ -1,23 +1,27 @@
 package com.meninocoiso.bscm.data.repository
 
 import android.util.Log
+import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.remote.ApiClient
-import com.meninocoiso.bscm.data.remote.dto.activity.ActivityEntry
+import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.repository.MeRepository
+import com.meninocoiso.bscm.domain.result.ContentResult
 import jakarta.inject.Inject
+import kotlinx.coroutines.flow.first
 
 private const val TAG = "MeRepositoryRemote"
 
 class MeRepositoryRemote @Inject constructor(
     private val apiClient: ApiClient,
-    private val profileCacheRepository: ProfileCacheRepository
+    private val profileCacheRepository: ProfileCacheRepository,
+    private val chartManager: ChartManager
 ) : MeRepository {
     override suspend fun getProfile(useCache: Boolean): Result<UserProfileResponse> = runCatching {
         // Try cache first if requested
         if (useCache) {
-            profileCacheRepository.getProfile("")?.let { cached ->
+            profileCacheRepository.getProfile()?.let { cached ->
                 Log.d(TAG, "Returning cached profile")
                 return@runCatching cached
             }
@@ -26,17 +30,18 @@ class MeRepositoryRemote @Inject constructor(
         // Fetch from API
         val profile = apiClient.getMyProfile()
 
-        // Cache the result
-        profileCacheRepository.cacheProfile("", profile)
+        // Cache the result (owner)
+        profileCacheRepository.cacheProfile(profile = profile)
 
         profile
     }
 
-    override suspend fun getActivity(limit: Int, offset: Int, useCache: Boolean): Result<List<ActivityEntry>> = runCatching {
+    override suspend fun getActivity(limit: Int, offset: Int, useCache: Boolean): Result<List<ActivityItemResponse>> = runCatching {
         // Only use cache for first page
         if (useCache && offset == 0) {
-            profileCacheRepository.getActivity("")?.let { cached ->
+            profileCacheRepository.getActivity()?.let { cached ->
                 Log.d(TAG, "Returning cached activity")
+                // hydrate charts for each activity entry using chartManager (ensures DB content is used)
                 return@runCatching cached
             }
         }
@@ -55,19 +60,30 @@ class MeRepositoryRemote @Inject constructor(
     override suspend fun getLikes(limit: Int, offset: Int, useCache: Boolean): Result<List<Chart>> = runCatching {
         // Only use cache for first page
         if (useCache && offset == 0) {
-            /*profileCacheRepository.getMyLikes()?.let { cached ->
-                Log.d(TAG, "Returning cached likes (${cached.size} items)")
-                return@runCatching cached
-            }*/
+            profileCacheRepository.getMyLikesIds()?.let { cachedIds ->
+                Log.d(TAG, "Returning cached likes IDs (${cachedIds.size} items)")
+                // Hydrate via chartManager which will read from memory/local/remote as needed
+                val chartsRes = chartManager.getChartsById(cachedIds).first { it !is ContentResult.Loading }
+                when (chartsRes) {
+                    is ContentResult.Success<*> -> return@runCatching (chartsRes as ContentResult.Success<List<Chart>>).data
+                    is ContentResult.Error -> Log.e(TAG, "Error hydrating cached likes: ${chartsRes.message}")
+                    else -> {}
+                }
+            }
         }
 
         // Fetch from API
         val likes = apiClient.getMyLikes(limit, offset)
+        Log.d(TAG, "Fetched ${likes.size} likes from API")
+        // Update local cache
 
-        // Cache only first page
-        /*if (offset == 0) {
-            profileCacheRepository.cacheMyLikes(likes)
-        }*/
+        // Update local cache with latest data for each liked chart (ensures DB content is updated)
+        // chartManager.updateCharts()
+
+        // Cache only first page: store IDs
+        if (offset == 0) {
+            profileCacheRepository.cacheMyLikesIds(likeIds = likes.map { it.id })
+        }
 
         likes
     }
@@ -75,19 +91,25 @@ class MeRepositoryRemote @Inject constructor(
     override suspend fun getBookmarks(limit: Int, offset: Int, useCache: Boolean): Result<List<Chart>> = runCatching {
         // Only use cache for first page
         if (useCache && offset == 0) {
-            /*profileCacheRepository.getMyBookmarks()?.let { cached ->
-                Log.d(TAG, "Returning cached bookmarks (${cached.size} items)")
-                return@runCatching cached
-            }*/
+            profileCacheRepository.getMyBookmarksIds()?.let { cachedIds ->
+                Log.d(TAG, "Returning cached bookmarks IDs (${cachedIds.size} items)")
+                val chartsRes = chartManager.getChartsById(cachedIds).first { it !is ContentResult.Loading }
+                when (chartsRes) {
+                    is ContentResult.Success<*> -> return@runCatching (chartsRes as ContentResult.Success<List<Chart>>).data
+                    is ContentResult.Error -> Log.e(TAG, "Error hydrating cached bookmarks: ${chartsRes.message}")
+                    else -> {}
+                }
+            }
         }
 
         // Fetch from API
         val bookmarks = apiClient.getMyBookmarks(limit, offset)
+        // Update local cache
 
-        // Cache only first page
-        /*if (offset == 0) {
-            profileCacheRepository.cacheMyBookmarks(bookmarks)
-        }*/
+        // Cache only first page: store IDs
+        if (offset == 0) {
+            profileCacheRepository.cacheMyBookmarksIds(bookmarks.map { it.id })
+        }
 
         bookmarks
     }

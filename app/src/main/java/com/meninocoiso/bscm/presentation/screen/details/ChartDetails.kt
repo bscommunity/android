@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.presentation.ui.components.CarouselItem
 import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
@@ -111,12 +112,12 @@ fun ChartDetailsScreen(
     // Simplified dialog state management
     var currentDialog by rememberSaveable { mutableStateOf(ChartDialog.None) }
 
-    var isBookmarked by rememberSaveable { mutableStateOf(chart.isBookmarked) }
-    var isLiked by rememberSaveable { mutableStateOf(chart.isLiked) }
+    var isBookmarked by rememberSaveable { mutableStateOf(chart.bookmarkedAt != null) }
+    var isLiked by rememberSaveable { mutableStateOf(chart.likedAt != null) }
 
     LaunchedEffect(chart.id) {
-        isBookmarked = chart.isBookmarked
-        isLiked = chart.isLiked
+        isBookmarked = chart.bookmarkedAt != null
+        isLiked = chart.likedAt != null
     }
 
     // Collection sheet state
@@ -198,7 +199,7 @@ fun ChartDetailsScreen(
         }
     }
 
-    val lastUpdated = StringUtils.toRelativeString(chart.latestVersion.publishedAt)
+    val lastUpdated = StringUtils.toRelativeString(chart.latestVersion.createdAt)
 
     Scaffold(
         snackbarHost = { SwipeableSnackbarHost(snackbarHostState) },
@@ -501,4 +502,4 @@ fun ChartDetailsScreen(
     }
 }
 
-typealias OnNavigateToDetails = (chart: Chart) -> Unit
+typealias OnNavigateToDetails = (item: CatalogItem) -> Unit?

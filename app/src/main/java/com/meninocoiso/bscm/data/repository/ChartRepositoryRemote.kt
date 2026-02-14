@@ -39,6 +39,20 @@ class ChartRepositoryRemote @Inject constructor(
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
+    override suspend fun getItem(id: String): Flow<Result<Chart>> = flow {
+        val chart = apiClient.getChart(id)
+        emit(Result.success(chart))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }.flowOn(dispatcher)
+    
+    override suspend fun getItemsById(ids: List<String>): Flow<Result<List<Chart>>> = flow {
+        val charts = apiClient.getChartsByIds(ids)
+        emit(Result.success(charts))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }.flowOn(dispatcher)
+    
     override suspend fun getLatestVersionsByChartIds(ids: List<String>): Flow<Result<List<Version>>> =
         flow {
             val charts = apiClient.getLatestVersionsByChartIds(ids)
@@ -54,14 +68,7 @@ class ChartRepositoryRemote @Inject constructor(
         }.catch { e ->
             emit(Result.failure(e))
         }.flowOn(dispatcher)
-
-    override suspend fun getItem(id: String): Flow<Result<Chart>> = flow {
-        val chart = apiClient.getChart(id)
-        emit(Result.success(chart))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
+    
     override suspend fun postAnalytics(
         id: String,
         operation: OperationOption,
