@@ -16,7 +16,7 @@ import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 fun ProfileLibrary(
     items: List<CatalogItem>,
     state: ContentState,
-    onFetch: () -> Unit,
+    onFetch: (reset: Boolean) -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
     listState: LazyListState,
     isLoadingMore: Boolean,

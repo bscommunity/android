@@ -1,6 +1,7 @@
 package com.meninocoiso.bscm.presentation.screen.details
 
 import DownloadEvent
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -116,6 +117,7 @@ fun ChartDetailsScreen(
     var isLiked by rememberSaveable { mutableStateOf(chart.likedAt != null) }
 
     LaunchedEffect(chart.id) {
+        Log.d("ChartDetailsScreen", "Chart ID: ${chart.id}, BookmarkedAt: ${chart.bookmarkedAt}, LikedAt: ${chart.likedAt}")
         isBookmarked = chart.bookmarkedAt != null
         isLiked = chart.likedAt != null
     }

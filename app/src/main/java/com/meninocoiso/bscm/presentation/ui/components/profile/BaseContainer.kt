@@ -29,7 +29,7 @@ import com.meninocoiso.bscm.util.DateUtils.DateFormat
 fun BaseContainer(
     isEmpty: Boolean,
     state: ContentState,
-    onRetry: () -> Unit,
+    onRetry: (reset: Boolean) -> Unit,
     empty: @Composable () -> Unit,
     content: @Composable () -> Unit
 ) {
@@ -48,7 +48,7 @@ fun BaseContainer(
                         title = stringResource(R.string.something_went_wrong),
                         message = stringResource(R.string.check_connection),
                         icon = R.drawable.rounded_emergency_home_24,
-                        onClick = onRetry
+                        onClick = { onRetry(true) }
                     )
                 }
 
@@ -60,7 +60,7 @@ fun BaseContainer(
             PullToRefreshBox(
                 modifier = Modifier.fillMaxSize(),
                 isRefreshing = state is ContentState.Loading,
-                onRefresh = onRetry
+                onRefresh = { onRetry(false) }
             ) {
                 content()
             }

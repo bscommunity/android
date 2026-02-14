@@ -272,7 +272,7 @@ fun ProfileScreen(
                                 ProfileLikes(
                                     items = likedContent,
                                     state = section1State,
-                                    onFetch = { profileViewModel.fetchUserLikes(reset = true) },
+                                    onFetch = { profileViewModel.fetchUserLikes(reset = false) },
                                     onNavigateToDetails = onNavigateToDetails,
                                     listState = likesListState,
                                     isLoadingMore = paginationState.isLoadingMoreLikes,
@@ -287,7 +287,7 @@ fun ProfileScreen(
                                     onFetch = {
                                         profileViewModel.fetchProfileActivity(
                                             userId,
-                                            reset = true
+                                            reset = false
                                         )
                                     },
                                     listState = activityListState,
@@ -306,7 +306,7 @@ fun ProfileScreen(
                                     state = section2State,
                                     onFetch = {
                                         println("Fetching user collections")
-                                        profileViewModel.fetchUserCollections(reset = true)
+                                        profileViewModel.fetchUserCollections(reset = false)
                                     },
                                     onNavigateToDetails = onNavigateToDetails,
                                     onNavigateToCollection = onNavigateToCollection,
@@ -323,7 +323,7 @@ fun ProfileScreen(
                                 ProfileLibrary(
                                     libraryContent,
                                     section2State,
-                                    { profileViewModel.fetchProfileLibrary(userId, reset = true) },
+                                    { profileViewModel.fetchProfileLibrary(userId, reset = false) },
                                     onNavigateToDetails,
                                     listState = libraryListState,
                                     isLoadingMore = paginationState.isLoadingMoreLibrary,

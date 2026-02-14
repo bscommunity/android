@@ -75,10 +75,8 @@ class MeRepositoryRemote @Inject constructor(
         // Fetch from API
         val likes = apiClient.getMyLikes(limit, offset)
         Log.d(TAG, "Fetched ${likes.size} likes from API")
-        // Update local cache
-
-        // Update local cache with latest data for each liked chart (ensures DB content is updated)
-        // chartManager.updateCharts()
+        // Persist likedAt metadata for UI usage
+        chartManager.persistCharts(likes)
 
         // Cache only first page: store IDs
         if (offset == 0) {
@@ -104,7 +102,8 @@ class MeRepositoryRemote @Inject constructor(
 
         // Fetch from API
         val bookmarks = apiClient.getMyBookmarks(limit, offset)
-        // Update local cache
+        // Persist bookmarkedAt metadata for UI usage
+        chartManager.persistCharts(bookmarks)
 
         // Cache only first page: store IDs
         if (offset == 0) {

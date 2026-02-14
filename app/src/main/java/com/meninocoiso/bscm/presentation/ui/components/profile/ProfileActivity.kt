@@ -42,7 +42,7 @@ import java.time.temporal.ChronoUnit
 fun ProfileActivity(
     items: List<ActivityItemResponse>,
     state: ContentState,
-    onFetch: () -> Unit,
+    onFetch: (reset: Boolean) -> Unit,
     listState: LazyListState,
     isLoadingMore: Boolean,
     hasMore: Boolean,

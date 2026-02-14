@@ -29,7 +29,7 @@ fun ProfileCollections(
     modifier: Modifier = Modifier,
     items: List<Collection>,
     state: ContentState,
-    onFetch: () -> Unit,
+    onFetch: (reset: Boolean) -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
     onNavigateToCollection: (collectionId: String) -> Unit,
     bookmarksListState: LazyListState,
@@ -121,7 +121,7 @@ fun ProfileCollections(
 fun ProfileCollectionTabContent(
     items: List<CatalogItem>,
     state: ContentState,
-    onFetch: () -> Unit,
+    onFetch: (reset: Boolean) -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
     listState: LazyListState,
     isLoadingMore: Boolean,
@@ -163,7 +163,7 @@ fun ProfileCollectionTabContent(
 fun ProfileCollectionList(
     items: List<Collection>,
     state: ContentState,
-    onFetch: () -> Unit,
+    onFetch: (reset: Boolean) -> Unit,
     onNavigateToCollection: (collectionId: String) -> Unit,
     listState: LazyListState,
     isLoadingMore: Boolean,

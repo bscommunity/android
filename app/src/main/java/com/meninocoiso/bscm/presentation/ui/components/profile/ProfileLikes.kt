@@ -20,7 +20,7 @@ import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 fun ProfileLikes(
     items: List<CatalogItem>,
     state: ContentState,
-    onFetch: () -> Unit,
+    onFetch: (reset: Boolean) -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
     listState: LazyListState,
     isLoadingMore: Boolean,

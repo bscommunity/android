@@ -43,15 +43,15 @@ class ProfileViewModel @Inject constructor(
 
     data class ProfilePaginationState(
         val isLoadingMoreActivity: Boolean = false,
-        val hasMoreActivity: Boolean = false,
+        val hasMoreActivity: Boolean = true,
         val isLoadingMoreLibrary: Boolean = false,
-        val hasMoreLibrary: Boolean = false,
+        val hasMoreLibrary: Boolean = true,
         val isLoadingMoreLikes: Boolean = false,
-        val hasMoreLikes: Boolean = false,
+        val hasMoreLikes: Boolean = true,
         val isLoadingMoreBookmarks: Boolean = false,
-        val hasMoreBookmarks: Boolean = false,
+        val hasMoreBookmarks: Boolean = true,
         val isLoadingMoreCollections: Boolean = false,
-        val hasMoreCollections: Boolean = false
+        val hasMoreCollections: Boolean = true
     )
 
     private val _isLoadingMoreActivity = MutableStateFlow(false)
@@ -343,6 +343,11 @@ class ProfileViewModel @Inject constructor(
                 _section1State.value = ContentState.Loading
             }
 
+            Log.d(
+                TAG,
+                "Fetching user likes, reset: $reset - currentPage: ${likesPagination.currentPage}, nextOffset: ${likesPagination.nextOffset()}, isLoadingMore: ${likesPagination.isLoadingMore}, hasMore: ${likesPagination.hasMore}"
+            )
+
             if (likesPagination.isLoadingMore || !likesPagination.hasMore) return@launch
 
             likesPagination.isLoadingMore = true
@@ -354,14 +359,21 @@ class ProfileViewModel @Inject constructor(
             )
             val result = meRepository.getLikes(
                 limit = likesPagination.pageSize,
-                offset = likesPagination.nextOffset()
+                offset = likesPagination.nextOffset(),
+                useCache = reset // Only use cache on initial load
             )
 
             result.onSuccess { data ->
                 val updated =
                     if (likesPagination.currentPage == 0) data else _likedContent.value + data
                 _likedContent.value = updated
-                likesPagination.hasMore = data.size >= likesPagination.pageSize
+                likesPagination.hasMore = if (likesPagination.currentPage == 0) {
+                    // If it's the first page, we can use the result size to determine if there's more
+                    data.size >= likesPagination.pageSize
+                } else {
+                    // For subsequent pages, we rely on the API's indication of more data
+                    data.isNotEmpty()
+                }
                 _hasMoreLikes.value = likesPagination.hasMore
                 likesPagination.advancePage()
                 _section1State.value = ContentState.Success
@@ -416,7 +428,7 @@ class ProfileViewModel @Inject constructor(
     /**
      * Loads more likes for the current user.
      */
-    fun loadMoreLikes() = {
+    fun loadMoreLikes() {
         Log.d(TAG, "Loading more likes")
         fetchUserLikes(reset = false)
     }
@@ -455,13 +467,17 @@ class ProfileViewModel @Inject constructor(
         )
 
         result.onSuccess { data ->
-            val existingBookmarksCollection = _collectionContent.value.firstOrNull { it.kind == CollectionKind.BOOKMARKS }
+            val existingBookmarksCollection =
+                _collectionContent.value.firstOrNull { it.kind == CollectionKind.BOOKMARKS }
             val existing = existingBookmarksCollection?.items ?: emptyList()
             val updatedBookmarks = if (bookmarksPagination.currentPage == 0) data else {
                 existing + data
             }
 
-            Log.d("hasMore: ", "${data.size} >= ${bookmarksPagination.pageSize} - dataSize: ${data.size}")
+            Log.d(
+                "hasMore: ",
+                "${data.size} >= ${bookmarksPagination.pageSize} - dataSize: ${data.size}"
+            )
             bookmarksPagination.hasMore = data.size >= bookmarksPagination.pageSize
             _hasMoreBookmarks.value = bookmarksPagination.hasMore
             bookmarksPagination.advancePage()
@@ -545,6 +561,7 @@ class ProfileViewModel @Inject constructor(
                 updatedAt = LocalDateTime.now(),
                 items = updatedBookmarks
             )
+
             else -> existingBookmarks
         }
 

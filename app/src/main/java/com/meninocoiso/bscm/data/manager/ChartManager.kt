@@ -88,6 +88,15 @@ class ChartManager @Inject constructor(
 
     fun getChartsById(ids: List<String>): Flow<ContentResult<List<Chart>>> = contentManager.getItemsById(ids)
 
+    suspend fun persistCharts(charts: List<Chart>) {
+        if (charts.isEmpty()) return
+        memoryStore.addWithoutAffectingFeed(charts, getId = { it.id })
+        val result = localChartRepository.update(charts).first()
+        if (result.isFailure) {
+            Log.e(TAG, "Failed to persist charts", result.exceptionOrNull())
+        }
+    }
+
     fun updateChartStatus(chartId: String, operation: OperationOption): Flow<ContentResult<Chart>> =
         contentManager.updateContent(chartId, operation) { existing, op ->
             when (op) {
