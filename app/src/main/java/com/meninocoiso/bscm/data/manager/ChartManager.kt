@@ -26,7 +26,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -98,26 +97,8 @@ class ChartManager @Inject constructor(
         }
     }
 
-    fun updateChartStatus(chartId: String, operation: OperationOption): Flow<ContentResult<Chart>> =
-        contentManager.updateContent(chartId, operation) { existing, op ->
-            when (op) {
-                OperationOption.INSTALL -> Result.success(existing.copy(isInstalled = true))
-
-                OperationOption.UPDATE -> existing.availableVersion?.let {
-                    Result.success(existing.copy(latestVersion = it, availableVersion = null))
-                } ?: Result.failure(IllegalStateException(context.getString(R.string.no_available_version)))
-
-                OperationOption.DELETE -> Result.success(existing.copy(isInstalled = false))
-
-                OperationOption.LIKE -> Result.success(existing.copy(likedAt = LocalDateTime.now()))
-
-                OperationOption.UNLIKE -> Result.success(existing.copy(likedAt = null))
-
-                OperationOption.BOOKMARK -> Result.success(existing.copy(bookmarkedAt = LocalDateTime.now()))
-
-                OperationOption.UNBOOKMARK -> Result.success(existing.copy(bookmarkedAt = null))
-            }
-        }
+    suspend fun updateContent(chartId: String, operation: OperationOption): ContentResult<Chart> =
+        contentManager.updateContent(chartId, operation)
 
     fun getChart(chartId: String): Flow<ContentResult<Chart>> = contentManager.getItem(chartId)
 

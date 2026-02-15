@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -39,8 +40,12 @@ class ContentMemoryStore<T> @Inject constructor(
         )
 
         // Apply state changes atomically
-        _contentById.value = result.updatedContent
-        _feedOrderIds.value = result.updatedFeedOrder
+        _contentById.update { current ->
+            if (current == result.updatedContent) current else result.updatedContent
+        }
+        _feedOrderIds.update { current ->
+            if (current == result.updatedFeedOrder) current else result.updatedFeedOrder
+        }
 
         // Notify about stale content (database cleanup)
         if (result.staleContent.isNotEmpty()) {
@@ -66,8 +71,12 @@ class ContentMemoryStore<T> @Inject constructor(
         )
 
         // Apply state changes atomically
-        _contentById.value = result.updatedContent
-        _feedOrderIds.value = result.updatedFeedOrder
+        _contentById.update { current ->
+            if (current == result.updatedContent) current else result.updatedContent
+        }
+        _feedOrderIds.update { current ->
+            if (current == result.updatedFeedOrder) current else result.updatedFeedOrder
+        }
     }
 
     fun addWithoutAffectingFeed(
@@ -81,7 +90,9 @@ class ContentMemoryStore<T> @Inject constructor(
             currentContent = _contentById.value,
             getId = getId
         )
-        _contentById.value = updatedMap
+        _contentById.update { current ->
+            if (current == updatedMap) current else updatedMap
+        }
     }
 
     fun upsertContent(items: List<T>, getId: (T) -> String) {
@@ -91,15 +102,17 @@ class ContentMemoryStore<T> @Inject constructor(
             currentContent = _contentById.value,
             getId = getId
         )
-        _contentById.value = updatedMap
+        _contentById.update { current ->
+            if (current == updatedMap) current else updatedMap
+        }
     }
 
     fun setSearchResults(ids: List<String>) {
-        _searchResultIds.value = ids
+        _searchResultIds.update { current -> if (current == ids) current else ids }
     }
 
     fun clearSearchResults() {
-        _searchResultIds.value = emptyList()
+        _searchResultIds.update { current -> if (current.isEmpty()) current else emptyList() }
     }
 
     fun hasFeedItems(): Boolean = _feedOrderIds.value.isNotEmpty()

@@ -29,5 +29,4 @@ interface ChartRemoteRepository :
 /** Local-only chart repository contracts. */
 interface ChartLocalRepository :
     ContentLocalRepository<Chart, SortOption, ChartQuery>,
-    ContentItemRepository<Chart>,
-    ContentOperationRepository
+    ContentItemRepository<Chart>

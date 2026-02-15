@@ -9,6 +9,7 @@ import com.meninocoiso.bscm.domain.repository.ContentAnalyticsRepository
 import com.meninocoiso.bscm.domain.repository.ContentFeedRepository
 import com.meninocoiso.bscm.domain.repository.ContentItemRepository
 import com.meninocoiso.bscm.domain.repository.ContentLocalRepository
+import com.meninocoiso.bscm.domain.repository.ContentOperationPolicy
 import com.meninocoiso.bscm.domain.repository.ContentQuery
 import com.meninocoiso.bscm.domain.repository.ContentSuggestionsRepository
 import com.meninocoiso.bscm.domain.result.ContentResult
@@ -37,6 +38,7 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
     private val localRepository: ContentLocalRepository<T, S, Q>,
     private val remoteItemRepository: ContentItemRepository<T>,
     private val localItemRepository: ContentItemRepository<T>,
+    private val operationPolicy: ContentOperationPolicy<T>,
     private val suggestionsRepository: ContentSuggestionsRepository,
     private val analyticsRepository: ContentAnalyticsRepository,
     private val memoryStore: ContentMemoryStore<T>,
@@ -147,49 +149,35 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
     suspend fun postAnalytics(id: String, operation: OperationOption): Flow<Result<Boolean>> =
         analyticsRepository.postAnalytics(id, operation)
 
-    fun updateContent(
+    suspend fun updateContent(
         id: String,
         operation: OperationOption,
-        mapUpdated: (T, OperationOption) -> Result<T>
-    ): Flow<ContentResult<T>> = flow {
-
-        // 1. Get from memory
+    ): ContentResult<T> {
         val existing = memoryStore.contentById.value[id]
-            ?: return@flow emit(
-                ContentResult.Error(context.getString(R.string.content_not_found))
-            )
-
-        // 2. Update database (single source of truth)
-        val dbResult = localRepository.updateContentStatus(id, operation).first()
-        if (dbResult.isFailure || dbResult.getOrNull() != true) {
-            return@flow emit(
-                ContentResult.Error(
-                    context.getString(R.string.failed_to_update),
-                    dbResult.exceptionOrNull()
-                )
-            )
-        }
-
-        // 3. Apply domain rules
-        val updated = mapUpdated(existing, operation)
-            .getOrElse { err ->
-                return@flow emit(
-                    ContentResult.Error(
-                        err.message ?: context.getString(R.string.failed_to_update),
-                        err
-                    )
+            ?: localItemRepository.getItem(id).first().getOrElse { err ->
+                return ContentResult.Error(
+                    err.message ?: context.getString(R.string.content_not_found),
+                    err
                 )
             }
 
-        // 4. Sync memory cache
-        memoryStore.upsertContent(listOf(updated)) { it.id }
-
-        // 5. Emit updated list
-        emit(
-            ContentResult.Success(
-                updated
+        val updated = operationPolicy.apply(existing, operation).getOrElse { err ->
+            return ContentResult.Error(
+                err.message ?: context.getString(R.string.failed_to_update),
+                err
             )
-        )
+        }
+
+        val dbResult = localRepository.update(listOf(updated)).first()
+        if (dbResult.isFailure || dbResult.getOrNull() != true) {
+            return ContentResult.Error(
+                context.getString(R.string.failed_to_update),
+                dbResult.exceptionOrNull()
+            )
+        }
+
+        memoryStore.upsertContent(listOf(updated)) { it.id }
+        return ContentResult.Success(updated)
     }
 
     suspend fun loadCachedContent(sortBy: S, limit: Int? = null, filters: Q? = null) {

@@ -12,7 +12,6 @@ import com.meninocoiso.bscm.util.StorageUtils
 import com.meninocoiso.bscm.util.StorageUtils.BEATSTAR_URI
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -75,10 +74,9 @@ class DownloadRepository @Inject constructor(
         }
 
         // Update the chart list
-        chartManager.updateChartStatus(contentId, operation).first().let {
-            if (it is ContentResult.Error) {
-                throw Exception(it.message)
-            }
+        val updateResult = chartManager.updateContent(contentId, operation)
+        if (updateResult is ContentResult.Error) {
+            throw Exception(updateResult.message)
         }
     }
 
@@ -97,10 +95,9 @@ class DownloadRepository @Inject constructor(
         }
 
         // Update the chart list
-        chartManager.updateChartStatus(contentId, OperationOption.DELETE).first().let {
-            if (it is ContentResult.Error) {
-                throw Exception(it.message)
-            }
+        val updateResult = chartManager.updateContent(contentId, OperationOption.DELETE)
+        if (updateResult is ContentResult.Error) {
+            throw Exception(updateResult.message)
         }
     }
 }

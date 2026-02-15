@@ -2,11 +2,11 @@ package com.meninocoiso.bscm.di
 
 import android.content.Context
 import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
+import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.repository.InteractionRepositoryImpl
 import com.meninocoiso.bscm.data.repository.ProfileCacheRepository
-import com.meninocoiso.bscm.domain.repository.ChartLocalRepository
 import com.meninocoiso.bscm.domain.repository.InteractionRepository
 import com.meninocoiso.bscm.monitor.NetworkConnectivityMonitor
 import com.meninocoiso.bscm.service.InteractionSyncService
@@ -48,12 +48,12 @@ object InteractionModule {
         apiClient: ApiClient,
         networkMonitor: NetworkConnectivityMonitor,
         profileCacheRepository: ProfileCacheRepository,
-        chartLocalRepository: ChartLocalRepository
+        chartManager: ChartManager
     ): InteractionRepository = InteractionRepositoryImpl(
         queueManager,
         apiClient,
         networkMonitor,
         profileCacheRepository,
-        chartLocalRepository
+        chartManager
     )
 }

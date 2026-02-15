@@ -12,7 +12,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import javax.inject.Inject
@@ -46,7 +45,7 @@ class InteractionRepositoryImpl @Inject constructor(
 
         // 1. Immediately update local database via ChartManager - this is the source of truth
         try {
-            val result = chartManager.updateChartStatus(contentId, OperationOption.LIKE).first()
+            val result = chartManager.updateContent(contentId, OperationOption.LIKE)
             if (result is ContentResult.Success) {
                 Log.d(TAG, "Updated local chart likedAt for contentId: $contentId")
             } else {
@@ -107,7 +106,7 @@ class InteractionRepositoryImpl @Inject constructor(
 
         // 1. Immediately update local database via ChartManager - this is the source of truth
         try {
-            val result = chartManager.updateChartStatus(contentId, OperationOption.UNLIKE).first()
+            val result = chartManager.updateContent(contentId, OperationOption.UNLIKE)
             if (result is ContentResult.Success) {
                 Log.d(TAG, "Cleared local chart likedAt for contentId: $contentId")
             } else {
@@ -185,7 +184,7 @@ class InteractionRepositoryImpl @Inject constructor(
 
         // 1. Immediately update local database via ChartManager - this is the source of truth
         try {
-            val result = chartManager.updateChartStatus(contentId, OperationOption.BOOKMARK).first()
+            val result = chartManager.updateContent(contentId, OperationOption.BOOKMARK)
             if (result is ContentResult.Success) {
                 Log.d(TAG, "Updated local chart bookmarkedAt for contentId: $contentId")
             } else {
@@ -245,7 +244,7 @@ class InteractionRepositoryImpl @Inject constructor(
 
         // 1. Immediately update local database via ChartManager - this is the source of truth
         try {
-            val result = chartManager.updateChartStatus(contentId, OperationOption.UNBOOKMARK).first()
+            val result = chartManager.updateContent(contentId, OperationOption.UNBOOKMARK)
             if (result is ContentResult.Success) {
                 Log.d(TAG, "Cleared local chart bookmarkedAt for contentId: $contentId")
             } else {

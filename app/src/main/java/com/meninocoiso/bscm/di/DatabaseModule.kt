@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.meninocoiso.bscm.data.local.AppDatabase
 import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
+import com.meninocoiso.bscm.data.manager.ChartOperationPolicy
 import com.meninocoiso.bscm.data.manager.ContentManager
 import com.meninocoiso.bscm.data.manager.ContentMemoryStore
 import com.meninocoiso.bscm.data.repository.ChartRepositoryLocal
@@ -14,6 +15,7 @@ import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.repository.ChartLocalRepository
 import com.meninocoiso.bscm.domain.repository.ChartQuery
 import com.meninocoiso.bscm.domain.repository.ChartRemoteRepository
+import com.meninocoiso.bscm.domain.repository.ContentOperationPolicy
 import com.meninocoiso.bscm.domain.repository.ContentFeedRepository
 import com.meninocoiso.bscm.domain.repository.ContentLocalRepository
 import dagger.Module
@@ -67,6 +69,7 @@ object DatabaseModule {
         local: ContentLocalRepository<Chart, SortOption, ChartQuery>,
         remoteItemRepository: ChartRemoteRepository,
         localItemRepository: ChartLocalRepository,
+        operationPolicy: ContentOperationPolicy<Chart>,
         suggestionsRepository: ChartRemoteRepository,
         analyticsRepository: ChartRemoteRepository,
         memoryStore: ContentMemoryStore<Chart>,
@@ -77,11 +80,18 @@ object DatabaseModule {
         localRepository = local,
         remoteItemRepository = remoteItemRepository,
         localItemRepository = localItemRepository,
+        operationPolicy = operationPolicy,
         suggestionsRepository = suggestionsRepository,
         analyticsRepository = analyticsRepository,
         memoryStore = memoryStore,
         coroutineScope = coroutineScope
     )
+
+    @Provides
+    @Singleton
+    fun provideChartOperationPolicy(
+        policy: ChartOperationPolicy
+    ): ContentOperationPolicy<Chart> = policy
 
     /**
      * Provides a singleton instance of AppDatabase.

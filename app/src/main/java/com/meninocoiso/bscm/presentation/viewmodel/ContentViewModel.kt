@@ -26,7 +26,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -283,8 +282,7 @@ class ContentViewModel @Inject constructor(
 
                 // Update the chart in local database
                 val updateResult = chartManager
-                    .updateChartStatus(contentId, OperationOption.DELETE)
-                    .first()
+                    .updateContent(contentId, OperationOption.DELETE)
 
                 if (updateResult is ContentResult.Error) {
                     throw IllegalStateException(updateResult.message)

@@ -1,6 +1,7 @@
 package com.meninocoiso.bscm.domain.repository
 
 import com.meninocoiso.bscm.domain.enums.OperationOption
+import com.meninocoiso.bscm.domain.model.CatalogItem
 import kotlinx.coroutines.flow.Flow
 
 /** Base query marker for content-specific filters. */
@@ -29,8 +30,7 @@ interface ContentCacheRepository<T> {
 /** Local repository that supports feed/search + cache mutations. */
 interface ContentLocalRepository<T, S, Q : ContentQuery> :
     ContentFeedRepository<T, S, Q>,
-    ContentCacheRepository<T>,
-    ContentOperationRepository
+    ContentCacheRepository<T>
 
 /** Single item access. */
 interface ContentItemRepository<T> {
@@ -43,20 +43,12 @@ interface ContentSuggestionsRepository {
     suspend fun getSuggestions(query: String, limit: Int? = null): Flow<Result<List<String>>>
 }
 
-/** Operations triggered by local actions. */
-interface ContentOperationRepository {
-    suspend fun updateContentStatus(
-        id: String,
-        operation: OperationOption = OperationOption.INSTALL,
-    ): Flow<Result<Boolean>>
-    suspend fun updateLikedAt(
-        id: String,
-        likedAt: String? = null,
-    )
-    suspend fun updateBookmarkedAt(
-        id: String,
-        bookmarkedAt: String? = null,
-    )
+/** Content-type specific operation rules for local mutations. */
+interface ContentOperationPolicy<T : CatalogItem> {
+    fun apply(
+        existing: T,
+        operation: OperationOption,
+    ): Result<T>
 }
 
 /** Remote analytics posting. */
