@@ -13,7 +13,12 @@ class CollectionRepositoryRemote @Inject constructor(
     private val apiClient: ApiClient,
     private val profileCacheRepository: ProfileCacheRepository
 ) : CollectionRepository {
-    override suspend fun getUserCollections(userId: String, limit: Int, offset: Int, useCache: Boolean): Result<List<Collection>> = runCatching {
+    override suspend fun getUserCollections(
+        userId: String,
+        limit: Int,
+        offset: Int,
+        useCache: Boolean
+    ): Result<List<Collection>> = runCatching {
         // Only use cache for first page
         if (useCache && offset == 0) {
             profileCacheRepository.getCollections(userId)?.let { cached ->
@@ -37,32 +42,37 @@ class CollectionRepositoryRemote @Inject constructor(
         collections
     }
 
-    override suspend fun createCollection(name: String, isPublic: Boolean): Result<Collection> = runCatching {
-        val collection = apiClient.createCollection(name, isPublic)
+    override suspend fun createCollection(name: String, isPublic: Boolean): Result<Collection> =
+        runCatching {
+            val collection = apiClient.createCollection(name, isPublic)
 
-        // Invalidate cache so it refreshes on next fetch
-        // profileCacheRepository.invalidateMyCollections()
+            // Add to cache immediately so it shows up in UI without needing to refetch
+            profileCacheRepository.addCollection(collection = collection)
 
-        collection
-    }
+            collection
+        }
 
-    override suspend fun updateCollection(collectionId: String, name: String?, isPublic: Boolean?): Result<Unit> =
+    override suspend fun updateCollection(
+        collectionId: String,
+        name: String?,
+        isPublic: Boolean?
+    ): Result<Unit> =
         runCatching {
             apiClient.updateCollection(collectionId, name, isPublic)
 
-            // Invalidate cache so it refreshes on next fetch
-            // profileCacheRepository.invalidateMyCollections()
-
-            Unit
+            // Update cache immediately so it reflects in UI without needing to refetch
+            profileCacheRepository.updateCollection(
+                collectionId = collectionId,
+                name = name,
+                isPublic = isPublic
+            )
         }
 
     override suspend fun deleteCollection(collectionId: String): Result<Unit> = runCatching {
         apiClient.deleteCollection(collectionId)
 
-        // Invalidate cache so it refreshes on next fetch
-        // profileCacheRepository.invalidateMyCollections()
-
-        Unit
+        // Remove from cache immediately so it reflects in UI without needing to refetch
+        profileCacheRepository.removeCollection(collectionId = collectionId)
     }
 
     override suspend fun getCollectionItems(
@@ -74,11 +84,17 @@ class CollectionRepositoryRemote @Inject constructor(
         apiClient.getCollectionItems(collectionId, contentType, limit, offset)
     }
 
-    override suspend fun addItemToCollection(collectionId: String, contentId: String): Result<Unit> = runCatching {
+    override suspend fun addItemToCollection(
+        collectionId: String,
+        contentId: String
+    ): Result<Unit> = runCatching {
         apiClient.addItemToCollection(collectionId, contentId)
     }
 
-    override suspend fun removeItemFromCollection(collectionId: String, contentId: String): Result<Unit> = runCatching {
+    override suspend fun removeItemFromCollection(
+        collectionId: String,
+        contentId: String
+    ): Result<Unit> = runCatching {
         apiClient.removeItemFromCollection(collectionId, contentId)
     }
 }

@@ -1,5 +1,6 @@
 package com.meninocoiso.bscm.domain.repository
 
+import com.meninocoiso.bscm.domain.enums.CollectionKind
 import kotlinx.coroutines.flow.Flow
 
 interface InteractionRepository {
@@ -33,13 +34,25 @@ interface InteractionRepository {
     ): Flow<Result<Unit>>
     
     /**
-     * Queues removing content from a custom collection
+     * Removes content from a custom collection
      */
     suspend fun removeFromCollection(
         contentId: String,
         collectionId: String
     ): Flow<Result<Unit>>
-    
+
+    /**
+     * Changes the collection of content, removing it from the previous collection
+     * (BOOKMARKS) and adding it to the new collection (custom or vice-versa).
+     * This ensures proper queue management by removing the old interaction before
+     * adding the new one.
+     */
+    suspend fun changeContentCollection(
+        contentId: String,
+        targetCollectionId: String,
+        targetCollectionKind: CollectionKind
+    ): Flow<Result<Unit>>
+
     /**
      * Gets the current interaction queue size
      */

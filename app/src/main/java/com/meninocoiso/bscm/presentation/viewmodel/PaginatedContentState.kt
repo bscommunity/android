@@ -67,4 +67,8 @@ class PaginatedContentState<T>(
     fun updateData(transform: (List<T>) -> List<T>) {
         dataSource.updateData(transform)
     }
+
+    fun setState(state: ContentState) {
+        _contentState.value = state
+    }
 }

@@ -46,8 +46,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.domain.state.DownloadState
 import com.meninocoiso.bscm.presentation.ui.components.CarouselItem
 import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
@@ -538,14 +540,26 @@ fun ChartDetailsScreen(
                 }
             },
             collections = userCollections,
-            isLoading = collectionsState is com.meninocoiso.bscm.domain.result.ContentState.Loading,
+            isLoading = collectionsState is ContentState.Loading,
             onCollectionSelected = { collectionId ->
                 currentChart.contentId?.let { contentId ->
-                    interactionViewModel.addToCollection(contentId, collectionId)
+                    // When user selects a collection from the bottom sheet after bookmarking,
+                    // we need to remove the bookmark interaction and add to the custom collection
+                    if (isBookmarked) {
+                        interactionViewModel.changeContentCollection(
+                            contentId = contentId,
+                            targetCollectionId = collectionId,
+                            targetCollectionKind = CollectionKind.USER
+                        )
+                    } else {
+                        // If not bookmarked, just add to collection normally
+                        interactionViewModel.addToCollection(contentId, collectionId)
+                    }
                 }
                 showCollectionSheet = false
             },
             onCreateCollection = { name, isPublic ->
+                // Create collection first, then add content to it once created (handled in CollectionViewModel)
                 collectionViewModel.createCollection(name, isPublic)
             }
         )

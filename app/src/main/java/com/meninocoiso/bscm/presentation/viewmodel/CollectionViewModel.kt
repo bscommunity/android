@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.repository.CollectionRepository
+import com.meninocoiso.bscm.domain.result.ContentState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -73,10 +74,17 @@ class CollectionViewModel @Inject constructor(
 	 */
 	fun createCollection(name: String, isPublic: Boolean) {
 		viewModelScope.launch {
+            collectionsState.setState(ContentState.Loading)
 			val result = collectionRepository.createCollection(name, isPublic)
 			result.onSuccess { collection ->
 				// Prepend new collection to the list
 				collectionsState.updateData { listOf(collection) + it }
+                collectionsState.setState(ContentState.Success)
+
+                // Add the new collection's items to the items state
+                currentCollectionId = collection.id
+                collectionItemsState.updateData { emptyList() } // Clear items for new collection
+                collectionItemsState.setState(ContentState.Success)
 			}
 		}
 	}

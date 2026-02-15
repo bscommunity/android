@@ -1,6 +1,5 @@
 package com.meninocoiso.bscm.presentation.ui.components.profile
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -51,8 +50,7 @@ fun ProfileLikes(
         LazyColumn(
             modifier = modifier,
             state = listState,
-            contentPadding = PaddingValues(vertical = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(vertical = 16.dp),
         ) {
             item {
                 SegmentedButtonUI(

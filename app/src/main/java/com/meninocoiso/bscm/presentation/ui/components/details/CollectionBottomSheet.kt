@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.input.TextFieldLineLimits
@@ -22,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -142,6 +142,7 @@ fun CollectionBottomSheet(
                     )
 
                     1 -> CreateCollectionSection(
+                        isLoading = isLoading,
                         onBackClick = {
                             coroutineScope.launch {
                                 horizontalPagerState.scrollToPage(0)
@@ -226,6 +227,7 @@ fun CollectionsListSection(
 
 @Composable
 fun CreateCollectionSection(
+    isLoading: Boolean,
     onBackClick: () -> Unit = { },
     onSave: (name: String, isPublic: Boolean) -> Unit = { _, _ -> }
 ) {
@@ -258,6 +260,7 @@ fun CreateCollectionSection(
             },
         )
         Button(
+            enabled = !isLoading,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
@@ -267,7 +270,15 @@ fun CreateCollectionSection(
                     onSave(name, isPublic)
                 }
             }) {
-            Text("Save")
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text("Save")
+            }
         }
     }
 }

@@ -2,6 +2,7 @@ package com.meninocoiso.bscm.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.repository.InteractionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -117,6 +118,24 @@ class InteractionViewModel @Inject constructor(
     fun removeFromCollection(contentId: String, collectionId: String) {
         viewModelScope.launch {
             interactionRepository.removeFromCollection(contentId, collectionId)
+                .collect { result ->
+                    result.onSuccess {
+                        updateQueueSize()
+                    }.onFailure {
+                        // Handle error if needed
+                    }
+                }
+        }
+    }
+
+    /**
+     * Changes the collection of content, removing it from the previous collection
+     * (BOOKMARKS) and adding it to the new collection (custom or vice-versa).
+     * This ensures proper queue management and prevents sync conflicts.
+     */
+    fun changeContentCollection(contentId: String, targetCollectionId: String, targetCollectionKind: CollectionKind) {
+        viewModelScope.launch {
+            interactionRepository.changeContentCollection(contentId, targetCollectionId, targetCollectionKind)
                 .collect { result ->
                     result.onSuccess {
                         updateQueueSize()
