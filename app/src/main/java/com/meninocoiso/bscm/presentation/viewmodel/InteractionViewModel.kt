@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.domain.repository.InteractionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,22 +17,23 @@ class InteractionViewModel @Inject constructor(
     
     private val _queueSize = MutableStateFlow(0)
     val queueSize: StateFlow<Int> = _queueSize.asStateFlow()
-    
+
     private val _isProcessing = MutableStateFlow(false)
     val isProcessing: StateFlow<Boolean> = _isProcessing.asStateFlow()
-    
+
     init {
         updateQueueSize()
     }
-    
+
     /**
-     * Likes content using the offline-first queue system
+     * Likes content using the offline-first system.
+     * Updates local database immediately, queues for remote sync.
      */
     fun likeContent(contentId: String) {
         viewModelScope.launch {
             interactionRepository.likeContent(contentId)
                 .collect { result ->
-                    result.onSuccess { 
+                    result.onSuccess {
                         updateQueueSize()
                     }.onFailure { error ->
                         // Handle error if needed
@@ -41,15 +41,16 @@ class InteractionViewModel @Inject constructor(
                 }
         }
     }
-    
+
     /**
-     * Unlikes content using the offline-first queue system
+     * Unlikes content using the offline-first system.
+     * Updates local database immediately, queues for remote sync.
      */
     fun unlikeContent(contentId: String) {
         viewModelScope.launch {
             interactionRepository.unlikeContent(contentId)
                 .collect { result ->
-                    result.onSuccess { 
+                    result.onSuccess {
                         updateQueueSize()
                     }.onFailure { error ->
                         // Handle error if needed
@@ -57,49 +58,36 @@ class InteractionViewModel @Inject constructor(
                 }
         }
     }
-    
-    /**
-     * Gets the like status for content from queued interactions
-     * Returns null if no queued action, true if queued like, false if queued unlike
-     */
-    suspend fun getLikeStatus(contentId: String): Flow<Result<Boolean?>> {
-        return interactionRepository.isContentLiked(contentId)
-    }
 
     /**
-     * Gets the bookmark status for content from queued interactions
-     * Returns null if no queued action, true if queued bookmark, false if queued unbookmark
-     */
-    suspend fun getBookmarkStatus(contentId: String): Flow<Result<Boolean?>> {
-        return interactionRepository.isContentBookmarked(contentId)
-    }
-    
-    /**
-     * Bookmarks content using the offline-first queue system
+     * Bookmarks content using the offline-first system.
+     * Updates local database immediately, queues for remote sync.
      */
     fun bookmarkContent(contentId: String) {
         viewModelScope.launch {
             interactionRepository.bookmarkContent(contentId)
                 .collect { result ->
-                    result.onSuccess { 
+                    result.onSuccess {
                         updateQueueSize()
-                    }.onFailure { error ->
+                    }.onFailure {
                         // Handle error if needed
                     }
+
                 }
         }
     }
-    
+
     /**
-     * Unbookmarks content using the offline-first queue system
+     * Unbookmarks content using the offline-first system.
+     * Updates local database immediately, queues for remote sync.
      */
     fun unbookmarkContent(contentId: String) {
         viewModelScope.launch {
             interactionRepository.unbookmarkContent(contentId)
                 .collect { result ->
-                    result.onSuccess { 
+                    result.onSuccess {
                         updateQueueSize()
-                    }.onFailure { error ->
+                    }.onFailure {
                         // Handle error if needed
                     }
                 }
@@ -118,6 +106,7 @@ class InteractionViewModel @Inject constructor(
                     }.onFailure {
                         // Handle error if needed
                     }
+
                 }
         }
     }
@@ -137,7 +126,7 @@ class InteractionViewModel @Inject constructor(
                 }
         }
     }
-    
+
     /**
      * Manually processes the interaction queue
      */
@@ -152,7 +141,7 @@ class InteractionViewModel @Inject constructor(
             }
         }
     }
-    
+
     /**
      * Updates the current queue size
      */

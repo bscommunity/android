@@ -6,6 +6,7 @@ import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.repository.InteractionRepositoryImpl
 import com.meninocoiso.bscm.data.repository.ProfileCacheRepository
+import com.meninocoiso.bscm.domain.repository.ChartLocalRepository
 import com.meninocoiso.bscm.domain.repository.InteractionRepository
 import com.meninocoiso.bscm.monitor.NetworkConnectivityMonitor
 import com.meninocoiso.bscm.service.InteractionSyncService
@@ -19,33 +20,40 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object InteractionModule {
-    
+
     @Provides
     @Singleton
     fun provideNetworkConnectivityMonitor(
         @ApplicationContext context: Context
     ): NetworkConnectivityMonitor = NetworkConnectivityMonitor(context)
-    
+
     @Provides
     @Singleton
     fun provideInteractionQueueManager(
         queueDao: InteractionQueueDao,
         apiClient: ApiClient,
     ): InteractionQueueManager = InteractionQueueManager(queueDao, apiClient)
-    
+
     @Provides
     @Singleton
     fun provideInteractionSyncService(
         networkMonitor: NetworkConnectivityMonitor,
         queueManager: InteractionQueueManager
     ): InteractionSyncService = InteractionSyncService(networkMonitor, queueManager)
-    
+
     @Provides
     @Singleton
     fun provideInteractionRepository(
         queueManager: InteractionQueueManager,
         apiClient: ApiClient,
         networkMonitor: NetworkConnectivityMonitor,
-        profileCacheRepository: ProfileCacheRepository
-    ): InteractionRepository = InteractionRepositoryImpl(queueManager, apiClient, networkMonitor, profileCacheRepository)
+        profileCacheRepository: ProfileCacheRepository,
+        chartLocalRepository: ChartLocalRepository
+    ): InteractionRepository = InteractionRepositoryImpl(
+        queueManager,
+        apiClient,
+        networkMonitor,
+        profileCacheRepository,
+        chartLocalRepository
+    )
 }

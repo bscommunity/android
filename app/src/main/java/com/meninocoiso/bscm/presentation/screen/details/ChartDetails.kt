@@ -1,7 +1,6 @@
 package com.meninocoiso.bscm.presentation.screen.details
 
 import DownloadEvent
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,6 +48,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.state.DownloadState
 import com.meninocoiso.bscm.presentation.ui.components.CarouselItem
 import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
 import com.meninocoiso.bscm.presentation.ui.components.MediaCarousel
@@ -62,9 +62,8 @@ import com.meninocoiso.bscm.presentation.ui.components.dialog.ReportDialog
 import com.meninocoiso.bscm.presentation.ui.components.layout.Section
 import com.meninocoiso.bscm.presentation.ui.components.layout.SwipeableSnackbarHost
 import com.meninocoiso.bscm.presentation.ui.components.preview.PreviewContributors
-import com.meninocoiso.bscm.domain.state.DownloadState
-import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.CollectionViewModel
+import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.InteractionViewModel
 import com.meninocoiso.bscm.util.LinkingUtils.shareChartLink
 import com.meninocoiso.bscm.util.StringUtils
@@ -102,8 +101,11 @@ fun ChartDetailsScreen(
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // Use the chart parameter directly as the source of truth
+    val currentChart = chart
+
     // Combine states to reduce recompositions
-    val chartState by contentViewModel.getDownloadState(chart.id)
+    val chartState by contentViewModel.getDownloadState(currentChart.id)
         .collectAsStateWithLifecycle()
 
     // UI State
@@ -113,14 +115,32 @@ fun ChartDetailsScreen(
     // Simplified dialog state management
     var currentDialog by rememberSaveable { mutableStateOf(ChartDialog.None) }
 
-    var isBookmarked by rememberSaveable { mutableStateOf(chart.bookmarkedAt != null) }
-    var isLiked by rememberSaveable { mutableStateOf(chart.likedAt != null) }
+    // Optimistic UI state - for instant feedback while local database is being updated
+    var optimisticLiked by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    var optimisticBookmarked by rememberSaveable { mutableStateOf<Boolean?>(null) }
 
-    LaunchedEffect(chart.id) {
-        Log.d("ChartDetailsScreen", "Chart ID: ${chart.id}, BookmarkedAt: ${chart.bookmarkedAt}, LikedAt: ${chart.likedAt}")
-        isBookmarked = chart.bookmarkedAt != null
-        isLiked = chart.likedAt != null
+    // Source-of-truth is the currentChart's local database fields (updated via observation)
+    // Optimistic state takes priority for instant UI feedback, then falls back to chart's actual state
+    val isLiked = optimisticLiked ?: (currentChart.likedAt != null)
+    val isBookmarked = optimisticBookmarked ?: (currentChart.bookmarkedAt != null)
+
+    // Clear optimistic state when currentChart updates with the persisted value
+    LaunchedEffect(currentChart.likedAt) {
+        if (optimisticLiked != null && currentChart.likedAt != null) {
+            optimisticLiked = null
+        }
     }
+
+    LaunchedEffect(currentChart.bookmarkedAt) {
+        if (optimisticBookmarked != null && currentChart.bookmarkedAt != null) {
+            optimisticBookmarked = null
+        }
+    }
+    // Prepare string resources for use in LaunchedEffect
+    val downloadCompleteMsg = stringResource(R.string.download_complete)
+    val errorTitleMsg = stringResource(R.string.error)
+    val chartDeletedMsg = stringResource(R.string.chart_deleted)
+    val failedToDeleteMsg = stringResource(R.string.failed_to_delete_chart)
 
     // Collection sheet state
     val collectionSheetState = rememberModalBottomSheetState()
@@ -140,15 +160,15 @@ fun ChartDetailsScreen(
     // Manage download events
     LaunchedEffect(Unit) {
         // Check status on first load
-        contentViewModel.checkStatus(chart)
+        contentViewModel.checkStatus(currentChart)
 
         contentViewModel.events.collect { event ->
             when (event) {
                 is DownloadEvent.Complete ->
-                    snackbarHostState.showSnackbar(context.getString(R.string.download_complete))
+                    snackbarHostState.showSnackbar(downloadCompleteMsg)
 
                 is DownloadEvent.Error ->
-                    snackbarHostState.showSnackbar(context.getString(R.string.error, event.message))
+                    snackbarHostState.showSnackbar("$errorTitleMsg: ${event.message}")
 
                 else -> { /* Other events don't need UI feedback */
                 }
@@ -165,15 +185,15 @@ fun ChartDetailsScreen(
                 onDismiss = { currentDialog = ChartDialog.None },
                 onConfirm = {
                     contentViewModel.deleteChart(
-                        chart,
+                        currentChart,
                         onSuccess = {
                             scope.launch {
-                                snackbarHostState.showSnackbar(context.getString(R.string.chart_deleted))
+                                snackbarHostState.showSnackbar(chartDeletedMsg)
                             }
                         },
                         onError = {
                             scope.launch {
-                                snackbarHostState.showSnackbar(context.getString(R.string.failed_to_delete_chart))
+                                snackbarHostState.showSnackbar(failedToDeleteMsg)
                             }
                         }
                     )
@@ -192,7 +212,7 @@ fun ChartDetailsScreen(
 
         ChartDialog.ListenTrack -> {
             ListenTrackDialog(
-                streamingLinks = chart.trackUrls,
+                streamingLinks = currentChart.trackUrls,
                 onDismiss = { currentDialog = ChartDialog.None }
             )
         }
@@ -201,7 +221,7 @@ fun ChartDetailsScreen(
         }
     }
 
-    val lastUpdated = StringUtils.toRelativeString(chart.latestVersion.createdAt)
+    val lastUpdated = StringUtils.toRelativeString(currentChart.latestVersion.createdAt)
 
     Scaffold(
         snackbarHost = { SwipeableSnackbarHost(snackbarHostState) },
@@ -224,7 +244,7 @@ fun ChartDetailsScreen(
                 actions = {
                     // Dropdown menu for more options
                     DropdownMenuUI {
-                        if (chart.contentId != null) {
+                        if (currentChart.contentId != null) {
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,
                                 text = { Text(stringResource(R.string.share)) },
@@ -235,7 +255,7 @@ fun ChartDetailsScreen(
                                     )
                                 },
                                 onClick = {
-                                    shareChartLink(context, chart.contentId)
+                                    shareChartLink(context, currentChart.contentId)
                                 }
                             )
                             DropdownMenuItem(
@@ -252,7 +272,7 @@ fun ChartDetailsScreen(
                                 }
                             )
                         }
-                        if (chartState == DownloadState.Installed(chart.id)) {
+                        if (chartState == DownloadState.Installed(currentChart.id)) {
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,
                                 text = { Text(stringResource(R.string.delete_chart)) },
@@ -271,8 +291,8 @@ fun ChartDetailsScreen(
                 },
                 title = {
                     Column {
-                        Text(chart.track, style = MaterialTheme.typography.titleLarge)
-                        Text(chart.artist, style = MaterialTheme.typography.titleMedium)
+                        Text(currentChart.track, style = MaterialTheme.typography.titleLarge)
+                        Text(currentChart.artist, style = MaterialTheme.typography.titleMedium)
                     }
                 }
             )
@@ -280,7 +300,7 @@ fun ChartDetailsScreen(
         bottomBar = {
             BottomAppBar(
                 actions = {
-                    if (chart.trackUrls.isNotEmpty()) {
+                    if (currentChart.trackUrls.isNotEmpty()) {
                         IconButton(onClick = { currentDialog = ChartDialog.ListenTrack }) {
                             Icon(
                                 painter = painterResource(id = R.drawable.baseline_artist_24),
@@ -289,18 +309,20 @@ fun ChartDetailsScreen(
                         }
                     }
 
-                    if (chart.contentId != null) {
+                    if (currentChart.contentId != null) {
                         InteractionButton(
                             R.drawable.baseline_bookmark_24,
                             R.drawable.rounded_bookmark_24,
                             isBookmarked
                         ) { newValue ->
-                            isBookmarked = newValue
+                            // Optimistic UI update
+                            optimisticBookmarked = newValue
+
                             if (newValue) {
                                 scope.launch {
                                     // Queue/send the bookmark interaction
                                     // This ensures it's registered locally even if app closes
-                                    interactionViewModel.bookmarkContent(chart.contentId)
+                                    interactionViewModel.bookmarkContent(currentChart.contentId)
 
                                     // Show snackbar after interaction is queued
                                     val result = snackbarHostState.showSnackbar(
@@ -318,7 +340,7 @@ fun ChartDetailsScreen(
                                     }
                                 }
                             } else {
-                                interactionViewModel.unbookmarkContent(chart.contentId)
+                                interactionViewModel.unbookmarkContent(currentChart.contentId)
                                 snackbarHostState.currentSnackbarData?.dismiss()
                             }
                         }
@@ -327,18 +349,20 @@ fun ChartDetailsScreen(
                             R.drawable.rounded_favorite_24,
                             isLiked
                         ) { newValue ->
-                            isLiked = newValue
+                            // Optimistic UI update
+                            optimisticLiked = newValue
+
                             if (newValue) {
-                                interactionViewModel.likeContent(chart.contentId)
+                                interactionViewModel.likeContent(currentChart.contentId)
                             } else {
-                                interactionViewModel.unlikeContent(chart.contentId)
+                                interactionViewModel.unlikeContent(currentChart.contentId)
                             }
                         }
                     }
                 },
                 floatingActionButton = {
                     DownloadButton(
-                        chart = chart,
+                        chart = currentChart,
                         downloadState = chartState,
                         contentViewModel = contentViewModel,
                     )
@@ -358,60 +382,60 @@ fun ChartDetailsScreen(
             MediaCarousel(
                 listOf(
                     CarouselItem.ImageItem(
-                        imageUrl = chart.coverUrl,
+                        imageUrl = currentChart.coverUrl,
                     ),
                     CarouselItem.VideoItem(
-                        videoId = chart.latestVersion.previewUrl
+                        videoId = currentChart.latestVersion.previewUrl
                     )
                 ),
                 isVideoEnabled = isGameplayVideoPreviewEnabled.value
             )
 
             // Credits
-            if (chart.contributors.isNotEmpty()) {
-                PreviewContributors(chart.contributors)
+            if (currentChart.contributors.isNotEmpty()) {
+                PreviewContributors(currentChart.contributors)
             }
 
             // Stats
             Section(title = stringResource(R.string.stats)) {
                 Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                    if (chart.latestVersion.duration > 0) {
+                    if (currentChart.latestVersion.duration > 0) {
                         StatListItem(
-                            title = "~${StringUtils.toDurationString(chart.latestVersion.duration)}",
+                            title = "~${StringUtils.toDurationString(currentChart.latestVersion.duration)}",
                             icon = R.drawable.outline_access_time_24
                         )
                     }
-                    if (chart.latestVersion.notesAmount > 0) {
+                    if (currentChart.latestVersion.notesAmount > 0) {
                         StatListItem(
                             title = pluralStringResource(
                                 R.plurals.notes_amount,
-                                chart.latestVersion.notesAmount,
-                                chart.latestVersion.notesAmount
+                                currentChart.latestVersion.notesAmount,
+                                currentChart.latestVersion.notesAmount
                             ),
                             icon = R.drawable.rounded_music_note_24
                         )
                     }
-                    if (chart.latestVersion.effectsAmount > 0) {
+                    if (currentChart.latestVersion.effectsAmount > 0) {
                         StatListItem(
                             title = pluralStringResource(
                                 R.plurals.effects_amount,
-                                chart.latestVersion.effectsAmount,
-                                chart.latestVersion.effectsAmount
+                                currentChart.latestVersion.effectsAmount,
+                                currentChart.latestVersion.effectsAmount
                             ),
                             icon = R.drawable.rounded_blur_medium_24
                         )
                     }
-                    if (chart.downloadsSum > 0) {
+                    if (currentChart.downloadsSum > 0) {
                         StatListItem(
                             title = pluralStringResource(
                                 R.plurals.downloads_amount,
-                                chart.downloadsSum,
-                                chart.downloadsSum
+                                currentChart.downloadsSum,
+                                currentChart.downloadsSum
                             ),
                             icon = R.drawable.rounded_download_24
                         )
                     }
-                    if (chart.contentId != null) {
+                    if (currentChart.contentId != null) {
                         StatListItem(
                             title = stringResource(R.string.updated_at, lastUpdated),
                             icon = R.drawable.rounded_calendar_today_24
@@ -421,7 +445,7 @@ fun ChartDetailsScreen(
             }
 
             // Known Issues
-            if (chart.contentId != null) {
+            if (currentChart.contentId != null) {
                 Section(title = stringResource(R.string.known_issues)) {
                     Box(modifier = Modifier.padding(16.dp)) {
                         Column(
@@ -431,7 +455,7 @@ fun ChartDetailsScreen(
                             horizontalAlignment = Alignment.Start,
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            if (chart.latestVersion.knownIssues.isEmpty()) {
+                            if (currentChart.latestVersion.knownIssues.isEmpty()) {
                                 Text(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -440,7 +464,7 @@ fun ChartDetailsScreen(
                                     style = MaterialTheme.typography.bodyLarge
                                 )
                             } else {
-                                chart.latestVersion.knownIssues.forEach {
+                                currentChart.latestVersion.knownIssues.forEach {
                                     Text(
                                         text = "•   ${it.description}",
                                         style = MaterialTheme.typography.bodyLarge
@@ -492,7 +516,7 @@ fun ChartDetailsScreen(
             collections = userCollections,
             isLoading = collectionsState is com.meninocoiso.bscm.domain.result.ContentState.Loading,
             onCollectionSelected = { collectionId ->
-                chart.contentId?.let { contentId ->
+                currentChart.contentId?.let { contentId ->
                     interactionViewModel.addToCollection(contentId, collectionId)
                 }
                 showCollectionSheet = false

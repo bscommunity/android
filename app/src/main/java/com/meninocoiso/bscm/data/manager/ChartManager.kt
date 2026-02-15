@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -107,6 +108,14 @@ class ChartManager @Inject constructor(
                 } ?: Result.failure(IllegalStateException(context.getString(R.string.no_available_version)))
 
                 OperationOption.DELETE -> Result.success(existing.copy(isInstalled = false))
+
+                OperationOption.LIKE -> Result.success(existing.copy(likedAt = LocalDateTime.now()))
+
+                OperationOption.UNLIKE -> Result.success(existing.copy(likedAt = null))
+
+                OperationOption.BOOKMARK -> Result.success(existing.copy(bookmarkedAt = LocalDateTime.now()))
+
+                OperationOption.UNBOOKMARK -> Result.success(existing.copy(bookmarkedAt = null))
             }
         }
 

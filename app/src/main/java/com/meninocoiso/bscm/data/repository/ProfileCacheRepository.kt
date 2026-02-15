@@ -231,6 +231,62 @@ class ProfileCacheRepository @Inject constructor(
         }
     }
 
+    /**
+     * Add a single chart ID to likes cache
+     */
+    suspend fun addLikeId(chartId: String) {
+        try {
+            val currentIds = getMyLikesIds()?.toMutableSet() ?: mutableSetOf()
+            currentIds.add(chartId)
+            cacheMyLikesIds(currentIds.toList())
+            Log.d(TAG, "Added like ID: $chartId to cache")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error adding like ID to cache", e)
+        }
+    }
+
+    /**
+     * Remove a single chart ID from likes cache
+     */
+    suspend fun removeLikeId(chartId: String) {
+        try {
+            val currentIds = getMyLikesIds()?.toMutableSet() ?: mutableSetOf()
+            currentIds.remove(chartId)
+            cacheMyLikesIds(currentIds.toList())
+            Log.d(TAG, "Removed like ID: $chartId from cache")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error removing like ID from cache", e)
+        }
+    }
+
+    /**
+     * Add a single chart ID to bookmarks cache
+     */
+    suspend fun addBookmarkId(chartId: String) {
+        try {
+            val currentIds = getMyBookmarksIds()?.toMutableSet() ?: mutableSetOf()
+            currentIds.add(chartId)
+            cacheMyBookmarksIds(currentIds.toList())
+            Log.d(TAG, "Added bookmark ID: $chartId to cache")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error adding bookmark ID to cache", e)
+        }
+    }
+
+    /**
+     * Remove a single chart ID from bookmarks cache
+     */
+    suspend fun removeBookmarkId(chartId: String) {
+        try {
+            val currentIds = getMyBookmarksIds()?.toMutableSet() ?: mutableSetOf()
+            currentIds.remove(chartId)
+            cacheMyBookmarksIds(currentIds.toList())
+            Log.d(TAG, "Removed bookmark ID: $chartId from cache")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error removing bookmark ID from cache", e)
+        }
+    }
+
     // -------------------- Cache Management --------------------
     suspend fun invalidateProfile(userId: String) {
         dataStore.edit { preferences ->

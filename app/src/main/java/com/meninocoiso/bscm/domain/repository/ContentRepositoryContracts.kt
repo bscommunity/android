@@ -43,12 +43,20 @@ interface ContentSuggestionsRepository {
     suspend fun getSuggestions(query: String, limit: Int? = null): Flow<Result<List<String>>>
 }
 
-/** Operations triggered by local install/update/delete actions. */
+/** Operations triggered by local actions. */
 interface ContentOperationRepository {
     suspend fun updateContentStatus(
         id: String,
         operation: OperationOption = OperationOption.INSTALL,
     ): Flow<Result<Boolean>>
+    suspend fun updateLikedAt(
+        id: String,
+        likedAt: String? = null,
+    )
+    suspend fun updateBookmarkedAt(
+        id: String,
+        bookmarkedAt: String? = null,
+    )
 }
 
 /** Remote analytics posting. */

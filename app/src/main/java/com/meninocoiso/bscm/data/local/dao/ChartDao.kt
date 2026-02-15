@@ -82,6 +82,20 @@ interface ChartDao {
     @Query("UPDATE charts SET latest_version = available_version, available_version = NULL WHERE id = :id")
     fun updateVersion(id: String)
 
+    /**
+     * Update the likedAt timestamp for a chart
+     * Pass null to remove the like
+     */
+    @Query("UPDATE charts SET liked_at = :likedAt WHERE id = :chartId")
+    suspend fun updateLikedAt(chartId: String, likedAt: String?)
+
+    /**
+     * Update the bookmarkedAt timestamp for a chart
+     * Pass null to remove the bookmark
+     */
+    @Query("UPDATE charts SET bookmarked_at = :bookmarkedAt WHERE id = :chartId")
+    suspend fun updateBookmarkedAt(chartId: String, bookmarkedAt: String?)
+
     @Delete
     fun delete(chart: Chart)
 

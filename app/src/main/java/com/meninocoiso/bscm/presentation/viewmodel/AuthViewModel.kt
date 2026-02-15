@@ -10,6 +10,7 @@ import com.meninocoiso.bscm.data.repository.AuthRepository
 import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.data.security.DiscordOAuth
 import com.meninocoiso.bscm.domain.model.User
+import com.meninocoiso.bscm.domain.state.AuthState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -26,12 +27,6 @@ import kotlinx.coroutines.launch
 import java.security.SecureRandom
 import javax.inject.Inject
 
-data class AuthUiState(
-    val isLoading: Boolean = false,
-    val isLoggedIn: Boolean = false,
-    val user: User? = null
-)
-
 private const val TAG = "AuthViewModel"
 
 @HiltViewModel
@@ -42,8 +37,8 @@ class AuthViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(AuthUiState())
-    val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(AuthState())
+    val uiState: StateFlow<AuthState> = _uiState.asStateFlow()
 
     private val _snackbarEvents = MutableSharedFlow<String>()
     val snackbarEvents: SharedFlow<String> = _snackbarEvents.shareIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, replay = 0)
@@ -213,7 +208,7 @@ class AuthViewModel @Inject constructor(
             runCatching { authRepository.logout() }
                 .onSuccess {
                     Log.d(TAG, "logout: Logout successful")
-                    _uiState.update { AuthUiState(isLoading = false) }
+                    _uiState.update { AuthState(isLoading = false) }
                     _snackbarEvents.emit(context.getString(R.string.logout_success))
                 }
                 .onFailure { e ->

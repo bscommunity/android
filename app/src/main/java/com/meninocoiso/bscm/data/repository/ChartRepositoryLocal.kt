@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import java.time.LocalDateTime
 
 private const val TAG = "ChartRepositoryLocal"
 
@@ -93,10 +94,46 @@ class ChartRepositoryLocal(
                 Log.d(TAG, "Deleting chart with id: $id")
                 chartDao.update(id, false)
             }
+            OperationOption.LIKE -> {
+                val now = LocalDateTime.now().toString()
+                Log.d(TAG, "Liking chart with id: $id at $now")
+                chartDao.updateLikedAt(id, now)
+            }
+            OperationOption.UNLIKE -> {
+                Log.d(TAG, "Unliking chart with id: $id")
+                chartDao.updateLikedAt(id, null)
+            }
+            OperationOption.BOOKMARK -> {
+                val now = LocalDateTime.now().toString()
+                Log.d(TAG, "Bookmarking chart with id: $id at $now")
+                chartDao.updateBookmarkedAt(id, now)
+            }
+            OperationOption.UNBOOKMARK -> {
+                Log.d(TAG, "Unbookmarking chart with id: $id")
+                chartDao.updateBookmarkedAt(id, null)
+            }
         }
 
         emit(Result.success(true))
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
+
+    /**
+     * Update the like status for a chart locally
+     * Persists to database immediately
+     */
+    override suspend fun updateLikedAt(id: String, likedAt: String?) {
+        chartDao.updateLikedAt(id, likedAt)
+        Log.d(TAG, "Updated likedAt for chart $id: $likedAt")
+    }
+
+    /**
+     * Update the bookmark status for a chart locally
+     * Persists to database immediately
+     */
+    override suspend fun updateBookmarkedAt(id: String, bookmarkedAt: String?) {
+        chartDao.updateBookmarkedAt(id, bookmarkedAt)
+        Log.d(TAG, "Updated bookmarkedAt for chart $id: $bookmarkedAt")
+    }
 }
