@@ -28,7 +28,8 @@ class InteractionQueueManager @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var batchJob: Job? = null
 
-    init {
+    // Already done by [InteractionSyncService]
+    /*init {
         // Try to process any pending interactions from previous session
         scope.launch {
             try {
@@ -39,7 +40,7 @@ class InteractionQueueManager @Inject constructor(
                 Log.e(TAG, "Error processing pending interactions on init", e)
             }
         }
-    }
+    }*/
 
     /**
      * Queue a like/unlike interaction
