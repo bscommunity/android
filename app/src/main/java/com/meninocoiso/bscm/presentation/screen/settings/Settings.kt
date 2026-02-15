@@ -90,8 +90,8 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
+    user: User?,
     startOAuth: (Uri) -> Unit,
-    cacheUser: User?,
     onFabStateChange: (Boolean) -> Unit,
     onSnackbar: OnSnackbar,
     onNavigateToProfile: (user: User) -> Unit,
@@ -104,18 +104,10 @@ fun SettingsScreen(
     val activity = LocalActivity.current as ComponentActivity
     val authViewModel: AuthViewModel = hiltViewModel(activity)
 
-    val authState by authViewModel.uiState.collectAsStateWithLifecycle()
+    val isLoading by authViewModel.isLoading.collectAsStateWithLifecycle()
 
     // Dialog state
     var showContributorsDialog by rememberSaveable { mutableStateOf(false) }
-
-    // Seed cached user only once while restoring
-    LaunchedEffect(cacheUser) {
-        authViewModel.seedCachedUser(cacheUser)
-    }
-
-    // Defines which user to display 
-    val displayUser = authState.user ?: cacheUser
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -163,7 +155,7 @@ fun SettingsScreen(
 
         // Account Section with Authentication
         SettingsCard(title = stringResource(R.string.account)) {
-            if (authState.isLoggedIn && displayUser != null) {
+            if (user != null) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
                         contentAlignment = Alignment.Center,
@@ -171,7 +163,7 @@ fun SettingsScreen(
                     ) {
                         with(sharedTransitionScope) {
                             Avatar(
-                                url = displayUser.avatarUrl,
+                                url = user.avatarUrl,
                                 size = 128.dp,
                                 modifier = Modifier
                                     .sharedElement(
@@ -185,7 +177,7 @@ fun SettingsScreen(
                                     )
                                     .roundedPolygonClip()
                                     .clickable(
-                                        onClick = { onNavigateToProfile(displayUser) },
+                                        onClick = { onNavigateToProfile(user) },
                                         indication = ripple(
                                             bounded = true,
                                             radius = Dp.Unspecified,
@@ -235,7 +227,7 @@ fun SettingsScreen(
                         modifier = Modifier.settingsCard(),
                         headlineContent = {
                             Text(
-                                text = "Linked to @${displayUser.username}",
+                                text = "Linked to @${user.username}",
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         },
@@ -273,9 +265,9 @@ fun SettingsScreen(
                                     startOAuth(uri)
                                 }
                             },
-                            enabled = !authState.isLoading
+                            enabled = !isLoading
                         ) {
-                            if (authState.isLoading) {
+                            if (isLoading) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(ButtonDefaults.IconSize),
                                     strokeWidth = 2.dp

@@ -29,9 +29,9 @@ class InteractionViewModel @Inject constructor(
      * Likes content using the offline-first system.
      * Updates local database immediately, queues for remote sync.
      */
-    fun likeContent(contentId: String) {
+    fun likeContent(id: String, contentId: String) {
         viewModelScope.launch {
-            interactionRepository.likeContent(contentId)
+            interactionRepository.likeContent(id, contentId)
                 .collect { result ->
                     result.onSuccess {
                         updateQueueSize()
@@ -46,9 +46,9 @@ class InteractionViewModel @Inject constructor(
      * Unlikes content using the offline-first system.
      * Updates local database immediately, queues for remote sync.
      */
-    fun unlikeContent(contentId: String) {
+    fun unlikeContent(id: String, contentId: String) {
         viewModelScope.launch {
-            interactionRepository.unlikeContent(contentId)
+            interactionRepository.unlikeContent(id, contentId)
                 .collect { result ->
                     result.onSuccess {
                         updateQueueSize()
@@ -63,9 +63,9 @@ class InteractionViewModel @Inject constructor(
      * Bookmarks content using the offline-first system.
      * Updates local database immediately, queues for remote sync.
      */
-    fun bookmarkContent(contentId: String) {
+    fun bookmarkContent(id: String, contentId: String) {
         viewModelScope.launch {
-            interactionRepository.bookmarkContent(contentId)
+            interactionRepository.bookmarkContent(id, contentId)
                 .collect { result ->
                     result.onSuccess {
                         updateQueueSize()
@@ -81,9 +81,9 @@ class InteractionViewModel @Inject constructor(
      * Unbookmarks content using the offline-first system.
      * Updates local database immediately, queues for remote sync.
      */
-    fun unbookmarkContent(contentId: String) {
+    fun unbookmarkContent(id: String, contentId: String) {
         viewModelScope.launch {
-            interactionRepository.unbookmarkContent(contentId)
+            interactionRepository.unbookmarkContent(id, contentId)
                 .collect { result ->
                     result.onSuccess {
                         updateQueueSize()

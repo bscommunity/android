@@ -5,10 +5,10 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.BuildConfig
-import com.meninocoiso.bscm.domain.state.MainActivityState
 import com.meninocoiso.bscm.data.repository.AppUpdateRepository
 import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
+import com.meninocoiso.bscm.domain.state.MainActivityState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +41,7 @@ class MainActivityViewModel @Inject constructor(
 		MainActivityState.Success(
 			settings = settings,
 			latestUpdateVersion = latestUpdateVersion,
-			cacheUser = user
+			user = user
 		)
 	}.stateIn(
 		scope = viewModelScope,

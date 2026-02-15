@@ -74,7 +74,7 @@ class DownloadRepository @Inject constructor(
         }
 
         // Update the chart list
-        val updateResult = chartManager.updateContent(contentId, operation)
+        val updateResult = chartManager.updateContentByContentId(contentId, operation)
         if (updateResult is ContentResult.Error) {
             throw Exception(updateResult.message)
         }
@@ -95,7 +95,7 @@ class DownloadRepository @Inject constructor(
         }
 
         // Update the chart list
-        val updateResult = chartManager.updateContent(contentId, OperationOption.DELETE)
+        val updateResult = chartManager.updateContentByContentId(contentId, OperationOption.DELETE)
         if (updateResult is ContentResult.Error) {
             throw Exception(updateResult.message)
         }

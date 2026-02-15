@@ -26,6 +26,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.domain.enums.ThemePreference
 import com.meninocoiso.bscm.domain.state.MainActivityState
 import com.meninocoiso.bscm.domain.state.MainActivityState.Loading
@@ -42,7 +43,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.meninocoiso.bscm.data.repository.CacheRepository
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -176,7 +176,7 @@ class MainActivity : AppCompatActivity() {
                     },
                     user = when (uiState) {
                         Loading -> null
-                        is Success -> (uiState as Success).cacheUser
+                        is Success -> (uiState as Success).user
                     },
                     // Pass a lambda to start OAuth so Composables don't need to know launchers
                     startOAuth = { uri -> startOAuth(uri) },

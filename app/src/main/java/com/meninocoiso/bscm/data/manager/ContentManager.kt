@@ -67,11 +67,6 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
 
     fun getItem(id: String): Flow<ContentResult<T>> = flow {
         emit(ContentResult.Loading)
-        val cached = memoryStore.contentById.value[id]
-        if (cached != null) {
-            emit(ContentResult.Success(cached))
-            return@flow
-        }
 
         val localResult = localItemRepository.getItem(id).first()
         localResult.fold(
@@ -100,6 +95,36 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
         )
     }
 
+    fun getItemByContentId(contentId: String): Flow<ContentResult<T>> = flow {
+        emit(ContentResult.Loading)
+
+        val localResult = localItemRepository.getItemByContentId(contentId).first()
+        localResult.fold(
+            onSuccess = { item ->
+                memoryStore.upsertContent(listOf(item)) { it.id }
+                emit(ContentResult.Success(item))
+            },
+            onFailure = {
+                val remoteResult = remoteItemRepository.getItemByContentId(contentId).first()
+                remoteResult.fold(
+                    onSuccess = { item ->
+                        memoryStore.upsertContent(listOf(item)) { it.id }
+                        coroutineScope.launch { localRepository.insert(listOf(item)).first() }
+                        emit(ContentResult.Success(item))
+                    },
+                    onFailure = { err ->
+                        emit(
+                            ContentResult.Error(
+                                err.message ?: context.getString(R.string.content_not_found),
+                                err
+                            )
+                        )
+                    }
+                )
+            }
+        )
+    }
+
     fun getItemsById(ids: List<String>): Flow<ContentResult<List<T>>> = flow {
         emit(ContentResult.Loading)
         val cachedItems = ids.mapNotNull { memoryStore.contentById.value[it] }
@@ -108,7 +133,7 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
             return@flow
         }
 
-        val localResult = localItemRepository.getItemsById(ids).first()
+        val localResult = localItemRepository.getItems(ids).first()
         localResult.fold(
             onSuccess = { items ->
                 Log.d("ContentManager", "Fetched ${items.size} items from local DB for IDs: $ids")
@@ -116,7 +141,7 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
                 emit(ContentResult.Success(items))
             },
             onFailure = {
-                val remoteResult = remoteItemRepository.getItemsById(ids).first()
+                val remoteResult = remoteItemRepository.getItems(ids).first()
                 remoteResult.fold(
                     onSuccess = { items ->
                         Log.d("ContentManager", "Fetched ${items.size} items from remote for IDs: $ids")

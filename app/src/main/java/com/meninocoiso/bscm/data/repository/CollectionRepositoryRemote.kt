@@ -76,11 +76,9 @@ class CollectionRepositoryRemote @Inject constructor(
 
     override suspend fun addItemToCollection(collectionId: String, contentId: String): Result<Unit> = runCatching {
         apiClient.addItemToCollection(collectionId, contentId)
-        Unit
     }
 
     override suspend fun removeItemFromCollection(collectionId: String, contentId: String): Result<Unit> = runCatching {
         apiClient.removeItemFromCollection(collectionId, contentId)
-        Unit
     }
 }

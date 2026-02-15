@@ -62,6 +62,7 @@ import com.meninocoiso.bscm.presentation.ui.components.dialog.ReportDialog
 import com.meninocoiso.bscm.presentation.ui.components.layout.Section
 import com.meninocoiso.bscm.presentation.ui.components.layout.SwipeableSnackbarHost
 import com.meninocoiso.bscm.presentation.ui.components.preview.PreviewContributors
+import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.CollectionViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.InteractionViewModel
@@ -74,7 +75,7 @@ import kotlinx.serialization.Serializable
 data class ChartDetails(val chart: Chart)
 
 @Serializable
-data class DeepLinkChartDetails(val chartId: String)
+data class DeepLinkChartDetails(val contentId: String)
 
 val DropdownItemPadding = PaddingValues(
     start = 16.dp,
@@ -91,9 +92,11 @@ private enum class ChartDialog { None, Report, DeleteConfirmation, ListenTrack }
 fun ChartDetailsScreen(
     chart: Chart,
     onReturn: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     contentViewModel: ContentViewModel = hiltViewModel(),
     interactionViewModel: InteractionViewModel = hiltViewModel(),
-    collectionViewModel: CollectionViewModel = hiltViewModel()
+    collectionViewModel: CollectionViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
 
@@ -150,6 +153,8 @@ fun ChartDetailsScreen(
 
     val userCollections by collectionViewModel.collections.collectAsStateWithLifecycle()
     val collectionsState by collectionViewModel.collectionsContentState.collectAsStateWithLifecycle()
+
+    val isLoggedIn by authViewModel.isLoggedInFlow.collectAsStateWithLifecycle(false)
 
     LaunchedEffect(showCollectionSheet) {
         if (showCollectionSheet) {
@@ -222,6 +227,21 @@ fun ChartDetailsScreen(
     }
 
     val lastUpdated = StringUtils.toRelativeString(currentChart.latestVersion.createdAt)
+
+    val onUnauthenticated = { message: String ->
+        scope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss() // Dismiss any existing snackbar before showing a new one
+            val result = snackbarHostState.showSnackbar(
+                message,
+                duration = SnackbarDuration.Short,
+                actionLabel = "Connect"
+            )
+
+            if (result == SnackbarResult.ActionPerformed) {
+                onNavigateToSettings()
+            }
+        }
+    }
 
     Scaffold(
         snackbarHost = { SwipeableSnackbarHost(snackbarHostState) },
@@ -313,7 +333,9 @@ fun ChartDetailsScreen(
                         InteractionButton(
                             R.drawable.baseline_bookmark_24,
                             R.drawable.rounded_bookmark_24,
-                            isBookmarked
+                            isBookmarked,
+                            !isLoggedIn,
+                            onDisabled = { onUnauthenticated("Connect to manage favorites") }
                         ) { newValue ->
                             // Optimistic UI update
                             optimisticBookmarked = newValue
@@ -322,7 +344,7 @@ fun ChartDetailsScreen(
                                 scope.launch {
                                     // Queue/send the bookmark interaction
                                     // This ensures it's registered locally even if app closes
-                                    interactionViewModel.bookmarkContent(currentChart.contentId)
+                                    interactionViewModel.bookmarkContent(currentChart.id, currentChart.contentId)
 
                                     // Show snackbar after interaction is queued
                                     val result = snackbarHostState.showSnackbar(
@@ -340,22 +362,24 @@ fun ChartDetailsScreen(
                                     }
                                 }
                             } else {
-                                interactionViewModel.unbookmarkContent(currentChart.contentId)
+                                interactionViewModel.unbookmarkContent(currentChart.id, currentChart.contentId)
                                 snackbarHostState.currentSnackbarData?.dismiss()
                             }
                         }
                         InteractionButton(
                             R.drawable.baseline_favorite_24,
                             R.drawable.rounded_favorite_24,
-                            isLiked
+                            isLiked,
+                            !isLoggedIn,
+                            onDisabled = { onUnauthenticated("Connect to manage likes") }
                         ) { newValue ->
                             // Optimistic UI update
                             optimisticLiked = newValue
 
                             if (newValue) {
-                                interactionViewModel.likeContent(currentChart.contentId)
+                                interactionViewModel.likeContent(currentChart.id, currentChart.contentId)
                             } else {
-                                interactionViewModel.unlikeContent(currentChart.contentId)
+                                interactionViewModel.unlikeContent(currentChart.id, currentChart.contentId)
                             }
                         }
                     }

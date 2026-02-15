@@ -17,6 +17,9 @@ interface ChartDao {
     @Query("SELECT * FROM charts WHERE id = :id")
     fun getChart(id: String): Chart?
 
+    @Query("SELECT * FROM charts WHERE content_id = :contentId LIMIT 1")
+    fun getChartByContentId(contentId: String): Chart?
+
     @Query("SELECT * FROM charts WHERE id IN (:ids)")
     fun getChartsByIds(ids: List<String>): List<Chart>
 

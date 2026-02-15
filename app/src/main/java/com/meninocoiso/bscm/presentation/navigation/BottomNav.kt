@@ -104,9 +104,10 @@ fun BottomNav(
     bottomNavController: NavHostController,
     navController: NavHostController,
     onNavigateToDetails: OnNavigateToDetails,
+    onNavigateToSettings: () -> Unit,
     hasUpdate: Boolean = false,
+    user: User?,
     startOAuth: (Uri) -> Unit,
-    cacheUser: User? = null,
 ) {
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
 
@@ -145,20 +146,6 @@ fun BottomNav(
                     onAction?.invoke()
                 }
             }
-        }
-    }
-    
-    val onNavigateToSettings = {
-        bottomNavController.navigate(route = Route.Settings) {
-            popUpTo(bottomNavController.graph.startDestinationId) {
-                saveState = true
-            }
-            // Avoid multiple copies of the same destination when
-            // reselecting the same item
-            launchSingleTop = true
-
-            // Restore cacheState when reselecting a previously selected item
-            restoreState = true
         }
     }
 
@@ -242,8 +229,8 @@ fun BottomNav(
                 SettingsScreen(
                     sharedTransitionScope = sharedTransitionScope,
                     animatedContentScope = animatedContentScope,
+                    user = user,
                     startOAuth = startOAuth,
-                    cacheUser = cacheUser,
                     onFabStateChange = onFabStateChange,
                     onSnackbar = onSnackbar,
                     onNavigateToProfile = onNavigateToProfile

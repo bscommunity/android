@@ -9,6 +9,7 @@ import com.meninocoiso.bscm.domain.model.auth.AuthResponse
 import com.meninocoiso.bscm.domain.model.auth.RefreshTokenRequest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,10 +21,8 @@ class AuthRepository @Inject constructor(
     private val tokenManager: SecureTokenManager,
     private val cacheRepository: CacheRepository,
 ) {
-    suspend fun isLoggedIn(): Boolean = tokenManager.isLoggedIn()
     fun isLoggedInFlow(): Flow<Boolean> = tokenManager.isLoggedInFlow()
-
-    suspend fun getCachedUser(): User? = cacheRepository.getUser()
+    fun getCachedUserFlow(): Flow<User?> = cacheRepository.cacheFlow.map { it.user }
 
     fun authenticateWithDiscord(code: String, redirectUri: String): Flow<Result<User>> = flow {
             Log.d(TAG, "authenticateWithDiscord: Starting authentication with code=${code.take(10)}..., redirectUri=$redirectUri")
@@ -116,6 +115,10 @@ class AuthRepository @Inject constructor(
             emit(Result.failure(t))
         }
     }
+
+    suspend fun setPendingOAuthState(state: String) = cacheRepository.setPendingOAuthState(state)
+
+    suspend fun clearPendingOAuthState() = cacheRepository.clearPendingOAuthState()
 
     suspend fun logout() {
         tokenManager.clearTokens()

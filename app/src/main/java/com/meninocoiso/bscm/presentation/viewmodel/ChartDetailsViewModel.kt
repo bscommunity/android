@@ -26,8 +26,8 @@ class ChartDetailsViewModel @Inject constructor(
     private val _chart = MutableStateFlow<ContentResult<Chart>>(ContentResult.Loading)
     val chart: StateFlow<ContentResult<Chart>> = _chart.asStateFlow()
 
-    fun fetchChartById(chartId: String?) {
-        if (chartId.isNullOrEmpty()) {
+    fun fetchChartById(contentId: String?) {
+        if (contentId.isNullOrEmpty()) {
             _chart.value = ContentResult.Error(context.getString(R.string.invalid_chart_id))
             return
         }
@@ -36,7 +36,7 @@ class ChartDetailsViewModel @Inject constructor(
             _chart.value = ContentResult.Loading
 
             try {
-                chartManager.getChart(chartId).collect { result ->
+                chartManager.getChartByContentId(contentId).collect { result ->
                     when (result) {
                         is ContentResult.Success -> {
                             Log.d(TAG, "Chart data loaded successfully")

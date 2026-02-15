@@ -7,34 +7,22 @@ interface InteractionRepository {
     /**
      * Queues a like interaction for offline-first processing
      */
-    suspend fun likeContent(contentId: String): Flow<Result<Unit>>
-    
+    suspend fun likeContent(id: String, contentId: String): Flow<Result<Unit>>
+
     /**
      * Queues an unlike interaction for offline-first processing
      */
-    suspend fun unlikeContent(contentId: String): Flow<Result<Unit>>
-    
-    /**
-     * Checks if content is liked (from queued interactions)
-     * Returns null if no queued action, true if queued like, false if queued unlike
-     */
-    suspend fun isContentLiked(contentId: String): Flow<Result<Boolean?>>
+    suspend fun unlikeContent(id: String, contentId: String): Flow<Result<Unit>>
 
     /**
      * Queues a bookmark interaction for offline-first processing
      */
-    suspend fun bookmarkContent(contentId: String): Flow<Result<Unit>>
+    suspend fun bookmarkContent(id: String, contentId: String): Flow<Result<Unit>>
     
     /**
      * Queues an unbookmark interaction for offline-first processing
      */
-    suspend fun unbookmarkContent(contentId: String): Flow<Result<Unit>>
-    
-    /**
-     * Checks if content is bookmarked (from queued interactions)
-     * Returns null if no queued action, true if queued bookmark, false if queued unbookmark
-     */
-    suspend fun isContentBookmarked(contentId: String): Flow<Result<Boolean?>>
+    suspend fun unbookmarkContent(id: String, contentId: String): Flow<Result<Unit>>
 
     /**
      * Queues adding content to a custom collection

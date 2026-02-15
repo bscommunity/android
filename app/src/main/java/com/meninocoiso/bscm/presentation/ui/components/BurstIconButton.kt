@@ -248,9 +248,9 @@ fun BurstIconButton(
     ) {
         visuals.forEach { visual -> visual() }
         IconButton(
-            enabled = enabled,
             onClick = {
                 onClick()
+                if (!enabled) return@IconButton
                 if (!isActive) triggerAnimations()
             }
         ) {

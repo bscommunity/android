@@ -35,7 +35,8 @@ interface ContentLocalRepository<T, S, Q : ContentQuery> :
 /** Single item access. */
 interface ContentItemRepository<T> {
     suspend fun getItem(id: String): Flow<Result<T>>
-    suspend fun getItemsById(ids: List<String>): Flow<Result<List<T>>>
+    suspend fun getItemByContentId(contentId: String): Flow<Result<T>>
+    suspend fun getItems(ids: List<String>): Flow<Result<List<T>>>
 }
 
 /** Suggestions/search hints for content. */

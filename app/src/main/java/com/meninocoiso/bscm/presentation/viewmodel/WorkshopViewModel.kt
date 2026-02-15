@@ -57,6 +57,9 @@ class WorkshopViewModel @Inject constructor(
     val isExplicitAllowed: Flow<Boolean> = settingsRepository.settingsFlow
         .map { it.allowExplicitContent }
 
+    val isAuthenticated: Flow<Boolean> = cacheRepository.cacheFlow
+        .map { it.user != null }
+
     // Updated to use the new ChartManager flows
     val feedCharts: Flow<List<Chart>> = chartManager.feedCharts
     val searchCharts: Flow<List<Chart>> = chartManager.searchCharts

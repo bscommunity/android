@@ -8,6 +8,6 @@ sealed interface MainActivityState {
     data class Success(
         val settings: Settings,
         val latestUpdateVersion: String,
-        val cacheUser: User? = null,
+        val user: User? = null,
     ) : MainActivityState
 }

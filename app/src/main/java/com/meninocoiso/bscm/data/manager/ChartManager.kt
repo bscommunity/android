@@ -97,10 +97,22 @@ class ChartManager @Inject constructor(
         }
     }
 
-    suspend fun updateContent(chartId: String, operation: OperationOption): ContentResult<Chart> =
-        contentManager.updateContent(chartId, operation)
+    suspend fun updateContentById(internalId: String, operation: OperationOption): ContentResult<Chart> =
+        contentManager.updateContent(internalId, operation)
+
+    suspend fun updateContentByContentId(contentId: String, operation: OperationOption): ContentResult<Chart> {
+        val internalId = resolveInternalIdByContentId(contentId).getOrElse { err ->
+            return ContentResult.Error(
+                err.message ?: context.getString(R.string.content_not_found),
+                err
+            )
+        }
+        return contentManager.updateContent(internalId, operation)
+    }
 
     fun getChart(chartId: String): Flow<ContentResult<Chart>> = contentManager.getItem(chartId)
+
+    fun getChartByContentId(contentId: String): Flow<ContentResult<Chart>> = contentManager.getItemByContentId(contentId)
 
     fun getSuggestions(query: String): Flow<List<String>> = contentManager.getSuggestions(query)
 
@@ -197,6 +209,13 @@ class ChartManager @Inject constructor(
                 Log.e(TAG, "Failed to persist installed changes", result.exceptionOrNull())
             }
         }
+    }
+
+    private suspend fun resolveInternalIdByContentId(contentId: String): Result<String> {
+        val fromMemory = memoryStore.contentById.value.values.firstOrNull { it.contentId == contentId }
+        if (fromMemory != null) return Result.success(fromMemory.id)
+
+        return localChartRepository.getItemByContentId(contentId).first().map { it.id }
     }
 
     private fun isLocalOnlyChart(chart: Chart): Boolean = chart.contentId == null

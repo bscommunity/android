@@ -37,10 +37,10 @@ private const val TAG = "SettingsViewModel"
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
+    private val apiClient: ApiClient,
     private val settingsRepository: SettingsRepository,
     private val appUpdateRepository: AppUpdateRepository,
-    private val apiClient: ApiClient,
-    private val cacheRepository: CacheRepository, // Inject CacheRepository
+    private val cacheRepository: CacheRepository,
 ) : ViewModel() {
     /**
      * Expose settings as a StateFlow for reactive UI updates

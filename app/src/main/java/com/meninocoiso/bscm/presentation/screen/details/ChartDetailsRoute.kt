@@ -23,15 +23,16 @@ import com.meninocoiso.bscm.presentation.viewmodel.ChartDetailsViewModel
 
 @Composable
 fun ChartDetailsRoute(
-    chartId: String?,
+    contentId: String?,
     onReturn: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     viewModel: ChartDetailsViewModel = hiltViewModel()
 ) {
     val state by viewModel.chart.collectAsStateWithLifecycle()
 
-    // If we don't have a chart from typed navigation, fetch it using chartId
-    LaunchedEffect(chartId) {
-        viewModel.fetchChartById(chartId)
+    // If we don't have a chart from typed navigation, fetch it using contentId
+    LaunchedEffect(contentId) {
+        viewModel.fetchChartById(contentId)
     }
     
     Scaffold(
@@ -55,7 +56,8 @@ fun ChartDetailsRoute(
                 is ContentResult.Success -> {
                     ChartDetailsScreen(
                         chart = (state as ContentResult.Success<Chart>).data,
-                        onReturn = onReturn
+                        onReturn = onReturn,
+                        onNavigateToSettings = onNavigateToSettings
                     )
                 }
 
@@ -66,7 +68,7 @@ fun ChartDetailsRoute(
                             ?: stringResource(R.string.failed_to_load_chart_details_description),
                         icon = R.drawable.rounded_error_24,
                         onClick = {
-                            viewModel.fetchChartById(chartId)
+                            viewModel.fetchChartById(contentId)
                         },
                         buttonLabel = stringResource(R.string.retry),
                     )

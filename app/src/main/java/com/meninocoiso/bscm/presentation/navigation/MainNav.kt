@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.core.net.toUri
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -40,7 +41,7 @@ object MainRoute
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean, user: User?, intentFlow: Flow<Intent>, ) {
+fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFlow: Flow<Intent>) {
     val navController = rememberNavController()
     val bottomNavController = rememberNavController()
 
@@ -59,9 +60,8 @@ fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean, user: User?, intentFl
                 val url = when (item) {
                     is TourPass -> "https://bscm.dev/tourpass/${item.id}"
                     is Theme -> "https://bscm.dev/theme/${item.id}"
-                    else -> null
                 }
-                url?.let { startOAuth(Uri.parse(it)) }
+                startOAuth(url.toUri())
             }
         }
     }
@@ -70,6 +70,20 @@ fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean, user: User?, intentFl
         navController.navigate(route = Collection(collectionId = collectionId)) {
             // Prevent users from opening multiple collection screens
             launchSingleTop = true
+        }
+    }
+
+    val onNavigateToSettings = {
+        bottomNavController.navigate(route = Route.Settings) {
+            popUpTo(bottomNavController.graph.startDestinationId) {
+                saveState = true
+            }
+            // Avoid multiple copies of the same destination when
+            // reselecting the same item
+            launchSingleTop = true
+
+            // Restore cacheState when reselecting a previously selected item
+            restoreState = true
         }
     }
 
@@ -97,14 +111,18 @@ fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean, user: User?, intentFl
                 // Deep link to chart details
                 composableWithTransitions<DeepLinkChartDetails>(
                     deepLinks = listOf(
-                        navDeepLink { uriPattern = "bscm://chart/{chartId}" }
+                        navDeepLink { uriPattern = "bscm://chart/{contentId}" }
                     )
                 ) { backStackEntry ->
                     val chartDetails: DeepLinkChartDetails = backStackEntry.toRoute()
                     ChartDetailsRoute(
-                        chartId = chartDetails.chartId,
+                        contentId = chartDetails.contentId,
                         onReturn = {
                             navController.navigateUp()
+                        },
+                        onNavigateToSettings = {
+                            navController.navigateUp()
+                            onNavigateToSettings()
                         }
                     )
                 }
@@ -120,6 +138,10 @@ fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean, user: User?, intentFl
                         chart = chartDetails.chart,
                         onReturn = {
                             navController.navigateUp()
+                        },
+                        onNavigateToSettings = {
+                            navController.navigateUp()
+                            onNavigateToSettings()
                         }
                     )
                 }
@@ -169,9 +191,10 @@ fun MainNav(startOAuth: (Uri) -> Unit, hasUpdate: Boolean, user: User?, intentFl
                         bottomNavController,
                         navController,
                         onNavigateToDetails,
+                        onNavigateToSettings,
                         hasUpdate,
+                        user,
                         startOAuth,
-                        user
                     )
                 }
             }

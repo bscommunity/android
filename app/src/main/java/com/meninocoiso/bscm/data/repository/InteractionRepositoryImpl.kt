@@ -40,28 +40,28 @@ class InteractionRepositoryImpl @Inject constructor(
      * @param contentId The ID of the content to like.
      * @return A Flow emitting Result<Unit> indicating success or failure.
      */
-    override suspend fun likeContent(contentId: String): Flow<Result<Unit>> = flow {
+    override suspend fun likeContent(id: String, contentId: String): Flow<Result<Unit>> = flow {
         Log.d(TAG, "Starting likeContent for contentId: $contentId")
 
         // 1. Immediately update local database via ChartManager - this is the source of truth
         try {
-            val result = chartManager.updateContent(contentId, OperationOption.LIKE)
+            val result = chartManager.updateContentById(id, OperationOption.LIKE)
             if (result is ContentResult.Success) {
-                Log.d(TAG, "Updated local chart likedAt for contentId: $contentId")
+                Log.d(TAG, "Updated local chart likedAt for id: $id")
             } else {
-                Log.e(TAG, "Failed to update local chart likedAt for contentId: $contentId. Result: $result")
+                Log.e(TAG, "Failed to update local chart likedAt for id: $id. Result: $result")
                 // We might want to throw or emit failure, but the logic continues to queueing
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to update local chart likedAt for contentId: $contentId", e)
+            Log.e(TAG, "Failed to update local chart likedAt for id: $id", e)
         }
 
         // 2. Update ProfileCacheRepository to include this chart ID in likes
         try {
-            profileCacheRepository.addLikeId(contentId)
-            Log.d(TAG, "Added contentId to profile cache likes: $contentId")
+            profileCacheRepository.addLikeId(id)
+            Log.d(TAG, "Added id to profile cache likes: $id")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to update profile cache for contentId: $contentId", e)
+            Log.e(TAG, "Failed to update profile cache for id: $id", e)
         }
 
         // 3. Queue the action for remote sync
@@ -101,27 +101,27 @@ class InteractionRepositoryImpl @Inject constructor(
      * @param contentId The ID of the content to unlike.
      * @return A Flow emitting Result<Unit> indicating success or failure.
      */
-    override suspend fun unlikeContent(contentId: String): Flow<Result<Unit>> = flow {
+    override suspend fun unlikeContent(id: String, contentId: String): Flow<Result<Unit>> = flow {
         Log.d(TAG, "Starting unlikeContent for contentId: $contentId")
 
         // 1. Immediately update local database via ChartManager - this is the source of truth
         try {
-            val result = chartManager.updateContent(contentId, OperationOption.UNLIKE)
+            val result = chartManager.updateContentById(id, OperationOption.UNLIKE)
             if (result is ContentResult.Success) {
-                Log.d(TAG, "Cleared local chart likedAt for contentId: $contentId")
+                Log.d(TAG, "Cleared local chart likedAt for id: $id")
             } else {
-                 Log.e(TAG, "Failed to clear local chart likedAt for contentId: $contentId. Result: $result")
+                 Log.e(TAG, "Failed to clear local chart likedAt for id: $id. Result: $result")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to clear local chart likedAt for contentId: $contentId", e)
+            Log.e(TAG, "Failed to clear local chart likedAt for id: $id", e)
         }
 
         // 2. Update ProfileCacheRepository to remove this chart ID from likes
         try {
-            profileCacheRepository.removeLikeId(contentId)
-            Log.d(TAG, "Removed contentId from profile cache likes: $contentId")
+            profileCacheRepository.removeLikeId(id)
+            Log.d(TAG, "Removed id from profile cache likes: $id")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to update profile cache for contentId: $contentId", e)
+            Log.e(TAG, "Failed to update profile cache for id: $id", e)
         }
 
         // 3. Queue the action for remote sync
@@ -151,24 +151,6 @@ class InteractionRepositoryImpl @Inject constructor(
     }.flowOn(dispatcher)
 
     /**
-     * Gets the like status for content from the local chart database.
-     * This is the source of truth, not the queue.
-     *
-     * Note: This method is kept for backward compatibility but now reads from the chart database,
-     * not from the queue. ChartDetails should use the chart's likedAt field directly.
-     *
-     * @param contentId The ID of the content to check.
-     * @return A Flow emitting Result<Boolean?> (not used in UI, provided for compatibility).
-     */
-    override suspend fun isContentLiked(contentId: String): Flow<Result<Boolean?>> = flow {
-        Log.d(TAG, "isContentLiked called for contentId: $contentId - reading from local database")
-        emit(Result.success(null)) // UI should use chart.likedAt directly
-    }.catch { e ->
-        Log.e(TAG, "Failed to check if content is liked for contentId: $contentId", e)
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
-    /**
      * Bookmarks the content with the given contentId.
      *
      * 1. Immediately updates the local chart database (bookmarkedAt = now)
@@ -179,27 +161,27 @@ class InteractionRepositoryImpl @Inject constructor(
      * @param contentId The ID of the content to bookmark.
      * @return A Flow emitting Result<Unit> indicating success or failure.
      */
-    override suspend fun bookmarkContent(contentId: String): Flow<Result<Unit>> = flow {
+    override suspend fun bookmarkContent(id: String, contentId: String): Flow<Result<Unit>> = flow {
         Log.d(TAG, "Starting bookmarkContent for contentId: $contentId")
 
         // 1. Immediately update local database via ChartManager - this is the source of truth
         try {
-            val result = chartManager.updateContent(contentId, OperationOption.BOOKMARK)
+            val result = chartManager.updateContentById(id, OperationOption.BOOKMARK)
             if (result is ContentResult.Success) {
-                Log.d(TAG, "Updated local chart bookmarkedAt for contentId: $contentId")
+                Log.d(TAG, "Updated local chart bookmarkedAt for id: $id")
             } else {
-                Log.e(TAG, "Failed to update local chart bookmarkedAt for contentId: $contentId. Result: $result")
+                Log.e(TAG, "Failed to update local chart bookmarkedAt for id: $id. Result: $result")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to update local chart bookmarkedAt for contentId: $contentId", e)
+            Log.e(TAG, "Failed to update local chart bookmarkedAt for id: $id", e)
         }
 
         // 2. Update ProfileCacheRepository to include this chart ID in bookmarks
         try {
-            profileCacheRepository.addBookmarkId(contentId)
-            Log.d(TAG, "Added contentId to profile cache bookmarks: $contentId")
+            profileCacheRepository.addBookmarkId(id)
+            Log.d(TAG, "Added id to profile cache bookmarks: $id")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to update profile cache for contentId: $contentId", e)
+            Log.e(TAG, "Failed to update profile cache for id: $id", e)
         }
 
         // 3. Queue the action for remote sync
@@ -239,27 +221,27 @@ class InteractionRepositoryImpl @Inject constructor(
      * @param contentId The ID of the content to unbookmark.
      * @return A Flow emitting Result<Unit> indicating success or failure.
      */
-    override suspend fun unbookmarkContent(contentId: String): Flow<Result<Unit>> = flow {
+    override suspend fun unbookmarkContent(id: String, contentId: String): Flow<Result<Unit>> = flow {
         Log.d(TAG, "Starting unbookmarkContent for contentId: $contentId")
 
         // 1. Immediately update local database via ChartManager - this is the source of truth
         try {
-            val result = chartManager.updateContent(contentId, OperationOption.UNBOOKMARK)
+            val result = chartManager.updateContentById(id, OperationOption.UNBOOKMARK)
             if (result is ContentResult.Success) {
-                Log.d(TAG, "Cleared local chart bookmarkedAt for contentId: $contentId")
+                Log.d(TAG, "Cleared local chart bookmarkedAt for id: $id")
             } else {
-                Log.e(TAG, "Failed to clear local chart bookmarkedAt for contentId: $contentId. Result: $result")
+                Log.e(TAG, "Failed to clear local chart bookmarkedAt for id: $id. Result: $result")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to clear local chart bookmarkedAt for contentId: $contentId", e)
+            Log.e(TAG, "Failed to clear local chart bookmarkedAt for id: $id", e)
         }
 
         // 2. Update ProfileCacheRepository to remove this chart ID from bookmarks
         try {
-            profileCacheRepository.removeBookmarkId(contentId)
-            Log.d(TAG, "Removed contentId from profile cache bookmarks: $contentId")
+            profileCacheRepository.removeBookmarkId(id)
+            Log.d(TAG, "Removed id from profile cache bookmarks: $id")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to update profile cache for contentId: $contentId", e)
+            Log.e(TAG, "Failed to update profile cache for id: $id", e)
         }
 
         // 3. Queue the action for remote sync
@@ -285,24 +267,6 @@ class InteractionRepositoryImpl @Inject constructor(
         emit(Result.success(Unit))
     }.catch { e ->
         Log.e(TAG, "Unexpected error in unbookmarkContent for contentId: $contentId", e)
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
-    /**
-     * Gets the bookmark status for content from the local chart database.
-     * This is the source of truth, not the queue.
-     *
-     * Note: This method is kept for backward compatibility but now reads from the chart database,
-     * not from the queue. ChartDetails should use the chart's bookmarkedAt field directly.
-     *
-     * @param contentId The ID of the content to check.
-     * @return A Flow emitting Result<Boolean?> (not used in UI, provided for compatibility).
-     */
-    override suspend fun isContentBookmarked(contentId: String): Flow<Result<Boolean?>> = flow {
-        Log.d(TAG, "isContentBookmarked called for contentId: $contentId - reading from local database")
-        emit(Result.success(null)) // UI should use chart.bookmarkedAt directly
-    }.catch { e ->
-        Log.e(TAG, "Failed to check if content is bookmarked for contentId: $contentId", e)
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
