@@ -208,9 +208,6 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    /** Helper to extract shrunk version name (removes suffix after last '-') */
-    fun shrunkVersion(version: String): String = version.substringBeforeLast("-")
-
     fun downloadUpdate(version: String) {
         Log.d(TAG, "Downloading update for version: $version")
 

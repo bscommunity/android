@@ -8,12 +8,14 @@ import com.meninocoiso.bscm.data.remote.dto.activity.ChartActivityItem
 import com.meninocoiso.bscm.data.remote.dto.activity.ThemeActivityItem
 import com.meninocoiso.bscm.data.remote.dto.activity.TourPassActivityItem
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
+import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.repository.CollectionRepository
 import com.meninocoiso.bscm.domain.repository.MeRepository
 import com.meninocoiso.bscm.domain.repository.ProfileRepository
+import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.ContentState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,10 +33,14 @@ private const val TAG = "ProfileViewModel"
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val profileRepository: ProfileRepository,
     private val meRepository: MeRepository,
-    private val collectionRepository: CollectionRepository
+    private val profileRepository: ProfileRepository,
+    private val collectionRepository: CollectionRepository,
+    private val cacheRepository: CacheRepository,
 ) : ViewModel() {
+    private val _profile = MutableStateFlow<ContentResult<UserProfileResponse>>(ContentResult.Loading)
+    val profile: StateFlow<ContentResult<UserProfileResponse>> = _profile.asStateFlow()
+
     private val activityPagination = PaginationState(pageSize = 20)
     private val libraryPagination = PaginationState(pageSize = 20)
     private val likesPagination = PaginationState(pageSize = 20)
@@ -126,46 +132,46 @@ class ProfileViewModel @Inject constructor(
     private val _collectionContent = MutableStateFlow<List<Collection>>(emptyList())
     val collectionContent: StateFlow<List<Collection>> = _collectionContent.asStateFlow()
 
-    private val _isFollowing = MutableStateFlow(false)
-    val isFollowing: StateFlow<Boolean> = _isFollowing.asStateFlow()
+    private val _isFollowingState = MutableStateFlow(false)
+    val isFollowingState: StateFlow<Boolean> = _isFollowingState.asStateFlow()
 
-    private var currentProfileId: String? = null
-    private var isOwnerProfile: Boolean = false
-    private var profileHeader: UserProfileResponse? = null
+    private val _isOwner = MutableStateFlow(false)
+    val isOwner: StateFlow<Boolean> = _isOwner.asStateFlow()
 
     /**
-     * Loads the profile for the given user ID. If it's the owner's profile, fetches from MeRepository,
-     * otherwise from ProfileRepository. Resets all states if the profile changes.
+     * Loads the profile for the given user ID.
      *
-     * @param userId The ID of the user whose profile to load.
-     * @param isOwner Whether the profile belongs to the current user.
+     * @param username The username of the profile to load
      */
-    fun loadProfile(userId: String, isOwner: Boolean) {
-        if (currentProfileId == userId && isOwnerProfile == isOwner) return
-
-        currentProfileId = userId
-        isOwnerProfile = isOwner
-
+    fun loadProfile(username: String?) {
         resetAll()
+        _profile.value = ContentResult.Loading
 
         viewModelScope.launch {
+            val currentUser = cacheRepository.getUser()
+            val isOwner = username.isNullOrBlank() || currentUser?.username == username
+
+            _isOwner.value = isOwner
+
             if (isOwner) {
                 Log.d(TAG, "Fetching owner profile")
-                meRepository.getProfile().onSuccess { header ->
-                    profileHeader = header
-                    _isFollowing.value = false
+                meRepository.getProfile().onSuccess { profile ->
+                    _profile.value = ContentResult.Success(profile)
+                    _isFollowingState.value = false
                     Log.d(TAG, "Owner profile loaded successfully")
                 }.onFailure {
+                    _profile.value = ContentResult.Error(it.message ?: "Failed to load profile")
                     Log.e(TAG, "Error loading owner profile", it)
                 }
             } else {
-                Log.d(TAG, "Fetching profile header for userId: $userId")
-                profileRepository.getProfileHeader(userId).onSuccess { header ->
-                    profileHeader = header
-                    _isFollowing.value = header.isFollowing ?: false
-                    Log.d(TAG, "Profile header loaded successfully for userId: $userId")
+                Log.d(TAG, "Fetching profile header for: $username")
+                profileRepository.getProfileHeader(username).onSuccess { profile ->
+                    _profile.value = ContentResult.Success(profile)
+                    _isFollowingState.value = profile.isFollowing == true
+                    Log.d(TAG, "Profile header loaded successfully for: $username")
                 }.onFailure {
-                    Log.e(TAG, "Error loading profile header for userId: $userId", it)
+                    _profile.value = ContentResult.Error(it.message ?: "Failed to load profile")
+                    Log.e(TAG, "Error loading profile header for: $username", it)
                 }
             }
         }
@@ -204,10 +210,8 @@ class ProfileViewModel @Inject constructor(
      * @param userId The ID of the user to follow or unfollow.
      */
     fun toggleFollow(userId: String) {
-        if (isOwnerProfile) return
-
         viewModelScope.launch {
-            val shouldFollow = !_isFollowing.value
+            val shouldFollow = !_isFollowingState.value
             val result = if (shouldFollow) {
                 Log.d(TAG, "Following user: $userId")
                 profileRepository.followUser(userId)
@@ -216,7 +220,7 @@ class ProfileViewModel @Inject constructor(
                 profileRepository.unfollowUser(userId)
             }
             result.onSuccess {
-                _isFollowing.value = shouldFollow
+                _isFollowingState.value = shouldFollow
                 Log.d(TAG, "Follow status toggled to $shouldFollow for userId: $userId")
             }.onFailure {
                 Log.e(TAG, "Error toggling follow for userId: $userId", it)
@@ -553,7 +557,7 @@ class ProfileViewModel @Inject constructor(
             updatedBookmarks != null && existingBookmarks != null -> existingBookmarks.copy(items = updatedBookmarks)
             updatedBookmarks != null -> Collection(
                 id = "bookmarks",
-                userId = currentProfileId ?: "user",
+                userId = _profile.value.let { if (it is ContentResult.Success) it.data.user.id else "user" },
                 kind = CollectionKind.BOOKMARKS,
                 name = "Bookmarks",
                 isPublic = false,

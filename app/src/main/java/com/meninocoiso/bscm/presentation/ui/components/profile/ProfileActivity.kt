@@ -27,7 +27,6 @@ import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.activity.ChartActivityItem
 import com.meninocoiso.bscm.data.remote.dto.activity.ThemeActivityItem
 import com.meninocoiso.bscm.data.remote.dto.activity.TourPassActivityItem
-import com.meninocoiso.bscm.domain.enums.ActivityType
 import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageSize
@@ -63,7 +62,7 @@ fun ProfileActivity(
         onRetry = onFetch,
         empty = {
             StatusMessageUI(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(top = 36.dp),
                 size = StatusMessageSize.Medium,
                 message = "No recent activity",
                 icon = R.drawable.rounded_update_disabled_24
@@ -174,8 +173,9 @@ fun ProfileActivity(
  * Returns a human-readable description of the activity
  */
 private fun getActivityText(item: ActivityItemResponse): String {
-    return when (item.type) {
-        ActivityType.CHART_CREATED -> when (item) {
+    return "teste"
+    /*return when (item.type) {
+        ActivityType.CREATED_CHART -> when (item) {
             is ChartActivityItem -> "Created chart \"${item.chart.track}\""
             is ThemeActivityItem -> "Created theme \"${item.theme.name}\""
             is TourPassActivityItem -> "Created tour pass \"${item.tourPass.name}\""
@@ -191,7 +191,7 @@ private fun getActivityText(item: ActivityItemResponse): String {
             is TourPassActivityItem -> "Bookmarked tour pass \"${item.tourPass.name}\""
         }
         ActivityType.FOLLOWED_USER -> "Followed a user"
-    }
+    }*/
 }
 
 /**

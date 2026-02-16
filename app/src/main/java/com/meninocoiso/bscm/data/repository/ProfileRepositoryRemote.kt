@@ -18,20 +18,20 @@ class ProfileRepositoryRemote @Inject constructor(
     private val profileCacheRepository: ProfileCacheRepository,
     private val chartManager: ChartManager
 ) : ProfileRepository {
-    override suspend fun getProfileHeader(userId: String, useCache: Boolean): Result<UserProfileResponse> = runCatching {
+    override suspend fun getProfileHeader(username: String, useCache: Boolean): Result<UserProfileResponse> = runCatching {
         // Try cache first if requested
         if (useCache) {
-            profileCacheRepository.getProfile(userId)?.let { cached ->
-                Log.d(TAG, "Returning cached profile for user: $userId")
+            profileCacheRepository.getProfile(username)?.let { cached ->
+                Log.d(TAG, "Returning cached profile for user: $username")
                 return@runCatching cached
             }
         }
 
         // Fetch from API
-        val profile = apiClient.getUserProfile(userId)
+        val profile = apiClient.getUserProfileByUsername(username)
 
         // Cache the result
-        profileCacheRepository.cacheProfile(userId, profile)
+        profileCacheRepository.cacheProfile(profile.user.id, profile)
 
         profile
     }
@@ -88,14 +88,12 @@ class ProfileRepositoryRemote @Inject constructor(
     override suspend fun followUser(userId: String): Result<Unit> = runCatching {
         apiClient.followUser(userId)
 
-        // Update the user profile cache since follow count changed
-        // profileCacheRepository.invalidateUserProfile(userId)
+        profileCacheRepository.invalidateProfile(userId)
     }
 
     override suspend fun unfollowUser(userId: String): Result<Unit> = runCatching {
         apiClient.unfollowUser(userId)
 
-        // Invalidate the user profile cache since follow count changed
-        // profileCacheRepository.invalidateUserProfile(userId)
+        profileCacheRepository.invalidateProfile(userId)
     }
 }

@@ -17,21 +17,24 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
+import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Theme
 import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.serialization.ChartParameterType
-import com.meninocoiso.bscm.domain.serialization.UserParameterType
+import com.meninocoiso.bscm.domain.serialization.SimplifiedUserParameterType
+import com.meninocoiso.bscm.presentation.screen.collection.Collection
+import com.meninocoiso.bscm.presentation.screen.collection.CollectionScreen
 import com.meninocoiso.bscm.presentation.screen.details.ChartDetails
 import com.meninocoiso.bscm.presentation.screen.details.ChartDetailsRoute
 import com.meninocoiso.bscm.presentation.screen.details.ChartDetailsScreen
 import com.meninocoiso.bscm.presentation.screen.details.DeepLinkChartDetails
-import com.meninocoiso.bscm.presentation.screen.settings.Collection
-import com.meninocoiso.bscm.presentation.screen.settings.CollectionScreen
-import com.meninocoiso.bscm.presentation.screen.settings.Profile
-import com.meninocoiso.bscm.presentation.screen.settings.ProfileScreen
+import com.meninocoiso.bscm.presentation.screen.profile.DeepLinkProfile
+import com.meninocoiso.bscm.presentation.screen.profile.Profile
+import com.meninocoiso.bscm.presentation.screen.profile.ProfileRoute
+import com.meninocoiso.bscm.presentation.screen.profile.ProfileScreen
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import kotlin.reflect.typeOf
@@ -127,6 +130,27 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
                     )
                 }
 
+                // Deep link to user profile
+                composableWithTransitions<DeepLinkProfile>(
+                    deepLinks = listOf(
+                        navDeepLink { uriPattern = "bscm://profile/{userId}" }
+                    )
+                ) { backStackEntry ->
+                    val profileRoute: DeepLinkProfile = backStackEntry.toRoute()
+                    ProfileRoute(
+                        username = profileRoute.userId,
+                        onNavigateToDetails = { chart ->
+                            onNavigateToDetails(chart)
+                        },
+                        onNavigateToCollection = { collectionId ->
+                            onNavigateToCollection(collectionId)
+                        },
+                        onReturn = {
+                            navController.navigateUp()
+                        }
+                    )
+                }
+
                 // Chart details
                 composableWithTransitions<ChartDetails>(
                     typeMap = mapOf(
@@ -149,23 +173,24 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
                 // Profile screen
                 composable<Profile>(
                     typeMap = mapOf(
-                        typeOf<User>() to UserParameterType
+                        typeOf<SimplifiedUser>() to SimplifiedUserParameterType
                     )
                 ) { backStackEntry ->
-                    val profile: Profile = backStackEntry.toRoute()
+                    val profileRoute: Profile = backStackEntry.toRoute()
                     ProfileScreen(
                         this@SharedTransitionLayout,
                         this,
-                        user = profile.user,
-                        userId = profile.user.id,
+                        user = profileRoute.user,
+                        isFollowing = profileRoute.isFollowing,
+                        isOwner = profileRoute.isOwner,
+                        onReturn = {
+                            navController.navigateUp()
+                        },
                         onNavigateToDetails = { chart ->
                             onNavigateToDetails(chart)
                         },
                         onNavigateToCollection = { collectionId ->
                             onNavigateToCollection(collectionId)
-                        },
-                        onReturn = {
-                            navController.navigateUp()
                         }
                     )
                 }

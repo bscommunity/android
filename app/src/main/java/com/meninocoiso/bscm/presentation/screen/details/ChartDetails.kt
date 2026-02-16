@@ -597,4 +597,4 @@ fun ChartDetailsScreen(
     }
 }
 
-typealias OnNavigateToDetails = (item: CatalogItem) -> Unit?
+typealias OnNavigateToDetails = (CatalogItem) -> Unit?

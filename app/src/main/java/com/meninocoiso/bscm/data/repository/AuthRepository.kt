@@ -116,6 +116,8 @@ class AuthRepository @Inject constructor(
         }
     }
 
+    suspend fun getCurrentUserId(): String? = cacheRepository.getUser()?.id
+
     suspend fun setPendingOAuthState(state: String) = cacheRepository.setPendingOAuthState(state)
 
     suspend fun clearPendingOAuthState() = cacheRepository.clearPendingOAuthState()

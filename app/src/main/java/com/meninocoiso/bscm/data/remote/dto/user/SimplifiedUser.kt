@@ -13,6 +13,6 @@ data class SimplifiedUser(
     val username: String,
     val avatarUrl: String? = null,
     val bannerUrl: String? = null,
-    val accentColor: Int? = null,
+    val accentColor: Long? = null,
     val isVerified: Boolean? = false
 ) : Parcelable

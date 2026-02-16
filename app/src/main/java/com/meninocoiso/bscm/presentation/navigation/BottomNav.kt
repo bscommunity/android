@@ -23,10 +23,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.toRoute
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.enums.UpdatesSection
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
-import com.meninocoiso.bscm.presentation.screen.settings.Profile
+import com.meninocoiso.bscm.presentation.screen.profile.Profile
 import com.meninocoiso.bscm.presentation.screen.settings.SettingsScreen
 import com.meninocoiso.bscm.presentation.screen.updates.UpdatesScreen
 import com.meninocoiso.bscm.presentation.screen.workshop.WorkshopScreen
@@ -149,8 +150,12 @@ fun BottomNav(
         }
     }
 
-    val onNavigateToProfile = { user: User ->
-        navController.navigate(route = Profile(user))
+    val onNavigateToProfile = { user: SimplifiedUser, isOwner: Boolean, isFollowing: Boolean ->
+        navController.navigate(route = Profile(
+            user = user,
+            isOwner = isOwner,
+            isFollowing = isFollowing,
+        ))
     }
 
     val onFabStateChange: (Boolean) -> Unit = { shouldExtend ->

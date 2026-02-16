@@ -72,20 +72,20 @@ class ProfileCacheRepository @Inject constructor(
 
     suspend fun cacheProfile(profile: UserProfileResponse) = cacheProfile(OWNER_ID, profile)
 
-    suspend fun getProfile(userId: String): UserProfileResponse? {
+    suspend fun getProfile(username: String): UserProfileResponse? {
         return try {
             val preferences = dataStore.data.first()
-            val timestamp = preferences[profileTimestampKey(userId)] ?: 0L
+            val timestamp = preferences[profileTimestampKey(username)] ?: 0L
 
             if (!isQuickCacheValid(timestamp)) {
-                invalidateProfile(userId)
+                invalidateProfile(username)
                 return null
             }
 
-            val encoded = preferences[profileKey(userId)] ?: return null
+            val encoded = preferences[profileKey(username)] ?: return null
             json.decodeFromString(UserProfileResponse.serializer(), encoded)
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading profile header cache for user: $userId", e)
+            Log.e(TAG, "Error reading profile header cache for user: $username", e)
             null
         }
     }

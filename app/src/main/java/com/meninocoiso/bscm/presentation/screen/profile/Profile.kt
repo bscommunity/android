@@ -1,9 +1,7 @@
-package com.meninocoiso.bscm.presentation.screen.settings
+package com.meninocoiso.bscm.presentation.screen.profile
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,11 +17,11 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
@@ -43,8 +41,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -62,14 +60,13 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.domain.model.User
+import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
@@ -85,10 +82,12 @@ import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import java.time.LocalDateTime
 
 @Serializable
-data class Profile(val user: User)
+data class Profile(val user: SimplifiedUser, val isOwner: Boolean, val isFollowing: Boolean)
+
+@Serializable
+data class DeepLinkProfile(val userId: String)
 
 data class ProfileTabItem(val contentDescription: String, val iconResId: Int)
 
@@ -123,21 +122,23 @@ fun getProfileTabItems(): List<ProfileTabItem> {
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun ProfileScreen(
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope,
-    userId: String,
-    user: User,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedContentScope: AnimatedContentScope? = null,
+    user: SimplifiedUser,
+    isFollowing: Boolean,
+    isOwner: Boolean,
     onReturn: () -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
     onNavigateToCollection: (collectionId: String) -> Unit = {},
-    profileViewModel: ProfileViewModel = hiltViewModel()
+    profileViewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val coroutineScope = rememberCoroutineScope()
+
+    val userId = user.id
 
     val scrollBehavior =
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
-    val isOwner = userId == user.id
     val tabItems = if (isOwner) getOwnerTabItems() else getProfileTabItems()
 
     val horizontalPagerState = rememberPagerState { tabItems.size }
@@ -154,7 +155,7 @@ fun ProfileScreen(
     val activityContent by profileViewModel.activityContent.collectAsStateWithLifecycle()
     val libraryContent by profileViewModel.libraryContent.collectAsStateWithLifecycle()
     val likedContent by profileViewModel.likedContent.collectAsStateWithLifecycle()
-    val isFollowing by profileViewModel.isFollowing.collectAsStateWithLifecycle()
+    val isFollowingState by profileViewModel.isFollowingState.collectAsStateWithLifecycle()
     val paginationState by profileViewModel.paginationState.collectAsStateWithLifecycle()
 
     val activityListState = rememberLazyListState()
@@ -167,13 +168,8 @@ fun ProfileScreen(
     val headerScrollState = rememberScrollState()
     var headerHeightPx by remember { mutableFloatStateOf(0f) }
     val tabRowHeight = 56.dp
-    val tabRowHeightPx = with(LocalDensity.current) { tabRowHeight.toPx() }
 
-    LaunchedEffect(userId, isOwner) {
-        profileViewModel.loadProfile(userId, isOwner)
-    }
-
-    LaunchedEffect(horizontalPagerState.currentPage, userId, isOwner) {
+    LaunchedEffect(horizontalPagerState.currentPage, isOwner) {
         profileViewModel.onTabSelected(userId, isOwner, horizontalPagerState.currentPage)
     }
 
@@ -272,7 +268,7 @@ fun ProfileScreen(
                                 ProfileLikes(
                                     items = likedContent,
                                     state = section1State,
-                                    onFetch = { profileViewModel.fetchUserLikes(reset = false) },
+                                    onFetch = { profileViewModel.fetchUserLikes(reset = true) },
                                     onNavigateToDetails = onNavigateToDetails,
                                     listState = likesListState,
                                     isLoadingMore = paginationState.isLoadingMoreLikes,
@@ -287,7 +283,7 @@ fun ProfileScreen(
                                     onFetch = {
                                         profileViewModel.fetchProfileActivity(
                                             userId,
-                                            reset = false
+                                            reset = true
                                         )
                                     },
                                     listState = activityListState,
@@ -305,8 +301,7 @@ fun ProfileScreen(
                                     items = collectionContent,
                                     state = section2State,
                                     onFetch = {
-                                        println("Fetching user collections")
-                                        profileViewModel.fetchUserCollections(reset = false)
+                                        profileViewModel.fetchUserCollections(reset = true)
                                     },
                                     onNavigateToDetails = onNavigateToDetails,
                                     onNavigateToCollection = onNavigateToCollection,
@@ -323,7 +318,7 @@ fun ProfileScreen(
                                 ProfileLibrary(
                                     libraryContent,
                                     section2State,
-                                    { profileViewModel.fetchProfileLibrary(userId, reset = false) },
+                                    { profileViewModel.fetchProfileLibrary(userId, reset = true) },
                                     onNavigateToDetails,
                                     listState = libraryListState,
                                     isLoadingMore = paginationState.isLoadingMoreLibrary,
@@ -357,18 +352,18 @@ fun ProfileScreen(
                             .padding(16.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        when (user.bannerUrl) {
-                            null -> Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .size(180.dp)
-                                    .clip(RoundedCornerShape(28.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .zIndex(1f)
-                            )
+                    when (user.bannerUrl) {
+                        null -> Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .size(180.dp)
+                                .clip(RoundedCornerShape(28.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .zIndex(1f)
+                        )
 
-                            else -> CoilImage(
-                                imageModel = { user.bannerUrl },
+                        else -> CoilImage(
+                            imageModel = { user.bannerUrl },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .size(180.dp)
@@ -381,39 +376,49 @@ fun ProfileScreen(
                             )
                         }
 
-                        with(sharedTransitionScope) {
-                            Avatar(
-                                url = user.avatarUrl,
-                                size = 96.dp,
-                                modifier = Modifier
-                                    .align(Alignment.BottomStart)
-                                    .offset(x = 16.dp, y = (-16).dp)
-                                    .zIndex(1f)
-                                    .sharedElement(
-                                        sharedTransitionScope.rememberSharedContentState(key = "profile_image"),
-                                        animatedVisibilityScope = animatedContentScope
-                                    )
-                                    .border(
-                                        width = 2.dp,
-                                        color = MaterialTheme.colorScheme.outline,
-                                        shape = roundedPolygonShape()
-                                    )
-                                    .roundedPolygonClip(),
+                    Avatar(
+                        url = user.avatarUrl,
+                        size = 96.dp,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .offset(x = 16.dp, y = (-16).dp)
+                            .zIndex(1f)
+                            .then(
+                                if (sharedTransitionScope != null && animatedContentScope != null) {
+                                    with(sharedTransitionScope) {
+                                        Modifier.sharedElement(
+                                            rememberSharedContentState(key = "profile_image"),
+                                            animatedVisibilityScope = animatedContentScope
+                                        )
+                                    }
+                                } else Modifier
                             )
-                            ProfileIndicator(
-                                modifier = Modifier
-                                    .sharedElement(
-                                        sharedTransitionScope.rememberSharedContentState(key = "profile_icon"),
-                                        animatedVisibilityScope = animatedContentScope
-                                    )
-                                    .graphicsLayer(
-                                        alpha = 0f,
-                                        scaleX = 0f,
-                                        scaleY = 0f
-                                    )
+                            .border(
+                                width = 2.dp,
+                                color = MaterialTheme.colorScheme.outline,
+                                shape = roundedPolygonShape()
                             )
-                        }
-                    }
+                            .roundedPolygonClip(),
+                    )
+                    ProfileIndicator(
+                        modifier = Modifier
+                            .then(
+                                if (sharedTransitionScope != null && animatedContentScope != null) {
+                                    with(sharedTransitionScope) {
+                                        Modifier.sharedElement(
+                                            rememberSharedContentState(key = "profile_icon"),
+                                            animatedVisibilityScope = animatedContentScope
+                                        )
+                                    }
+                                } else Modifier
+                            )
+                            .graphicsLayer(
+                                alpha = 0f,
+                                scaleX = 0f,
+                                scaleY = 0f
+                            )
+                    )
+                }
 
                     // Actions
                     if (!isOwner) {
@@ -504,36 +509,4 @@ fun ProfileScreen(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
-@Preview(showBackground = true)
-@Composable
-fun ProfileScreenPreview() {
-    MaterialTheme {
-        SharedTransitionLayout {
-            AnimatedContent(
-                targetState = true,
-                label = "profile_preview"
-            ) { _ ->
-                ProfileScreen(
-                    sharedTransitionScope = this@SharedTransitionLayout,
-                    animatedContentScope = this@AnimatedContent,
-                    userId = "preview_user_id",
-                    user = User(
-                        id = "preview_user_id",
-                        username = "meninocoiso",
-                        email = "user@example.com",
-                        avatarUrl = null,
-                        bannerUrl = null,
-                        accentColor = 0xFF6200EE,
-                        discordId = null,
-                        createdAt = LocalDateTime.now()
-                    ),
-                    onReturn = {},
-                    onNavigateToDetails = {},
-                    onNavigateToCollection = {},
-                )
-            }
-        }
-    }
-}
-
+typealias OnNavigateToProfile = (user: SimplifiedUser, isOwner: Boolean, isFollowing: Boolean) -> Unit

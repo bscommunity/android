@@ -34,6 +34,10 @@ class AuthViewModel @Inject constructor(
 
     val isLoggedInFlow = authRepository.isLoggedInFlow()
 
+    suspend fun getCurrentUserId(): String? {
+        return authRepository.getCurrentUserId()
+    }
+
     private val _snackbarEvents = MutableSharedFlow<String>()
     val snackbarEvents: SharedFlow<String> = _snackbarEvents.shareIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, replay = 0)
 
@@ -50,7 +54,7 @@ class AuthViewModel @Inject constructor(
     /**
      * Starts the Discord OAuth flow
      */
-    suspend fun startDiscordOAuth(): Uri {
+    suspend fun getAuthorizationUrl(): Uri {
         Log.d(TAG, "startDiscordOAuth: Starting OAuth process")
         // generate a random state token and persist it to validate redirects
         val state = generateStateToken()

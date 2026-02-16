@@ -1,4 +1,4 @@
-package com.meninocoiso.bscm.presentation.screen.settings
+package com.meninocoiso.bscm.presentation.screen.collection
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.layout.Arrangement
