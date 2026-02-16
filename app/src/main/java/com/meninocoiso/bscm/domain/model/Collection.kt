@@ -1,3 +1,5 @@
+@file:UseSerializers(LocalDateTimeSerializer::class)
+
 package com.meninocoiso.bscm.domain.model
 
 import androidx.room.ColumnInfo
@@ -5,9 +7,13 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.meninocoiso.bscm.domain.enums.CollectionKind
+import com.meninocoiso.bscm.domain.serialization.LocalDateTimeSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import java.time.LocalDateTime
 
 @Entity(tableName = "collections")
+@Serializable
 data class Collection(
     @PrimaryKey val id: String,
     @ColumnInfo(name = "user_id") val userId: String,

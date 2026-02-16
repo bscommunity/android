@@ -426,6 +426,7 @@ class KtorApiClient @Inject constructor(
         val response = client.post("collections/batch") {
             setBody(interactions)
         }
+        println("Batch process response: ${response.status}, body: ${response.bodyAsText()}")
         return response.status.isSuccess()
     }
 

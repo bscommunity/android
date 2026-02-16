@@ -1,6 +1,7 @@
 package com.meninocoiso.bscm.presentation.screen.details
 
 import DownloadEvent
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -157,6 +158,9 @@ fun ChartDetailsScreen(
     val collectionsState by collectionViewModel.collectionsContentState.collectAsStateWithLifecycle()
 
     val isLoggedIn by authViewModel.isLoggedInFlow.collectAsStateWithLifecycle(false)
+    val contentCollection by interactionViewModel
+        .getContentCollection(currentChart.contentId ?: "")
+        .collectAsStateWithLifecycle()
 
     LaunchedEffect(showCollectionSheet) {
         if (showCollectionSheet) {
@@ -364,7 +368,17 @@ fun ChartDetailsScreen(
                                     }
                                 }
                             } else {
-                                interactionViewModel.unbookmarkContent(currentChart.id, currentChart.contentId)
+                                // If unbookmarking, we need to check if it's in a user collection or just bookmarked
+                                when (contentCollection?.kind) {
+                                    CollectionKind.USER -> interactionViewModel.removeFromCollection(
+                                        contentId = currentChart.contentId,
+                                        collectionId = contentCollection!!.id
+                                    )
+                                    else -> interactionViewModel.unbookmarkContent(
+                                        currentChart.id,
+                                        currentChart.contentId
+                                    )
+                                }
                                 snackbarHostState.currentSnackbarData?.dismiss()
                             }
                         }
@@ -542,6 +556,12 @@ fun ChartDetailsScreen(
             collections = userCollections,
             isLoading = collectionsState is ContentState.Loading,
             onCollectionSelected = { collectionId ->
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        "Saved to collection!",
+                        duration = SnackbarDuration.Short
+                    )
+                }
                 currentChart.contentId?.let { contentId ->
                     // When user selects a collection from the bottom sheet after bookmarking,
                     // we need to remove the bookmark interaction and add to the custom collection
@@ -559,8 +579,19 @@ fun ChartDetailsScreen(
                 showCollectionSheet = false
             },
             onCreateCollection = { name, isPublic ->
-                // Create collection first, then add content to it once created (handled in CollectionViewModel)
-                collectionViewModel.createCollection(name, isPublic)
+                scope.launch {
+                    val newCollectionId = collectionViewModel.createCollection(name, isPublic)
+                    Log.d("ChartDetailsScreen", "Created collection with ID: $newCollectionId")
+                    if (newCollectionId != null) {
+                        snackbarHostState.showSnackbar("Saved to \"$name\"!")
+                        currentChart.contentId?.let { contentId ->
+                            interactionViewModel.addToCollection(contentId, newCollectionId)
+                        }
+                    } else {
+                        // Handle collection creation failure if needed
+                        snackbarHostState.showSnackbar("Failed to create collection. Please try again.")
+                    }
+                }
             }
         )
     }

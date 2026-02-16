@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -48,6 +49,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Collection
+import com.meninocoiso.bscm.presentation.ui.components.StatusMessageSize
+import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.SwitchUI
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 import kotlinx.coroutines.launch
@@ -74,7 +77,7 @@ fun CollectionBottomSheet(
 
     ModalBottomSheet(
         sheetState = sheetState,
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = { if (!isLoading) onDismissRequest() },
     ) {
         Row(
             modifier = Modifier
@@ -84,13 +87,16 @@ fun CollectionBottomSheet(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (horizontalPagerState.currentPage > 0) {
-                IconButton(onClick = {
-                    coroutineScope.launch {
-                        horizontalPagerState.scrollToPage(
-                            horizontalPagerState.currentPage - 1
-                        )
+                IconButton(
+                    enabled = !isLoading,
+                    onClick = {
+                        coroutineScope.launch {
+                            horizontalPagerState.scrollToPage(
+                                horizontalPagerState.currentPage - 1
+                            )
+                        }
                     }
-                }) {
+                ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                         contentDescription = stringResource(R.string.back)
@@ -150,9 +156,7 @@ fun CollectionBottomSheet(
                         },
                         onSave = { name, isPublic ->
                             onCreateCollection(name, isPublic)
-                            coroutineScope.launch {
-                                horizontalPagerState.scrollToPage(0)
-                            }
+                            onDismissRequest()
                         }
                     )
                 }
@@ -204,23 +208,38 @@ fun CollectionsListSection(
         }
         if (isLoading && collections.isEmpty()) {
             item {
-                Text(
-                    text = "Carregando coleções...",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyMedium
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+        } else if (collections.isEmpty()) {
+            item {
+                StatusMessageUI(
+                    modifier = Modifier.padding(vertical = 32.dp),
+                    icon = R.drawable.outline_deployed_code_24,
+                    title = "No collections yet",
+                    message = "Your collections will appear here. Create your first one!",
+                    size = StatusMessageSize.Small
                 )
             }
-        }
-
-        items(collections.size) { index ->
-            val collection = collections[index]
-            CollectionItem(
-                name = collection.name,
-                coverUrl = collection.coverUrl ?: "",
-                isPublic = collection.isPublic,
-                contentCounts = Triple(collection.itemCount, 0, 0),
-                onClick = { onCollectionClick(collection.id) }
-            )
+        } else {
+            items(collections.size) { index ->
+                val collection = collections[index]
+                CollectionItem(
+                    name = collection.name,
+                    coverUrl = collection.coverUrl ?: "",
+                    isPublic = collection.isPublic,
+                    contentCounts = Triple(collection.itemCount, 0, 0),
+                    onClick = { onCollectionClick(collection.id) }
+                )
+            }
         }
     }
 }
@@ -231,7 +250,7 @@ fun CreateCollectionSection(
     onBackClick: () -> Unit = { },
     onSave: (name: String, isPublic: Boolean) -> Unit = { _, _ -> }
 ) {
-    var isPublic by rememberSaveable { mutableStateOf(false) }
+    var isPublic by rememberSaveable { mutableStateOf(true) }
     val nameState = rememberTextFieldState(initialText = "")
 
     Column(
@@ -244,6 +263,7 @@ fun CreateCollectionSection(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
             state = nameState,
+            enabled = !isLoading,
             label = { Text("Name") },
             lineLimits = TextFieldLineLimits.SingleLine,
             supportingText = { Text("0/30") },
@@ -256,7 +276,11 @@ fun CreateCollectionSection(
             headlineContent = { Text("Make public") },
             supportingContent = { Text("Public collections will be showed in your profile and can be shared with friends") },
             trailingContent = {
-                SwitchUI(checked = isPublic, onCheckedChange = { isPublic = !isPublic })
+                SwitchUI(
+                    checked = isPublic,
+                    onCheckedChange = { isPublic = !isPublic },
+                    enabled = !isLoading
+                )
             },
         )
         Button(
@@ -274,7 +298,6 @@ fun CreateCollectionSection(
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
                     color = MaterialTheme.colorScheme.onSurface,
-                    strokeWidth = 2.dp
                 )
             } else {
                 Text("Save")

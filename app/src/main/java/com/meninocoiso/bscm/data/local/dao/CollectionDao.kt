@@ -6,9 +6,11 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
+import com.meninocoiso.bscm.data.remote.dto.collection.SimplifiedCollection
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.CollectionItemCrossRef
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CollectionDao {
@@ -50,6 +52,15 @@ interface CollectionDao {
 
     @Query("DELETE FROM collection_item_cross_ref WHERE collection_id = :collectionId AND content_id = :contentId")
     suspend fun deleteCrossRef(collectionId: String, contentId: String)
+
+    @Query("""
+        SELECT id, kind FROM collections c
+        INNER JOIN collection_item_cross_ref ref ON c.id = ref.collection_id
+        WHERE ref.content_id = :contentId
+        AND c.kind != 'LIKES'
+        LIMIT 1
+    """)
+    fun getCollectionForContent(contentId: String): Flow<SimplifiedCollection?>
 
     @Transaction
     @Query("""

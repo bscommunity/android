@@ -1,12 +1,12 @@
 package com.meninocoiso.bscm.presentation.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.repository.CollectionRepository
 import com.meninocoiso.bscm.domain.result.ContentState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -72,20 +72,30 @@ class CollectionViewModel @Inject constructor(
 	/**
 	 * Create a new collection
 	 */
-	fun createCollection(name: String, isPublic: Boolean) {
-		viewModelScope.launch {
-            collectionsState.setState(ContentState.Loading)
-			val result = collectionRepository.createCollection(name, isPublic)
-			result.onSuccess { collection ->
+	suspend fun createCollection(name: String, isPublic: Boolean): String? {
+		collectionsState.setState(ContentState.Loading)
+		val result = collectionRepository.createCollection(name, isPublic)
+		return result.fold(
+			onSuccess = { collection ->
+                Log.d("CollectionViewModel", "Created collection: ${collection.name} (ID: ${collection.id})")
+
 				// Prepend new collection to the list
 				collectionsState.updateData { listOf(collection) + it }
-                collectionsState.setState(ContentState.Success)
+				collectionsState.setState(ContentState.Success)
 
-                // Add the new collection's items to the items state
-                currentCollectionId = collection.id
-                collectionItemsState.updateData { emptyList() } // Clear items for new collection
-                collectionItemsState.setState(ContentState.Success)
+				// Add the new collection's items to the items state
+				currentCollectionId = collection.id
+				collectionItemsState.updateData { emptyList() } // Clear items for new collection
+				collectionItemsState.setState(ContentState.Success)
+
+				collection.id
+			},
+			onFailure = {
+                Log.d("CollectionViewModel", "Failed to create collection: ${it.message}")
+				// Handle failure by setting error state
+				collectionsState.setState(ContentState.Error)
+				null
 			}
-		}
+		)
 	}
 }

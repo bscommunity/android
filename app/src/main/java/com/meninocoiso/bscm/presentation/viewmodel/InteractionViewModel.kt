@@ -1,19 +1,25 @@
 package com.meninocoiso.bscm.presentation.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.meninocoiso.bscm.data.local.dao.CollectionDao
+import com.meninocoiso.bscm.data.remote.dto.collection.SimplifiedCollection
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.repository.InteractionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class InteractionViewModel @Inject constructor(
-    private val interactionRepository: InteractionRepository
+    private val interactionRepository: InteractionRepository,
+    private val collectionDao: CollectionDao
 ) : ViewModel() {
     
     private val _queueSize = MutableStateFlow(0)
@@ -84,6 +90,7 @@ class InteractionViewModel @Inject constructor(
      */
     fun unbookmarkContent(id: String, contentId: String) {
         viewModelScope.launch {
+            Log.d("InteractionViewModel", "Attempting to unbookmark contentId=$contentId for id=$id")
             interactionRepository.unbookmarkContent(id, contentId)
                 .collect { result ->
                     result.onSuccess {
@@ -117,6 +124,7 @@ class InteractionViewModel @Inject constructor(
      */
     fun removeFromCollection(contentId: String, collectionId: String) {
         viewModelScope.launch {
+            Log.d("InteractionViewModel", "Attempting to remove contentId=$contentId from collectionId=$collectionId")
             interactionRepository.removeFromCollection(contentId, collectionId)
                 .collect { result ->
                     result.onSuccess {
@@ -145,6 +153,10 @@ class InteractionViewModel @Inject constructor(
                 }
         }
     }
+
+    fun getContentCollection(contentId: String): StateFlow<SimplifiedCollection?> =
+        collectionDao.getCollectionForContent(contentId)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /**
      * Manually processes the interaction queue
