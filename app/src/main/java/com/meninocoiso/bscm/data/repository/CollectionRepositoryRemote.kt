@@ -1,16 +1,20 @@
 package com.meninocoiso.bscm.data.repository
 
 import android.util.Log
+import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.remote.ApiClient
+import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.repository.CollectionRepository
 import jakarta.inject.Inject
+import java.time.LocalDateTime
 
 private const val TAG = "CollectionRepositoryRemote"
 
 class CollectionRepositoryRemote @Inject constructor(
     private val apiClient: ApiClient,
+    private val collectionDao: CollectionDao,
     private val profileCacheRepository: ProfileCacheRepository
 ) : CollectionRepository {
     override suspend fun getUserCollections(
@@ -19,11 +23,27 @@ class CollectionRepositoryRemote @Inject constructor(
         offset: Int,
         useCache: Boolean
     ): Result<List<Collection>> = runCatching {
-        // Only use cache for first page
-        if (useCache && offset == 0) {
-            profileCacheRepository.getCollections(userId)?.let { cached ->
-                Log.d(TAG, "Returning cached collections (${cached.size} items)")
-                return@runCatching cached
+        if (userId == "user") {
+            val localCollections = collectionDao.getUserCollections(limit, offset)
+            if (localCollections.isNotEmpty()) {
+                Log.d(TAG, "Returning owner collections from Room (${localCollections.size} items)")
+                return@runCatching localCollections
+            }
+            if (useCache && offset > 0) {
+                return@runCatching emptyList()
+            }
+        }
+
+        // Other profiles: quick cache by IDs + Room hydration
+        if (userId != "user" && useCache && offset == 0) {
+            val cachedIds = profileCacheRepository.getCollections(userId)
+            if (!cachedIds.isNullOrEmpty()) {
+                val cachedCollections = collectionDao.getCollectionsByIds(cachedIds)
+                    .sortedBy { cachedIds.indexOf(it.id) }
+                if (cachedCollections.isNotEmpty()) {
+                    Log.d(TAG, "Returning cached collections for user $userId (${cachedCollections.size} items)")
+                    return@runCatching cachedCollections
+                }
             }
         }
 
@@ -34,20 +54,24 @@ class CollectionRepositoryRemote @Inject constructor(
             apiClient.getUserCollections(userId, limit, offset)
         }
 
-        // Cache only first page
-        if (offset == 0) {
-            profileCacheRepository.cacheCollections(userId, collections)
+        val userCollections = collections.filter { it.kind == CollectionKind.USER }
+        if (userCollections.isNotEmpty()) {
+            collectionDao.upsertCollections(userCollections)
         }
 
-        collections
+        // Cache only first page
+        if (offset == 0) {
+            profileCacheRepository.cacheCollectionIds(userId, userCollections.map { it.id })
+        }
+
+        userCollections
     }
 
     override suspend fun createCollection(name: String, isPublic: Boolean): Result<Collection> =
         runCatching {
             val collection = apiClient.createCollection(name, isPublic)
 
-            // Add to cache immediately so it shows up in UI without needing to refetch
-            profileCacheRepository.addCollection(collection = collection)
+            collectionDao.upsertCollection(collection)
 
             collection
         }
@@ -60,19 +84,18 @@ class CollectionRepositoryRemote @Inject constructor(
         runCatching {
             apiClient.updateCollection(collectionId, name, isPublic)
 
-            // Update cache immediately so it reflects in UI without needing to refetch
-            profileCacheRepository.updateCollection(
+            collectionDao.updateCollectionMetadata(
                 collectionId = collectionId,
                 name = name,
-                isPublic = isPublic
+                isPublic = isPublic,
+                updatedAt = LocalDateTime.now()
             )
         }
 
     override suspend fun deleteCollection(collectionId: String): Result<Unit> = runCatching {
         apiClient.deleteCollection(collectionId)
 
-        // Remove from cache immediately so it reflects in UI without needing to refetch
-        profileCacheRepository.removeCollection(collectionId = collectionId)
+        collectionDao.deleteCollectionById(collectionId)
     }
 
     override suspend fun getCollectionItems(

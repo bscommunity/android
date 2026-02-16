@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.meninocoiso.bscm.data.local.AppDatabase
 import com.meninocoiso.bscm.data.local.dao.ChartDao
+import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
 import com.meninocoiso.bscm.data.manager.ChartOperationPolicy
 import com.meninocoiso.bscm.data.manager.ContentManager
@@ -37,6 +38,11 @@ object DatabaseModule {
     @Provides
     fun provideInteractionQueueDao(appDatabase: AppDatabase): InteractionQueueDao {
         return appDatabase.interactionQueueDao()
+    }
+
+    @Provides
+    fun provideCollectionDao(appDatabase: AppDatabase): CollectionDao {
+        return appDatabase.collectionDao()
     }
 
     // Chart local repository for chart-specific operations

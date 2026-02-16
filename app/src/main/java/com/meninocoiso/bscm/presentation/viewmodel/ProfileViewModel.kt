@@ -360,7 +360,7 @@ class ProfileViewModel @Inject constructor(
             val result = meRepository.getLikes(
                 limit = likesPagination.pageSize,
                 offset = likesPagination.nextOffset(),
-                useCache = reset // Only use cache on initial load
+                useCache = true
             )
 
             result.onSuccess { data ->

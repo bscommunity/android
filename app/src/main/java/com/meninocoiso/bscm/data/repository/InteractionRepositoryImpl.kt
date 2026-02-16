@@ -1,10 +1,13 @@
 package com.meninocoiso.bscm.data.repository
 
 import android.util.Log
+import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.domain.enums.CollectionKind
+import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.enums.OperationOption
+import com.meninocoiso.bscm.domain.model.CollectionItemCrossRef
 import com.meninocoiso.bscm.domain.repository.InteractionRepository
 import com.meninocoiso.bscm.domain.result.ContentResult
 import kotlinx.coroutines.CoroutineDispatcher
@@ -27,8 +30,8 @@ private const val TAG = "InteractionRepositoryImpl"
 @Singleton
 class InteractionRepositoryImpl @Inject constructor(
     private val queueManager: InteractionQueueManager,
-    private val profileCacheRepository: ProfileCacheRepository,
     private val chartManager: ChartManager,
+    private val collectionDao: CollectionDao,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : InteractionRepository {
 
@@ -40,11 +43,7 @@ class InteractionRepositoryImpl @Inject constructor(
      * 3. Delegates queue + remote sync to InteractionQueueManager
      */
     override suspend fun likeContent(id: String, contentId: String): Flow<Result<Unit>> = flow {
-        updateLocalState(
-            id = id,
-            operation = OperationOption.LIKE,
-            cacheUpdate = { profileCacheRepository.addLikeId(id) }
-        )
+        updateLocalState(id = id, operation = OperationOption.LIKE)
         queueManager.queueAndSyncLike(contentId, isLike = true)
         emit(Result.success(Unit))
     }.catch { e ->
@@ -60,11 +59,7 @@ class InteractionRepositoryImpl @Inject constructor(
      * 3. Delegates queue + remote sync to InteractionQueueManager
      */
     override suspend fun unlikeContent(id: String, contentId: String): Flow<Result<Unit>> = flow {
-        updateLocalState(
-            id = id,
-            operation = OperationOption.UNLIKE,
-            cacheUpdate = { profileCacheRepository.removeLikeId(id) }
-        )
+        updateLocalState(id = id, operation = OperationOption.UNLIKE)
         queueManager.queueAndSyncLike(contentId, isLike = false)
         emit(Result.success(Unit))
     }.catch { e ->
@@ -80,11 +75,7 @@ class InteractionRepositoryImpl @Inject constructor(
      * 3. Delegates queue + remote sync to InteractionQueueManager
      */
     override suspend fun bookmarkContent(id: String, contentId: String): Flow<Result<Unit>> = flow {
-        updateLocalState(
-            id = id,
-            operation = OperationOption.BOOKMARK,
-            cacheUpdate = { profileCacheRepository.addBookmarkId(id) }
-        )
+        updateLocalState(id = id, operation = OperationOption.BOOKMARK)
         queueManager.queueAndSyncBookmark(contentId, isBookmarked = true)
         emit(Result.success(Unit))
     }.catch { e ->
@@ -100,11 +91,7 @@ class InteractionRepositoryImpl @Inject constructor(
      * 3. Delegates queue + remote sync to InteractionQueueManager
      */
     override suspend fun unbookmarkContent(id: String, contentId: String): Flow<Result<Unit>> = flow {
-        updateLocalState(
-            id = id,
-            operation = OperationOption.UNBOOKMARK,
-            cacheUpdate = { profileCacheRepository.removeBookmarkId(id) }
-        )
+        updateLocalState(id = id, operation = OperationOption.UNBOOKMARK)
         queueManager.queueAndSyncBookmark(contentId, isBookmarked = false)
         emit(Result.success(Unit))
     }.catch { e ->
@@ -119,6 +106,14 @@ class InteractionRepositoryImpl @Inject constructor(
         contentId: String,
         collectionId: String
     ): Flow<Result<Unit>> = flow {
+        collectionDao.upsertCrossRef(
+            CollectionItemCrossRef(
+                collectionId = collectionId,
+                contentId = contentId,
+                contentType = ContentType.CHART
+            )
+        )
+        collectionDao.incrementCollectionItemCount(collectionId, java.time.LocalDateTime.now())
         queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = true)
         emit(Result.success(Unit))
     }.catch { e ->
@@ -133,6 +128,8 @@ class InteractionRepositoryImpl @Inject constructor(
         contentId: String,
         collectionId: String
     ): Flow<Result<Unit>> = flow {
+        collectionDao.deleteCrossRef(collectionId, contentId)
+        collectionDao.decrementCollectionItemCount(collectionId, java.time.LocalDateTime.now())
         queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = false)
         emit(Result.success(Unit))
     }.catch { e ->
@@ -173,11 +170,7 @@ class InteractionRepositoryImpl @Inject constructor(
      * Errors are caught and logged individually so a cache failure
      * doesn't prevent the chart update (and vice versa).
      */
-    private suspend fun updateLocalState(
-        id: String,
-        operation: OperationOption,
-        cacheUpdate: suspend () -> Unit
-    ) {
+    private suspend fun updateLocalState(id: String, operation: OperationOption) {
         try {
             val result = chartManager.updateContentById(id, operation)
             if (result !is ContentResult.Success) {
@@ -185,12 +178,6 @@ class InteractionRepositoryImpl @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Exception updating local chart for id=$id, operation=$operation", e)
-        }
-
-        try {
-            cacheUpdate()
-        } catch (e: Exception) {
-            Log.e(TAG, "Exception updating profile cache for id=$id, operation=$operation", e)
         }
     }
 }

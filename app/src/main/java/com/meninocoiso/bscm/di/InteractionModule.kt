@@ -1,12 +1,12 @@
 package com.meninocoiso.bscm.di
 
 import android.content.Context
+import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
 import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.repository.InteractionRepositoryImpl
-import com.meninocoiso.bscm.data.repository.ProfileCacheRepository
 import com.meninocoiso.bscm.domain.repository.InteractionRepository
 import com.meninocoiso.bscm.monitor.NetworkConnectivityMonitor
 import com.meninocoiso.bscm.service.InteractionSyncService
@@ -32,7 +32,8 @@ object InteractionModule {
     fun provideInteractionQueueManager(
         queueDao: InteractionQueueDao,
         apiClient: ApiClient,
-    ): InteractionQueueManager = InteractionQueueManager(queueDao, apiClient)
+        networkMonitor: NetworkConnectivityMonitor,
+    ): InteractionQueueManager = InteractionQueueManager(queueDao, apiClient, networkMonitor)
 
     @Provides
     @Singleton
@@ -45,15 +46,11 @@ object InteractionModule {
     @Singleton
     fun provideInteractionRepository(
         queueManager: InteractionQueueManager,
-        apiClient: ApiClient,
-        networkMonitor: NetworkConnectivityMonitor,
-        profileCacheRepository: ProfileCacheRepository,
-        chartManager: ChartManager
+        chartManager: ChartManager,
+        collectionDao: CollectionDao,
     ): InteractionRepository = InteractionRepositoryImpl(
         queueManager,
-        apiClient,
-        networkMonitor,
-        profileCacheRepository,
-        chartManager
+        chartManager,
+        collectionDao,
     )
 }

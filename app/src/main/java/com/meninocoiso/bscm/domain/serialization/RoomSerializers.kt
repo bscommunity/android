@@ -2,7 +2,9 @@ package com.meninocoiso.bscm.domain.serialization
 
 import androidx.room.TypeConverter
 import com.meninocoiso.bscm.domain.enums.ActionType
+import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.enums.Difficulty
+import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Contributor
 import com.meninocoiso.bscm.domain.model.KnownIssue
@@ -143,5 +145,25 @@ class RoomSerializers {
     @TypeConverter
     fun toActionType(value: String): ActionType {
         return ActionType.valueOf(value)
+    }
+
+    @TypeConverter
+    fun fromCollectionKind(value: CollectionKind): String {
+        return value.name
+    }
+
+    @TypeConverter
+    fun toCollectionKind(value: String): CollectionKind {
+        return CollectionKind.valueOf(value)
+    }
+
+    @TypeConverter
+    fun fromContentType(value: ContentType): String {
+        return value.name
+    }
+
+    @TypeConverter
+    fun toContentType(value: String): ContentType {
+        return ContentType.valueOf(value)
     }
 }

@@ -8,7 +8,6 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
-import com.meninocoiso.bscm.domain.model.Collection
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
@@ -17,7 +16,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "ProfileCacheRepository"
-private const val CACHE_EXPIRATION_MILLIS = 30 * 60 * 1000L // 30 minutes
+private const val QUICK_CACHE_EXPIRATION_MILLIS = 10 * 60 * 1000L // 10 minutes for other profiles
+private const val OWNER_ID = "owner"
 
 @Singleton
 class ProfileCacheRepository @Inject constructor(
@@ -26,9 +26,10 @@ class ProfileCacheRepository @Inject constructor(
     companion object ProfileCacheKeys {
         fun profileKey(userId: String) = stringPreferencesKey("profile_$userId")
         fun profileTimestampKey(userId: String) = longPreferencesKey("profile_timestamp_$userId")
-        fun collectionsKey(userId: String) = stringPreferencesKey("collections_$userId")
+
+        fun collectionsIdsKey(userId: String) = stringPreferencesKey("collections_ids_$userId")
         fun activityKey(userId: String) = stringPreferencesKey("activity_$userId")
-        fun libraryKey(userId: String) = stringPreferencesKey("library_$userId")
+        fun libraryIdsKey(userId: String) = stringPreferencesKey("library_ids_$userId")
     }
 
     private val json = Json {
@@ -36,7 +37,26 @@ class ProfileCacheRepository @Inject constructor(
         encodeDefaults = true
     }
 
-    // -------------------- Profile --------------------
+    private suspend fun writeStringList(key: Preferences.Key<String>, values: List<String>) {
+        val encoded = json.encodeToString(ListSerializer(String.serializer()), values)
+        dataStore.edit { preferences ->
+            preferences[key] = encoded
+        }
+    }
+
+    private suspend fun readStringList(key: Preferences.Key<String>): List<String>? {
+        val preferences = dataStore.data.first()
+        val encoded = preferences[key] ?: return null
+        return json.decodeFromString(ListSerializer(String.serializer()), encoded)
+    }
+
+    private suspend fun touchProfileTimestamp(userId: String) {
+        dataStore.edit { preferences ->
+            preferences[profileTimestampKey(userId)] = System.currentTimeMillis()
+        }
+    }
+
+    // -------------------- Profile Header --------------------
     suspend fun cacheProfile(userId: String, profile: UserProfileResponse) {
         try {
             val encoded = json.encodeToString(UserProfileResponse.serializer(), profile)
@@ -44,22 +64,20 @@ class ProfileCacheRepository @Inject constructor(
                 preferences[profileKey(userId)] = encoded
                 preferences[profileTimestampKey(userId)] = System.currentTimeMillis()
             }
-            Log.d(TAG, "Cached profile for user: $userId")
+            Log.d(TAG, "Cached profile header for user: $userId")
         } catch (e: Exception) {
-            Log.e(TAG, "Error caching profile for user: $userId", e)
+            Log.e(TAG, "Error caching profile header for user: $userId", e)
         }
     }
 
-    /**
-     * Get profile
-     */
+    suspend fun cacheProfile(profile: UserProfileResponse) = cacheProfile(OWNER_ID, profile)
+
     suspend fun getProfile(userId: String): UserProfileResponse? {
         return try {
             val preferences = dataStore.data.first()
             val timestamp = preferences[profileTimestampKey(userId)] ?: 0L
 
-            if (!isCacheValid(timestamp)) {
-                Log.d(TAG, "Profile cache expired for user: $userId")
+            if (!isQuickCacheValid(timestamp)) {
                 invalidateProfile(userId)
                 return null
             }
@@ -67,7 +85,18 @@ class ProfileCacheRepository @Inject constructor(
             val encoded = preferences[profileKey(userId)] ?: return null
             json.decodeFromString(UserProfileResponse.serializer(), encoded)
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading profile cache for user: $userId", e)
+            Log.e(TAG, "Error reading profile header cache for user: $userId", e)
+            null
+        }
+    }
+
+    suspend fun getProfile(): UserProfileResponse? {
+        return try {
+            val preferences = dataStore.data.first()
+            val encoded = preferences[profileKey(OWNER_ID)] ?: return null
+            json.decodeFromString(UserProfileResponse.serializer(), encoded)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading owner profile cache", e)
             null
         }
     }
@@ -79,82 +108,30 @@ class ProfileCacheRepository @Inject constructor(
         }
     }
 
-    // -------------------- Collections --------------------
-    suspend fun cacheCollections(userId: String, collections: List<Collection>) {
-        try {
-            val encoded = json.encodeToString(ListSerializer(Collection.serializer()), collections)
-            dataStore.edit { preferences ->
-                preferences[collectionsKey(userId)] = encoded
-            }
-            Log.d(TAG, "Cached collections for user: $userId")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error caching collections for user: $userId", e)
-        }
+    suspend fun clearProfile() = clearProfile(OWNER_ID)
+
+    // -------------------- Collections IDs --------------------
+    suspend fun cacheCollectionIds(userId: String, collectionIds: List<String>) {
+        writeStringList(collectionsIdsKey(userId), collectionIds)
+        touchProfileTimestamp(userId)
     }
 
-    suspend fun addCollection(userId: String, collection: Collection) {
-        try {
-            val currentCollections = getCollections(userId)?.toMutableList() ?: mutableListOf()
-            currentCollections.add(collection)
-            cacheCollections(userId, currentCollections)
-            Log.d(TAG, "Added collection to cache for user: $userId")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error adding collection to cache for user: $userId", e)
-        }
-    }
-
-    suspend fun updateCollection(userId: String, collectionId: String, name: String?, isPublic: Boolean?) {
-        try {
-            val currentCollections = getCollections(userId)?.toMutableList() ?: mutableListOf()
-            val index = currentCollections.indexOfFirst { it.id == collectionId }
-            if (index != -1) {
-                val existing = currentCollections[index]
-                val updated = existing.copy(
-                    name = name ?: existing.name,
-                    isPublic = isPublic ?: existing.isPublic
-                )
-                currentCollections[index] = updated
-                cacheCollections(userId, currentCollections)
-                Log.d(TAG, "Updated collection in cache for user: $userId")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error updating collection in cache for user: $userId", e)
-        }
-    }
-
-    suspend fun removeCollection(userId: String, collectionId: String) {
-        try {
-            val currentCollections = getCollections(userId)?.toMutableList() ?: mutableListOf()
-            val removed = currentCollections.removeAll { it.id == collectionId }
-            if (removed) {
-                cacheCollections(userId, currentCollections)
-                Log.d(TAG, "Removed collection from cache for user: $userId")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error removing collection from cache for user: $userId", e)
-        }
-    }
-
-    suspend fun getCollections(userId: String): List<Collection>? {
+    suspend fun getCollections(userId: String): List<String>? {
         return try {
             val preferences = dataStore.data.first()
             val timestamp = preferences[profileTimestampKey(userId)] ?: 0L
-
-            if (!isCacheValid(timestamp)) {
-                Log.d(TAG, "Collections cache expired for user: $userId")
+            if (!isQuickCacheValid(timestamp)) {
                 invalidateProfile(userId)
                 return null
             }
-
-            val encoded = preferences[collectionsKey(userId)] ?: return null
-            json.decodeFromString(ListSerializer(Collection.serializer()), encoded)
+            readStringList(collectionsIdsKey(userId))
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading collections cache for user: $userId", e)
+            Log.e(TAG, "Error reading collections IDs cache for user: $userId", e)
             null
         }
     }
 
-    // -------------------- Activity --------------------
+    // -------------------- Activity (quick cache for other profiles) --------------------
     suspend fun cacheActivity(userId: String, activity: List<ActivityItemResponse>) {
         try {
             val encoded = json.encodeToString(ListSerializer(ActivityItemResponse.serializer()), activity)
@@ -162,23 +139,23 @@ class ProfileCacheRepository @Inject constructor(
                 preferences[activityKey(userId)] = encoded
                 preferences[profileTimestampKey(userId)] = System.currentTimeMillis()
             }
-            Log.d(TAG, "Cached activity for user: $userId")
         } catch (e: Exception) {
             Log.e(TAG, "Error caching activity for user: $userId", e)
         }
     }
 
+    suspend fun cacheActivity(activity: List<ActivityItemResponse>) = cacheActivity(OWNER_ID, activity)
+
     suspend fun getActivity(userId: String): List<ActivityItemResponse>? {
         return try {
             val preferences = dataStore.data.first()
-            val timestamp = preferences[profileTimestampKey(userId)] ?: 0L
-
-            if (!isCacheValid(timestamp)) {
-                Log.d(TAG, "Activity cache expired for user: $userId")
-                invalidateProfile(userId)
-                return null
+            if (userId != OWNER_ID && userId != "user") {
+                val timestamp = preferences[profileTimestampKey(userId)] ?: 0L
+                if (!isQuickCacheValid(timestamp)) {
+                    invalidateProfile(userId)
+                    return null
+                }
             }
-
             val encoded = preferences[activityKey(userId)] ?: return null
             json.decodeFromString(ListSerializer(ActivityItemResponse.serializer()), encoded)
         } catch (e: Exception) {
@@ -187,35 +164,29 @@ class ProfileCacheRepository @Inject constructor(
         }
     }
 
-    // -------------------- User Library (Charts) --------------------
-    suspend fun cacheLibrary(userId: String, charts: List<String>) {
-        try {
-            val encoded = json.encodeToString(ListSerializer(String.serializer()), charts)
-            dataStore.edit { preferences ->
-                preferences[libraryKey(userId)] = encoded
-                preferences[profileTimestampKey(userId)] = System.currentTimeMillis()
-            }
-            Log.d(TAG, "Cached user library for user: $userId")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error caching user library for user: $userId", e)
+    suspend fun getActivity(): List<ActivityItemResponse>? = getActivity(OWNER_ID)
+
+    // -------------------- Library IDs (charts from other profiles) --------------------
+    suspend fun cacheLibrary(userId: String, chartIds: List<String>) {
+        writeStringList(libraryIdsKey(userId), chartIds)
+        if (userId != OWNER_ID && userId != "user") {
+            touchProfileTimestamp(userId)
         }
     }
 
     suspend fun getLibrary(userId: String): List<String>? {
         return try {
-            val preferences = dataStore.data.first()
-            val timestamp = preferences[profileTimestampKey(userId)] ?: 0L
-
-            if (!isCacheValid(timestamp)) {
-                Log.d(TAG, "User library cache expired for user: $userId")
-                invalidateProfile(userId)
-                return null
+            if (userId != OWNER_ID && userId != "user") {
+                val preferences = dataStore.data.first()
+                val timestamp = preferences[profileTimestampKey(userId)] ?: 0L
+                if (!isQuickCacheValid(timestamp)) {
+                    invalidateProfile(userId)
+                    return null
+                }
             }
-
-            val encoded = preferences[libraryKey(userId)] ?: return null
-            json.decodeFromString(ListSerializer(String.serializer()), encoded)
+            readStringList(libraryIdsKey(userId))
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading user library cache for user: $userId", e)
+            Log.e(TAG, "Error reading library IDs cache for user: $userId", e)
             null
         }
     }
@@ -225,21 +196,19 @@ class ProfileCacheRepository @Inject constructor(
         dataStore.edit { preferences ->
             preferences.remove(profileKey(userId))
             preferences.remove(profileTimestampKey(userId))
-            preferences.remove(collectionsKey(userId))
+            preferences.remove(collectionsIdsKey(userId))
             preferences.remove(activityKey(userId))
-            preferences.remove(libraryKey(userId))
+            preferences.remove(libraryIdsKey(userId))
         }
-        Log.d(TAG, "Invalidated all cache for user: $userId")
     }
 
     suspend fun clearAllCache() {
         dataStore.edit { preferences ->
             preferences.clear()
         }
-        Log.d(TAG, "Cleared all profile cache")
     }
 
-    private fun isCacheValid(timestamp: Long): Boolean {
-        return System.currentTimeMillis() - timestamp < CACHE_EXPIRATION_MILLIS
+    private fun isQuickCacheValid(timestamp: Long): Boolean {
+        return System.currentTimeMillis() - timestamp < QUICK_CACHE_EXPIRATION_MILLIS
     }
 }

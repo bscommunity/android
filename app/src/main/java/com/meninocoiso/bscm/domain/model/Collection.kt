@@ -1,21 +1,34 @@
 package com.meninocoiso.bscm.domain.model
 
+import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.Ignore
+import androidx.room.PrimaryKey
 import com.meninocoiso.bscm.domain.enums.CollectionKind
-import com.meninocoiso.bscm.domain.serialization.LocalDateTimeSerializer
-import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
 
-@Serializable
+@Entity(tableName = "collections")
 data class Collection(
-    val id: String,
-    val userId: String,
+    @PrimaryKey val id: String,
+    @ColumnInfo(name = "user_id") val userId: String,
     val kind: CollectionKind,
     val name: String,
-    val isPublic: Boolean,
-    @Serializable(with = LocalDateTimeSerializer::class)
-    val createdAt: LocalDateTime,
-    @Serializable(with = LocalDateTimeSerializer::class)
-    val updatedAt: LocalDateTime,
-    val coverUrl: String? = null,
-    val itemCount: Int = 0,
-)
+    @ColumnInfo(name = "is_public") val isPublic: Boolean,
+    @ColumnInfo(name = "cover_url") val coverUrl: String? = null,
+    @ColumnInfo(name = "item_count") val itemCount: Int = 0,
+    @ColumnInfo(name = "created_at") val createdAt: LocalDateTime,
+    @ColumnInfo(name = "updated_at") val updatedAt: LocalDateTime,
+    @Ignore val items: List<CatalogItem> = emptyList(),
+) {
+    constructor(
+        id: String,
+        userId: String,
+        kind: CollectionKind,
+        name: String,
+        isPublic: Boolean,
+        coverUrl: String?,
+        itemCount: Int,
+        createdAt: LocalDateTime,
+        updatedAt: LocalDateTime,
+    ) : this(id, userId, kind, name, isPublic, coverUrl, itemCount, createdAt, updatedAt, emptyList())
+}
