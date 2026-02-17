@@ -150,11 +150,9 @@ fun BottomNav(
         }
     }
 
-    val onNavigateToProfile = { user: SimplifiedUser, isOwner: Boolean, isFollowing: Boolean ->
+    val onNavigateToProfile = { user: SimplifiedUser ->
         navController.navigate(route = Profile(
             user = user,
-            isOwner = isOwner,
-            isFollowing = isFollowing,
         ))
     }
 

@@ -27,10 +27,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.presentation.navigation.OnSnackbar
 import com.meninocoiso.bscm.presentation.navigation.show
+import com.meninocoiso.bscm.presentation.screen.profile.OnNavigateToProfile
 import com.meninocoiso.bscm.presentation.screen.settings.sections.AboutSection
 import com.meninocoiso.bscm.presentation.screen.settings.sections.AccountSection
 import com.meninocoiso.bscm.presentation.screen.settings.sections.CustomizationSection
@@ -50,7 +50,7 @@ fun SettingsScreen(
     startOAuth: (Uri) -> Unit,
     onFabStateChange: (Boolean) -> Unit,
     onSnackbar: OnSnackbar,
-    onNavigateToProfile: (user: SimplifiedUser, isOwner: Boolean, isFollowing: Boolean) -> Unit,
+    onNavigateToProfile: OnNavigateToProfile,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -97,7 +97,6 @@ fun SettingsScreen(
             )
         }
 
-        // Account Section with Authentication
         AccountSection(
             user = user,
             isLoading = isLoading,

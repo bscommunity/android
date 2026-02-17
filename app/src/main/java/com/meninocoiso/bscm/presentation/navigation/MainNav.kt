@@ -133,12 +133,12 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
                 // Deep link to user profile
                 composableWithTransitions<DeepLinkProfile>(
                     deepLinks = listOf(
-                        navDeepLink { uriPattern = "bscm://profile/{userId}" }
+                        navDeepLink { uriPattern = "bscm://profile/{username}" }
                     )
                 ) { backStackEntry ->
                     val profileRoute: DeepLinkProfile = backStackEntry.toRoute()
                     ProfileRoute(
-                        username = profileRoute.userId,
+                        username = profileRoute.username,
                         onNavigateToDetails = { chart ->
                             onNavigateToDetails(chart)
                         },
@@ -178,11 +178,9 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
                 ) { backStackEntry ->
                     val profileRoute: Profile = backStackEntry.toRoute()
                     ProfileScreen(
-                        this@SharedTransitionLayout,
-                        this,
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedContentScope = this,
                         user = profileRoute.user,
-                        isFollowing = profileRoute.isFollowing,
-                        isOwner = profileRoute.isOwner,
                         onReturn = {
                             navController.navigateUp()
                         },

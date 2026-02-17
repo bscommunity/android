@@ -55,7 +55,7 @@ fun AnimatedAccountHeader(
                     .roundedPolygonClip()
                     .clickable(
                         onClick = {
-                            onNavigateToProfile(user.toSimplifiedUser(), true, false)
+                            onNavigateToProfile(user.toSimplifiedUser())
                         },
                         indication = ripple(
                             bounded = true,
