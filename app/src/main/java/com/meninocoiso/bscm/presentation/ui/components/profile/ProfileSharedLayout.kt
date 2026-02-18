@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.Text
@@ -60,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
+import com.meninocoiso.bscm.presentation.ui.components.layout.SwipeableSnackbarHost
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonClip
 import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonShape
@@ -75,6 +77,7 @@ fun ProfileSectionsLayout(
     user: SimplifiedUser,
     tabItems: List<ProfileTabItem>,
     onReturn: () -> Unit,
+    snackbarHostState: SnackbarHostState = androidx.compose.runtime.remember { SnackbarHostState() },
     topBarActions: @Composable RowScope.() -> Unit = {},
     headerActions: @Composable (() -> Unit)? = null,
     headerIdentity: @Composable BoxScope.() -> Unit,
@@ -97,6 +100,7 @@ fun ProfileSectionsLayout(
         modifier = Modifier
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
+        snackbarHost = { SwipeableSnackbarHost(snackbarHostState) },
         topBar = {
             MediumTopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(

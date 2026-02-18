@@ -10,8 +10,11 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -24,7 +27,7 @@ import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileHeaderIden
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileLikes
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileSectionsLayout
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileTabItem
-import com.meninocoiso.bscm.presentation.viewmodel.UserProfileViewModel
+import com.meninocoiso.bscm.presentation.viewmodel.profile.UserProfileViewModel
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -57,11 +60,19 @@ fun ProfileScreen(
     val likesListState = rememberLazyListState()
     val bookmarksListState = rememberLazyListState()
     val collectionsListState = rememberLazyListState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(profileViewModel) {
+        profileViewModel.snackbarEvents.collect { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
 
     ProfileSectionsLayout(
         user = user,
         tabItems = tabItems,
         onReturn = onReturn,
+        snackbarHostState = snackbarHostState,
         topBarActions = {
             IconButton(onClick = { }) {
                 Icon(
@@ -84,11 +95,12 @@ fun ProfileScreen(
                 ProfileLikes(
                     items = uiState.likes.items,
                     state = uiState.likes.state,
-                    onFetch = { profileViewModel.fetchUserLikes(reset = true) },
+                    isRefreshing = uiState.likes.isRefreshing,
+                    onFetch = { profileViewModel.refreshUserLikes() },
                     onNavigateToDetails = onNavigateToDetails,
                     listState = likesListState,
-                    isLoadingMore = uiState.likes.pagination.isLoadingMore,
-                    hasMore = uiState.likes.pagination.hasMore,
+                    isLoadingMore = uiState.likes.isLoadingMore,
+                    hasMore = uiState.likes.hasMore,
                     onLoadMore = { profileViewModel.loadMoreLikes() },
                     modifier = Modifier.fillMaxSize()
                 )
@@ -99,9 +111,8 @@ fun ProfileScreen(
                     modifier = Modifier.fillMaxSize(),
                     items = uiState.collections.items,
                     state = uiState.collections.state,
-                    onFetch = {
-                        profileViewModel.fetchUserCollections(reset = true)
-                    },
+                    isRefreshing = uiState.collections.isRefreshing,
+                    onFetch = { profileViewModel.refreshUserCollections() },
                     onNavigateToDetails = onNavigateToDetails,
                     onNavigateToCollection = onNavigateToCollection,
                     bookmarksListState = bookmarksListState,

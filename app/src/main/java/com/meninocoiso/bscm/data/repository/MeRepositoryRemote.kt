@@ -64,13 +64,12 @@ class MeRepositoryRemote @Inject constructor(
     }
 
     override suspend fun getLikes(limit: Int, offset: Int, useCache: Boolean): Result<List<Chart>> = runCatching {
+        Log.d(TAG, "getLikes called with limit=$limit, offset=$offset, useCache=$useCache")
         val localLikes = withContext(Dispatchers.IO) { chartDao.getLikedCharts(limit, offset) }
+        Log.d(TAG, "Found ${localLikes.size} liked charts in Room for offset=$offset")
         if (useCache && offset == 0 && localLikes.isNotEmpty()) {
             Log.d(TAG, "Returning likes from Room (${localLikes.size} items)")
             return@runCatching localLikes
-        }
-        if (useCache && offset > 0) {
-            return@runCatching emptyList()
         }
 
         // Fetch from API
@@ -84,13 +83,11 @@ class MeRepositoryRemote @Inject constructor(
     }
 
     override suspend fun getBookmarks(limit: Int, offset: Int, useCache: Boolean): Result<List<Chart>> = runCatching {
+        Log.d(TAG, "getBookmarks called with limit=$limit, offset=$offset, useCache=$useCache")
         val localBookmarks = withContext(Dispatchers.IO) { chartDao.getBookmarkedCharts(limit, offset) }
         if (useCache && offset == 0 && localBookmarks.isNotEmpty()) {
             Log.d(TAG, "Returning bookmarks from Room (${localBookmarks.size} items)")
             return@runCatching localBookmarks
-        }
-        if (useCache && offset > 0) {
-            return@runCatching emptyList()
         }
 
         // Fetch from API

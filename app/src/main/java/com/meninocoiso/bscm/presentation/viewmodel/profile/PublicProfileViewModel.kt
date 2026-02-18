@@ -1,0 +1,178 @@
+package com.meninocoiso.bscm.presentation.viewmodel
+
+import android.util.Log
+import androidx.lifecycle.viewModelScope
+import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
+import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
+import com.meninocoiso.bscm.domain.model.CatalogItem
+import com.meninocoiso.bscm.domain.repository.ProfileRepository
+import com.meninocoiso.bscm.domain.result.ContentResult
+import com.meninocoiso.bscm.presentation.viewmodel.profile.BaseProfileViewModel
+import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedSection
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+private const val TAG = "PublicProfileViewModel"
+
+/**
+ * ViewModel for viewing another user's public profile.
+ *
+ * Because pagination logic now lives in [BaseProfileViewModel], this class is
+ * purely about *what* to fetch and *where* to store results — not *how* to paginate.
+ */
+@HiltViewModel
+class PublicProfileViewModel @Inject constructor(
+    private val profileRepository: ProfileRepository,
+) : BaseProfileViewModel() {
+
+    // -------------------------------------------------------------------------
+    // Profile header
+    // -------------------------------------------------------------------------
+
+    private val _profile =
+        MutableStateFlow<ContentResult<UserProfileResponse>>(ContentResult.Loading)
+    val profile: StateFlow<ContentResult<UserProfileResponse>> = _profile.asStateFlow()
+
+    // -------------------------------------------------------------------------
+    // UI state
+    // -------------------------------------------------------------------------
+
+    data class PublicProfileUiState(
+        val activity: PagedSection<ActivityItemResponse> = PagedSection(),
+        val library: PagedSection<CatalogItem> = PagedSection(),
+        val isFollowing: Boolean = false,
+    )
+
+    private val _uiState = MutableStateFlow(PublicProfileUiState())
+    val uiState: StateFlow<PublicProfileUiState> = _uiState.asStateFlow()
+
+    // -------------------------------------------------------------------------
+    // Pagination cursors
+    // -------------------------------------------------------------------------
+
+    private val activityPagination = PaginationState(pageSize = 20)
+    private val libraryPagination = PaginationState(pageSize = 20)
+
+    // -------------------------------------------------------------------------
+    // Public API
+    // -------------------------------------------------------------------------
+
+    fun loadProfile(username: String) {
+        resetAll()
+        viewModelScope.launch {
+            Log.d(TAG, "Loading profile for: $username")
+            profileRepository.getProfileHeader(username)
+                .onSuccess { profile ->
+                    _profile.value = ContentResult.Success(profile)
+                    _uiState.update { it.copy(isFollowing = profile.isFollowing == true) }
+                    Log.d(TAG, "Profile loaded: $username")
+                }
+                .onFailure { error ->
+                    _profile.value = ContentResult.Error(error.message ?: "Failed to load profile")
+                    Log.e(TAG, "Error loading profile: $username", error)
+                }
+        }
+    }
+
+    /**
+     * Called when the user taps a tab. Fetches lazily on first visit.
+     *
+     * @param userId The resolved user ID (available after [loadProfile] succeeds).
+     */
+    fun onTabSelected(userId: String, index: Int) {
+        when (index) {
+            0 -> if (_uiState.value.activity.isEmpty) fetchActivity(userId)
+            1 -> if (_uiState.value.library.isEmpty) fetchLibrary(userId)
+        }
+    }
+
+    /**
+     * Optimistic follow toggle — flips local state immediately, reverts on failure.
+     * This is faster-feeling than waiting for the network round-trip.
+     */
+    fun toggleFollow(userId: String) = viewModelScope.launch {
+        val target = !_uiState.value.isFollowing
+        _uiState.update { it.copy(isFollowing = target) } // optimistic update
+
+        val result = if (target) profileRepository.followUser(userId)
+        else profileRepository.unfollowUser(userId)
+
+        result
+            .onSuccess { Log.d(TAG, "Follow toggled → $target for $userId") }
+            .onFailure { error ->
+                _uiState.update { it.copy(isFollowing = !target) } // revert
+                emitSnackbar("Falha ao atualizar seguidor")
+                Log.e(TAG, "Toggle follow failed for $userId", error)
+            }
+    }
+
+    fun fetchActivity(userId: String) = fetchPaged(
+        pagination = activityPagination,
+        fetch = { limit, offset, _ ->
+            profileRepository.getActivity(userId = userId, limit = limit, offset = offset)
+        },
+        getItems = { _uiState.value.activity.items },
+        setSection = { section ->
+            _uiState.update { it.copy(activity = section) }
+            Log.d(TAG, "Activity updated: ${section.items.size} items for $userId")
+        },
+    )
+
+    fun refreshActivity(userId: String) = refreshPaged(
+        pagination = activityPagination,
+        fetch = { limit, offset, _ ->
+            profileRepository.getActivity(userId = userId, limit = limit, offset = offset)
+        },
+        getItems = { _uiState.value.activity.items },
+        getSection = { _uiState.value.activity },
+        setSection = { section -> _uiState.update { it.copy(activity = section) } },
+        onFailureWithData = { emitSnackbar("Falha ao atualizar atividade") },
+    )
+
+    fun fetchLibrary(userId: String) = fetchPaged(
+        pagination = libraryPagination,
+        fetch = { limit, offset, _ ->
+            profileRepository.getUserCharts(userId = userId, limit = limit, offset = offset)
+        },
+        getItems = { _uiState.value.library.items },
+        setSection = { section ->
+            _uiState.update { it.copy(library = section) }
+            Log.d(TAG, "Library updated: ${section.items.size} items for $userId")
+        },
+    )
+
+    fun refreshLibrary(userId: String) = refreshPaged(
+        pagination = libraryPagination,
+        fetch = { limit, offset, _ ->
+            profileRepository.getUserCharts(userId = userId, limit = limit, offset = offset)
+        },
+        getItems = { _uiState.value.library.items },
+        getSection = { _uiState.value.library },
+        setSection = { section -> _uiState.update { it.copy(library = section) } },
+        onFailureWithData = { emitSnackbar("Falha ao atualizar biblioteca") },
+    )
+
+    fun loadMoreActivity(userId: String) {
+        if (_uiState.value.activity.isIdle) fetchActivity(userId)
+    }
+
+    fun loadMoreLibrary(userId: String) {
+        if (_uiState.value.library.isIdle) fetchLibrary(userId)
+    }
+
+    // -------------------------------------------------------------------------
+    // Reset
+    // -------------------------------------------------------------------------
+
+    private fun resetAll() {
+        activityPagination.reset()
+        libraryPagination.reset()
+        _profile.value = ContentResult.Loading
+        _uiState.value = PublicProfileUiState()
+    }
+}

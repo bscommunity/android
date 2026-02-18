@@ -126,10 +126,7 @@ fun PublicProfileScreen(
                     items = uiState.activity.items,
                     state = uiState.activity.state,
                     onFetch = {
-                        profileViewModel.fetchProfileActivity(
-                            userId,
-                            reset = true
-                        )
+                        profileViewModel.fetchActivity(userId)
                     },
                     listState = activityListState,
                     isLoadingMore = uiState.activity.isLoadingMore,
@@ -145,10 +142,7 @@ fun PublicProfileScreen(
                     items = uiState.library.items,
                     state = uiState.library.state,
                     onFetch = {
-                        profileViewModel.fetchProfileLibrary(
-                            userId,
-                            reset = true
-                        )
+                        profileViewModel.fetchLibrary(userId)
                     },
                     onNavigateToDetails = onNavigateToDetails,
                     listState = libraryListState,

@@ -31,6 +31,7 @@ fun ProfileCollections(
     modifier: Modifier = Modifier,
     items: List<Collection>,
     state: ContentState,
+    isRefreshing: Boolean = false,
     onFetch: (reset: Boolean) -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
     onNavigateToCollection: (collectionId: String) -> Unit,
@@ -80,6 +81,7 @@ fun ProfileCollections(
                     ProfileCollectionTabContent(
                         items = bookmarksCollection?.items ?: emptyList(),
                         state = state,
+                        isRefreshing = isRefreshing,
                         onFetch = onFetch,
                         onNavigateToDetails = onNavigateToDetails,
                         listState = bookmarksListState,
@@ -96,6 +98,7 @@ fun ProfileCollections(
                     ProfileCollectionList(
                         items = customCollections,
                         state = state,
+                        isRefreshing = isRefreshing,
                         onFetch = onFetch,
                         onNavigateToCollection = onNavigateToCollection,
                         listState = collectionsListState,
@@ -124,6 +127,7 @@ fun ProfileCollections(
 fun ProfileCollectionTabContent(
     items: List<CatalogItem>,
     state: ContentState,
+    isRefreshing: Boolean = false,
     onFetch: (reset: Boolean) -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
     listState: LazyListState,
@@ -142,6 +146,7 @@ fun ProfileCollectionTabContent(
     BaseContainer(
         isEmpty = items.isEmpty(),
         state = state,
+        isRefreshing = isRefreshing,
         onRetry = onFetch,
         empty = {
             StatusMessageUI(
@@ -156,7 +161,7 @@ fun ProfileCollectionTabContent(
             contentList(items, onNavigateToDetails)
             pagination(
                 isLoadingMore = isLoadingMore,
-                message = if (hasMore) "Carregando..." else "Fim da lista"
+                message = if (!hasMore) "Fim da lista" else ""
             )
         }
     }
@@ -166,6 +171,7 @@ fun ProfileCollectionTabContent(
 fun ProfileCollectionList(
     items: List<Collection>,
     state: ContentState,
+    isRefreshing: Boolean = false,
     onFetch: (reset: Boolean) -> Unit,
     onNavigateToCollection: (collectionId: String) -> Unit,
     listState: LazyListState,
@@ -184,6 +190,7 @@ fun ProfileCollectionList(
     BaseContainer(
         isEmpty = items.isEmpty(),
         state = state,
+        isRefreshing = isRefreshing,
         onRetry = onFetch,
         empty = {
             StatusMessageUI(
@@ -209,7 +216,7 @@ fun ProfileCollectionList(
             }
             pagination(
                 isLoadingMore = isLoadingMore,
-                message = if (hasMore) "Loading..." else "End of list"
+                message = if (!hasMore) "End of list" else ""
             )
         }
     }

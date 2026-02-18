@@ -17,15 +17,16 @@ import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 
 @Composable
 fun ProfileLikes(
+    modifier: Modifier = Modifier,
     items: List<CatalogItem>,
     state: ContentState,
+    isRefreshing: Boolean,
     onFetch: (reset: Boolean) -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
     listState: LazyListState,
     isLoadingMore: Boolean,
     hasMore: Boolean,
     onLoadMore: () -> Unit,
-    modifier: Modifier = Modifier
 ) {
     OnScrollLoadMore(
         listState = listState,
@@ -37,6 +38,7 @@ fun ProfileLikes(
     BaseContainer(
         isEmpty = items.isEmpty(),
         state = state,
+        isRefreshing = isRefreshing,
         onRetry = onFetch,
         empty = {
             StatusMessageUI(
@@ -62,7 +64,7 @@ fun ProfileLikes(
             contentList(items, onNavigateToDetails)
             pagination(
                 isLoadingMore = isLoadingMore,
-                message = if (hasMore) "Carregando..." else "Fim da lista"
+                message = if (!hasMore) "Fim da lista" else ""
             )
         }
     }

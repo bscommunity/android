@@ -31,6 +31,7 @@ import com.meninocoiso.bscm.util.DateUtils.DateFormat
 fun BaseContainer(
     isEmpty: Boolean,
     state: ContentState,
+    isRefreshing: Boolean = false,
     onRetry: (reset: Boolean) -> Unit,
     empty: @Composable () -> Unit,
     content: @Composable () -> Unit
@@ -61,7 +62,7 @@ fun BaseContainer(
         else -> {
             PullToRefreshBox(
                 modifier = Modifier.fillMaxSize(),
-                isRefreshing = state is ContentState.Loading,
+                isRefreshing = isRefreshing,
                 onRefresh = { onRetry(false) }
             ) {
                 content()
@@ -83,7 +84,7 @@ private fun PaginationLoadingIndicator(
             CircularProgressIndicator(modifier = Modifier
                 .size(24.dp)
                 .padding(vertical = 36.dp))
-        } else {
+        } else if (message.isNotEmpty()) {
             Text(
                 text = message,
                 modifier = Modifier.padding(16.dp)
