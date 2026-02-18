@@ -579,16 +579,17 @@ fun ChartDetailsScreen(
                 showCollectionSheet = false
             },
             onCreateCollection = { name, isPublic ->
-                scope.launch {
-                    val newCollectionId = collectionViewModel.createCollection(name, isPublic)
-                    Log.d("ChartDetailsScreen", "Created collection with ID: $newCollectionId")
-                    if (newCollectionId != null) {
+                val newCollectionId = collectionViewModel.createCollection(name, isPublic)
+                Log.d("ChartDetailsScreen", "Created collection with ID: $newCollectionId")
+                if (newCollectionId != null) {
+                    currentChart.contentId?.let { contentId ->
+                        interactionViewModel.addToCollection(contentId, newCollectionId)
+                    }
+                    scope.launch {
                         snackbarHostState.showSnackbar("Saved to \"$name\"!")
-                        currentChart.contentId?.let { contentId ->
-                            interactionViewModel.addToCollection(contentId, newCollectionId)
-                        }
-                    } else {
-                        // Handle collection creation failure if needed
+                    }
+                } else {
+                    scope.launch {
                         snackbarHostState.showSnackbar("Failed to create collection. Please try again.")
                     }
                 }

@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -68,33 +70,49 @@ fun BaseContainer(
     }
 }
 
+@Composable
+private fun PaginationLoadingIndicator(
+    isLoadingMore: Boolean,
+    message: String
+) {
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
+    ) {
+        if (isLoadingMore) {
+            CircularProgressIndicator(modifier = Modifier
+                .size(24.dp)
+                .padding(vertical = 36.dp))
+        } else {
+            Text(
+                text = message,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+    }
+}
+
 fun LazyListScope.pagination(
     isLoadingMore: Boolean,
     message: String
 ) {
-    if (isLoadingMore) {
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 36.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp))
-            }
-        }
-    } else {
-        item {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = message,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-        }
+    item {
+        PaginationLoadingIndicator(
+            isLoadingMore = isLoadingMore,
+            message = message
+        )
+    }
+}
+
+fun LazyGridScope.pagination(
+    isLoadingMore: Boolean,
+    message: String
+) {
+    item(span = { GridItemSpan(maxLineSpan) }) {
+        PaginationLoadingIndicator(
+            isLoadingMore = isLoadingMore,
+            message = message
+        )
     }
 }
 

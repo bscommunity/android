@@ -3,9 +3,9 @@ package com.meninocoiso.bscm.presentation.ui.components.layout
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -40,7 +40,8 @@ fun CoverArt(
     difficulty: Difficulty? = null,
     borderRadius: Dp = 0.dp,
     size: Dp = 76.dp,
-    url: String
+    url: String,
+    contentScale: ContentScale = ContentScale.Crop
 ) {
     CoverArt(
         modifier = modifier,
@@ -48,7 +49,8 @@ fun CoverArt(
         borderRadius = borderRadius,
         width = size,
         height = size,
-        url = url
+        url = url,
+        contentScale = contentScale
     )
 }
 
@@ -59,7 +61,8 @@ fun CoverArt(
     borderRadius: Dp = 0.dp,
     width: Dp = 76.dp,
     height: Dp = 76.dp,
-    url: String
+    url: String,
+    contentScale: ContentScale = ContentScale.Crop
 ) {
     val hasExplicitSize = width != Dp.Unspecified && height != Dp.Unspecified
     val sizeModifier = if (hasExplicitSize) Modifier.size(width, height) else Modifier
@@ -84,13 +87,13 @@ fun CoverArt(
     ) {
         val imageOptions = if (hasExplicitSize) {
             ImageOptions(
-                contentScale = ContentScale.Crop,
+                contentScale = contentScale,
                 alignment = Alignment.Center,
                 requestSize = IntSize(sizeInPx.first, sizeInPx.second)
             )
         } else {
             ImageOptions(
-                contentScale = ContentScale.Crop,
+                contentScale = contentScale,
                 alignment = Alignment.Center
             )
         }

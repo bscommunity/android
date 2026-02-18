@@ -18,7 +18,6 @@ import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -30,11 +29,7 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.ui.components.details.GameplayPreview
 import com.meninocoiso.bscm.presentation.ui.components.details.GameplayPreviewThumbnail
 import com.meninocoiso.bscm.presentation.ui.components.details.openLinkIntent
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil3.CoilImage
-import com.skydoves.landscapist.components.rememberImageComponent
-import com.skydoves.landscapist.placeholder.shimmer.Shimmer
-import com.skydoves.landscapist.placeholder.shimmer.ShimmerPlugin
+import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 
 sealed class CarouselItem {
     data class ImageItem(
@@ -73,22 +68,13 @@ fun MediaCarousel(items: List<CarouselItem>, isVideoEnabled: Boolean) {
             when (val item = items[i]) {
                 is CarouselItem.ImageItem -> {
                     // Square image: size equals carouselHeight
-                    CoilImage(
-                        imageModel = { item.imageUrl },
-                        component = rememberImageComponent {
-                            +ShimmerPlugin(
-                                Shimmer.Resonate(
-                                    baseColor = Color(0xFFF4F4E8),
-                                    highlightColor = Color(0xFFE9E9DD)
-                                )
-                            )
-                        },
-                        modifier = Modifier
-                            .maskClip(MaterialTheme.shapes.extraLarge),
-                        imageOptions = ImageOptions(
-                            contentScale = ContentScale.Fit,
-                            alignment = Alignment.Center,
-                        ),
+                    CoverArt(
+                        url = item.imageUrl,
+                        modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge),
+                        width = carouselHeight,
+                        height = carouselHeight,
+                        borderRadius = 0.dp,
+                        contentScale = ContentScale.Fit
                     )
                 }
 

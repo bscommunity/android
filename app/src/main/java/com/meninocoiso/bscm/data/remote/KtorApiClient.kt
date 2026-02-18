@@ -116,7 +116,7 @@ class KtorApiClient @Inject constructor(
             // url("https://api-cyb1.onrender.com")
             url {
                 protocol = URLProtocol.HTTP
-                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.11"
+                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.9"
                 port = 8080
             }
             contentType(KtorContentType.Application.Json)
@@ -414,6 +414,7 @@ class KtorApiClient @Inject constructor(
         val response = client.post("collections/$collectionId/items") {
             setBody(mapOf("contentId" to contentId))
         }
+        Log.d(TAG, "Add item to collection response: ${response.status}, body: ${response.bodyAsText()}")
         return response.status.isSuccess()
     }
 

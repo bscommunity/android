@@ -23,6 +23,7 @@ import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Theme
 import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.model.User
+import com.meninocoiso.bscm.domain.model.toSimplifiedUser
 import com.meninocoiso.bscm.domain.serialization.ChartParameterType
 import com.meninocoiso.bscm.domain.serialization.SimplifiedUserParameterType
 import com.meninocoiso.bscm.presentation.screen.collection.Collection
@@ -139,6 +140,7 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
                     val profileRoute: DeepLinkProfile = backStackEntry.toRoute()
                     ProfileRoute(
                         username = profileRoute.username,
+                        user = if (user?.username == profileRoute.username) user.toSimplifiedUser() else null,
                         onNavigateToDetails = { chart ->
                             onNavigateToDetails(chart)
                         },

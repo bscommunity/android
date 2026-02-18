@@ -16,12 +16,11 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -55,6 +54,8 @@ import com.meninocoiso.bscm.presentation.ui.components.SwitchUI
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 import kotlinx.coroutines.launch
 
+private const val MAX_NAME_LENGTH = 30
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CollectionBottomSheet(
@@ -64,7 +65,7 @@ fun CollectionBottomSheet(
     collections: List<Collection>,
     isLoading: Boolean,
     onCollectionSelected: (collectionId: String) -> Unit,
-    onCreateCollection: (name: String, isPublic: Boolean) -> Unit
+    onCreateCollection: suspend (name: String, isPublic: Boolean) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
     val horizontalPagerState = rememberPagerState { 2 }
@@ -156,7 +157,11 @@ fun CollectionBottomSheet(
                         },
                         onSave = { name, isPublic ->
                             onCreateCollection(name, isPublic)
-                            onDismissRequest()
+                            coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
+                                if (!sheetState.isVisible) {
+                                    onDismissRequest()
+                                }
+                            }
                         }
                     )
                 }
@@ -248,10 +253,12 @@ fun CollectionsListSection(
 fun CreateCollectionSection(
     isLoading: Boolean,
     onBackClick: () -> Unit = { },
-    onSave: (name: String, isPublic: Boolean) -> Unit = { _, _ -> }
+    onSave: suspend (name: String, isPublic: Boolean) -> Unit
 ) {
     var isPublic by rememberSaveable { mutableStateOf(true) }
-    val nameState = rememberTextFieldState(initialText = "")
+    var name by rememberSaveable { mutableStateOf("") }
+
+    val scope = rememberCoroutineScope()
 
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -262,11 +269,12 @@ fun CreateCollectionSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
-            state = nameState,
+            value = name,
+            onValueChange = { if (it.length <= MAX_NAME_LENGTH) name = it },
             enabled = !isLoading,
             label = { Text("Name") },
-            lineLimits = TextFieldLineLimits.SingleLine,
-            supportingText = { Text("0/30") },
+            singleLine = true,
+            supportingText = { Text("${name.length}/${MAX_NAME_LENGTH}") },
             placeholder = { Text("Enter collection name") }
         )
         ListItem(
@@ -284,20 +292,23 @@ fun CreateCollectionSection(
             },
         )
         Button(
-            enabled = !isLoading,
+            enabled = !isLoading && name.isNotBlank(),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
             onClick = {
-                val name = nameState.text.toString().trim()
-                if (name.isNotEmpty()) {
-                    onSave(name, isPublic)
+                val trimmedName = name.trim()
+                if (trimmedName.isNotEmpty()) {
+                    scope.launch {
+                        onSave(trimmedName, isPublic)
+                    }
                 }
-            }) {
+            })
+        {
             if (isLoading) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(16.dp),
+                    color = ButtonDefaults.buttonColors().disabledContentColor,
                 )
             } else {
                 Text("Save")

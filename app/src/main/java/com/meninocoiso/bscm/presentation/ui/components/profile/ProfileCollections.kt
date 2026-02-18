@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -42,7 +44,7 @@ fun ProfileCollections(
     onLoadMoreCollections: () -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val tabItems = listOf("All", "Collections", "Charts", "Tour Passes", "Themes")
+    val tabItems = listOf("Charts", "Tour Passes", "Themes", "Collections")
 
     val horizontalPagerState = rememberPagerState { tabItems.size }
 
@@ -50,12 +52,13 @@ fun ProfileCollections(
     val customCollections = items.filter { it.kind == CollectionKind.USER }
 
     Column(modifier) {
-        val extraTabs = (items.size - 2).coerceAtLeast(0)
+        // We subtract bookmarks from the total count to get the number of custom ones
+        val collectionsAmount = (items.size - 1).coerceAtLeast(0)
 
         if (items.isNotEmpty()) {
             CatalogFilters(
                 items = items.flatMap { it.items },
-                collectionsAmount = extraTabs,
+                collectionsAmount = collectionsAmount,
                 currentSelected = horizontalPagerState.currentPage,
                 onFilterSelected = { index ->
                     coroutineScope.launch {
@@ -88,7 +91,7 @@ fun ProfileCollections(
                     )
                 }
 
-                4 -> {
+                3 -> {
                     // Collections
                     ProfileCollectionList(
                         items = customCollections,
@@ -190,11 +193,12 @@ fun ProfileCollectionList(
             )
         }
     ) {
-        LazyColumn(
+        LazyVerticalGrid(
             modifier = modifier,
-            state = listState,
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            columns = GridCells.Fixed(2),
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(items.size) { index ->
                 val item = items[index]
@@ -205,7 +209,7 @@ fun ProfileCollectionList(
             }
             pagination(
                 isLoadingMore = isLoadingMore,
-                message = if (hasMore) "Carregando..." else "Fim da lista"
+                message = if (hasMore) "Loading..." else "End of list"
             )
         }
     }

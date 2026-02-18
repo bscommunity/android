@@ -25,7 +25,7 @@ class CollectionRepositoryRemote @Inject constructor(
     ): Result<List<Collection>> = runCatching {
         if (userId == "user") {
             val localCollections = collectionDao.getUserCollections(limit, offset)
-            if (localCollections.isNotEmpty()) {
+            if (useCache && offset == 0 && localCollections.isNotEmpty()) {
                 Log.d(TAG, "Returning owner collections from Room (${localCollections.size} items)")
                 return@runCatching localCollections
             }

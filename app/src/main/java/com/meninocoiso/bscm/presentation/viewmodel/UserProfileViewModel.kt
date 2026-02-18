@@ -91,8 +91,8 @@ class UserProfileViewModel @Inject constructor(
      */
     fun onTabSelected(index: Int) {
         when (index) {
-            0 -> if (_uiState.value.likes.items.isEmpty()) fetchUserLikes(reset = true)
-            1 -> if (_uiState.value.collections.items.isEmpty()) fetchUserCollections(reset = true)
+            0 -> if (_uiState.value.likes.items.isEmpty()) fetchUserLikes(reset = false)
+            1 -> if (_uiState.value.collections.items.isEmpty()) fetchUserCollections(reset = false)
         }
     }
 
@@ -116,11 +116,6 @@ class UserProfileViewModel @Inject constructor(
                 }
             }
 
-            Log.d(
-                TAG,
-                "Fetching user likes, reset: $reset - currentPage: ${likesPagination.currentPage}, nextOffset: ${likesPagination.nextOffset()}, isLoadingMore: ${likesPagination.isLoadingMore}, hasMore: ${likesPagination.hasMore}"
-            )
-
             if (likesPagination.isLoadingMore || !likesPagination.hasMore) return@launch
 
             likesPagination.isLoadingMore = true
@@ -139,7 +134,7 @@ class UserProfileViewModel @Inject constructor(
             val result = meRepository.getLikes(
                 limit = likesPagination.pageSize,
                 offset = likesPagination.nextOffset(),
-                useCache = true
+                useCache = !reset
             )
 
             result.onSuccess { data ->
@@ -148,13 +143,7 @@ class UserProfileViewModel @Inject constructor(
                 } else {
                     _uiState.value.likes.items + data
                 }
-                likesPagination.hasMore = if (likesPagination.currentPage == 0) {
-                    // If it's the first page, we can use the result size to determine if there's more
-                    data.size >= likesPagination.pageSize
-                } else {
-                    // For subsequent pages, we rely on the API's indication of more data
-                    data.isNotEmpty()
-                }
+                likesPagination.hasMore = data.size >= likesPagination.pageSize
                 likesPagination.advancePage()
                 _uiState.update { current ->
                     current.copy(
@@ -194,7 +183,7 @@ class UserProfileViewModel @Inject constructor(
     }
 
     /**
-     * Fetches the user's collections (bookmarks and custom collections) with pagination support.
+     * Fetches the user's collections (bookmarks and custom collections)
      *
      * @param reset Whether to reset the pagination and content.
      */
@@ -216,8 +205,8 @@ class UserProfileViewModel @Inject constructor(
             }
 
             Log.d(TAG, "Fetching user collections, reset: $reset")
-            fetchBookmarksInternal()
-            fetchCustomCollectionsInternal()
+            fetchBookmarksInternal(!reset)
+            fetchCustomCollectionsInternal(!reset)
         }
     }
 
@@ -225,6 +214,7 @@ class UserProfileViewModel @Inject constructor(
      * Loads more likes for the current user.
      */
     fun loadMoreLikes() {
+        if (_uiState.value.likes.state == ContentState.Loading) return
         Log.d(TAG, "Loading more likes")
         fetchUserLikes(reset = false)
     }
@@ -233,6 +223,7 @@ class UserProfileViewModel @Inject constructor(
      * Loads more bookmarks for the current user.
      */
     fun loadMoreBookmarks() {
+        if (_uiState.value.collections.state == ContentState.Loading) return
         Log.d(TAG, "Loading more bookmarks")
         viewModelScope.launch { fetchBookmarksInternal() }
     }
@@ -241,6 +232,7 @@ class UserProfileViewModel @Inject constructor(
      * Loads more collections for the current user.
      */
     fun loadMoreCollections() {
+        if (_uiState.value.collections.state == ContentState.Loading) return
         Log.d(TAG, "Loading more custom collections")
         viewModelScope.launch { fetchCustomCollectionsInternal() }
     }
@@ -248,7 +240,7 @@ class UserProfileViewModel @Inject constructor(
     /**
      * Fetches bookmarks internally with pagination support.
      */
-    private suspend fun fetchBookmarksInternal() {
+    private suspend fun fetchBookmarksInternal(useCache: Boolean = true) {
         if (bookmarksPagination.isLoadingMore || !bookmarksPagination.hasMore) return
 
         bookmarksPagination.isLoadingMore = true
@@ -265,7 +257,8 @@ class UserProfileViewModel @Inject constructor(
         )
         val result = meRepository.getBookmarks(
             limit = bookmarksPagination.pageSize,
-            offset = bookmarksPagination.nextOffset()
+            offset = bookmarksPagination.nextOffset(),
+            useCache = useCache
         )
 
         result.onSuccess { data ->
@@ -276,17 +269,13 @@ class UserProfileViewModel @Inject constructor(
                 existing + data
             }
 
-            Log.d(
-                "hasMore: ",
-                "${data.size} >= ${bookmarksPagination.pageSize} - dataSize: ${data.size}"
-            )
             bookmarksPagination.hasMore = data.size >= bookmarksPagination.pageSize
             bookmarksPagination.advancePage()
             updateCollectionContent(
                 updatedBookmarks = updatedBookmarks,
                 collectionState = ContentState.Success,
                 bookmarksMeta = PaginationMeta(
-                    isLoadingMore = true,
+                    isLoadingMore = false,
                     hasMore = bookmarksPagination.hasMore
                 )
             )
@@ -317,7 +306,7 @@ class UserProfileViewModel @Inject constructor(
     /**
      * Fetches custom collections internally with pagination support.
      */
-    private suspend fun fetchCustomCollectionsInternal() {
+    private suspend fun fetchCustomCollectionsInternal(useCache: Boolean = true) {
         if (collectionsPagination.isLoadingMore || !collectionsPagination.hasMore) return
 
         collectionsPagination.isLoadingMore = true
@@ -334,7 +323,8 @@ class UserProfileViewModel @Inject constructor(
         )
         val result = collectionRepository.getUserCollections(
             limit = collectionsPagination.pageSize,
-            offset = collectionsPagination.nextOffset()
+            offset = collectionsPagination.nextOffset(),
+            useCache = useCache
         )
 
         result.onSuccess { data ->
@@ -347,7 +337,7 @@ class UserProfileViewModel @Inject constructor(
                 customCollections = updatedCustom,
                 collectionState = ContentState.Success,
                 customMeta = PaginationMeta(
-                    isLoadingMore = true,
+                    isLoadingMore = false,
                     hasMore = collectionsPagination.hasMore
                 )
             )
@@ -441,4 +431,3 @@ class UserProfileViewModel @Inject constructor(
         _uiState.value = UserProfileUiState()
     }
 }
-
