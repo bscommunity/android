@@ -17,12 +17,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -32,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.domain.enums.ButtonVariant
+import com.meninocoiso.bscm.domain.model.SimplifiedCollection
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.ButtonUI
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
@@ -44,94 +49,112 @@ import com.meninocoiso.bscm.presentation.viewmodel.CollectionViewModel
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Collection(val collectionId: String)
+data class Collection(val collection: SimplifiedCollection)
+
+@Serializable
+data class DeepLinkCollection(val collectionId: String)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun CollectionScreen(
-    collectionId: String,
-    onNavigateToDetails: OnNavigateToDetails,
+    collection: SimplifiedCollection,
     onReturn: () -> Unit,
-    collectionViewModel: CollectionViewModel = hiltViewModel()
+    onNavigateToDetails: OnNavigateToDetails,
+    viewModel: CollectionViewModel = hiltViewModel(),
 ) {
     val listState = rememberLazyListState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    val collectionItems by collectionViewModel.collectionItems.collectAsStateWithLifecycle()
-    val collectionState by collectionViewModel.collectionItemsContentState.collectAsStateWithLifecycle()
-    val isLoadingMore by collectionViewModel.isLoadingMoreItems.collectAsStateWithLifecycle()
-    val hasMoreItems by collectionViewModel.hasMoreItems.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val items = uiState.items
 
-    val scrollBehavior =
-        TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
-    LaunchedEffect(collectionId) {
-        collectionViewModel.loadCollectionItems(collectionId, reset = true)
+    // Wire snackbar events from the ViewModel
+    LaunchedEffect(viewModel) {
+        viewModel.snackbarEvents.collect { snackbarHostState.showSnackbar(it) }
     }
 
+    // Initial load — resets automatically when collection.id changes
+    LaunchedEffect(collection.id) {
+        viewModel.loadItems(collection.id, reset = true)
+    }
+
+    // Scroll-driven pagination
     OnScrollLoadMore(
         listState = listState,
-        hasMore = hasMoreItems,
-        isLoadingMore = isLoadingMore,
-        onLoadMore = { collectionViewModel.loadCollectionItems(collectionId, reset = false) }
+        hasMore = items.hasMore,
+        isLoadingMore = items.isLoadingMore,
+        onLoadMore = { viewModel.loadMoreItems(collection.id) },
     )
 
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             LargeTopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.background
+                    scrolledContainerColor = MaterialTheme.colorScheme.background,
                 ),
                 navigationIcon = {
                     IconButton(
-                        modifier = Modifier
-                            .padding(end = 12.dp),
-                        onClick = { onReturn() }
+                        modifier = Modifier.padding(end = 12.dp),
+                        onClick = onReturn,
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             tint = MaterialTheme.colorScheme.onSurface,
-                            contentDescription = stringResource(R.string.return_screen)
+                            contentDescription = stringResource(R.string.return_screen),
                         )
                     }
                 },
                 actions = {
-                    IconButton(onClick = { }) {
+                    IconButton(onClick = {}) {
                         Icon(
                             imageVector = Icons.Default.Share,
-                            contentDescription = stringResource(R.string.share)
+                            contentDescription = stringResource(R.string.share),
                         )
                     }
                 },
                 title = {
                     Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        horizontalAlignment = Alignment.Start
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalAlignment = Alignment.Start,
                     ) {
-                        Text("Coleção", style = MaterialTheme.typography.headlineSmall)
+                        // Name is available immediately from the route parameter —
+                        // no loading state needed for the header.
+                        Text(collection.name, style = MaterialTheme.typography.headlineSmall)
+                        if (collection.itemCount > 0) {
+                            Text(
+                                "${collection.itemCount} items",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 },
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         BaseContainer(
-            isEmpty = collectionItems.isEmpty(),
-            state = collectionState,
-            onRetry = { collectionViewModel.loadCollectionItems(collectionId, reset = true) },
+            isEmpty = items.items.isEmpty(),
+            state = items.state,
+            isRefreshing = items.isRefreshing,
+            onRetry = { viewModel.loadItems(collection.id, reset = true) },
             empty = {
                 StatusMessageUI(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 48.dp),
                     message = "No content in this collection",
-                    icon = R.drawable.outline_library_music_24
+                    icon = R.drawable.outline_library_music_24,
                 )
-            }
+            },
         ) {
             LazyColumn(
                 modifier = Modifier
@@ -147,19 +170,20 @@ fun CollectionScreen(
                         text = "Manage collection",
                         icon = R.drawable.outline_settings_24,
                         onClick = { /* Navigate to edit collection */ },
-                        modifier = Modifier
-                            .padding(start = 16.dp)
+                        modifier = Modifier.padding(start = 16.dp),
+                        variant = ButtonVariant.Tonal
                     )
                 }
                 item {
                     CatalogFilters(
-                        items = collectionItems,
-                        onFilterSelected = { /* Handle filter selection */ })
+                        items = items.items,
+                        onFilterSelected = {},
+                    )
                 }
-                contentList(items = collectionItems, onNavigateToDetails = onNavigateToDetails)
+                contentList(items = items.items, onNavigateToDetails = onNavigateToDetails)
                 pagination(
-                    isLoadingMore = isLoadingMore,
-                    message = if (hasMoreItems) "Carregando..." else "Fim da coleção"
+                    isLoadingMore = items.isLoadingMore,
+                    message = if (items.hasMore) "Carregando..." else "Fim da coleção",
                 )
             }
         }
@@ -172,10 +196,9 @@ fun CollectionScreen(
 fun CollectionScreenPreview() {
     MaterialTheme {
         CollectionScreen(
-            collectionId = "collectionId",
-            onNavigateToDetails = { },
-            onReturn = {}
+            collection = SimplifiedCollection(id = "preview", name = "My Collection", itemCount = 42),
+            onNavigateToDetails = {},
+            onReturn = {},
         )
     }
 }
-

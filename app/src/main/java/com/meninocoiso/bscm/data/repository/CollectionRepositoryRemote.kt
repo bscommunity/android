@@ -67,6 +67,15 @@ class CollectionRepositoryRemote @Inject constructor(
         userCollections
     }
 
+    override suspend fun getCollectionById(collectionId: String): Result<Collection> = runCatching {
+        val cached = collectionDao.getCollectionsByIds(listOf(collectionId)).firstOrNull()
+        if (cached != null) return@runCatching cached
+
+        val collection = apiClient.getCollection(collectionId)
+        collectionDao.upsertCollection(collection)
+        collection
+    }
+
     override suspend fun createCollection(name: String, isPublic: Boolean): Result<Collection> =
         runCatching {
             val collection = apiClient.createCollection(name, isPublic)

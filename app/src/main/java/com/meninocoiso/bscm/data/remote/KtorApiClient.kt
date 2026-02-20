@@ -116,7 +116,7 @@ class KtorApiClient @Inject constructor(
             // url("https://api-cyb1.onrender.com")
             url {
                 protocol = URLProtocol.HTTP
-                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.11"
+                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.151.36"
                 port = 8080
             }
             contentType(KtorContentType.Application.Json)
@@ -375,6 +375,10 @@ class KtorApiClient @Inject constructor(
                 offset?.let { parameters.append("offset", it.toString()) }
             }
         }.body()
+    }
+
+    override suspend fun getCollection(collectionId: String): Collection {
+        return client.get("collections/$collectionId").body()
     }
 
     override suspend fun createCollection(name: String, isPublic: Boolean): Collection {

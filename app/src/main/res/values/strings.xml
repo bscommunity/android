@@ -311,6 +311,8 @@
     <string name="failed_to_load_chart_details">Failed to load chart details</string>
     <string name="failed_to_load_chart_details_description">An error occurred while loading the
         chart details</string>
+    <string name="failed_to_load_collection">Failed to load collection</string>
+    <string name="failed_to_load_collection_description">An error occurred while loading the collection</string>
     <string name="invalid_chart_id">Invalid chart ID</string>
     <string name="failed_to_load_cached_charts">Failed to load cached charts</string>
     <string name="failed_to_fetch_feed_charts">Failed to fetch feed charts</string>

@@ -154,14 +154,16 @@ fun ChartDetailsScreen(
         mutableStateOf(false)
     }
 
-    val userCollections by collectionViewModel.collections.collectAsStateWithLifecycle()
-    val collectionsState by collectionViewModel.collectionsContentState.collectAsStateWithLifecycle()
+    val collectionUiState by collectionViewModel.uiState.collectAsStateWithLifecycle()
+    val userCollections = collectionUiState.userCollections.items
+    val isCollectionsLoading = collectionUiState.userCollections.state is ContentState.Loading
 
     val isLoggedIn by authViewModel.isLoggedInFlow.collectAsStateWithLifecycle(false)
     val contentCollection by interactionViewModel
         .getContentCollection(currentChart.contentId ?: "")
         .collectAsStateWithLifecycle()
 
+    // Load the user's collections whenever the sheet opens
     LaunchedEffect(showCollectionSheet) {
         if (showCollectionSheet) {
             collectionViewModel.fetchUserCollections(reset = true)
@@ -554,7 +556,7 @@ fun ChartDetailsScreen(
                 }
             },
             collections = userCollections,
-            isLoading = collectionsState is ContentState.Loading,
+            isLoading = isCollectionsLoading,
             onCollectionSelected = { collectionId ->
                 scope.launch {
                     snackbarHostState.showSnackbar(

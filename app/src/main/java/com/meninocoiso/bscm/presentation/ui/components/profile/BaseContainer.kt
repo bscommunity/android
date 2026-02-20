@@ -81,9 +81,7 @@ private fun PaginationLoadingIndicator(
         contentAlignment = Alignment.Center
     ) {
         if (isLoadingMore) {
-            CircularProgressIndicator(modifier = Modifier
-                .size(24.dp)
-                .padding(vertical = 36.dp))
+            CircularProgressIndicator()
         } else if (message.isNotEmpty()) {
             Text(
                 text = message,

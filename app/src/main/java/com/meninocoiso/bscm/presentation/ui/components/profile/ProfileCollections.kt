@@ -19,6 +19,8 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Collection
+import com.meninocoiso.bscm.domain.model.SimplifiedCollection
+import com.meninocoiso.bscm.domain.model.toSimplifiedCollection
 import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageSize
@@ -34,7 +36,7 @@ fun ProfileCollections(
     isRefreshing: Boolean = false,
     onFetch: (reset: Boolean) -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
-    onNavigateToCollection: (collectionId: String) -> Unit,
+    onNavigateToCollection: (SimplifiedCollection) -> Unit,
     bookmarksListState: LazyListState,
     collectionsListState: LazyListState,
     isLoadingMoreBookmarks: Boolean,
@@ -125,6 +127,7 @@ fun ProfileCollections(
 
 @Composable
 fun ProfileCollectionTabContent(
+    modifier: Modifier = Modifier,
     items: List<CatalogItem>,
     state: ContentState,
     isRefreshing: Boolean = false,
@@ -134,7 +137,6 @@ fun ProfileCollectionTabContent(
     isLoadingMore: Boolean,
     hasMore: Boolean,
     onLoadMore: () -> Unit,
-    modifier: Modifier = Modifier
 ) {
     OnScrollLoadMore(
         listState = listState,
@@ -169,16 +171,16 @@ fun ProfileCollectionTabContent(
 
 @Composable
 fun ProfileCollectionList(
+    modifier: Modifier = Modifier,
     items: List<Collection>,
     state: ContentState,
     isRefreshing: Boolean = false,
     onFetch: (reset: Boolean) -> Unit,
-    onNavigateToCollection: (collectionId: String) -> Unit,
+    onNavigateToCollection: (SimplifiedCollection) -> Unit,
     listState: LazyListState,
     isLoadingMore: Boolean,
     hasMore: Boolean,
     onLoadMore: () -> Unit,
-    modifier: Modifier = Modifier
 ) {
     OnScrollLoadMore(
         listState = listState,
@@ -211,7 +213,7 @@ fun ProfileCollectionList(
                 val item = items[index]
                 CollectionPreview(
                     collection = item,
-                    onPress = { onNavigateToCollection(item.id) }
+                    onPress = { onNavigateToCollection(item.toSimplifiedCollection()) }
                 )
             }
             pagination(

@@ -25,6 +25,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
+import com.meninocoiso.bscm.domain.model.SimplifiedCollection
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileActivity
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileHeaderIdentity
@@ -47,7 +48,7 @@ fun PublicProfileScreen(
     isFollowing: Boolean,
     onReturn: () -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
-    onNavigateToCollection: (collectionId: String) -> Unit = {},
+    onNavigateToCollection: (SimplifiedCollection) -> Unit = {},
     profileViewModel: PublicProfileViewModel = hiltViewModel(),
 ) {
     val userId = user.id

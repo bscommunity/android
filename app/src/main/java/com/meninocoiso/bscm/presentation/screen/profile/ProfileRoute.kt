@@ -14,6 +14,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
+import com.meninocoiso.bscm.domain.model.SimplifiedCollection
 import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.RouteUI
@@ -26,7 +27,7 @@ fun ProfileRoute(
     user: SimplifiedUser?,
     onReturn: () -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
-    onNavigateToCollection: (collectionId: String) -> Unit,
+    onNavigateToCollection: (SimplifiedCollection) -> Unit,
     publicViewModel: PublicProfileViewModel = hiltViewModel()
 ) {
     // If user is accessing own profile, return profile screen directly

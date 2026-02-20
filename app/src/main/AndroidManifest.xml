@@ -120,6 +120,17 @@
                 />
             </intent-filter>
 
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="bscm"
+                    android:host="collection"
+                    android:pathPattern="/.*"
+                    />
+            </intent-filter>
+
             <intent-filter android:label="oauth_redirect">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

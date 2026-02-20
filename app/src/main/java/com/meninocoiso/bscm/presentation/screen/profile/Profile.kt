@@ -21,6 +21,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
+import com.meninocoiso.bscm.domain.model.SimplifiedCollection
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileCollections
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileHeaderIdentity
@@ -41,7 +42,7 @@ fun ProfileScreen(
     user: SimplifiedUser,
     onReturn: () -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
-    onNavigateToCollection: (collectionId: String) -> Unit = {},
+    onNavigateToCollection: (SimplifiedCollection) -> Unit = {},
     profileViewModel: UserProfileViewModel = hiltViewModel(),
 ) {
     val tabItems = listOf(

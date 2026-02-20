@@ -20,14 +20,18 @@ import androidx.navigation.toRoute
 import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.SimplifiedCollection
 import com.meninocoiso.bscm.domain.model.Theme
 import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.toSimplifiedUser
 import com.meninocoiso.bscm.domain.serialization.ChartParameterType
+import com.meninocoiso.bscm.domain.serialization.SimplifiedCollectionParameterType
 import com.meninocoiso.bscm.domain.serialization.SimplifiedUserParameterType
 import com.meninocoiso.bscm.presentation.screen.collection.Collection
+import com.meninocoiso.bscm.presentation.screen.collection.CollectionRoute
 import com.meninocoiso.bscm.presentation.screen.collection.CollectionScreen
+import com.meninocoiso.bscm.presentation.screen.collection.DeepLinkCollection
 import com.meninocoiso.bscm.presentation.screen.details.ChartDetails
 import com.meninocoiso.bscm.presentation.screen.details.ChartDetailsRoute
 import com.meninocoiso.bscm.presentation.screen.details.ChartDetailsScreen
@@ -70,9 +74,8 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
         }
     }
 
-    val onNavigateToCollection = { collectionId: String ->
-        navController.navigate(route = Collection(collectionId = collectionId)) {
-            // Prevent users from opening multiple collection screens
+    val onNavigateToCollection = { collection: SimplifiedCollection ->
+        navController.navigate(route = Collection(collection = collection)) {
             launchSingleTop = true
         }
     }
@@ -144,11 +147,27 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
                         onNavigateToDetails = { chart ->
                             onNavigateToDetails(chart)
                         },
-                        onNavigateToCollection = { collectionId ->
-                            onNavigateToCollection(collectionId)
-                        },
+                        onNavigateToCollection = onNavigateToCollection,
                         onReturn = {
                             navController.navigateUp()
+                        }
+                    )
+                }
+
+                // Deep link to collection
+                composableWithTransitions<DeepLinkCollection>(
+                    deepLinks = listOf(
+                        navDeepLink { uriPattern = "bscm://collection/{collectionId}" }
+                    )
+                ) { backStackEntry ->
+                    val route: DeepLinkCollection = backStackEntry.toRoute()
+                    CollectionRoute(
+                        collectionId = route.collectionId,
+                        onReturn = {
+                            navController.navigateUp()
+                        },
+                        onNavigateToDetails = { chart ->
+                            onNavigateToDetails(chart)
                         }
                     )
                 }
@@ -189,17 +208,19 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
                         onNavigateToDetails = { chart ->
                             onNavigateToDetails(chart)
                         },
-                        onNavigateToCollection = { collectionId ->
-                            onNavigateToCollection(collectionId)
-                        }
+                        onNavigateToCollection = onNavigateToCollection,
                     )
                 }
 
                 // Collection screen
-                composable<Collection> { backStackEntry ->
-                    val collection: Collection = backStackEntry.toRoute()
+                composableWithTransitions<Collection>(
+                    typeMap = mapOf(
+                        typeOf<SimplifiedCollection>() to SimplifiedCollectionParameterType
+                    )
+                ) { backStackEntry ->
+                    val route: Collection = backStackEntry.toRoute()
                     CollectionScreen(
-                        collectionId = collection.collectionId,
+                        collection = route.collection,
                         onNavigateToDetails = { chart ->
                             onNavigateToDetails(chart)
                         },
