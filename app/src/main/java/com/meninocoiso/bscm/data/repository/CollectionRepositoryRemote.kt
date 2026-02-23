@@ -4,8 +4,10 @@ import android.util.Log
 import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.domain.enums.CollectionKind
+import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
+import com.meninocoiso.bscm.domain.model.CollectionItemCrossRef
 import com.meninocoiso.bscm.domain.repository.CollectionRepository
 import jakarta.inject.Inject
 import java.time.LocalDateTime
@@ -117,9 +119,38 @@ class CollectionRepositoryRemote @Inject constructor(
         collectionId: String,
         limit: Int,
         offset: Int,
-        contentType: String?
+        contentType: String?,
+        useCache: Boolean
     ): Result<List<Chart>> = runCatching {
-        apiClient.getCollectionItems(collectionId, contentType, limit, offset)
+        Log.d(TAG, "Getting items for collection $collectionId (limit=$limit, offset=$offset, useCache=$useCache)")
+
+        // Return Room-cached items on the first page when cache is allowed
+        if (useCache && offset == 0) {
+            val cached = collectionDao.getChartItems(collectionId, limit, offset)
+            if (cached.isNotEmpty()) {
+                Log.d(TAG, "Returning cached items for collection $collectionId (${cached.size} items)")
+                return@runCatching cached
+            }
+        }
+
+        // Fetch from API
+        val items = apiClient.getCollectionItems(collectionId, contentType, limit, offset)
+        Log.d(TAG, "Fetched ${items.size} items for collection $collectionId from API")
+
+        // Persist charts to Room and update cross-refs (first page only to avoid stale data)
+        if (offset == 0 && items.isNotEmpty()) {
+            collectionDao.upsertCharts(items)
+            val crossRefs = items.map { chart ->
+                CollectionItemCrossRef(
+                    collectionId = collectionId,
+                    contentId = chart.contentId ?: chart.id,
+                    contentType = ContentType.CHART,
+                )
+            }
+            collectionDao.upsertCrossRefs(crossRefs)
+        }
+
+        items
     }
 
     override suspend fun addItemToCollection(

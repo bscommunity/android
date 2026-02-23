@@ -48,6 +48,7 @@ fun CollectionRoute(
                     collection = (state as ContentResult.Success<SimplifiedCollection>).data,
                     onReturn = onReturn,
                     onNavigateToDetails = onNavigateToDetails,
+                    viewModel = viewModel
                 )
             }
 

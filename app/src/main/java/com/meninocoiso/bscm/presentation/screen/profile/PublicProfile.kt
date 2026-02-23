@@ -19,7 +19,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,7 +34,9 @@ import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileHeaderIden
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileLibrary
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileSectionsLayout
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileTabItem
+import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.PublicProfileViewModel
+import com.meninocoiso.bscm.util.LinkingUtils
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -45,13 +49,14 @@ data class DeepLinkProfile(val username: String)
 @Composable
 fun PublicProfileScreen(
     user: SimplifiedUser,
-    isFollowing: Boolean,
     onReturn: () -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
-    onNavigateToCollection: (SimplifiedCollection) -> Unit = {},
-    profileViewModel: PublicProfileViewModel = hiltViewModel(),
+    onNavigateToCollection: (SimplifiedCollection) -> Unit,
+    profileViewModel: PublicProfileViewModel,
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val userId = user.id
+    val context = LocalContext.current
 
     val tabItems = listOf(
         ProfileTabItem(
@@ -63,7 +68,9 @@ fun PublicProfileScreen(
             iconResId = R.drawable.outline_library_music_24
         )
     )
+
     val uiState by profileViewModel.uiState.collectAsStateWithLifecycle()
+    val isLoggedIn by authViewModel.isLoggedInFlow.collectAsStateWithLifecycle(false)
 
     val activityListState = rememberLazyListState()
     val libraryListState = rememberLazyListState()
@@ -79,43 +86,70 @@ fun PublicProfileScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Button(
-                    onClick = { profileViewModel.toggleFollow(userId) },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        modifier = Modifier.size(20.dp),
-                        painter = painterResource(R.drawable.rounded_stars_24),
-                        contentDescription = null
-                    )
-                    Text(
-                        modifier = Modifier.padding(start = 8.dp),
-                        text = if (uiState.isFollowing) "Following" else "Follow"
-                    )
-                }
-                IconButton(
-                    onClick = {}, colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                ) {
-                    Icon(
-                        modifier = Modifier.size(20.dp),
-                        imageVector = Icons.Outlined.Share,
-                        contentDescription = null
-                    )
-                }
-                IconButton(
-                    onClick = {}, colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                ) {
-                    Icon(
-                        modifier = Modifier.size(20.dp),
-                        painter = painterResource(R.drawable.rounded_flag_24),
-                        contentDescription = null
-                    )
+                if (isLoggedIn) {
+                    Button(
+                        onClick = { profileViewModel.toggleFollow(userId) },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(20.dp),
+                            painter = if (uiState.isFollowing)
+                                painterResource(R.drawable.baseline_stars_24)
+                            else
+                                painterResource(R.drawable.rounded_stars_24),
+                            contentDescription = null
+                        )
+                        Text(
+                            modifier = Modifier.padding(start = 8.dp),
+                            text = if (uiState.isFollowing) "Following" else "Follow"
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            LinkingUtils.shareProfile(
+                                context = context,
+                                username = user.username
+                            )
+                        }, colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(20.dp),
+                            imageVector = Icons.Outlined.Share,
+                            contentDescription = null
+                        )
+                    }
+                    if (!uiState.isFollowing) {
+                        IconButton(
+                            onClick = {}, colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        ) {
+                            Icon(
+                                modifier = Modifier.size(20.dp),
+                                painter = painterResource(R.drawable.rounded_flag_24),
+                                contentDescription = null
+                            )
+                        }
+                    }
+                } else {
+                    Button(
+                        onClick = { LinkingUtils.shareProfile(context, user.username) },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(20.dp),
+                            imageVector = Icons.Outlined.Share,
+                            contentDescription = null
+                        )
+                        Text(
+                            modifier = Modifier.padding(start = 8.dp),
+                            text = stringResource(R.string.share)
+                        )
+                    }
                 }
             }
         },
@@ -127,7 +161,7 @@ fun PublicProfileScreen(
                     items = uiState.activity.items,
                     state = uiState.activity.state,
                     onFetch = {
-                        profileViewModel.fetchActivity(userId)
+                        profileViewModel.refreshActivity(userId)
                     },
                     listState = activityListState,
                     isLoadingMore = uiState.activity.isLoadingMore,
@@ -143,7 +177,7 @@ fun PublicProfileScreen(
                     items = uiState.library.items,
                     state = uiState.library.state,
                     onFetch = {
-                        profileViewModel.fetchLibrary(userId)
+                        profileViewModel.refreshLibrary(userId)
                     },
                     onNavigateToDetails = onNavigateToDetails,
                     listState = libraryListState,

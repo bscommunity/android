@@ -15,7 +15,8 @@ interface CollectionRepository {
         collectionId: String,
         limit: Int,
         offset: Int,
-        contentType: String? = null
+        contentType: String? = null,
+        useCache: Boolean = true
     ): Result<List<Chart>>
 
     suspend fun addItemToCollection(collectionId: String, contentId: String): Result<Unit>

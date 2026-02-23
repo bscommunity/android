@@ -95,11 +95,12 @@ class CollectionViewModel @Inject constructor(
         fetchPaged(
             pagination = itemsPagination,
             reset = reset || idChanged,
-            fetch = { limit, offset, _ ->
+            fetch = { limit, offset, cache ->
                 collectionRepository.getCollectionItems(
                     collectionId = collectionId,
                     limit = limit,
                     offset = offset,
+                    useCache = cache,
                 )
             },
             getItems = { _uiState.value.items.items },
@@ -116,11 +117,12 @@ class CollectionViewModel @Inject constructor(
 
     fun refreshItems(collectionId: String) = refreshPaged(
         pagination = itemsPagination,
-        fetch = { limit, offset, _ ->
+        fetch = { limit, offset, cache ->
             collectionRepository.getCollectionItems(
                 collectionId = collectionId,
                 limit = limit,
                 offset = offset,
+                useCache = cache,
             )
         },
         getItems = { _uiState.value.items.items },

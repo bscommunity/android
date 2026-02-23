@@ -70,7 +70,7 @@ import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.CollectionViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.InteractionViewModel
-import com.meninocoiso.bscm.util.LinkingUtils.shareChartLink
+import com.meninocoiso.bscm.util.LinkingUtils
 import com.meninocoiso.bscm.util.StringUtils
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.launch
@@ -285,7 +285,7 @@ fun ChartDetailsScreen(
                                     )
                                 },
                                 onClick = {
-                                    shareChartLink(context, currentChart.contentId)
+                                    LinkingUtils.shareChart(context, currentChart.contentId)
                                 }
                             )
                             DropdownMenuItem(

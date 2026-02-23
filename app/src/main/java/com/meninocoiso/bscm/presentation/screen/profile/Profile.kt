@@ -16,6 +16,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -29,6 +30,7 @@ import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileLikes
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileSectionsLayout
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileTabItem
 import com.meninocoiso.bscm.presentation.viewmodel.profile.UserProfileViewModel
+import com.meninocoiso.bscm.util.LinkingUtils
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -45,6 +47,8 @@ fun ProfileScreen(
     onNavigateToCollection: (SimplifiedCollection) -> Unit = {},
     profileViewModel: UserProfileViewModel = hiltViewModel(),
 ) {
+    val context = LocalContext.current
+
     val tabItems = listOf(
         ProfileTabItem(
             contentDescription = "Likes",
@@ -75,7 +79,12 @@ fun ProfileScreen(
         onReturn = onReturn,
         snackbarHostState = snackbarHostState,
         topBarActions = {
-            IconButton(onClick = { }) {
+            IconButton(onClick = {
+                LinkingUtils.shareProfile(
+                    context = context,
+                    username = user.username,
+                )
+            }) {
                 Icon(
                     imageVector = Icons.Default.Share,
                     contentDescription = stringResource(R.string.share)

@@ -61,10 +61,10 @@ fun ProfileRoute(
                     val data = (state as ContentResult.Success<UserProfileResponse>).data
                     PublicProfileScreen(
                         user = data.user,
-                        isFollowing = data.isFollowing ?: false,
                         onReturn = onReturn,
                         onNavigateToDetails = onNavigateToDetails,
-                        onNavigateToCollection = onNavigateToCollection
+                        onNavigateToCollection = onNavigateToCollection,
+                        profileViewModel = publicViewModel,
                     )
                 }
 

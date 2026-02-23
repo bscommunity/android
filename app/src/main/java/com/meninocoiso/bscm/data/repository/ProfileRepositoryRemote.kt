@@ -19,6 +19,9 @@ class ProfileRepositoryRemote @Inject constructor(
     private val chartManager: ChartManager
 ) : ProfileRepository {
     override suspend fun getProfileHeader(username: String, useCache: Boolean): Result<UserProfileResponse> = runCatching {
+
+        Log.d(TAG, "Fetching profile for user: $username (useCache=$useCache)")
+
         // Try cache first if requested
         if (useCache) {
             profileCacheRepository.getProfile(username)?.let { cached ->
@@ -31,7 +34,7 @@ class ProfileRepositoryRemote @Inject constructor(
         val profile = apiClient.getUserProfileByUsername(username)
 
         // Cache the result
-        profileCacheRepository.cacheProfile(profile.user.id, profile)
+        profileCacheRepository.cacheProfile(username, profile)
 
         profile
     }

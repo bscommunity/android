@@ -98,6 +98,7 @@ class PublicProfileViewModel @Inject constructor(
     fun toggleFollow(userId: String) = viewModelScope.launch {
         val target = !_uiState.value.isFollowing
         _uiState.update { it.copy(isFollowing = target) } // optimistic update
+        Log.d(TAG, "Toggling follow → $target for $userId")
 
         val result = if (target) profileRepository.followUser(userId)
         else profileRepository.unfollowUser(userId)
@@ -117,10 +118,7 @@ class PublicProfileViewModel @Inject constructor(
             profileRepository.getActivity(userId = userId, limit = limit, offset = offset)
         },
         getItems = { _uiState.value.activity.items },
-        setSection = { section ->
-            _uiState.update { it.copy(activity = section) }
-            Log.d(TAG, "Activity updated: ${section.items.size} items for $userId")
-        },
+        setSection = { section -> _uiState.update { it.copy(activity = section) } },
     )
 
     fun refreshActivity(userId: String) = refreshPaged(
@@ -131,7 +129,7 @@ class PublicProfileViewModel @Inject constructor(
         getItems = { _uiState.value.activity.items },
         getSection = { _uiState.value.activity },
         setSection = { section -> _uiState.update { it.copy(activity = section) } },
-        onFailureWithData = { emitSnackbar("Falha ao atualizar atividade") },
+        onFailureWithData = { emitSnackbar("Failed to update activity feed") },
     )
 
     fun fetchLibrary(userId: String) = fetchPaged(

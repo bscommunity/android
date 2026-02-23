@@ -45,7 +45,7 @@ fun ChartDetailsRoute(
                 ChartDetailsScreen(
                     chart = (state as ContentResult.Success<Chart>).data,
                     onReturn = onReturn,
-                    onNavigateToSettings = onNavigateToSettings
+                    onNavigateToSettings = onNavigateToSettings,
                 )
             }
 

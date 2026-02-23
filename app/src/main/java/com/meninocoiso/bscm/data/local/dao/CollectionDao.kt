@@ -50,6 +50,12 @@ interface CollectionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertCrossRef(crossRef: CollectionItemCrossRef)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertCrossRefs(crossRefs: List<CollectionItemCrossRef>)
+
+    @Upsert
+    suspend fun upsertCharts(charts: List<Chart>)
+
     @Query("DELETE FROM collection_item_cross_ref WHERE collection_id = :collectionId AND content_id = :contentId")
     suspend fun deleteCrossRef(collectionId: String, contentId: String)
 

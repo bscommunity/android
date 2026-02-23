@@ -57,16 +57,16 @@ class ProfileCacheRepository @Inject constructor(
     }
 
     // -------------------- Profile Header --------------------
-    suspend fun cacheProfile(userId: String, profile: UserProfileResponse) {
+    suspend fun cacheProfile(username: String, profile: UserProfileResponse) {
         try {
             val encoded = json.encodeToString(UserProfileResponse.serializer(), profile)
             dataStore.edit { preferences ->
-                preferences[profileKey(userId)] = encoded
-                preferences[profileTimestampKey(userId)] = System.currentTimeMillis()
+                preferences[profileKey(username)] = encoded
+                preferences[profileTimestampKey(username)] = System.currentTimeMillis()
             }
-            Log.d(TAG, "Cached profile header for user: $userId")
+            Log.d(TAG, "Cached profile header for user: $username")
         } catch (e: Exception) {
-            Log.e(TAG, "Error caching profile header for user: $userId", e)
+            Log.e(TAG, "Error caching profile header for user: $username", e)
         }
     }
 

@@ -15,8 +15,8 @@ fun Modifier.debouncedClickable(
     
     return clickable { 
         val currentTime = System.currentTimeMillis()
-        if (currentTime - lastClickTime.value < durationMillis) return@clickable
-        lastClickTime.value = currentTime
+        if (currentTime - lastClickTime.longValue < durationMillis) return@clickable
+        lastClickTime.longValue = currentTime
         onClick()
     }
 }
