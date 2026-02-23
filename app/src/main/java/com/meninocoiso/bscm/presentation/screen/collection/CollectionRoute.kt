@@ -21,16 +21,17 @@ import com.meninocoiso.bscm.presentation.viewmodel.CollectionViewModel
 
 @Composable
 fun CollectionRoute(
-    collectionId: String?,
+    username: String,
+    slug: String,
     onReturn: () -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
     viewModel: CollectionViewModel = hiltViewModel()
 ) {
     val state by viewModel.collectionResult.collectAsStateWithLifecycle()
 
-    // Fetch the collection by ID when arriving via deep link
-    LaunchedEffect(collectionId) {
-        viewModel.fetchCollectionById(collectionId)
+    // Fetch the collection via slug when the route is first opened
+    LaunchedEffect(slug) {
+        viewModel.fetchCollectionBySlug(username, slug)
     }
 
     RouteUI {
@@ -56,7 +57,7 @@ fun CollectionRoute(
                     message = (state as ContentResult.Error).message
                         ?: stringResource(R.string.failed_to_load_collection_description),
                     icon = R.drawable.rounded_error_24,
-                    onClick = { viewModel.fetchCollectionById(collectionId) },
+                    onClick = { viewModel.fetchCollectionBySlug(username, slug) },
                     buttonLabel = stringResource(R.string.retry),
                 )
 

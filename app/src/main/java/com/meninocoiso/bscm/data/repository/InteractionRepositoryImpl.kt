@@ -113,7 +113,7 @@ class InteractionRepositoryImpl @Inject constructor(
                 contentType = ContentType.CHART
             )
         )
-        collectionDao.incrementCollectionItemCount(collectionId, java.time.LocalDateTime.now())
+        collectionDao.incrementCollectionChartCount(collectionId, java.time.LocalDateTime.now())
         queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = true)
         emit(Result.success(Unit))
     }.catch { e ->
@@ -129,7 +129,7 @@ class InteractionRepositoryImpl @Inject constructor(
         collectionId: String
     ): Flow<Result<Unit>> = flow {
         collectionDao.deleteCrossRef(collectionId, contentId)
-        collectionDao.decrementCollectionItemCount(collectionId, java.time.LocalDateTime.now())
+        collectionDao.decrementCollectionChartCount(collectionId, java.time.LocalDateTime.now())
         queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = false)
         emit(Result.success(Unit))
     }.catch { e ->

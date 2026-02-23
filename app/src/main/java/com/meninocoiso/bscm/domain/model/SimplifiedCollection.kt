@@ -23,7 +23,7 @@ fun Collection.toSimplifiedCollection() = SimplifiedCollection(
     id = id,
     name = name,
     coverUrl = coverUrl,
-    itemCount = itemCount,
+    itemCount = chartCount,
 )
 
 

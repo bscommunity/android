@@ -3,8 +3,8 @@ package com.meninocoiso.bscm.domain.serialization
 import androidx.room.TypeConverter
 import com.meninocoiso.bscm.domain.enums.ActionType
 import com.meninocoiso.bscm.domain.enums.CollectionKind
-import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.ContentType
+import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Contributor
 import com.meninocoiso.bscm.domain.model.KnownIssue

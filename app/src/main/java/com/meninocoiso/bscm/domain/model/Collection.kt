@@ -21,7 +21,9 @@ data class Collection(
     val name: String,
     @ColumnInfo(name = "is_public") val isPublic: Boolean,
     @ColumnInfo(name = "cover_url") val coverUrl: String? = null,
-    @ColumnInfo(name = "item_count") val itemCount: Int = 0,
+    @ColumnInfo(name = "chart_count") val chartCount: Int = 0,
+    @ColumnInfo(name = "tour_pass_count") val tourPassCount: Int = 0,
+    @ColumnInfo(name = "theme_count") val themeCount: Int = 0,
     @ColumnInfo(name = "created_at") val createdAt: LocalDateTime,
     @ColumnInfo(name = "updated_at") val updatedAt: LocalDateTime,
     @Ignore val items: List<CatalogItem> = emptyList(),
@@ -33,8 +35,23 @@ data class Collection(
         name: String,
         isPublic: Boolean,
         coverUrl: String?,
-        itemCount: Int,
+        chartCount: Int,
+        tourPassCount: Int,
+        themeCount: Int,
         createdAt: LocalDateTime,
         updatedAt: LocalDateTime,
-    ) : this(id, userId, kind, name, isPublic, coverUrl, itemCount, createdAt, updatedAt, emptyList())
+    ) : this(
+        id,
+        userId,
+        kind,
+        name,
+        isPublic,
+        coverUrl,
+        chartCount,
+        tourPassCount,
+        themeCount,
+        createdAt,
+        updatedAt,
+        emptyList()
+    )
 }

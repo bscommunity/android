@@ -76,6 +76,12 @@ class CollectionRepositoryRemote @Inject constructor(
         collection
     }
 
+    override suspend fun getCollectionBySlug(username: String, slug: String): Result<Collection> = runCatching {
+        val collection = apiClient.getCollectionBySlug(username, slug)
+        collectionDao.upsertCollection(collection)
+        collection
+    }
+
     override suspend fun createCollection(name: String, isPublic: Boolean): Result<Collection> =
         runCatching {
             val collection = apiClient.createCollection(name, isPublic)

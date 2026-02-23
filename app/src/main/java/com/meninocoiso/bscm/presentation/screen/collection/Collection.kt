@@ -52,7 +52,7 @@ import kotlinx.serialization.Serializable
 data class Collection(val collection: SimplifiedCollection)
 
 @Serializable
-data class DeepLinkCollection(val collectionId: String)
+data class DeepLinkCollection(val username: String, val slug: String)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable

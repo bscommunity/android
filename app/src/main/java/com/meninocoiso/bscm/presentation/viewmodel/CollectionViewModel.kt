@@ -2,19 +2,21 @@ package com.meninocoiso.bscm.presentation.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.meninocoiso.bscm.data.remote.ApiException
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.SimplifiedCollection
+import com.meninocoiso.bscm.domain.model.toSimplifiedCollection
 import com.meninocoiso.bscm.domain.repository.CollectionRepository
+import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.presentation.viewmodel.profile.BaseProfileViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedSection
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import com.meninocoiso.bscm.domain.model.toSimplifiedCollection
-import com.meninocoiso.bscm.domain.result.ContentResult
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -49,26 +51,6 @@ class CollectionViewModel @Inject constructor(
         MutableStateFlow<ContentResult<SimplifiedCollection>>(ContentResult.Loading)
     val collectionResult: StateFlow<ContentResult<SimplifiedCollection>> =
         _collectionResult.asStateFlow()
-
-    fun fetchCollectionById(collectionId: String?) {
-        if (collectionId.isNullOrEmpty()) {
-            _collectionResult.value = ContentResult.Error("Invalid collection ID")
-            return
-        }
-        viewModelScope.launch {
-            _collectionResult.value = ContentResult.Loading
-            collectionRepository.getCollectionById(collectionId)
-                .onSuccess { collection ->
-                    _collectionResult.value =
-                        ContentResult.Success(collection.toSimplifiedCollection())
-                }
-                .onFailure { e ->
-                    Log.e(TAG, "Failed to fetch collection $collectionId", e)
-                    _collectionResult.value =
-                        ContentResult.Error(e.message ?: "Unknown error", e)
-                }
-        }
-    }
 
     // -------------------------------------------------------------------------
     // Pagination cursors
@@ -148,31 +130,72 @@ class CollectionViewModel @Inject constructor(
     )
 
     // -------------------------------------------------------------------------
-    // Public API — mutations
+    // Public API
     // -------------------------------------------------------------------------
 
+    fun fetchCollectionById(collectionId: String?) {
+        if (collectionId.isNullOrEmpty()) {
+            _collectionResult.value = ContentResult.Error("Invalid collection ID")
+            return
+        }
+        viewModelScope.launch {
+            _collectionResult.value = ContentResult.Loading
+            collectionRepository.getCollectionById(collectionId)
+                .onSuccess { collection ->
+                    _collectionResult.value =
+                        ContentResult.Success(collection.toSimplifiedCollection())
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "Failed to fetch collection $collectionId", e)
+                    _collectionResult.value =
+                        ContentResult.Error(e.message ?: "Unknown error", e)
+                }
+        }
+    }
+
+    fun fetchCollectionBySlug(username: String, slug: String) {
+        viewModelScope.launch {
+            _collectionResult.value = ContentResult.Loading
+            collectionRepository.getCollectionBySlug(username, slug)
+                .onSuccess { collection ->
+                    _collectionResult.value =
+                        ContentResult.Success(collection.toSimplifiedCollection())
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "Failed to fetch collection $username/$slug", e)
+                    _collectionResult.value =
+                        ContentResult.Error(e.message ?: "Unknown error", e)
+                }
+        }
+    }
+
     /**
-     * Creates a new collection and returns its ID on success, or null on failure.
+     * Creates a new collection and returns its ID on success, or throws ApiException on failure.
      * Prepends the new collection to the list optimistically.
      */
-    suspend fun createCollection(name: String, isPublic: Boolean): String? {
+    suspend fun createCollection(name: String, isPublic: Boolean): String {
         return collectionRepository.createCollection(name, isPublic)
-            .onSuccess { collection ->
-                Log.d(TAG, "Created collection: ${collection.name} (${collection.id})")
-                // Optimistic prepend so the sheet reflects it immediately
-                _uiState.update { state ->
-                    state.copy(
-                        userCollections = state.userCollections.copy(
-                            items = listOf(collection) + state.userCollections.items
+            .fold(
+                onSuccess = { collection ->
+                    Log.d(TAG, "Created collection: ${collection.name} (${collection.id})")
+                    // Optimistic prepend so the sheet reflects it immediately
+                    _uiState.update { state ->
+                        state.copy(
+                            userCollections = state.userCollections.copy(
+                                items = listOf(collection) + state.userCollections.items
+                            )
                         )
-                    )
+                    }
+
+                    collection.id
+                },
+                onFailure = { e ->
+                    Log.e(TAG, "Failed to create collection", e)
+                    // Rethrow ApiException so callers can handle HTTP status-specific logic.
+                    if (e is ApiException) throw e
+                    // Wrap other exceptions into a generic ApiException with 500 status.
+                    throw ApiException(HttpStatusCode.InternalServerError, e.message ?: "Unknown error")
                 }
-            }
-            .onFailure {
-                Log.e(TAG, "Failed to create collection", it)
-                emitSnackbar("Falha ao criar coleção")
-            }
-            .getOrNull()?.id
+            )
     }
 }
-

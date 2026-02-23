@@ -157,12 +157,13 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
                 // Deep link to collection
                 composableWithTransitions<DeepLinkCollection>(
                     deepLinks = listOf(
-                        navDeepLink { uriPattern = "bscm://collection/{collectionId}" }
+                        navDeepLink { uriPattern = "bscm://collection/{username}/{slug}" }
                     )
                 ) { backStackEntry ->
                     val route: DeepLinkCollection = backStackEntry.toRoute()
                     CollectionRoute(
-                        collectionId = route.collectionId,
+                        username = route.username,
+                        slug = route.slug,
                         onReturn = {
                             navController.navigateUp()
                         },

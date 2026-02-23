@@ -241,7 +241,7 @@ fun CollectionsListSection(
                     name = collection.name,
                     coverUrl = collection.coverUrl ?: "",
                     isPublic = collection.isPublic,
-                    contentCounts = Triple(collection.itemCount, 0, 0),
+                    contentCounts = Triple(collection.chartCount, 0, 0),
                     onClick = { onCollectionClick(collection.id) }
                 )
             }

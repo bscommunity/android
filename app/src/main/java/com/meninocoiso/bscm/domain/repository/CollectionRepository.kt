@@ -6,6 +6,7 @@ import com.meninocoiso.bscm.domain.model.Collection
 interface CollectionRepository {
     suspend fun getUserCollections(userId: String = "user", limit: Int, offset: Int, useCache: Boolean = true): Result<List<Collection>>
     suspend fun getCollectionById(collectionId: String): Result<Collection>
+    suspend fun getCollectionBySlug(username: String, slug: String): Result<Collection>
     suspend fun createCollection(name: String, isPublic: Boolean): Result<Collection>
     suspend fun updateCollection(collectionId: String, name: String?, isPublic: Boolean?): Result<Unit>
     suspend fun deleteCollection(collectionId: String): Result<Unit>

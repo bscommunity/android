@@ -41,11 +41,11 @@ interface CollectionDao {
         updatedAt: java.time.LocalDateTime
     )
 
-    @Query("UPDATE collections SET item_count = item_count + 1, updated_at = :updatedAt WHERE id = :collectionId")
-    suspend fun incrementCollectionItemCount(collectionId: String, updatedAt: java.time.LocalDateTime)
+    @Query("UPDATE collections SET chart_count = chart_count + 1, updated_at = :updatedAt WHERE id = :collectionId")
+    suspend fun incrementCollectionChartCount(collectionId: String, updatedAt: java.time.LocalDateTime)
 
-    @Query("UPDATE collections SET item_count = MAX(item_count - 1, 0), updated_at = :updatedAt WHERE id = :collectionId")
-    suspend fun decrementCollectionItemCount(collectionId: String, updatedAt: java.time.LocalDateTime)
+    @Query("UPDATE collections SET chart_count = MAX(chart_count - 1, 0), updated_at = :updatedAt WHERE id = :collectionId")
+    suspend fun decrementCollectionChartCount(collectionId: String, updatedAt: java.time.LocalDateTime)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertCrossRef(crossRef: CollectionItemCrossRef)

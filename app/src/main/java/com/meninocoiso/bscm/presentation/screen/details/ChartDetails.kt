@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.data.remote.ApiException
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
@@ -71,6 +72,7 @@ import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.InteractionViewModel
 import com.meninocoiso.bscm.util.LinkingUtils.shareChartLink
 import com.meninocoiso.bscm.util.StringUtils
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -581,18 +583,23 @@ fun ChartDetailsScreen(
                 showCollectionSheet = false
             },
             onCreateCollection = { name, isPublic ->
-                val newCollectionId = collectionViewModel.createCollection(name, isPublic)
-                Log.d("ChartDetailsScreen", "Created collection with ID: $newCollectionId")
-                if (newCollectionId != null) {
+                try {
+                    val newCollectionId = collectionViewModel.createCollection(name, isPublic)
+                    Log.d("ChartDetailsScreen", "Created collection with ID: $newCollectionId")
                     currentChart.contentId?.let { contentId ->
                         interactionViewModel.addToCollection(contentId, newCollectionId)
                     }
                     scope.launch {
                         snackbarHostState.showSnackbar("Saved to \"$name\"!")
                     }
-                } else {
+                } catch (e: ApiException) {
+                    Log.e("ChartDetailsScreen", "Error creating collection", e)
                     scope.launch {
-                        snackbarHostState.showSnackbar("Failed to create collection. Please try again.")
+                        if (e.status == HttpStatusCode.BadRequest) {
+                            snackbarHostState.showSnackbar("A collection with that name already exists. Please choose a different name.")
+                        } else {
+                            snackbarHostState.showSnackbar("Error creating collection: ${e.message}")
+                        }
                     }
                 }
             }

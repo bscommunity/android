@@ -64,6 +64,7 @@ interface ApiClient {
 
     // Collections
     suspend fun getCollection(collectionId: String): Collection
+    suspend fun getCollectionBySlug(username: String, slug: String): Collection
     suspend fun getUserCollections(userId: String, limit: Int? = null, offset: Int? = null): List<Collection>
     suspend fun createCollection(name: String, isPublic: Boolean): Collection
     suspend fun updateCollection(collectionId: String, name: String?, isPublic: Boolean?): Boolean
