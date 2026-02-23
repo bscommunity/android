@@ -16,14 +16,14 @@ data class SimplifiedCollection(
     val id: String,
     val name: String,
     val coverUrl: String? = null,
-    val itemCount: Int = 0,
+    val itemCount: Triple<Int, Int, Int> = Triple(0, 0, 0), // chartCount, tourPassCount, themeCount
 ) : Parcelable
 
 fun Collection.toSimplifiedCollection() = SimplifiedCollection(
     id = id,
     name = name,
     coverUrl = coverUrl,
-    itemCount = chartCount,
+    itemCount = Triple(chartCount, tourPassCount, themeCount)
 )
 
 

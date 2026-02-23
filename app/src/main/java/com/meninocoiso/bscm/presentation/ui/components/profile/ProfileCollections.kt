@@ -18,8 +18,11 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.model.CatalogItem
+import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.SimplifiedCollection
+import com.meninocoiso.bscm.domain.model.Theme
+import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.model.toSimplifiedCollection
 import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
@@ -60,7 +63,13 @@ fun ProfileCollections(
 
         if (items.isNotEmpty()) {
             CatalogFilters(
-                items = items.flatMap { it.items },
+                // TODO: Get these counts from the API instead of estimating them here,
+                //  since we might not be fetching all items at once
+                itemsAmount = Triple(
+                    bookmarksCollection?.items?.count { it is Chart } ?: 0,
+                    bookmarksCollection?.items?.count { it is TourPass } ?: 0,
+                    bookmarksCollection?.items?.count { it is Theme } ?: 0
+                ),
                 collectionsAmount = collectionsAmount,
                 currentSelected = horizontalPagerState.currentPage,
                 onFilterSelected = { index ->

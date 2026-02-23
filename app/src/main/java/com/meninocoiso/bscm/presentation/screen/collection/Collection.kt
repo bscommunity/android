@@ -67,6 +67,7 @@ fun CollectionScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val items = uiState.items
+    val itemCount = collection.itemCount.toList().sum()
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
@@ -127,9 +128,9 @@ fun CollectionScreen(
                         // Name is available immediately from the route parameter —
                         // no loading state needed for the header.
                         Text(collection.name, style = MaterialTheme.typography.headlineSmall)
-                        if (collection.itemCount > 0) {
+                        if (itemCount > 0) {
                             Text(
-                                "${collection.itemCount} items",
+                                "${itemCount} items",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -176,7 +177,7 @@ fun CollectionScreen(
                 }
                 item {
                     CatalogFilters(
-                        items = items.items,
+                        collection.itemCount,
                         onFilterSelected = {},
                     )
                 }
@@ -196,7 +197,7 @@ fun CollectionScreen(
 fun CollectionScreenPreview() {
     MaterialTheme {
         CollectionScreen(
-            collection = SimplifiedCollection(id = "preview", name = "My Collection", itemCount = 42),
+            collection = SimplifiedCollection(id = "preview", name = "My Collection", itemCount = Triple(5, 3, 2)),
             onNavigateToDetails = {},
             onReturn = {},
         )

@@ -7,6 +7,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.CatalogItem
+import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.Theme
+import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageSize
@@ -46,7 +49,16 @@ fun ProfileLibrary(
     ) {
         LazyColumn(modifier, state = listState) {
             item {
-                CatalogFilters(items, onFilterSelected = {})
+                CatalogFilters(
+                    // TODO: Get these counts from the API instead of estimating them here,
+                    //  since we might not be fetching all items at once
+                    itemsAmount = Triple(
+                        items.count { it is Chart },
+                        items.count { it is TourPass },
+                        items.count { it is Theme }
+                    ),
+                    onFilterSelected = {}
+                )
             }
 
             contentList(items, onNavigateToDetails)
