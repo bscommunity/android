@@ -344,7 +344,12 @@ fun ChartDetailsScreen(
                             R.drawable.rounded_bookmark_24,
                             isBookmarked,
                             !isLoggedIn,
-                            onDisabled = { onUnauthenticated("Connect to manage favorites") }
+                            onDisabled = { onUnauthenticated("Connect to manage favorites") },
+                            onHold = {
+                                wasBookmarkedWhenSheetOpened = true   // ← capture BEFORE sheet opens
+                                showCollectionSheet = true
+                            },
+                            onHoldLabel = "Switch Collection"
                         ) { newValue ->
                             optimisticBookmarked = newValue
 

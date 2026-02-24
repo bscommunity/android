@@ -29,7 +29,9 @@ fun InteractionButton(
     isDisabled: Boolean = false,
     onDisabled: () -> Unit = {},
     debounceMillis: Long = 600L,
-    onToggle: (isActive: Boolean) -> Unit = {},
+    onHold: (() -> Unit)? = null,
+    onHoldLabel: String? = null,
+    onToggle: (isActive: Boolean) -> Unit
 ) {
     var localIsActive by remember { mutableStateOf(isActive) }
 
@@ -68,6 +70,8 @@ fun InteractionButton(
                 onToggle(localIsActive)
             }
         },
+        onLongClick = onHold,
+        onLongClickLabel = onHoldLabel,
         animations = listOfNotNull(
             burstAnimation,
             ringAnimation,

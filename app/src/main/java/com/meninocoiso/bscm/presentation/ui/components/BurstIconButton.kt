@@ -6,16 +6,19 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -26,8 +29,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import kotlin.math.cos
+import kotlin.math.sin
 
 /**
  * Animation module type for modularity
@@ -103,7 +109,7 @@ fun createBurstAnimation(
         burstAlpha.snapTo(1f)
         val burstJob = scope.launch { burstProgress.animateTo(1f, config.progressAnimation) }
         val alphaJob = scope.launch {
-            kotlinx.coroutines.delay(config.alphaDelay)
+            delay(config.alphaDelay)
             burstAlpha.animateTo(0f, config.alphaAnimation)
         }
         burstJob.join(); alphaJob.join()
@@ -157,8 +163,8 @@ fun createBurstDotsVisual(
             val radiusPx = config.burstRadius.toPx() * burstProgress.value
             for (i in 0 until config.numDots) {
                 val angle = (2 * Math.PI * i) / config.numDots
-                val x = center.width + radiusPx * kotlin.math.cos(angle).toFloat()
-                val y = center.height + radiusPx * kotlin.math.sin(angle).toFloat()
+                val x = center.width + radiusPx * cos(angle).toFloat()
+                val y = center.height + radiusPx * sin(angle).toFloat()
                 drawCircle(
                     color = config.color.copy(alpha = burstAlpha.value),
                     radius = config.dotSize.toPx() * burstAlpha.value,
@@ -223,16 +229,18 @@ fun BurstIconButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     onClick: () -> Unit,
+    onLongClickLabel: String? = null,
+    onLongClick: (() -> Unit)? = null,
     animations: List<IconButtonAnimation> = listOf(),
     visuals: List<IconButtonVisual> = listOf(),
     hapticFeedback: Boolean = true,
     icon: @Composable () -> Unit
 ) {
-    val haptic = LocalHapticFeedback.current
+    val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
 
     fun triggerAnimations() {
-        if (hapticFeedback) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        if (hapticFeedback) haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         scope.launch {
             animations.map { anim -> scope.launch { anim(scope) } }
                 .joinAll()
@@ -247,12 +255,29 @@ fun BurstIconButton(
         contentAlignment = Alignment.Center
     ) {
         visuals.forEach { visual -> visual() }
-        IconButton(
-            onClick = {
-                onClick()
-                if (!enabled) return@IconButton
-                if (!isActive) triggerAnimations()
-            }
+        Box(
+            modifier = Modifier
+                .minimumInteractiveComponentSize()
+                .size(42.dp)
+                .clip(IconButtonDefaults.standardShape)
+                .combinedClickable(
+                    onClick = {
+                        if (enabled) {
+                            triggerAnimations()
+                        }
+                        onClick()
+                    },
+                    onLongClick = onLongClick?.let { longClick ->
+                        {
+                            if (enabled) {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                longClick()
+                            }
+                        }
+                    },
+                    onLongClickLabel = onLongClickLabel
+                ),
+            contentAlignment = Alignment.Center,
         ) {
             icon()
         }
