@@ -139,7 +139,7 @@ class UserProfileViewModel @Inject constructor(
             val c = fetchCustomCollections(reset = true, useCache = false,
                 onFailureWithData = { anyFailed = true })
             b.join(); c.join()
-            if (anyFailed) emitSnackbar("Falha ao atualizar coleções")
+            if (anyFailed) emitSnackbar("Failed to refresh collections")
         } finally {
             _uiState.update { it.copy(collections = it.collections.copy(isRefreshing = false)) }
         }
@@ -169,7 +169,7 @@ class UserProfileViewModel @Inject constructor(
         pagination = bookmarksPagination,
         reset = reset,
         useCache = useCache,
-        showSkeletonWhen = { _uiState.value.collections.items.isEmpty() },
+        showSkeletonWhen = { _uiState.value.collections.bookmarks.items.isEmpty() },
         fetch = { limit, offset, cache -> meRepository.getBookmarks(limit, offset, cache) },
         getItems = {
             _uiState.value.collections.bookmarks.items
@@ -198,7 +198,7 @@ class UserProfileViewModel @Inject constructor(
         pagination = collectionsPagination,
         reset = reset,
         useCache = useCache,
-        showSkeletonWhen = { _uiState.value.collections.items.isEmpty() },
+        showSkeletonWhen = { _uiState.value.collections.customCollections.items.isEmpty() },
         fetch = { limit, offset, cache ->
             collectionRepository.getUserCollections(limit = limit, offset = offset, useCache = cache)
         },

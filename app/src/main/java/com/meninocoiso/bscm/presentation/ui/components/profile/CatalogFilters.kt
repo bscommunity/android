@@ -16,33 +16,27 @@ fun CatalogFilters(
             id = 0,
             title = "Charts",
             count = itemsAmount.first,
-            disabled = itemsAmount.first == 0
         ),
         ContentFilterOption(
             id = 1,
             title = "Tour Passes",
             count = itemsAmount.second,
-            disabled = itemsAmount.second == 0
         ),
         ContentFilterOption(
             id = 2,
             title = "Themes",
             count = itemsAmount.third,
-            disabled = itemsAmount.third == 0
         )
     )
 
-    if (collectionsAmount != null) {
-        options.add(
-            options.size,
-            ContentFilterOption(
-                id = 3,
-                title = "Collections",
-                count = collectionsAmount,
-                disabled = collectionsAmount == 0
-            )
+    options.add(
+        options.size,
+        ContentFilterOption(
+            id = 3,
+            title = "Collections",
+            count = if (collectionsAmount != null && collectionsAmount > 0) collectionsAmount else null,
         )
-    }
+    )
 
     ContentFilterUI(
         currentSelected = currentSelected,

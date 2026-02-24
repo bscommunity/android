@@ -119,8 +119,8 @@ fun ProfileScreen(
             1 -> {
                 ProfileCollections(
                     modifier = Modifier.fillMaxSize(),
-                    items = uiState.collections.items,
-                    state = uiState.collections.state,
+                    bookmarks = uiState.collections.bookmarks,
+                    customCollections = uiState.collections.customCollections,
                     isRefreshing = uiState.collections.isRefreshing,
                     onFetch = { profileViewModel.refreshUserCollections() },
                     onNavigateToDetails = onNavigateToDetails,

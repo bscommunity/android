@@ -1,6 +1,7 @@
 package com.meninocoiso.bscm.presentation.ui.components.profile
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,12 +12,13 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
@@ -29,13 +31,14 @@ import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageSize
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.preview.CollectionPreview
+import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedSection
 import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileCollections(
     modifier: Modifier = Modifier,
-    items: List<Collection>,
-    state: ContentState,
+    bookmarks: PagedSection<CatalogItem>,
+    customCollections: PagedSection<Collection>,
     isRefreshing: Boolean = false,
     onFetch: (reset: Boolean) -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
@@ -54,44 +57,37 @@ fun ProfileCollections(
 
     val horizontalPagerState = rememberPagerState { tabItems.size }
 
-    val bookmarksCollection = items.find { it.kind == CollectionKind.BOOKMARKS }
-    val customCollections = items.filter { it.kind == CollectionKind.USER }
+    val bookmarksLoaded = bookmarks.state == ContentState.Success
+    val collectionsLoaded = customCollections.state == ContentState.Success
 
     Column(modifier) {
-        // We subtract bookmarks from the total count to get the number of custom ones
-        val collectionsAmount = (items.size - 1).coerceAtLeast(0)
-
-        if (items.isNotEmpty()) {
-            CatalogFilters(
-                // TODO: Get these counts from the API instead of estimating them here,
-                //  since we might not be fetching all items at once
-                itemsAmount = Triple(
-                    bookmarksCollection?.items?.count { it is Chart } ?: 0,
-                    bookmarksCollection?.items?.count { it is TourPass } ?: 0,
-                    bookmarksCollection?.items?.count { it is Theme } ?: 0
-                ),
-                collectionsAmount = collectionsAmount,
-                currentSelected = horizontalPagerState.currentPage,
-                onFilterSelected = { index ->
-                    coroutineScope.launch {
-                        // Update pager when a tab is selected
-                        horizontalPagerState.animateScrollToPage(index)
-                    }
-                },
-            )
-        }
+        CatalogFilters(
+            // TODO: Get these counts from the API instead of estimating them here,
+            //  since we might not be fetching all items at once
+            itemsAmount = Triple(
+                if (bookmarksLoaded) bookmarks.items.count { it is Chart } else 0,
+                if (bookmarksLoaded) bookmarks.items.count { it is TourPass } else 0,
+                if (bookmarksLoaded) bookmarks.items.count { it is Theme } else 0
+            ),
+            collectionsAmount = if (collectionsLoaded) customCollections.items.size else null,
+            currentSelected = horizontalPagerState.currentPage,
+            onFilterSelected = { index ->
+                coroutineScope.launch {
+                    horizontalPagerState.animateScrollToPage(index)
+                }
+            },
+        )
 
         HorizontalPager(
             state = horizontalPagerState,
-            key = { it }, // Recompose the pager when the page changes
-            beyondViewportPageCount = 1 // Keep the next page in memory
+            key = { it },
+            beyondViewportPageCount = 1
         ) { index ->
             when (index) {
                 0 -> {
-                    // Charts
                     ProfileCollectionTabContent(
-                        items = bookmarksCollection?.items ?: emptyList(),
-                        state = state,
+                        items = bookmarks.items,
+                        state = bookmarks.state,
                         isRefreshing = isRefreshing,
                         onFetch = onFetch,
                         onNavigateToDetails = onNavigateToDetails,
@@ -105,10 +101,9 @@ fun ProfileCollections(
                 }
 
                 3 -> {
-                    // Collections
                     ProfileCollectionList(
-                        items = customCollections,
-                        state = state,
+                        items = customCollections.items,
+                        state = customCollections.state,
                         isRefreshing = isRefreshing,
                         onFetch = onFetch,
                         onNavigateToCollection = onNavigateToCollection,
@@ -122,12 +117,17 @@ fun ProfileCollections(
                 }
 
                 else -> {
-                    // Other tabs (Tour Passes, Themes) - Placeholder
-                    StatusMessageUI(
-                        modifier = Modifier.fillMaxWidth(),
-                        message = "No content available",
-                        icon = R.drawable.outline_library_music_24
-                    )
+                    if (bookmarks.state == ContentState.Loading) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    } else {
+                        StatusMessageUI(
+                            modifier = Modifier.fillMaxWidth(),
+                            message = "No content available",
+                            icon = R.drawable.outline_library_music_24
+                        )
+                    }
                 }
             }
         }

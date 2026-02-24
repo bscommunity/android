@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 data class ContentFilterOption(
     val id: Int,
     val title: String,
-    val count: Int,
+    val count: Int? = null,
     val disabled: Boolean = false,
 )
 
@@ -60,7 +60,7 @@ fun ContentFilterUI(
                         }
                     }
                     .padding(horizontal = 12.dp, vertical = 20.dp),
-                text = "${option.title} ${option.count}",
+                text = "${option.title} ${option.count ?: ""}",
                 style = MaterialTheme.typography.labelLarge,
             )
         }
