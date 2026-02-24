@@ -1,6 +1,7 @@
 package com.meninocoiso.bscm.domain.serialization
 
 import androidx.room.TypeConverter
+import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.enums.ActionType
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.enums.ContentType
@@ -165,5 +166,16 @@ class RoomSerializers {
     @TypeConverter
     fun toContentType(value: String): ContentType {
         return ContentType.valueOf(value)
+    }
+
+    // SimplifiedUser converters
+    @TypeConverter
+    fun fromSimplifiedUser(user: SimplifiedUser): String {
+        return json.encodeToString(user)
+    }
+
+    @TypeConverter
+    fun toSimplifiedUser(userString: String): SimplifiedUser {
+        return json.decodeFromString(userString)
     }
 }

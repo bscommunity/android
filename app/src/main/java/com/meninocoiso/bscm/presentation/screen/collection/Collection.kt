@@ -3,6 +3,7 @@ package com.meninocoiso.bscm.presentation.screen.collection
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -29,7 +30,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -39,12 +42,14 @@ import com.meninocoiso.bscm.domain.model.SimplifiedCollection
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.ButtonUI
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
+import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 import com.meninocoiso.bscm.presentation.ui.components.profile.BaseContainer
 import com.meninocoiso.bscm.presentation.ui.components.profile.CatalogFilters
 import com.meninocoiso.bscm.presentation.ui.components.profile.OnScrollLoadMore
 import com.meninocoiso.bscm.presentation.ui.components.profile.contentList
 import com.meninocoiso.bscm.presentation.ui.components.profile.pagination
 import com.meninocoiso.bscm.presentation.viewmodel.CollectionViewModel
+import com.meninocoiso.bscm.util.LinkingUtils
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -61,6 +66,7 @@ fun CollectionScreen(
     onNavigateToDetails: OnNavigateToDetails,
     viewModel: CollectionViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -68,7 +74,8 @@ fun CollectionScreen(
     val items = uiState.items
     val itemCount = collection.itemCount.toList().sum()
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior =
+        TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
     // Wire snackbar events from the ViewModel
     LaunchedEffect(viewModel) {
@@ -112,11 +119,22 @@ fun CollectionScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {}) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                            contentDescription = stringResource(R.string.share),
-                        )
+                    // Only show share button if slug and owner are available
+                    val slug = collection.slug
+                    val owner = collection.owner
+                    if (slug != null && owner != null) {
+                        IconButton(onClick = {
+                            LinkingUtils.shareCollection(
+                                context = context,
+                                username = owner.username,
+                                slug = slug,
+                            )
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = stringResource(R.string.share),
+                            )
+                        }
                     }
                 },
                 title = {
@@ -127,11 +145,33 @@ fun CollectionScreen(
                         // Name is available immediately from the route parameter —
                         // no loading state needed for the header.
                         Text(collection.name, style = MaterialTheme.typography.headlineSmall)
-                        if (itemCount > 0) {
+
+
+                        if (collection.owner != null) {
+                            Row(
+                                modifier = Modifier
+                                    .padding(start = 6.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Avatar(
+                                    url = collection.owner.avatarUrl,
+                                    alt = collection.owner.username.first().toString(),
+                                    size = 16.dp
+                                )
+                                Text(
+                                    style = MaterialTheme.typography.bodySmall,
+                                    text = "Collection by ${collection.owner.username}",
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false)
+                                )
+                            }
+                        } else if (itemCount > 0) {
                             Text(
-                                "${itemCount} items",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                "$itemCount items",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
                             )
                         }
                     }

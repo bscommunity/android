@@ -38,6 +38,19 @@ object LinkingUtils {
             context.getString(R.string.share_via)))
     }
 
+    fun shareCollection(context: Context, username: String, slug: String) {
+        val shareableLink = "https://bscm.netlify.app/link/collection/$username/$slug"
+
+        val shareIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, shareableLink)
+            type = "text/plain"
+        }
+
+        context.startActivity(Intent.createChooser(shareIntent,
+            context.getString(R.string.share_via)))
+    }
+
     fun launchBeatClone(
         context: Context,
         openAlertDialog: (Boolean) -> Unit,

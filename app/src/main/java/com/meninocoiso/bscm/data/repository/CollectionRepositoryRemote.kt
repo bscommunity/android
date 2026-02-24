@@ -67,6 +67,8 @@ class CollectionRepositoryRemote @Inject constructor(
         }
 
         userCollections
+    }.onFailure { error ->
+        Log.e(TAG, "Failed to get collections for user $userId: ${error.message}", error)
     }
 
     override suspend fun getCollectionById(collectionId: String): Result<Collection> = runCatching {

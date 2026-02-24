@@ -1,6 +1,7 @@
 package com.meninocoiso.bscm.domain.model
 
 import android.os.Parcelable
+import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
@@ -15,14 +16,18 @@ import kotlinx.serialization.Serializable
 data class SimplifiedCollection(
     val id: String,
     val name: String,
+    val slug: String? = null,
     val coverUrl: String? = null,
+    val owner: SimplifiedUser? = null,
     val itemCount: Triple<Int, Int, Int> = Triple(0, 0, 0), // chartCount, tourPassCount, themeCount
 ) : Parcelable
 
 fun Collection.toSimplifiedCollection() = SimplifiedCollection(
     id = id,
     name = name,
+    slug = slug,
     coverUrl = coverUrl,
+    owner = owner,
     itemCount = Triple(chartCount, tourPassCount, themeCount)
 )
 

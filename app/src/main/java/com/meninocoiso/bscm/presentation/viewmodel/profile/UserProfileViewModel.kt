@@ -235,16 +235,17 @@ class UserProfileViewModel @Inject constructor(
     private fun buildBookmarksCollection(items: List<CatalogItem>): Collection {
         val existing = _uiState.value.collections.items
             .firstOrNull { it.kind == CollectionKind.BOOKMARKS }
-        return existing?.copy(items = items) ?: Collection(
-            id        = "bookmarks",
-            userId    = (_profile.value as? ContentResult.Success)?.data?.user?.id ?: "unknown",
-            kind      = CollectionKind.BOOKMARKS,
-            name      = "Bookmarks",
-            isPublic  = false,
-            createdAt = LocalDateTime.now(),
-            updatedAt = LocalDateTime.now(),
-            items     = items,
-        )
+
+        return existing?.copy()?.also { it.items = items }
+            ?: Collection(
+                id        = "bookmarks",
+                userId    = (_profile.value as? ContentResult.Success)?.data?.user?.id ?: "unknown",
+                kind      = CollectionKind.BOOKMARKS,
+                name      = "Bookmarks",
+                isPublic  = false,
+                createdAt = LocalDateTime.now(),
+                updatedAt = LocalDateTime.now(),
+            ).also { it.items = items }
     }
 
     /**
