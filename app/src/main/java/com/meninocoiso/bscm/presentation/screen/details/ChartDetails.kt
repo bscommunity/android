@@ -152,9 +152,8 @@ fun ChartDetailsScreen(
 
     // Collection sheet state
     val collectionSheetState = rememberModalBottomSheetState()
-    var showCollectionSheet by rememberSaveable {
-        mutableStateOf(false)
-    }
+    var showCollectionSheet by rememberSaveable { mutableStateOf(false) }
+    var wasBookmarkedWhenSheetOpened by rememberSaveable { mutableStateOf(false) }
 
     val collectionUiState by collectionViewModel.uiState.collectAsStateWithLifecycle()
     val userCollections = collectionUiState.userCollections.items
@@ -166,8 +165,8 @@ fun ChartDetailsScreen(
         .collectAsStateWithLifecycle()
 
     // Load the user's collections whenever the sheet opens
-    LaunchedEffect(showCollectionSheet) {
-        if (showCollectionSheet) {
+    LaunchedEffect(wasBookmarkedWhenSheetOpened) {
+        if (wasBookmarkedWhenSheetOpened) {
             collectionViewModel.fetchUserCollections(reset = true)
         }
     }
@@ -347,16 +346,12 @@ fun ChartDetailsScreen(
                             !isLoggedIn,
                             onDisabled = { onUnauthenticated("Connect to manage favorites") }
                         ) { newValue ->
-                            // Optimistic UI update
                             optimisticBookmarked = newValue
 
                             if (newValue) {
                                 scope.launch {
-                                    // Queue/send the bookmark interaction
-                                    // This ensures it's registered locally even if app closes
                                     interactionViewModel.bookmarkContent(currentChart.id, currentChart.contentId)
 
-                                    // Show snackbar after interaction is queued
                                     val result = snackbarHostState.showSnackbar(
                                         "Added to Favorites",
                                         "Manage",
@@ -365,14 +360,13 @@ fun ChartDetailsScreen(
 
                                     when (result) {
                                         SnackbarResult.ActionPerformed -> {
+                                            wasBookmarkedWhenSheetOpened = true   // ← capture BEFORE sheet opens
                                             showCollectionSheet = true
                                         }
-
                                         SnackbarResult.Dismissed -> Unit
                                     }
                                 }
                             } else {
-                                // If unbookmarking, we need to check if it's in a user collection or just bookmarked
                                 when (contentCollection?.kind) {
                                     CollectionKind.USER -> interactionViewModel.removeFromCollection(
                                         contentId = currentChart.contentId,
@@ -567,19 +561,17 @@ fun ChartDetailsScreen(
                     )
                 }
                 currentChart.contentId?.let { contentId ->
-                    // When user selects a collection from the bottom sheet after bookmarking,
-                    // we need to remove the bookmark interaction and add to the custom collection
-                    if (isBookmarked) {
+                    if (wasBookmarkedWhenSheetOpened) {          // ← use captured value
                         interactionViewModel.changeContentCollection(
                             contentId = contentId,
                             targetCollectionId = collectionId,
                             targetCollectionKind = CollectionKind.USER
                         )
                     } else {
-                        // If not bookmarked, just add to collection normally
                         interactionViewModel.addToCollection(contentId, collectionId)
                     }
                 }
+                wasBookmarkedWhenSheetOpened = false             // ← reset after use
                 showCollectionSheet = false
             },
             onCreateCollection = { name, isPublic ->

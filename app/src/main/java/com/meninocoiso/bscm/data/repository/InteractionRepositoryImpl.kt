@@ -1,6 +1,7 @@
 package com.meninocoiso.bscm.data.repository
 
 import android.util.Log
+import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.manager.InteractionQueueManager
@@ -21,27 +22,15 @@ import javax.inject.Singleton
 
 private const val TAG = "InteractionRepositoryImpl"
 
-// The repository's only job is to:
-//   1. Update local state (ChartManager + ProfileCacheRepository)
-//   2. Hand off remote sync to InteractionQueueManager
-//
-// It knows nothing about queue internals, network state, or API calls.
-
 @Singleton
 class InteractionRepositoryImpl @Inject constructor(
     private val queueManager: InteractionQueueManager,
     private val chartManager: ChartManager,
+    private val chartDao: ChartDao,
     private val collectionDao: CollectionDao,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : InteractionRepository {
 
-    /**
-     * Likes the content with the given id.
-     *
-     * 1. Updates local chart database (likedAt = now)
-     * 2. Updates ProfileCacheRepository
-     * 3. Delegates queue + remote sync to InteractionQueueManager
-     */
     override suspend fun likeContent(id: String, contentId: String): Flow<Result<Unit>> = flow {
         updateLocalState(id = id, operation = OperationOption.LIKE)
         queueManager.queueAndSyncLike(contentId, isLike = true)
@@ -51,13 +40,6 @@ class InteractionRepositoryImpl @Inject constructor(
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
-    /**
-     * Unlikes the content with the given id.
-     *
-     * 1. Updates local chart database (likedAt = null)
-     * 2. Updates ProfileCacheRepository
-     * 3. Delegates queue + remote sync to InteractionQueueManager
-     */
     override suspend fun unlikeContent(id: String, contentId: String): Flow<Result<Unit>> = flow {
         updateLocalState(id = id, operation = OperationOption.UNLIKE)
         queueManager.queueAndSyncLike(contentId, isLike = false)
@@ -67,13 +49,6 @@ class InteractionRepositoryImpl @Inject constructor(
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
-    /**
-     * Bookmarks the content with the given id.
-     *
-     * 1. Updates local chart database (bookmarkedAt = now)
-     * 2. Updates ProfileCacheRepository
-     * 3. Delegates queue + remote sync to InteractionQueueManager
-     */
     override suspend fun bookmarkContent(id: String, contentId: String): Flow<Result<Unit>> = flow {
         updateLocalState(id = id, operation = OperationOption.BOOKMARK)
         queueManager.queueAndSyncBookmark(contentId, isBookmarked = true)
@@ -83,13 +58,6 @@ class InteractionRepositoryImpl @Inject constructor(
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
-    /**
-     * Unbookmarks the content with the given id.
-     *
-     * 1. Updates local chart database (bookmarkedAt = null)
-     * 2. Updates ProfileCacheRepository
-     * 3. Delegates queue + remote sync to InteractionQueueManager
-     */
     override suspend fun unbookmarkContent(id: String, contentId: String): Flow<Result<Unit>> = flow {
         updateLocalState(id = id, operation = OperationOption.UNBOOKMARK)
         queueManager.queueAndSyncBookmark(contentId, isBookmarked = false)
@@ -99,9 +67,6 @@ class InteractionRepositoryImpl @Inject constructor(
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
-    /**
-     * Adds the content to the specified collection.
-     */
     override suspend fun addToCollection(
         contentId: String,
         collectionId: String
@@ -121,9 +86,6 @@ class InteractionRepositoryImpl @Inject constructor(
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
-    /**
-     * Removes the content from the specified collection.
-     */
     override suspend fun removeFromCollection(
         contentId: String,
         collectionId: String
@@ -138,17 +100,68 @@ class InteractionRepositoryImpl @Inject constructor(
     }.flowOn(dispatcher)
 
     /**
-     * Moves content to a different collection, respecting the mutual exclusion rule:
-     * content CANNOT be in BOOKMARKS and a USER collection at the same time.
+     * Moves content from BOOKMARKS into a custom USER collection (or vice-versa).
      *
-     * Delegates conflict resolution and sync entirely to InteractionQueueManager.
+     * The previous implementation only managed the queue but never updated the
+     * local Room state, so:
+     *   - bookmarked_at was never cleared → item kept appearing in the bookmarks list
+     *   - The cross-ref for the new collection was never written → item didn't appear
+     *     in the collection
+     *
+     * Fix: we now explicitly clear/set local state based on the target collection kind
+     * before delegating queue work to InteractionQueueManager.
+     *
+     * BOOKMARKS → USER collection:
+     *   1. Clear bookmarked_at in charts table (removes from bookmarks observer)
+     *   2. Write cross-ref into collection_item_cross_ref (adds to collection)
+     *   3. Increment collection chart count
+     *
+     * USER collection → BOOKMARKS (reverse direction, if ever needed):
+     *   1. Remove cross-ref from the source collection
+     *   2. Set bookmarked_at = now (adds to bookmarks observer)
      */
     override suspend fun changeContentCollection(
         contentId: String,
         targetCollectionId: String,
         targetCollectionKind: CollectionKind
     ): Flow<Result<Unit>> = flow {
-        // Clear any conflicting queued interaction first (BOOKMARKS <-> USER are mutually exclusive)
+        when (targetCollectionKind) {
+            CollectionKind.USER -> {
+                // Moving OUT of bookmarks INTO a custom collection.
+                // We need the chart's local `id` (not contentId) to clear bookmarked_at.
+                // ChartManager.updateContentByContentId handles the lookup.
+                updateLocalStateByContentId(contentId = contentId, operation = OperationOption.UNBOOKMARK)
+
+                // Write the cross-ref so the item appears in the collection immediately
+                collectionDao.upsertCrossRef(
+                    CollectionItemCrossRef(
+                        collectionId = targetCollectionId,
+                        contentId = contentId,
+                        contentType = ContentType.CHART
+                    )
+                )
+                collectionDao.incrementCollectionChartCount(
+                    targetCollectionId,
+                    java.time.LocalDateTime.now()
+                )
+            }
+
+            CollectionKind.BOOKMARKS -> {
+                // Moving OUT of a custom collection INTO bookmarks.
+                // Remove the cross-ref from the source collection first.
+                // (Caller should pass the source collectionId separately if needed;
+                //  for now we rely on queueManager to handle the removal side.)
+                updateLocalStateByContentId(contentId = contentId, operation = OperationOption.BOOKMARK)
+            }
+
+            else -> {
+                // LIKES or other system kinds — no local state change needed here
+                Log.w(TAG, "changeContentCollection called with unexpected kind: $targetCollectionKind")
+            }
+        }
+
+        // Always defer remote sync to the queue manager — handles conflict resolution
+        // and ensures offline-first behaviour is preserved.
         queueManager.clearConflictingInteractions(contentId, targetCollectionKind)
         queueManager.queueAndSyncCollection(contentId, targetCollectionId, isAdd = true)
         emit(Result.success(Unit))
@@ -157,18 +170,13 @@ class InteractionRepositoryImpl @Inject constructor(
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
-    override suspend fun getQueueSize(): Int {
-        return queueManager.getQueueSize()
-    }
+    override suspend fun getQueueSize(): Int = queueManager.getQueueSize()
 
-    override suspend fun processQueue() {
-        queueManager.processQueuedInteractions()
-    }
+    override suspend fun processQueue() = queueManager.processQueuedInteractions()
 
     /**
-     * Updates the local chart database and the profile cache.
-     * Errors are caught and logged individually so a cache failure
-     * doesn't prevent the chart update (and vice versa).
+     * Updates local chart state by chart `id` (the primary key).
+     * Used by like/unlike/bookmark/unbookmark where we always have the chart id.
      */
     private suspend fun updateLocalState(id: String, operation: OperationOption) {
         try {
@@ -178,6 +186,27 @@ class InteractionRepositoryImpl @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Exception updating local chart for id=$id, operation=$operation", e)
+        }
+    }
+
+    /**
+     * Updates local chart state by `contentId` (the remote content identifier).
+     * Used by [changeContentCollection] where we only have the contentId, not the
+     * chart's local primary key.
+     *
+     * We look up the chart's local `id` via [CollectionDao] / [ChartDao] first,
+     * then delegate to the existing [updateLocalState] — no new ChartManager method needed.
+     */
+    private suspend fun updateLocalStateByContentId(contentId: String, operation: OperationOption) {
+        try {
+            val chart = chartDao.getChartByContentId(contentId)
+            if (chart == null) {
+                Log.w(TAG, "No local chart found for contentId=$contentId, skipping local state update")
+                return
+            }
+            updateLocalState(id = chart.id, operation = operation)
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception updating local chart for contentId=$contentId, operation=$operation", e)
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.meninocoiso.bscm.di
 
 import android.content.Context
+import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
 import com.meninocoiso.bscm.data.manager.ChartManager
@@ -47,10 +48,12 @@ object InteractionModule {
     fun provideInteractionRepository(
         queueManager: InteractionQueueManager,
         chartManager: ChartManager,
+        chartDao: ChartDao,
         collectionDao: CollectionDao,
     ): InteractionRepository = InteractionRepositoryImpl(
         queueManager,
         chartManager,
+        chartDao,
         collectionDao,
     )
 }
