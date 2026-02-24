@@ -12,10 +12,12 @@ import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.viewmodel.PaginationState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.async
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
@@ -28,6 +30,20 @@ private const val TAG = "UserProfileViewModel"
  *
  * Extends [BaseProfileViewModel] to inherit the generic [fetchPaged] / [refreshPaged]
  * helpers, so pagination boilerplate is written exactly once.
+ *
+ * ## Reactivity strategy
+ *
+ * Likes and bookmarks use a two-layer approach:
+ *
+ *  1. **Paginated fetch** (`fetchPaged`) — handles initial load, "load more", and
+ *     pull-to-refresh from the API
+ *
+ *  2. **Room observer** — a `Flow<List<Chart>>` from `ChartDao` that Room re-emits
+ *     automatically whenever any coroutine writes `liked_at` or `bookmarked_at`,
+ *     including writes made by [InteractionViewModel] from the details screen.
+ *
+ * The observer skips the very first emission (`drop(1)`) because `fetchPaged`
+ * already populates the list on launch; we only want to react to *changes*.
  */
 @HiltViewModel
 class UserProfileViewModel @Inject constructor(
@@ -75,6 +91,13 @@ class UserProfileViewModel @Inject constructor(
     private val collectionsPagination  = PaginationState(pageSize = 20)
 
     // -------------------------------------------------------------------------
+    // Observer jobs — kept so we can cancel/restart on resetAll()
+    // -------------------------------------------------------------------------
+
+    private var likesObserverJob: Job? = null
+    private var bookmarksObserverJob: Job? = null
+
+    // -------------------------------------------------------------------------
     // Public API
     // -------------------------------------------------------------------------
 
@@ -90,11 +113,20 @@ class UserProfileViewModel @Inject constructor(
     /**
      * Called when the user taps a tab. Loads data lazily — only fetches if the
      * tab's list is still empty (i.e. first visit).
+     *
+     * The Room observers are started here on first visit so they're only active
+     * while the relevant tab has been opened at least once.
      */
     fun onTabSelected(index: Int) {
         when (index) {
-            0 -> if (_uiState.value.likes.isEmpty)               fetchUserLikes()
-            1 -> if (_uiState.value.collections.items.isEmpty()) fetchUserCollections()
+            0 -> if (_uiState.value.likes.isEmpty) {
+                fetchUserLikes()
+                startLikesObserver()
+            }
+            1 -> if (_uiState.value.collections.items.isEmpty()) {
+                fetchUserCollections()
+                startBookmarksObserver()
+            }
         }
     }
 
@@ -154,6 +186,74 @@ class UserProfileViewModel @Inject constructor(
     fun loadMoreCollections() {
         if (_uiState.value.collections.customCollections.isIdle) {
             viewModelScope.launch { fetchCustomCollections().join() }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Room observers — react to writes from InteractionViewModel
+    // -------------------------------------------------------------------------
+
+    /**
+     * Starts observing liked charts from Room.
+     *
+     * We `drop(1)` to skip the initial emission — [fetchUserLikes] already
+     * populates the list via the paginated API fetch. Without the drop, the
+     * observer would immediately overwrite the fetched items with whatever
+     * is currently in Room (which may be stale / smaller until the API syncs).
+     *
+     * On subsequent emissions (i.e. a real change happened), we surgically
+     * update only [PagedSection.items] while preserving all other pagination
+     * metadata (hasMore, isLoadingMore, state, etc.) so infinite scroll still works.
+     */
+    private fun startLikesObserver() {
+        if (likesObserverJob?.isActive == true) return // already watching
+
+        likesObserverJob = viewModelScope.launch {
+            meRepository.observeLikes()
+                .drop(1) // skip initial snapshot; fetchUserLikes handles first load
+                .catch { e -> Log.e(TAG, "Likes observer error", e) }
+                .collect { freshLikes ->
+                    Log.d(TAG, "Likes observer fired: ${freshLikes.size} items")
+                    _uiState.update { state ->
+                        state.copy(
+                            likes = state.likes.copy(items = freshLikes)
+                        )
+                    }
+                }
+        }
+    }
+
+    /**
+     * Starts observing bookmarked charts from Room.
+     *
+     * Same `drop(1)` rationale as [startLikesObserver].
+     * Only the bookmark items inside [CollectionSectionState.bookmarks] are
+     * updated; the custom-collections section is left untouched.
+     */
+    private fun startBookmarksObserver() {
+        if (bookmarksObserverJob?.isActive == true) return
+
+        bookmarksObserverJob = viewModelScope.launch {
+            meRepository.observeBookmarks()
+                .drop(1)
+                .catch { e -> Log.e(TAG, "Bookmarks observer error", e) }
+                .collect { freshBookmarks ->
+                    Log.d(TAG, "Bookmarks observer fired: ${freshBookmarks.size} items")
+                    _uiState.update { state ->
+                        val updatedBookmarksSection = state.collections.bookmarks
+                            .copy(items = freshBookmarks)
+                        val bookmarksCollection = buildBookmarksCollection(freshBookmarks)
+                        state.copy(
+                            collections = state.collections.copy(
+                                bookmarks = updatedBookmarksSection,
+                                items = mergeCollections(
+                                    bookmarksCollection = bookmarksCollection,
+                                    customCollections = null,
+                                ),
+                            )
+                        )
+                    }
+                }
         }
     }
 
@@ -275,6 +375,12 @@ class UserProfileViewModel @Inject constructor(
     // -------------------------------------------------------------------------
 
     private fun resetAll() {
+        // Cancel observers — they'll be restarted when tabs are visited again
+        likesObserverJob?.cancel()
+        bookmarksObserverJob?.cancel()
+        likesObserverJob = null
+        bookmarksObserverJob = null
+
         likesPagination.reset()
         bookmarksPagination.reset()
         collectionsPagination.reset()

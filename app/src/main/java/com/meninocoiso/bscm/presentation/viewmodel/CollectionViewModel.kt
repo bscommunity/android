@@ -36,6 +36,8 @@ class CollectionViewModel @Inject constructor(
         val items: PagedSection<CatalogItem> = PagedSection(),
         /** The current user's own collections list (used by CollectionBottomSheet). */
         val userCollections: PagedSection<Collection> = PagedSection(),
+        val isCreating: Boolean = false,
+        val isUpdating: Boolean = false,
     )
 
     private val _uiState = MutableStateFlow(CollectionUiState())
@@ -176,28 +178,54 @@ class CollectionViewModel @Inject constructor(
      * Prepends the new collection to the list optimistically.
      */
     suspend fun createCollection(name: String, isPublic: Boolean): String {
-        return collectionRepository.createCollection(name, isPublic)
-            .fold(
-                onSuccess = { collection ->
-                    Log.d(TAG, "Created collection: ${collection.name} (${collection.id})")
-                    // Optimistic prepend so the sheet reflects it immediately
-                    _uiState.update { state ->
-                        state.copy(
-                            userCollections = state.userCollections.copy(
-                                items = listOf(collection) + state.userCollections.items
+        _uiState.update { it.copy(isCreating = true) }
+        try {
+            return collectionRepository.createCollection(name, isPublic)
+                .fold(
+                    onSuccess = { collection ->
+                        Log.d(TAG, "Created collection: ${collection.name} (${collection.id})")
+                        // Optimistic prepend so the sheet reflects it immediately
+                        _uiState.update { state ->
+                            state.copy(
+                                userCollections = state.userCollections.copy(
+                                    items = listOf(collection) + state.userCollections.items
+                                )
                             )
-                        )
-                    }
+                        }
 
-                    collection.id
-                },
-                onFailure = { e ->
-                    Log.e(TAG, "Failed to create collection", e)
-                    // Rethrow ApiException so callers can handle HTTP status-specific logic.
-                    if (e is ApiException) throw e
-                    // Wrap other exceptions into a generic ApiException with 500 status.
-                    throw ApiException(HttpStatusCode.InternalServerError, e.message ?: "Unknown error")
+                        collection.id
+                    },
+                    onFailure = { e ->
+                        Log.e(TAG, "Failed to create collection", e)
+                        // Rethrow ApiException so callers can handle HTTP status-specific logic.
+                        if (e is ApiException) throw e
+                        // Wrap other exceptions into a generic ApiException with 500 status.
+                        throw ApiException(HttpStatusCode.InternalServerError, e.message ?: "Unknown error")
+                    }
+                )
+        } finally {
+            _uiState.update { it.copy(isCreating = false) }
+        }
+    }
+
+    /**
+     * Updates an existing collection.
+     */
+    suspend fun updateCollection(collectionId: String, name: String, isPublic: Boolean) {
+        _uiState.update { it.copy(isUpdating = true) }
+        try {
+            collectionRepository.updateCollection(collectionId, name, isPublic)
+                .onSuccess {
+                    Log.d(TAG, "Updated collection: $collectionId")
+                    emitSnackbar("Collection updated successfully")
                 }
-            )
+                .onFailure { e ->
+                    Log.e(TAG, "Failed to update collection", e)
+                    emitSnackbar("Failed to update collection")
+                    throw e
+                }
+        } finally {
+            _uiState.update { it.copy(isUpdating = false) }
+        }
     }
 }

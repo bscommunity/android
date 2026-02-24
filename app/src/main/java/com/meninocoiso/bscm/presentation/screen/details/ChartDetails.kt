@@ -56,7 +56,7 @@ import com.meninocoiso.bscm.domain.state.DownloadState
 import com.meninocoiso.bscm.presentation.ui.components.CarouselItem
 import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
 import com.meninocoiso.bscm.presentation.ui.components.MediaCarousel
-import com.meninocoiso.bscm.presentation.ui.components.details.CollectionBottomSheet
+import com.meninocoiso.bscm.presentation.ui.components.details.CollectionCreateBottomSheet
 import com.meninocoiso.bscm.presentation.ui.components.details.DownloadButton
 import com.meninocoiso.bscm.presentation.ui.components.details.InteractionButton
 import com.meninocoiso.bscm.presentation.ui.components.details.StatListItem
@@ -547,7 +547,7 @@ fun ChartDetailsScreen(
     }
 
     if (showCollectionSheet) {
-        CollectionBottomSheet(
+        CollectionCreateBottomSheet(
             sheetState = collectionSheetState,
             onDismissRequest = { showCollectionSheet = false },
             onClose = {

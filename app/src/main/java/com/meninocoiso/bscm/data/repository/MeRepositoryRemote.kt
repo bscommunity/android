@@ -12,6 +12,7 @@ import com.meninocoiso.bscm.domain.repository.MeRepository
 import jakarta.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -25,7 +26,6 @@ class MeRepositoryRemote @Inject constructor(
     private val chartDao: ChartDao
 ) : MeRepository {
     override suspend fun getProfile(useCache: Boolean): Result<UserProfileResponse> = runCatching {
-        // Try cache first if requested
         if (useCache) {
             profileCacheRepository.getProfile()?.let { cached ->
                 Log.d(TAG, "Returning cached profile")
@@ -33,29 +33,21 @@ class MeRepositoryRemote @Inject constructor(
             }
         }
 
-        // Fetch from API
         val profile = apiClient.getMyProfile()
-
-        // Cache the result (owner)
         profileCacheRepository.cacheProfile(profile = profile)
-
         profile
     }
 
     override suspend fun getActivity(limit: Int, offset: Int, useCache: Boolean): Result<List<ActivityItemResponse>> = runCatching {
-        // Only use cache for first page
         if (useCache && offset == 0) {
             profileCacheRepository.getActivity()?.let { cached ->
                 Log.d(TAG, "Returning cached activity")
-                // hydrate charts for each activity entry using chartManager (ensures DB content is used)
                 return@runCatching cached
             }
         }
 
-        // Fetch from API
         val activity = apiClient.getMyActivity(limit, offset)
 
-        // Cache only first page
         if (offset == 0) {
             profileCacheRepository.cacheActivity(activity)
         }
@@ -72,11 +64,9 @@ class MeRepositoryRemote @Inject constructor(
             return@runCatching localLikes
         }
 
-        // Fetch from API
         val likes = apiClient.getMyLikes(limit, offset)
         Log.d(TAG, "Fetched ${likes.size} likes from API")
 
-        // Persist likedAt metadata for UI usage in background
         coroutineScope.launch { chartManager.persistCharts(likes) }
 
         likes
@@ -90,12 +80,25 @@ class MeRepositoryRemote @Inject constructor(
             return@runCatching localBookmarks
         }
 
-        // Fetch from API
         val bookmarks = apiClient.getMyBookmarks(limit, offset)
 
-        // Persist bookmarkedAt metadata for UI usage in background
         coroutineScope.launch { chartManager.persistCharts(bookmarks) }
 
         bookmarks
     }
+
+    // -----------------------------------------------------------------
+    // Reactive streams — thin pass-through to ChartDao's Flow queries.
+    //
+    // Room handles all the magic here: whenever any coroutine writes
+    // liked_at or bookmarked_at (including InteractionViewModel via
+    // InteractionRepositoryImpl), Room invalidates these flows and
+    // re-emits the full updated list automatically.
+    // -----------------------------------------------------------------
+
+    override fun observeLikes(): Flow<List<Chart>> =
+        chartDao.observeLikedCharts()
+
+    override fun observeBookmarks(): Flow<List<Chart>> =
+        chartDao.observeBookmarkedCharts()
 }

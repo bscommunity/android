@@ -8,6 +8,7 @@ import androidx.room.Query
 import androidx.room.Upsert
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Version
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ChartDao {
@@ -28,6 +29,27 @@ interface ChartDao {
 
     @Query("SELECT * FROM charts WHERE bookmarked_at IS NOT NULL ORDER BY bookmarked_at DESC LIMIT :limit OFFSET :offset")
     fun getBookmarkedCharts(limit: Int, offset: Int): List<Chart>
+
+    // -----------------------------------------------------------------
+    // Reactive queries — Room emits a new list whenever liked_at /
+    // bookmarked_at changes in *any* row, so the profile screen updates
+    // instantly when the user likes/bookmarks from ChartDetailsScreen.
+    // -----------------------------------------------------------------
+
+    /**
+     * Observes all liked charts ordered by most-recently liked.
+     *
+     * Analogy: imagine a live leaderboard that re-sorts itself the
+     * moment a new score is written — no manual refresh needed.
+     */
+    @Query("SELECT * FROM charts WHERE liked_at IS NOT NULL ORDER BY liked_at DESC")
+    fun observeLikedCharts(): Flow<List<Chart>>
+
+    /**
+     * Observes all bookmarked charts ordered by most-recently bookmarked.
+     */
+    @Query("SELECT * FROM charts WHERE bookmarked_at IS NOT NULL ORDER BY bookmarked_at DESC")
+    fun observeBookmarkedCharts(): Flow<List<Chart>>
 
     @Query("SELECT id FROM charts WHERE liked_at IS NOT NULL ORDER BY liked_at DESC")
     fun getLikedChartIds(): List<String>
@@ -53,8 +75,6 @@ interface ChartDao {
     LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END
 """)
     fun getSuggestions(query: String, limit: Int?): List<String>
-    /*@Query("SELECT track FROM charts WHERE track LIKE '%' || :query || '%' OR artist LIKE '%' || :query || '%' LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END")
-    fun getSuggestions(query: String, limit: Int?): List<String>*/
 
     @Query("""
         SELECT * FROM charts 
@@ -73,7 +93,7 @@ interface ChartDao {
         OFFSET :offset
     """)
     fun getChartsSortedByMostDownloadedWithQuery(query: String?, limit: Int?, offset: Int): List<Chart>
-    
+
     @Query("SELECT * FROM charts WHERE track LIKE :first AND " +
             "artist LIKE :last LIMIT 1")
     fun findByName(first: String, last: String): Chart

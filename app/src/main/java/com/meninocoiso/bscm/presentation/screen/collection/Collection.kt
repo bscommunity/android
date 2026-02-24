@@ -50,6 +50,10 @@ import com.meninocoiso.bscm.presentation.ui.components.profile.contentList
 import com.meninocoiso.bscm.presentation.ui.components.profile.pagination
 import com.meninocoiso.bscm.presentation.viewmodel.CollectionViewModel
 import com.meninocoiso.bscm.util.LinkingUtils
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.meninocoiso.bscm.presentation.ui.components.details.CollectionEditBottomSheet
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -73,6 +77,9 @@ fun CollectionScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val items = uiState.items
     val itemCount = collection.itemCount.toList().sum()
+
+    val sheetState = rememberModalBottomSheetState()
+    var showBottomSheet by remember { mutableStateOf(false) }
 
     val scrollBehavior =
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
@@ -209,7 +216,9 @@ fun CollectionScreen(
                     ButtonUI(
                         text = "Manage collection",
                         icon = R.drawable.outline_settings_24,
-                        onClick = { /* Navigate to edit collection */ },
+                        onClick = {
+                            showBottomSheet = true
+                        },
                         modifier = Modifier.padding(start = 16.dp),
                         variant = ButtonVariant.Tonal
                     )
@@ -227,5 +236,18 @@ fun CollectionScreen(
                 )
             }
         }
+    }
+
+    if (showBottomSheet) {
+        CollectionEditBottomSheet(
+            sheetState = sheetState,
+            onDismissRequest = { showBottomSheet = false },
+            onClose = { showBottomSheet = false },
+            collection = collection,
+            onSaveChanges = { name, isPublic ->
+                viewModel.updateCollection(collection.id, name, isPublic)
+            },
+            isLoading = uiState.isUpdating
+        )
     }
 }

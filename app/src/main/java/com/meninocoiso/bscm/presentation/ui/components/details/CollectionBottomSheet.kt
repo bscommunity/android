@@ -48,6 +48,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Collection
+import com.meninocoiso.bscm.domain.model.SimplifiedCollection
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageSize
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.SwitchUI
@@ -58,14 +59,14 @@ private const val MAX_NAME_LENGTH = 30
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CollectionBottomSheet(
+fun CollectionCreateBottomSheet(
     sheetState: SheetState,
     onDismissRequest: () -> Unit,
     onClose: () -> Unit,
     collections: List<Collection>,
-    isLoading: Boolean,
-    onCollectionSelected: (collectionId: String) -> Unit,
-    onCreateCollection: suspend (name: String, isPublic: Boolean) -> Unit
+    isLoading: Boolean = false,
+    onCollectionSelected: (collectionId: String) -> Unit = { },
+    onCreateCollection: suspend (name: String, isPublic: Boolean) -> Unit = { _, _ -> },
 ) {
     val coroutineScope = rememberCoroutineScope()
     val horizontalPagerState = rememberPagerState { 2 }
@@ -148,13 +149,8 @@ fun CollectionBottomSheet(
                         }
                     )
 
-                    1 -> CreateCollectionSection(
+                    1 -> CollectionFormSection(
                         isLoading = isLoading,
-                        onBackClick = {
-                            coroutineScope.launch {
-                                horizontalPagerState.scrollToPage(0)
-                            }
-                        },
                         onSave = { name, isPublic ->
                             onCreateCollection(name, isPublic)
                             coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
@@ -167,6 +163,57 @@ fun CollectionBottomSheet(
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CollectionEditBottomSheet(
+    sheetState: SheetState,
+    onDismissRequest: () -> Unit,
+    onClose: () -> Unit,
+    collection: SimplifiedCollection,
+    isLoading: Boolean = false,
+    onSaveChanges: suspend (name: String, isPublic: Boolean) -> Unit,
+) {
+    val coroutineScope = rememberCoroutineScope()
+
+    ModalBottomSheet(
+        sheetState = sheetState,
+        onDismissRequest = { if (!isLoading) onDismissRequest() },
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(modifier = Modifier.size(48.dp))
+            Text(
+                text = "Edit collection",
+                style = MaterialTheme.typography.titleMedium
+            )
+            IconButton(onClick = onClose) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = stringResource(R.string.close_bottomsheet)
+                )
+            }
+        }
+        CollectionFormSection(
+            isLoading = isLoading,
+            initialName = collection.name,
+            initialIsPublic = collection.isPublic,
+            onSave = { name, isPublic ->
+                onSaveChanges(name, isPublic)
+                coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
+                    if (!sheetState.isVisible) {
+                        onDismissRequest()
+                    }
+                }
+            }
+        )
     }
 }
 
@@ -250,13 +297,14 @@ fun CollectionsListSection(
 }
 
 @Composable
-fun CreateCollectionSection(
+fun CollectionFormSection(
     isLoading: Boolean,
-    onBackClick: () -> Unit = { },
+    initialName: String = "",
+    initialIsPublic: Boolean = true,
     onSave: suspend (name: String, isPublic: Boolean) -> Unit
 ) {
-    var isPublic by rememberSaveable { mutableStateOf(true) }
-    var name by rememberSaveable { mutableStateOf("") }
+    var isPublic by rememberSaveable { mutableStateOf(initialIsPublic) }
+    var name by rememberSaveable { mutableStateOf(initialName) }
 
     val scope = rememberCoroutineScope()
 

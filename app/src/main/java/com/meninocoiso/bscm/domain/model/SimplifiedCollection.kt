@@ -18,6 +18,7 @@ data class SimplifiedCollection(
     val name: String,
     val slug: String? = null,
     val coverUrl: String? = null,
+    val isPublic: Boolean = false,
     val owner: SimplifiedUser? = null,
     val itemCount: Triple<Int, Int, Int> = Triple(0, 0, 0), // chartCount, tourPassCount, themeCount
 ) : Parcelable
