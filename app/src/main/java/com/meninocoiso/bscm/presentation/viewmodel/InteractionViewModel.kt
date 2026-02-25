@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -154,9 +155,14 @@ class InteractionViewModel @Inject constructor(
         }
     }
 
+    private val contentCollectionCache = mutableMapOf<String, StateFlow<SimplifiedCollection?>>()
+
     fun getContentCollection(contentId: String): StateFlow<SimplifiedCollection?> =
-        collectionDao.getCollectionForContent(contentId)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+        contentCollectionCache.getOrPut(contentId) {
+            collectionDao.getCollectionForContent(contentId)
+                .distinctUntilChanged()
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+        }
 
     /**
      * Manually processes the interaction queue

@@ -4,7 +4,8 @@ import android.util.Log
 import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
 import com.meninocoiso.bscm.data.local.entity.QueuedInteractionEntity
 import com.meninocoiso.bscm.data.remote.ApiClient
-import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionItemRequest
+import com.meninocoiso.bscm.data.remote.ApiException
+import com.meninocoiso.bscm.data.remote.dto.collection.BatchCollectionItemRequest
 import com.meninocoiso.bscm.domain.enums.ActionType
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.monitor.NetworkConnectivityMonitor
@@ -82,6 +83,7 @@ class InteractionQueueManager @Inject constructor(
         action: ActionType,
         apiCall: suspend () -> Boolean
     ) = withContext(Dispatchers.IO) {
+        Log.d("BookmarkDebug", "queueAndSync: contentId=$contentId, kind=$collectionKind, action=$action, queueSize=${queueDao.getQueueSize()}")
         // 1. Persist to queue first — this is our safety net
         val interaction = QueuedInteractionEntity(
             contentId = contentId,
@@ -114,8 +116,15 @@ class InteractionQueueManager @Inject constructor(
                     Log.w(TAG, "Immediate sync returned false, will retry from queue: contentId=$contentId")
                 }
             } catch (e: Exception) {
-                // Leave in queue for InteractionSyncService to retry
-                Log.w(TAG, "Immediate sync failed, will retry from queue later: contentId=$contentId", e)
+                if (e is ApiException && e.status.value in 400..499) {
+                    // 4xx = terminal error (bad request, conflict, already exists, etc.)
+                    // The server will never accept this — stop retrying, remove from queue
+                    removeQueuedInteraction(contentId, collectionKind, collectionId)
+                    Log.w(TAG, "Terminal ${e.status.value} error, removed from queue: contentId=$contentId — ${e.message}")
+                } else {
+                    // Network error, 5xx, timeout — leave in queue for retry
+                    Log.w(TAG, "Transient error, will retry from queue: contentId=$contentId", e)
+                }
             }
         }
     }
@@ -150,7 +159,7 @@ class InteractionQueueManager @Inject constructor(
 
     /**
      * Processes all queued interactions by deduplicating and sending a batch request.
-     * Called by [InteractionSyncService] on connectivity restore or app resume.
+     * Called by [com.meninocoiso.bscm.service.InteractionSyncService] on connectivity restore or app resume.
      */
     suspend fun processQueuedInteractions() = withContext(Dispatchers.IO) {
         try {
@@ -175,7 +184,7 @@ class InteractionQueueManager @Inject constructor(
             }
 
             val batchRequest = latestInteractionsMap.values.map { entity ->
-                CreateCollectionItemRequest(
+                BatchCollectionItemRequest(
                     contentId = entity.contentId,
                     collectionId = entity.collectionId,
                     collectionKind = entity.collectionKind,
@@ -183,6 +192,7 @@ class InteractionQueueManager @Inject constructor(
                 )
             }
 
+            Log.d("BookmarkDebug", "processBatch: ${batchRequest.map { "${it.contentId}:${it.collectionKind}:${it.action}" }}")
             Log.d(TAG, "Sending batch of ${batchRequest.size} interactions to server")
 
             try {

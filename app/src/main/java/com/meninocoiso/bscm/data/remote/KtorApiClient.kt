@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.meninocoiso.bscm.data.manager.SecureTokenManager
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
+import com.meninocoiso.bscm.data.remote.dto.collection.BatchCollectionItemRequest
 import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionItemRequest
 import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionRequest
 import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionRequest
@@ -11,6 +12,7 @@ import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.data.security.AuthInterceptor
 import com.meninocoiso.bscm.data.security.AuthPlugin
 import com.meninocoiso.bscm.data.security.TokenRefreshPlugin
+import com.meninocoiso.bscm.domain.enums.ActionType
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.OperationOption
@@ -420,9 +422,11 @@ class KtorApiClient @Inject constructor(
 
     override suspend fun addItemToCollection(collectionId: String, contentId: String): Boolean {
         val response = client.post("collections/$collectionId/items") {
-            setBody(mapOf("contentId" to contentId))
+            setBody(CreateCollectionItemRequest(
+                contentId = contentId,
+                action = ActionType.ADD
+            ))
         }
-        Log.d(TAG, "Add item to collection response: ${response.status}, body: ${response.bodyAsText()}")
         return response.status.isSuccess()
     }
 
@@ -431,7 +435,7 @@ class KtorApiClient @Inject constructor(
         return response.status.isSuccess()
     }
 
-    override suspend fun batchProcessInteractions(interactions: List<CreateCollectionItemRequest>): Boolean {
+    override suspend fun batchProcessInteractions(interactions: List<BatchCollectionItemRequest>): Boolean {
         val response = client.post("collections/batch") {
             setBody(interactions)
         }

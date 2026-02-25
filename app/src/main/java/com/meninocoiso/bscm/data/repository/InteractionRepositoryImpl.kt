@@ -71,6 +71,7 @@ class InteractionRepositoryImpl @Inject constructor(
         contentId: String,
         collectionId: String
     ): Flow<Result<Unit>> = flow {
+        Log.d("BookmarkDebug", "addToCollection called: contentId=$contentId, collectionId=$collectionId")
         collectionDao.upsertCrossRef(
             CollectionItemCrossRef(
                 collectionId = collectionId,
@@ -90,6 +91,7 @@ class InteractionRepositoryImpl @Inject constructor(
         contentId: String,
         collectionId: String
     ): Flow<Result<Unit>> = flow {
+        Log.d("BookmarkDebug", "removeFromCollection called: contentId=$contentId, collectionId=$collectionId")
         collectionDao.deleteCrossRef(collectionId, contentId)
         collectionDao.decrementCollectionChartCount(collectionId, java.time.LocalDateTime.now())
         queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = false)
@@ -125,6 +127,7 @@ class InteractionRepositoryImpl @Inject constructor(
         targetCollectionId: String,
         targetCollectionKind: CollectionKind
     ): Flow<Result<Unit>> = flow {
+        Log.d("BookmarkDebug", "changeContentCollection called: contentId=$contentId, target=$targetCollectionId, kind=$targetCollectionKind")
         when (targetCollectionKind) {
             CollectionKind.USER -> {
                 // Moving OUT of bookmarks INTO a custom collection.

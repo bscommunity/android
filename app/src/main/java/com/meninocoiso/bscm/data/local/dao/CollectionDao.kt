@@ -61,9 +61,9 @@ interface CollectionDao {
 
     @Query("""
         SELECT id, kind FROM collections c
-        INNER JOIN collection_item_cross_ref ref ON c.id = ref.collection_id
+        INNER JOIN collection_item_cross_ref ref 
+            ON c.id = ref.collection_id
         WHERE ref.content_id = :contentId
-        AND c.kind != 'LIKES'
         LIMIT 1
     """)
     fun getCollectionForContent(contentId: String): Flow<SimplifiedCollection?>

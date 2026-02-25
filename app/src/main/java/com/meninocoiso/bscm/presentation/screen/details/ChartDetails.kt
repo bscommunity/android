@@ -73,6 +73,7 @@ import com.meninocoiso.bscm.presentation.viewmodel.InteractionViewModel
 import com.meninocoiso.bscm.util.LinkingUtils
 import com.meninocoiso.bscm.util.StringUtils
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -89,7 +90,6 @@ val DropdownItemPadding = PaddingValues(
     bottom = 8.dp
 )
 
-// Dialog state management
 private enum class ChartDialog { None, Report, DeleteConfirmation, ListenTrack }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -109,48 +109,51 @@ fun ChartDetailsScreen(
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Use the chart parameter directly as the source of truth
-    val currentChart = chart
-
-    // Combine states to reduce recompositions
-    val chartState by contentViewModel.getDownloadState(currentChart.id)
+    val chartState by contentViewModel.getDownloadState(chart.id)
         .collectAsStateWithLifecycle()
 
-    // UI State
+    val isLoggedIn by authViewModel.isLoggedInFlow.collectAsStateWithLifecycle(false)
+
+    // contentCollection is the live Room source of truth for whether this chart
+    // belongs to any collection (BOOKMARKS or USER). It's a Flow backed by
+    // CollectionDao so it updates the instant any write happens, including from
+    // InteractionViewModel on another screen.
+    val contentCollection by interactionViewModel
+        .getContentCollection(chart.contentId ?: "")
+        .onEach { Log.d("BookmarkDebug", "contentCollection changed: $it") }
+        .collectAsStateWithLifecycle(initialValue = null)
+
     val isGameplayVideoPreviewEnabled = contentViewModel.isGameplayVideoPreviewEnabled
+        .onEach { Log.d("ChartDetailsScreen", "Gameplay video preview enabled: $it") }
         .collectAsStateWithLifecycle(initialValue = true)
 
-    // Simplified dialog state management
     var currentDialog by rememberSaveable { mutableStateOf(ChartDialog.None) }
 
-    // Optimistic UI state - for instant feedback while local database is being updated
     var optimisticLiked by rememberSaveable { mutableStateOf<Boolean?>(null) }
-    var optimisticBookmarked by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    val isLiked = optimisticLiked ?: (chart.likedAt != null)
 
-    // Source-of-truth is the currentChart's local database fields (updated via observation)
-    // Optimistic state takes priority for instant UI feedback, then falls back to chart's actual state
-    val isLiked = optimisticLiked ?: (currentChart.likedAt != null)
-    val isBookmarked = optimisticBookmarked ?: (currentChart.bookmarkedAt != null)
-
-    // Clear optimistic state when currentChart updates with the persisted value
-    LaunchedEffect(currentChart.likedAt) {
-        if (optimisticLiked != null && currentChart.likedAt != null) {
+    LaunchedEffect(chart.likedAt) {
+        if (optimisticLiked != null && chart.likedAt != null) {
             optimisticLiked = null
         }
     }
 
-    LaunchedEffect(currentChart.bookmarkedAt) {
-        if (optimisticBookmarked != null && currentChart.bookmarkedAt != null) {
+    var optimisticBookmarked by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    // Active if: optimistic state is set, OR item is in any collection (BOOKMARKS or USER custom)
+    val isBookmarked = optimisticBookmarked ?: (contentCollection != null || chart.bookmarkedAt != null)
+
+    LaunchedEffect(chart.bookmarkedAt, contentCollection) {
+        if (optimisticBookmarked != null && (chart.bookmarkedAt != null || contentCollection != null)) {
             optimisticBookmarked = null
         }
     }
-    // Prepare string resources for use in LaunchedEffect
-    val downloadCompleteMsg = stringResource(R.string.download_complete)
-    val errorTitleMsg = stringResource(R.string.error)
-    val chartDeletedMsg = stringResource(R.string.chart_deleted)
-    val failedToDeleteMsg = stringResource(R.string.failed_to_delete_chart)
 
+    Log.d("BookmarkDebug", "recompose — optimistic=$optimisticBookmarked, collection=$contentCollection, isBookmarked=$isBookmarked")
+
+
+    // -------------------------------------------------------------------------
     // Collection sheet state
+    // -------------------------------------------------------------------------
     val collectionSheetState = rememberModalBottomSheetState()
     var showCollectionSheet by rememberSaveable { mutableStateOf(false) }
     var wasBookmarkedWhenSheetOpened by rememberSaveable { mutableStateOf(false) }
@@ -159,38 +162,37 @@ fun ChartDetailsScreen(
     val userCollections = collectionUiState.userCollections.items
     val isCollectionsLoading = collectionUiState.userCollections.state is ContentState.Loading
 
-    val isLoggedIn by authViewModel.isLoggedInFlow.collectAsStateWithLifecycle(false)
-    val contentCollection by interactionViewModel
-        .getContentCollection(currentChart.contentId ?: "")
-        .collectAsStateWithLifecycle()
-
-    // Load the user's collections whenever the sheet opens
-    LaunchedEffect(wasBookmarkedWhenSheetOpened) {
-        if (wasBookmarkedWhenSheetOpened) {
+    LaunchedEffect(showCollectionSheet) {
+        if (showCollectionSheet) {
             collectionViewModel.fetchUserCollections(reset = true)
         }
     }
 
-    // Manage download events
+    // -------------------------------------------------------------------------
+    // Download events
+    // -------------------------------------------------------------------------
+    val downloadCompleteMsg = stringResource(R.string.download_complete)
+    val errorTitleMsg = stringResource(R.string.error)
+    val chartDeletedMsg = stringResource(R.string.chart_deleted)
+    val failedToDeleteMsg = stringResource(R.string.failed_to_delete_chart)
+
     LaunchedEffect(Unit) {
-        // Check status on first load
-        contentViewModel.checkStatus(currentChart)
+        contentViewModel.checkStatus(chart)
 
         contentViewModel.events.collect { event ->
             when (event) {
                 is DownloadEvent.Complete ->
                     snackbarHostState.showSnackbar(downloadCompleteMsg)
-
                 is DownloadEvent.Error ->
                     snackbarHostState.showSnackbar("$errorTitleMsg: ${event.message}")
-
-                else -> { /* Other events don't need UI feedback */
-                }
+                else -> {}
             }
         }
     }
 
+    // -------------------------------------------------------------------------
     // Dialog management
+    // -------------------------------------------------------------------------
     when (currentDialog) {
         ChartDialog.DeleteConfirmation -> {
             ConfirmationDialog(
@@ -199,53 +201,42 @@ fun ChartDetailsScreen(
                 onDismiss = { currentDialog = ChartDialog.None },
                 onConfirm = {
                     contentViewModel.deleteChart(
-                        currentChart,
+                        chart,
                         onSuccess = {
-                            scope.launch {
-                                snackbarHostState.showSnackbar(chartDeletedMsg)
-                            }
+                            scope.launch { snackbarHostState.showSnackbar(chartDeletedMsg) }
                         },
                         onError = {
-                            scope.launch {
-                                snackbarHostState.showSnackbar(failedToDeleteMsg)
-                            }
+                            scope.launch { snackbarHostState.showSnackbar(failedToDeleteMsg) }
                         }
                     )
                 }
             )
         }
-
         ChartDialog.Report -> {
             ReportDialog(
-                onSubmit = {
-                    // Implement report functionality
-                },
+                onSubmit = {},
                 onDismiss = { currentDialog = ChartDialog.None },
             )
         }
-
         ChartDialog.ListenTrack -> {
             ListenTrackDialog(
-                streamingLinks = currentChart.trackUrls,
+                streamingLinks = chart.trackUrls,
                 onDismiss = { currentDialog = ChartDialog.None }
             )
         }
-
-        ChartDialog.None -> { /* No dialog shown */
-        }
+        ChartDialog.None -> {}
     }
 
-    val lastUpdated = StringUtils.toRelativeString(currentChart.latestVersion.createdAt)
+    val lastUpdated = StringUtils.toRelativeString(chart.latestVersion.createdAt)
 
     val onUnauthenticated = { message: String ->
         scope.launch {
-            snackbarHostState.currentSnackbarData?.dismiss() // Dismiss any existing snackbar before showing a new one
+            snackbarHostState.currentSnackbarData?.dismiss()
             val result = snackbarHostState.showSnackbar(
                 message,
                 duration = SnackbarDuration.Short,
                 actionLabel = "Connect"
             )
-
             if (result == SnackbarResult.ActionPerformed) {
                 onNavigateToSettings()
             }
@@ -259,8 +250,7 @@ fun ChartDetailsScreen(
                 modifier = Modifier.padding(horizontal = 8.dp),
                 navigationIcon = {
                     IconButton(
-                        modifier = Modifier
-                            .padding(end = 12.dp),
+                        modifier = Modifier.padding(end = 12.dp),
                         onClick = { onReturn() }
                     ) {
                         Icon(
@@ -271,20 +261,16 @@ fun ChartDetailsScreen(
                     }
                 },
                 actions = {
-                    // Dropdown menu for more options
                     DropdownMenuUI {
-                        if (currentChart.contentId != null) {
+                        if (chart.contentId != null) {
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,
                                 text = { Text(stringResource(R.string.share)) },
                                 leadingIcon = {
-                                    Icon(
-                                        Icons.Outlined.Share,
-                                        contentDescription = null
-                                    )
+                                    Icon(Icons.Outlined.Share, contentDescription = null)
                                 },
                                 onClick = {
-                                    LinkingUtils.shareChart(context, currentChart.contentId)
+                                    LinkingUtils.shareChart(context, chart.contentId)
                                 }
                             )
                             DropdownMenuItem(
@@ -296,32 +282,25 @@ fun ChartDetailsScreen(
                                         contentDescription = null
                                     )
                                 },
-                                onClick = {
-                                    currentDialog = ChartDialog.Report
-                                }
+                                onClick = { currentDialog = ChartDialog.Report }
                             )
                         }
-                        if (chartState == DownloadState.Installed(currentChart.id)) {
+                        if (chartState == DownloadState.Installed(chart.id)) {
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,
                                 text = { Text(stringResource(R.string.delete_chart)) },
                                 leadingIcon = {
-                                    Icon(
-                                        Icons.Outlined.Delete,
-                                        contentDescription = null
-                                    )
+                                    Icon(Icons.Outlined.Delete, contentDescription = null)
                                 },
-                                onClick = {
-                                    currentDialog = ChartDialog.DeleteConfirmation
-                                }
+                                onClick = { currentDialog = ChartDialog.DeleteConfirmation }
                             )
                         }
                     }
                 },
                 title = {
                     Column {
-                        Text(currentChart.track, style = MaterialTheme.typography.titleLarge)
-                        Text(currentChart.artist, style = MaterialTheme.typography.titleMedium)
+                        Text(chart.track, style = MaterialTheme.typography.titleLarge)
+                        Text(chart.artist, style = MaterialTheme.typography.titleMedium)
                     }
                 }
             )
@@ -329,7 +308,7 @@ fun ChartDetailsScreen(
         bottomBar = {
             BottomAppBar(
                 actions = {
-                    if (currentChart.trackUrls.isNotEmpty()) {
+                    if (chart.trackUrls.isNotEmpty()) {
                         IconButton(onClick = { currentDialog = ChartDialog.ListenTrack }) {
                             Icon(
                                 painter = painterResource(id = R.drawable.baseline_artist_24),
@@ -338,7 +317,7 @@ fun ChartDetailsScreen(
                         }
                     }
 
-                    if (currentChart.contentId != null) {
+                    if (chart.contentId != null) {
                         InteractionButton(
                             R.drawable.baseline_bookmark_24,
                             R.drawable.rounded_bookmark_24,
@@ -346,16 +325,21 @@ fun ChartDetailsScreen(
                             !isLoggedIn,
                             onDisabled = { onUnauthenticated("Connect to manage favorites") },
                             onHold = {
-                                wasBookmarkedWhenSheetOpened = true   // ← capture BEFORE sheet opens
+                                wasBookmarkedWhenSheetOpened = isBookmarked
                                 showCollectionSheet = true
                             },
                             onHoldLabel = "Switch Collection"
                         ) { newValue ->
+                            // Set optimistic state immediately for instant feedback.
+                            // This overrides contentCollection until Room confirms.
                             optimisticBookmarked = newValue
 
                             if (newValue) {
                                 scope.launch {
-                                    interactionViewModel.bookmarkContent(currentChart.id, currentChart.contentId)
+                                    interactionViewModel.bookmarkContent(
+                                        chart.id,
+                                        chart.contentId
+                                    )
 
                                     val result = snackbarHostState.showSnackbar(
                                         "Added to Favorites",
@@ -363,28 +347,29 @@ fun ChartDetailsScreen(
                                         duration = SnackbarDuration.Short
                                     )
 
-                                    when (result) {
-                                        SnackbarResult.ActionPerformed -> {
-                                            wasBookmarkedWhenSheetOpened = true   // ← capture BEFORE sheet opens
-                                            showCollectionSheet = true
-                                        }
-                                        SnackbarResult.Dismissed -> Unit
+                                    if (result == SnackbarResult.ActionPerformed) {
+                                        wasBookmarkedWhenSheetOpened = true
+                                        showCollectionSheet = true
                                     }
                                 }
                             } else {
+                                // optimisticBookmarked=false will hide the button immediately.
+                                // The LaunchedEffect above will clear it once Room emits null
+                                // for contentCollection, completing the circle.
                                 when (contentCollection?.kind) {
                                     CollectionKind.USER -> interactionViewModel.removeFromCollection(
-                                        contentId = currentChart.contentId,
+                                        contentId = chart.contentId,
                                         collectionId = contentCollection!!.id
                                     )
                                     else -> interactionViewModel.unbookmarkContent(
-                                        currentChart.id,
-                                        currentChart.contentId
+                                        chart.id,
+                                        chart.contentId
                                     )
                                 }
                                 snackbarHostState.currentSnackbarData?.dismiss()
                             }
                         }
+
                         InteractionButton(
                             R.drawable.baseline_favorite_24,
                             R.drawable.rounded_favorite_24,
@@ -392,20 +377,24 @@ fun ChartDetailsScreen(
                             !isLoggedIn,
                             onDisabled = { onUnauthenticated("Connect to manage likes") }
                         ) { newValue ->
-                            // Optimistic UI update
                             optimisticLiked = newValue
-
                             if (newValue) {
-                                interactionViewModel.likeContent(currentChart.id, currentChart.contentId)
+                                interactionViewModel.likeContent(
+                                    chart.id,
+                                    chart.contentId
+                                )
                             } else {
-                                interactionViewModel.unlikeContent(currentChart.id, currentChart.contentId)
+                                interactionViewModel.unlikeContent(
+                                    chart.id,
+                                    chart.contentId
+                                )
                             }
                         }
                     }
                 },
                 floatingActionButton = {
                     DownloadButton(
-                        chart = currentChart,
+                        chart = chart,
                         downloadState = chartState,
                         contentViewModel = contentViewModel,
                     )
@@ -421,64 +410,57 @@ fun ChartDetailsScreen(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Media carousel
             MediaCarousel(
                 listOf(
-                    CarouselItem.ImageItem(
-                        imageUrl = currentChart.coverUrl,
-                    ),
-                    CarouselItem.VideoItem(
-                        videoId = currentChart.latestVersion.previewUrl
-                    )
+                    CarouselItem.ImageItem(imageUrl = chart.coverUrl),
+                    CarouselItem.VideoItem(videoId = chart.latestVersion.previewUrl)
                 ),
                 isVideoEnabled = isGameplayVideoPreviewEnabled.value
             )
 
-            // Credits
-            if (currentChart.contributors.isNotEmpty()) {
-                PreviewContributors(currentChart.contributors)
+            if (chart.contributors.isNotEmpty()) {
+                PreviewContributors(chart.contributors)
             }
 
-            // Stats
             Section(title = stringResource(R.string.stats)) {
                 Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                    if (currentChart.latestVersion.duration > 0) {
+                    if (chart.latestVersion.duration > 0) {
                         StatListItem(
-                            title = "~${StringUtils.toDurationString(currentChart.latestVersion.duration)}",
+                            title = "~${StringUtils.toDurationString(chart.latestVersion.duration)}",
                             icon = R.drawable.outline_access_time_24
                         )
                     }
-                    if (currentChart.latestVersion.notesAmount > 0) {
+                    if (chart.latestVersion.notesAmount > 0) {
                         StatListItem(
                             title = pluralStringResource(
                                 R.plurals.notes_amount,
-                                currentChart.latestVersion.notesAmount,
-                                currentChart.latestVersion.notesAmount
+                                chart.latestVersion.notesAmount,
+                                chart.latestVersion.notesAmount
                             ),
                             icon = R.drawable.rounded_music_note_24
                         )
                     }
-                    if (currentChart.latestVersion.effectsAmount > 0) {
+                    if (chart.latestVersion.effectsAmount > 0) {
                         StatListItem(
                             title = pluralStringResource(
                                 R.plurals.effects_amount,
-                                currentChart.latestVersion.effectsAmount,
-                                currentChart.latestVersion.effectsAmount
+                                chart.latestVersion.effectsAmount,
+                                chart.latestVersion.effectsAmount
                             ),
                             icon = R.drawable.rounded_blur_medium_24
                         )
                     }
-                    if (currentChart.downloadsSum > 0) {
+                    if (chart.downloadsSum > 0) {
                         StatListItem(
                             title = pluralStringResource(
                                 R.plurals.downloads_amount,
-                                currentChart.downloadsSum,
-                                currentChart.downloadsSum
+                                chart.downloadsSum,
+                                chart.downloadsSum
                             ),
                             icon = R.drawable.rounded_download_24
                         )
                     }
-                    if (currentChart.contentId != null) {
+                    if (chart.contentId != null) {
                         StatListItem(
                             title = stringResource(R.string.updated_at, lastUpdated),
                             icon = R.drawable.rounded_calendar_today_24
@@ -487,8 +469,7 @@ fun ChartDetailsScreen(
                 }
             }
 
-            // Known Issues
-            if (currentChart.contentId != null) {
+            if (chart.contentId != null) {
                 Section(title = stringResource(R.string.known_issues)) {
                     Box(modifier = Modifier.padding(16.dp)) {
                         Column(
@@ -498,7 +479,7 @@ fun ChartDetailsScreen(
                             horizontalAlignment = Alignment.Start,
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            if (currentChart.latestVersion.knownIssues.isEmpty()) {
+                            if (chart.latestVersion.knownIssues.isEmpty()) {
                                 Text(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -507,7 +488,7 @@ fun ChartDetailsScreen(
                                     style = MaterialTheme.typography.bodyLarge
                                 )
                             } else {
-                                currentChart.latestVersion.knownIssues.forEach {
+                                chart.latestVersion.knownIssues.forEach {
                                     Text(
                                         text = "•   ${it.description}",
                                         style = MaterialTheme.typography.bodyLarge
@@ -522,15 +503,11 @@ fun ChartDetailsScreen(
 
         Box(
             modifier = Modifier
-                .padding(
-                    bottom = innerPadding.calculateBottomPadding()
-                )
+                .padding(bottom = innerPadding.calculateBottomPadding())
                 .fillMaxSize(),
             contentAlignment = Alignment.BottomCenter
         ) {
-            if (chartState is DownloadState.Downloading ||
-                chartState is DownloadState.Extracting
-            ) {
+            if (chartState is DownloadState.Downloading || chartState is DownloadState.Extracting) {
                 LinearProgressIndicator(
                     progress = {
                         when (val state = chartState) {
@@ -565,8 +542,8 @@ fun ChartDetailsScreen(
                         duration = SnackbarDuration.Short
                     )
                 }
-                currentChart.contentId?.let { contentId ->
-                    if (wasBookmarkedWhenSheetOpened) {          // ← use captured value
+                chart.contentId?.let { contentId ->
+                    if (wasBookmarkedWhenSheetOpened) {
                         interactionViewModel.changeContentCollection(
                             contentId = contentId,
                             targetCollectionId = collectionId,
@@ -576,14 +553,14 @@ fun ChartDetailsScreen(
                         interactionViewModel.addToCollection(contentId, collectionId)
                     }
                 }
-                wasBookmarkedWhenSheetOpened = false             // ← reset after use
+                wasBookmarkedWhenSheetOpened = false
                 showCollectionSheet = false
             },
             onCreateCollection = { name, isPublic ->
                 try {
                     val newCollectionId = collectionViewModel.createCollection(name, isPublic)
                     Log.d("ChartDetailsScreen", "Created collection with ID: $newCollectionId")
-                    currentChart.contentId?.let { contentId ->
+                    chart.contentId?.let { contentId ->
                         interactionViewModel.addToCollection(contentId, newCollectionId)
                     }
                     scope.launch {

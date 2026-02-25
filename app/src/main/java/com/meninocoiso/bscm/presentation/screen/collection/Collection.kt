@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -22,11 +21,14 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -41,19 +43,14 @@ import com.meninocoiso.bscm.domain.enums.ButtonVariant
 import com.meninocoiso.bscm.domain.model.SimplifiedCollection
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.ButtonUI
-import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
+import com.meninocoiso.bscm.presentation.ui.components.details.CollectionEditBottomSheet
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
-import com.meninocoiso.bscm.presentation.ui.components.profile.BaseContainer
 import com.meninocoiso.bscm.presentation.ui.components.profile.CatalogFilters
 import com.meninocoiso.bscm.presentation.ui.components.profile.OnScrollLoadMore
 import com.meninocoiso.bscm.presentation.ui.components.profile.contentList
 import com.meninocoiso.bscm.presentation.ui.components.profile.pagination
 import com.meninocoiso.bscm.presentation.viewmodel.CollectionViewModel
 import com.meninocoiso.bscm.util.LinkingUtils
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import com.meninocoiso.bscm.presentation.ui.components.details.CollectionEditBottomSheet
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -188,7 +185,7 @@ fun CollectionScreen(
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
-        BaseContainer(
+        /*BaseContainer(
             isEmpty = items.items.isEmpty(),
             state = items.state,
             isRefreshing = items.isRefreshing,
@@ -202,11 +199,10 @@ fun CollectionScreen(
                     icon = R.drawable.outline_library_music_24,
                 )
             },
-        ) {
+        ) {*/
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .padding(innerPadding),
                 state = listState,
                 verticalArrangement = Arrangement.Top,
@@ -234,7 +230,7 @@ fun CollectionScreen(
                     isLoadingMore = items.isLoadingMore,
                     message = if (items.hasMore) "Carregando..." else "Fim da coleção",
                 )
-            }
+           /* }*/
         }
     }
 

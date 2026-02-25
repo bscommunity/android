@@ -1,7 +1,7 @@
 package com.meninocoiso.bscm.data.remote
 
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
-import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionItemRequest
+import com.meninocoiso.bscm.data.remote.dto.collection.BatchCollectionItemRequest
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
@@ -79,7 +79,7 @@ interface ApiClient {
     suspend fun removeItemFromCollection(collectionId: String, contentId: String): Boolean
 
     // Batch interactions
-    suspend fun batchProcessInteractions(interactions: List<CreateCollectionItemRequest>): Boolean
+    suspend fun batchProcessInteractions(interactions: List<BatchCollectionItemRequest>): Boolean
 
     // Utils methods
     suspend fun getContributors(): List<ContributionCategory>
