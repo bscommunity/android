@@ -65,8 +65,8 @@ fun CollectionCreateBottomSheet(
     onClose: () -> Unit,
     collections: List<Collection>,
     isLoading: Boolean = false,
-    onCollectionSelected: (collectionId: String) -> Unit = { },
-    onCreateCollection: suspend (name: String, isPublic: Boolean) -> Unit = { _, _ -> },
+    onCollectionSelected: (collectionId: String, collectionName: String) -> Unit,
+    onCreateCollection: suspend (name: String, isPublic: Boolean) -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
     val horizontalPagerState = rememberPagerState { 2 }
@@ -222,8 +222,8 @@ fun CollectionsListSection(
     modifier: Modifier = Modifier,
     collections: List<Collection>,
     isLoading: Boolean,
-    onCollectionClick: (String) -> Unit = { },
-    onCreateNewCollectionClick: () -> Unit = { }
+    onCollectionClick: (String, String) -> Unit,
+    onCreateNewCollectionClick: () -> Unit
 ) {
     LazyColumn(modifier = modifier) {
         item {
@@ -255,7 +255,7 @@ fun CollectionsListSection(
                         modifier = Modifier.size(28.dp)
                     )
                 }
-                Text("Criar nova coleção", style = MaterialTheme.typography.titleMedium)
+                Text("Create new collection", style = MaterialTheme.typography.titleMedium)
             }
         }
         if (isLoading && collections.isEmpty()) {
@@ -289,7 +289,7 @@ fun CollectionsListSection(
                     coverUrl = collection.coverUrl ?: "",
                     isPublic = collection.isPublic,
                     contentCounts = Triple(collection.chartCount, 0, 0),
-                    onClick = { onCollectionClick(collection.id) }
+                    onClick = { onCollectionClick(collection.id, collection.name) }
                 )
             }
         }

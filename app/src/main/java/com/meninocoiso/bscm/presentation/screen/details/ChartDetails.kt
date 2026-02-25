@@ -136,11 +136,10 @@ fun ChartDetailsScreen(
     }
 
     var optimisticBookmarked by rememberSaveable { mutableStateOf<Boolean?>(null) }
-    // Active if: optimistic state is set, OR item is in BOOKMARKS collection
-    val isBookmarked = optimisticBookmarked ?: (contentCollection?.kind == CollectionKind.BOOKMARKS)
+    val isBookmarked = optimisticBookmarked ?: (contentCollection?.kind != CollectionKind.LIKES)
 
     LaunchedEffect(contentCollection) {
-        if (optimisticBookmarked != null && contentCollection?.kind == CollectionKind.BOOKMARKS) {
+        if (optimisticBookmarked != null && contentCollection?.kind != CollectionKind.LIKES) {
             optimisticBookmarked = null
         }
     }
@@ -329,12 +328,11 @@ fun ChartDetailsScreen(
                             optimisticBookmarked = newValue
 
                             if (newValue) {
+                                interactionViewModel.bookmarkContent(
+                                    chart.id,
+                                    chart.contentId
+                                )
                                 scope.launch {
-                                    interactionViewModel.bookmarkContent(
-                                        chart.id,
-                                        chart.contentId
-                                    )
-
                                     val result = snackbarHostState.showSnackbar(
                                         "Added to Favorites",
                                         "Manage",
@@ -527,12 +525,12 @@ fun ChartDetailsScreen(
                     }
                 }
             },
-            collections = userCollections,
+            collections = userCollections.filter { it.id != contentCollection?.id },
             isLoading = isCollectionsLoading,
-            onCollectionSelected = { collectionId ->
+            onCollectionSelected = { collectionId, collectionName ->
                 scope.launch {
                     snackbarHostState.showSnackbar(
-                        "Saved to collection!",
+                        "Saved to ${collectionName}!",
                         duration = SnackbarDuration.Short
                     )
                 }

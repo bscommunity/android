@@ -116,7 +116,9 @@ class InteractionRepositoryImpl @Inject constructor(
      *   3. Increment collection chart count
      *
      * USER collection → BOOKMARKS:
-     *   1. Write cross-ref into BOOKMARKS
+     *   1. Remove cross-ref from the source USER collection
+     *   2. Decrement source collection chart count
+     *   3. Write cross-ref into BOOKMARKS
      */
     override suspend fun changeContentCollection(
         contentId: String,
@@ -144,7 +146,14 @@ class InteractionRepositoryImpl @Inject constructor(
             }
 
             CollectionKind.BOOKMARKS -> {
-                // Moving INTO bookmarks.
+                // Moving OUT of a custom collection INTO bookmarks.
+                // Remove cross-ref from the source collection and decrement its count
+                collectionDao.deleteCrossRef(targetCollectionId, contentId)
+                collectionDao.decrementCollectionChartCount(
+                    targetCollectionId,
+                    java.time.LocalDateTime.now()
+                )
+
                 // Write the cross-ref so the item appears in BOOKMARKS immediately
                 collectionDao.upsertCrossRef(
                     CollectionItemCrossRef(
