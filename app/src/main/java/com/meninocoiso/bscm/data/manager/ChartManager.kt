@@ -91,7 +91,7 @@ class ChartManager @Inject constructor(
     suspend fun persistCharts(charts: List<Chart>) {
         if (charts.isEmpty()) return
         memoryStore.addWithoutAffectingFeed(charts, getId = { it.id })
-        val result = localChartRepository.update(charts).first()
+        val result = localChartRepository.insert(charts).first()
         if (result.isFailure) {
             Log.e(TAG, "Failed to persist charts", result.exceptionOrNull())
         }

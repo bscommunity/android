@@ -3,7 +3,6 @@ package com.meninocoiso.bscm.presentation.ui.components.profile
 import android.content.Context
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
@@ -12,6 +11,8 @@ import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshState
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,13 +25,14 @@ import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
-import com.meninocoiso.bscm.util.DateUtils
 import com.meninocoiso.bscm.util.DateUtils.DateFormat
 
 @Composable
 fun BaseContainer(
     isEmpty: Boolean,
     state: ContentState,
+    modifier: Modifier = Modifier,
+    pullToRefreshState: PullToRefreshState = rememberPullToRefreshState(),
     isRefreshing: Boolean = false,
     onRetry: (reset: Boolean) -> Unit,
     empty: @Composable () -> Unit,
@@ -61,7 +63,8 @@ fun BaseContainer(
 
         else -> {
             PullToRefreshBox(
-                modifier = Modifier.fillMaxSize(),
+                modifier = modifier,
+                state = pullToRefreshState,
                 isRefreshing = isRefreshing,
                 onRefresh = { onRetry(false) }
             ) {
@@ -77,7 +80,7 @@ private fun PaginationLoadingIndicator(
     message: String
 ) {
     Box(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         if (isLoadingMore) {
@@ -121,12 +124,12 @@ fun LazyListScope.contentList(
     context: Context? = null,
     vararg formats: DateFormat = arrayOf(DateFormat.DAY)
 ) {
-    val groupedItems = if (context != null) DateUtils.groupItemsByDate(
+    /*val groupedItems = if (context != null) DateUtils.groupItemsByDate(
         context = context,
         items = items,
         getDate = { it.createdAt.toString() },
         *formats
-    ) else null
+    ) else null*/
 
     items(items.size) { index ->
         when (val item = items[index]) {

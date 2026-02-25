@@ -50,7 +50,14 @@ class InteractionRepositoryImpl @Inject constructor(
     }.flowOn(dispatcher)
 
     override suspend fun bookmarkContent(id: String, contentId: String): Flow<Result<Unit>> = flow {
-        updateLocalState(id = id, operation = OperationOption.BOOKMARK)
+        // Insert cross-ref for BOOKMARKS collection
+        collectionDao.upsertCrossRef(
+            CollectionItemCrossRef(
+                collectionId = "bookmarks",
+                contentId = contentId,
+                contentType = ContentType.CHART
+            )
+        )
         queueManager.queueAndSyncBookmark(contentId, isBookmarked = true)
         emit(Result.success(Unit))
     }.catch { e ->
@@ -59,7 +66,8 @@ class InteractionRepositoryImpl @Inject constructor(
     }.flowOn(dispatcher)
 
     override suspend fun unbookmarkContent(id: String, contentId: String): Flow<Result<Unit>> = flow {
-        updateLocalState(id = id, operation = OperationOption.UNBOOKMARK)
+        // Remove cross-ref from BOOKMARKS collection
+        collectionDao.deleteCrossRef("bookmarks", contentId)
         queueManager.queueAndSyncBookmark(contentId, isBookmarked = false)
         emit(Result.success(Unit))
     }.catch { e ->
@@ -71,7 +79,6 @@ class InteractionRepositoryImpl @Inject constructor(
         contentId: String,
         collectionId: String
     ): Flow<Result<Unit>> = flow {
-        Log.d("BookmarkDebug", "addToCollection called: contentId=$contentId, collectionId=$collectionId")
         collectionDao.upsertCrossRef(
             CollectionItemCrossRef(
                 collectionId = collectionId,
@@ -91,7 +98,6 @@ class InteractionRepositoryImpl @Inject constructor(
         contentId: String,
         collectionId: String
     ): Flow<Result<Unit>> = flow {
-        Log.d("BookmarkDebug", "removeFromCollection called: contentId=$contentId, collectionId=$collectionId")
         collectionDao.deleteCrossRef(collectionId, contentId)
         collectionDao.decrementCollectionChartCount(collectionId, java.time.LocalDateTime.now())
         queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = false)
@@ -104,36 +110,24 @@ class InteractionRepositoryImpl @Inject constructor(
     /**
      * Moves content from BOOKMARKS into a custom USER collection (or vice-versa).
      *
-     * The previous implementation only managed the queue but never updated the
-     * local Room state, so:
-     *   - bookmarked_at was never cleared → item kept appearing in the bookmarks list
-     *   - The cross-ref for the new collection was never written → item didn't appear
-     *     in the collection
-     *
-     * Fix: we now explicitly clear/set local state based on the target collection kind
-     * before delegating queue work to InteractionQueueManager.
-     *
      * BOOKMARKS → USER collection:
-     *   1. Clear bookmarked_at in charts table (removes from bookmarks observer)
+     *   1. Remove cross-ref from BOOKMARKS
      *   2. Write cross-ref into collection_item_cross_ref (adds to collection)
      *   3. Increment collection chart count
      *
-     * USER collection → BOOKMARKS (reverse direction, if ever needed):
-     *   1. Remove cross-ref from the source collection
-     *   2. Set bookmarked_at = now (adds to bookmarks observer)
+     * USER collection → BOOKMARKS:
+     *   1. Write cross-ref into BOOKMARKS
      */
     override suspend fun changeContentCollection(
         contentId: String,
         targetCollectionId: String,
         targetCollectionKind: CollectionKind
     ): Flow<Result<Unit>> = flow {
-        Log.d("BookmarkDebug", "changeContentCollection called: contentId=$contentId, target=$targetCollectionId, kind=$targetCollectionKind")
         when (targetCollectionKind) {
             CollectionKind.USER -> {
                 // Moving OUT of bookmarks INTO a custom collection.
-                // We need the chart's local `id` (not contentId) to clear bookmarked_at.
-                // ChartManager.updateContentByContentId handles the lookup.
-                updateLocalStateByContentId(contentId = contentId, operation = OperationOption.UNBOOKMARK)
+                // Remove cross-ref from BOOKMARKS
+                collectionDao.deleteCrossRef("bookmarks", contentId)
 
                 // Write the cross-ref so the item appears in the collection immediately
                 collectionDao.upsertCrossRef(
@@ -150,11 +144,15 @@ class InteractionRepositoryImpl @Inject constructor(
             }
 
             CollectionKind.BOOKMARKS -> {
-                // Moving OUT of a custom collection INTO bookmarks.
-                // Remove the cross-ref from the source collection first.
-                // (Caller should pass the source collectionId separately if needed;
-                //  for now we rely on queueManager to handle the removal side.)
-                updateLocalStateByContentId(contentId = contentId, operation = OperationOption.BOOKMARK)
+                // Moving INTO bookmarks.
+                // Write the cross-ref so the item appears in BOOKMARKS immediately
+                collectionDao.upsertCrossRef(
+                    CollectionItemCrossRef(
+                        collectionId = "bookmarks",
+                        contentId = contentId,
+                        contentType = ContentType.CHART
+                    )
+                )
             }
 
             else -> {

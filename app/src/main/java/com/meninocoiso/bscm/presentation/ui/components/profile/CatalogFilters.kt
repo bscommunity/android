@@ -8,6 +8,7 @@ import com.meninocoiso.bscm.presentation.ui.components.ContentFilterUI
 fun CatalogFilters(
     itemsAmount: Triple<Int, Int, Int>,
     collectionsAmount: Int? = null,
+    showCollection: Boolean = false,
     currentSelected: Int = 0,
     onFilterSelected: (Int) -> Unit
 ) {
@@ -29,14 +30,18 @@ fun CatalogFilters(
         )
     )
 
-    options.add(
-        options.size,
-        ContentFilterOption(
-            id = 3,
-            title = "Collections",
-            count = if (collectionsAmount != null && collectionsAmount > 0) collectionsAmount else null,
+    // TODO: There's probably a better solution than manually adding the
+    //  collection filter at the end of the list, but for now it works
+    if (showCollection) {
+        options.add(
+            options.size,
+            ContentFilterOption(
+                id = 3,
+                title = "Collections",
+                count = if (collectionsAmount != null && collectionsAmount > 0) collectionsAmount else null,
+            )
         )
-    )
+    }
 
     ContentFilterUI(
         currentSelected = currentSelected,

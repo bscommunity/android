@@ -123,7 +123,7 @@ class UserProfileViewModel @Inject constructor(
                 fetchUserLikes()
                 startLikesObserver()
             }
-            1 -> if (_uiState.value.collections.items.isEmpty()) {
+            1 -> if (_uiState.value.collections.bookmarks.items.isEmpty()) {
                 fetchUserCollections()
                 startBookmarksObserver()
             }

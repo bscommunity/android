@@ -2,12 +2,17 @@ package com.meninocoiso.bscm.data.repository
 
 import android.util.Log
 import com.meninocoiso.bscm.data.local.dao.ChartDao
+import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.di.ApplicationScope
+import com.meninocoiso.bscm.domain.enums.CollectionKind
+import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.Collection
+import com.meninocoiso.bscm.domain.model.CollectionItemCrossRef
 import com.meninocoiso.bscm.domain.repository.MeRepository
 import jakarta.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -23,7 +28,8 @@ class MeRepositoryRemote @Inject constructor(
     private val apiClient: ApiClient,
     private val profileCacheRepository: ProfileCacheRepository,
     private val chartManager: ChartManager,
-    private val chartDao: ChartDao
+    private val chartDao: ChartDao,
+    private val collectionDao: CollectionDao
 ) : MeRepository {
     override suspend fun getProfile(useCache: Boolean): Result<UserProfileResponse> = runCatching {
         if (useCache) {
@@ -81,8 +87,38 @@ class MeRepositoryRemote @Inject constructor(
         }
 
         val bookmarks = apiClient.getMyBookmarks(limit, offset)
+        Log.d(TAG, "Fetched ${bookmarks.size} bookmarks from API")
 
-        coroutineScope.launch { chartManager.persistCharts(bookmarks) }
+        coroutineScope.launch {
+            // 1. Ensure the 'bookmarks' collection row exists first (FK parent required by cross-ref).
+            collectionDao.upsertCollection(
+                Collection(
+                    id = "bookmarks",
+                    userId = "me",
+                    kind = CollectionKind.BOOKMARKS,
+                    name = "Bookmarks",
+                    isPublic = false,
+                    createdAt = java.time.LocalDateTime.now(),
+                    updatedAt = java.time.LocalDateTime.now(),
+                )
+            )
+            // 2. Persist chart rows so FK on content_id is satisfied.
+            chartManager.persistCharts(bookmarks)
+            // 3. Now it's safe to insert cross-refs.
+            val crossRefs = bookmarks.mapNotNull { chart ->
+                chart.contentId?.let { contentId ->
+                    CollectionItemCrossRef(
+                        collectionId = "bookmarks",
+                        contentId = contentId,
+                        contentType = ContentType.CHART
+                    )
+                }
+            }
+            if (crossRefs.isNotEmpty()) {
+                collectionDao.upsertCrossRefs(crossRefs)
+            }
+            Log.d(TAG, "Persisted ${bookmarks.size} bookmarks and ${crossRefs.size} cross-refs")
+        }
 
         bookmarks
     }

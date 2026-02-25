@@ -69,6 +69,7 @@ fun ProfileCollections(
                 if (bookmarksLoaded) bookmarks.items.count { it is TourPass } else 0,
                 if (bookmarksLoaded) bookmarks.items.count { it is Theme } else 0
             ),
+            showCollection = true,
             collectionsAmount = if (collectionsLoaded) customCollections.items.size else null,
             currentSelected = horizontalPagerState.currentPage,
             onFilterSelected = { index ->
@@ -86,7 +87,39 @@ fun ProfileCollections(
             when (index) {
                 0 -> {
                     ProfileCollectionTabContent(
-                        items = bookmarks.items,
+                        items = bookmarks.items.filterIsInstance<Chart>(),
+                        state = bookmarks.state,
+                        isRefreshing = isRefreshing,
+                        onFetch = onFetch,
+                        onNavigateToDetails = onNavigateToDetails,
+                        listState = bookmarksListState,
+                        isLoadingMore = isLoadingMoreBookmarks,
+                        hasMore = hasMoreBookmarks,
+                        onLoadMore = onLoadMoreBookmarks,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    )
+                }
+
+                1 -> {
+                    ProfileCollectionTabContent(
+                        items = bookmarks.items.filterIsInstance<TourPass>(),
+                        state = bookmarks.state,
+                        isRefreshing = isRefreshing,
+                        onFetch = onFetch,
+                        onNavigateToDetails = onNavigateToDetails,
+                        listState = bookmarksListState,
+                        isLoadingMore = isLoadingMoreBookmarks,
+                        hasMore = hasMoreBookmarks,
+                        onLoadMore = onLoadMoreBookmarks,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    )
+                }
+
+                2 -> {
+                    ProfileCollectionTabContent(
+                        items = bookmarks.items.filterIsInstance<Theme>(),
                         state = bookmarks.state,
                         isRefreshing = isRefreshing,
                         onFetch = onFetch,

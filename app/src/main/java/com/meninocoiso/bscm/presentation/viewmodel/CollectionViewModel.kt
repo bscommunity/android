@@ -94,10 +94,13 @@ class CollectionViewModel @Inject constructor(
             _uiState.update { it.copy(items = PagedSection()) }
         }
 
+        Log.d(TAG, "Loading items for collection $collectionId (reset=$reset, idChanged=$idChanged)")
+
         fetchPaged(
             pagination = itemsPagination,
             reset = reset || idChanged,
             fetch = { limit, offset, cache ->
+                Log.d(TAG, "Fetching items for collection $collectionId (limit=$limit, offset=$offset, cache=$cache)")
                 collectionRepository.getCollectionItems(
                     collectionId = collectionId,
                     limit = limit,
@@ -112,7 +115,7 @@ class CollectionViewModel @Inject constructor(
     }
 
     fun loadMoreItems(collectionId: String) {
-        if (!_uiState.value.items.isLoadingMore && _uiState.value.items.hasMore) {
+        if (!_uiState.value.items.isLoadingMore && !_uiState.value.items.isRefreshing && _uiState.value.items.hasMore) {
             loadItems(collectionId)
         }
     }

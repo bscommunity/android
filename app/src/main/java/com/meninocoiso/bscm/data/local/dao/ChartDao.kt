@@ -27,7 +27,15 @@ interface ChartDao {
     @Query("SELECT * FROM charts WHERE liked_at IS NOT NULL ORDER BY liked_at DESC LIMIT :limit OFFSET :offset")
     fun getLikedCharts(limit: Int, offset: Int): List<Chart>
 
-    @Query("SELECT * FROM charts WHERE bookmarked_at IS NOT NULL ORDER BY bookmarked_at DESC LIMIT :limit OFFSET :offset")
+    @Query("""
+        SELECT c.* FROM charts c
+        INNER JOIN collection_item_cross_ref ref 
+            ON c.content_id = ref.content_id
+        WHERE ref.collection_id = 'bookmarks'
+        AND ref.content_type = 'CHART'
+        ORDER BY ref.added_at DESC
+        LIMIT :limit OFFSET :offset
+    """)
     fun getBookmarkedCharts(limit: Int, offset: Int): List<Chart>
 
     // -----------------------------------------------------------------
@@ -48,13 +56,27 @@ interface ChartDao {
     /**
      * Observes all bookmarked charts ordered by most-recently bookmarked.
      */
-    @Query("SELECT * FROM charts WHERE bookmarked_at IS NOT NULL ORDER BY bookmarked_at DESC")
+    @Query("""
+        SELECT c.* FROM charts c
+        INNER JOIN collection_item_cross_ref ref 
+            ON c.content_id = ref.content_id
+        WHERE ref.collection_id = 'bookmarks'
+        AND ref.content_type = 'CHART'
+        ORDER BY ref.added_at DESC
+    """)
     fun observeBookmarkedCharts(): Flow<List<Chart>>
 
     @Query("SELECT id FROM charts WHERE liked_at IS NOT NULL ORDER BY liked_at DESC")
     fun getLikedChartIds(): List<String>
 
-    @Query("SELECT id FROM charts WHERE bookmarked_at IS NOT NULL ORDER BY bookmarked_at DESC")
+    @Query("""
+        SELECT c.id FROM charts c
+        INNER JOIN collection_item_cross_ref ref 
+            ON c.content_id = ref.content_id
+        WHERE ref.collection_id = 'bookmarks'
+        AND ref.content_type = 'CHART'
+        ORDER BY ref.added_at DESC
+    """)
     fun getBookmarkedChartIds(): List<String>
 
     //@Query("SELECT latest_version FROM charts WHERE id IN (:ids)")

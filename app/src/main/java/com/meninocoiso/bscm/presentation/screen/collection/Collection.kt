@@ -4,7 +4,10 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -21,6 +24,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
@@ -43,8 +47,10 @@ import com.meninocoiso.bscm.domain.enums.ButtonVariant
 import com.meninocoiso.bscm.domain.model.SimplifiedCollection
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.ButtonUI
+import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.details.CollectionEditBottomSheet
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
+import com.meninocoiso.bscm.presentation.ui.components.profile.BaseContainer
 import com.meninocoiso.bscm.presentation.ui.components.profile.CatalogFilters
 import com.meninocoiso.bscm.presentation.ui.components.profile.OnScrollLoadMore
 import com.meninocoiso.bscm.presentation.ui.components.profile.contentList
@@ -80,6 +86,7 @@ fun CollectionScreen(
 
     val scrollBehavior =
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val pullToRefreshState = rememberPullToRefreshState()
 
     // Wire snackbar events from the ViewModel
     LaunchedEffect(viewModel) {
@@ -185,11 +192,16 @@ fun CollectionScreen(
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
-        /*BaseContainer(
-            isEmpty = items.items.isEmpty(),
+        BaseContainer(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
+            pullToRefreshState = pullToRefreshState,
             state = items.state,
             isRefreshing = items.isRefreshing,
-            onRetry = { viewModel.loadItems(collection.id, reset = true) },
+            onRetry = { viewModel.refreshItems(collection.id) },
+            isEmpty = items.items.isEmpty(),
             empty = {
                 StatusMessageUI(
                     modifier = Modifier
@@ -198,12 +210,11 @@ fun CollectionScreen(
                     message = "No content in this collection",
                     icon = R.drawable.outline_library_music_24,
                 )
-            },
-        ) {*/
+            }
+        ) {
             LazyColumn(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
+                    .fillMaxSize(),
                 state = listState,
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.Start,
@@ -230,20 +241,28 @@ fun CollectionScreen(
                     isLoadingMore = items.isLoadingMore,
                     message = if (items.hasMore) "Carregando..." else "Fim da coleção",
                 )
-           /* }*/
+                // TODO: Workaround to avoid bugging the scroll when the list has few items
+                item {
+                    Spacer(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1200.dp)
+                    )
+                }
+            }
         }
-    }
 
-    if (showBottomSheet) {
-        CollectionEditBottomSheet(
-            sheetState = sheetState,
-            onDismissRequest = { showBottomSheet = false },
-            onClose = { showBottomSheet = false },
-            collection = collection,
-            onSaveChanges = { name, isPublic ->
-                viewModel.updateCollection(collection.id, name, isPublic)
-            },
-            isLoading = uiState.isUpdating
-        )
+        if (showBottomSheet) {
+            CollectionEditBottomSheet(
+                sheetState = sheetState,
+                onDismissRequest = { showBottomSheet = false },
+                onClose = { showBottomSheet = false },
+                collection = collection,
+                onSaveChanges = { name, isPublic ->
+                    viewModel.updateCollection(collection.id, name, isPublic)
+                },
+                isLoading = uiState.isUpdating
+            )
+        }
     }
 }

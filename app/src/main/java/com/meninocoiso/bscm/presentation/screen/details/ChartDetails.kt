@@ -73,7 +73,6 @@ import com.meninocoiso.bscm.presentation.viewmodel.InteractionViewModel
 import com.meninocoiso.bscm.util.LinkingUtils
 import com.meninocoiso.bscm.util.StringUtils
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -120,12 +119,10 @@ fun ChartDetailsScreen(
     // InteractionViewModel on another screen.
     val contentCollection by interactionViewModel
         .getContentCollection(chart.contentId ?: "")
-        .onEach { Log.d("BookmarkDebug", "contentCollection changed: $it") }
-        .collectAsStateWithLifecycle(initialValue = null)
+        .collectAsStateWithLifecycle()
 
     val isGameplayVideoPreviewEnabled = contentViewModel.isGameplayVideoPreviewEnabled
-        .onEach { Log.d("ChartDetailsScreen", "Gameplay video preview enabled: $it") }
-        .collectAsStateWithLifecycle(initialValue = true)
+        .collectAsStateWithLifecycle()
 
     var currentDialog by rememberSaveable { mutableStateOf(ChartDialog.None) }
 
@@ -139,17 +136,14 @@ fun ChartDetailsScreen(
     }
 
     var optimisticBookmarked by rememberSaveable { mutableStateOf<Boolean?>(null) }
-    // Active if: optimistic state is set, OR item is in any collection (BOOKMARKS or USER custom)
-    val isBookmarked = optimisticBookmarked ?: (contentCollection != null || chart.bookmarkedAt != null)
+    // Active if: optimistic state is set, OR item is in BOOKMARKS collection
+    val isBookmarked = optimisticBookmarked ?: (contentCollection?.kind == CollectionKind.BOOKMARKS)
 
-    LaunchedEffect(chart.bookmarkedAt, contentCollection) {
-        if (optimisticBookmarked != null && (chart.bookmarkedAt != null || contentCollection != null)) {
+    LaunchedEffect(contentCollection) {
+        if (optimisticBookmarked != null && contentCollection?.kind == CollectionKind.BOOKMARKS) {
             optimisticBookmarked = null
         }
     }
-
-    Log.d("BookmarkDebug", "recompose — optimistic=$optimisticBookmarked, collection=$contentCollection, isBookmarked=$isBookmarked")
-
 
     // -------------------------------------------------------------------------
     // Collection sheet state
