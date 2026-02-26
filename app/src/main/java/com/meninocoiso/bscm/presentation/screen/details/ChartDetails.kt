@@ -137,13 +137,12 @@ fun ChartDetailsScreen(
 
 
     var optimisticBookmarked by rememberSaveable { mutableStateOf<Boolean?>(null) }
-    val isBookmarked = optimisticBookmarked
-        ?: (contentCollection != null && contentCollection?.kind != CollectionKind.LIKES)
+    val isBookmarked = optimisticBookmarked ?: (chart.bookmarkedAt != null)
 
     println("ChartDetailsScreen: contentCollection = $contentCollection, isBookmarked = $isBookmarked")
 
     LaunchedEffect(contentCollection) {
-        if (optimisticBookmarked != null && contentCollection != null && contentCollection?.kind != CollectionKind.LIKES) {
+        if (optimisticBookmarked != null && chart.bookmarkedAt != null) {
             optimisticBookmarked = null
         }
     }
@@ -337,12 +336,10 @@ fun ChartDetailsScreen(
                             optimisticBookmarked = newValue
 
                             if (newValue) {
-                                scope.launch {
-                                    interactionViewModel.bookmarkContent(
-                                        chart.id,
-                                        chart.contentId
-                                    )
-                                }
+                                interactionViewModel.bookmarkContent(
+                                    chart.id,
+                                    chart.contentId
+                                )
                                 scope.launch {
                                     val result = snackbarHostState.showSnackbar(
                                         "Added to Favorites",
@@ -539,6 +536,7 @@ fun ChartDetailsScreen(
             },
             collections = userCollections.filter { it.id != contentCollection?.id },
             isLoading = isCollectionsLoading,
+            isMutating = collectionUiState.isCreating,
             onCollectionSelected = { collectionId, collectionName ->
                 scope.launch {
                     snackbarHostState.showSnackbar(
