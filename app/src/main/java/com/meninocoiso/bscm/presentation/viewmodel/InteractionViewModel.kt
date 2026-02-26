@@ -160,8 +160,8 @@ class InteractionViewModel @Inject constructor(
     /**
      * Manually processes the interaction queue
      */
-    fun processQueue() {
-        viewModelScope.launch {
+    /*fun processQueue() {
+        applicationScope.launch {
             _isProcessing.value = true
             try {
                 interactionRepository.processQueue()
@@ -170,7 +170,7 @@ class InteractionViewModel @Inject constructor(
                 _isProcessing.value = false
             }
         }
-    }
+    }*/
 
     /**
      * Updates the current queue size

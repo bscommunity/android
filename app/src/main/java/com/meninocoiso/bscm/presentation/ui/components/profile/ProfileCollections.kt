@@ -82,7 +82,8 @@ fun ProfileCollections(
         HorizontalPager(
             state = horizontalPagerState,
             key = { it },
-            beyondViewportPageCount = 1
+            beyondViewportPageCount = 1,
+            verticalAlignment = Alignment.Top
         ) { index ->
             when (index) {
                 0 -> {

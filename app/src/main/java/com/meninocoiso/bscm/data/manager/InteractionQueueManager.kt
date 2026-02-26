@@ -6,10 +6,13 @@ import com.meninocoiso.bscm.data.local.entity.QueuedInteractionEntity
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.ApiException
 import com.meninocoiso.bscm.data.remote.dto.collection.BatchCollectionItemRequest
+import com.meninocoiso.bscm.di.ApplicationScope
 import com.meninocoiso.bscm.domain.enums.ActionType
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.monitor.NetworkConnectivityMonitor
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,6 +25,7 @@ class InteractionQueueManager @Inject constructor(
     private val queueDao: InteractionQueueDao,
     private val apiClient: ApiClient,
     private val networkMonitor: NetworkConnectivityMonitor,
+    @param:ApplicationScope private val applicationScope: CoroutineScope   // ← add this
 ) {
     /**
      * Queues a like/unlike interaction and attempts an immediate sync if connected.
@@ -102,28 +106,28 @@ class InteractionQueueManager @Inject constructor(
         }
 
         if (queueDao.getQueueSize() > 1) { // > 1 because we just inserted
-            // There's a backlog — process everything together
-            processQueuedInteractions()
+            // Launch batch processing on applicationScope so it survives navigation
+            applicationScope.launch(Dispatchers.IO) {
+                processQueuedInteractions()
+            }
         } else {
             // Fast path — just sync this one item
-            try {
-                val success = apiCall()
-                if (success) {
-                    removeQueuedInteraction(contentId, collectionKind, collectionId)
-                    Log.d(TAG, "Immediate sync succeeded, removed from queue: contentId=$contentId")
-                } else {
-                    // Leave in queue for InteractionSyncService to retry
-                    Log.w(TAG, "Immediate sync returned false, will retry from queue: contentId=$contentId")
-                }
-            } catch (e: Exception) {
-                if (e is ApiException && e.status.value in 400..499) {
-                    // 4xx = terminal error (bad request, conflict, already exists, etc.)
-                    // The server will never accept this — stop retrying, remove from queue
-                    removeQueuedInteraction(contentId, collectionKind, collectionId)
-                    Log.w(TAG, "Terminal ${e.status.value} error, removed from queue: contentId=$contentId — ${e.message}")
-                } else {
-                    // Network error, 5xx, timeout — leave in queue for retry
-                    Log.w(TAG, "Transient error, will retry from queue: contentId=$contentId", e)
+            // Launch single sync on applicationScope for the same reason
+            applicationScope.launch(Dispatchers.IO) {
+                try {
+                    val success = apiCall()
+                    if (success) {
+                        removeQueuedInteraction(contentId, collectionKind, collectionId)
+                    } else {
+                        Log.w(TAG, "Immediate sync returned false, will retry: contentId=$contentId")
+                    }
+                } catch (e: Exception) {
+                    if (e is ApiException && e.status.value in 400..499) {
+                        removeQueuedInteraction(contentId, collectionKind, collectionId)
+                        Log.w(TAG, "Terminal ${e.status.value}, removed from queue: contentId=$contentId")
+                    } else {
+                        Log.w(TAG, "Transient error, will retry: contentId=$contentId", e)
+                    }
                 }
             }
         }

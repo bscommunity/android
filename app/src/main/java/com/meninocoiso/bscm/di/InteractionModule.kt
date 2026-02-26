@@ -16,6 +16,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
 import javax.inject.Singleton
 
 @Module
@@ -34,7 +35,9 @@ object InteractionModule {
         queueDao: InteractionQueueDao,
         apiClient: ApiClient,
         networkMonitor: NetworkConnectivityMonitor,
-    ): InteractionQueueManager = InteractionQueueManager(queueDao, apiClient, networkMonitor)
+        @ApplicationScope applicationScope: CoroutineScope
+    ): InteractionQueueManager =
+        InteractionQueueManager(queueDao, apiClient, networkMonitor, applicationScope)
 
     @Provides
     @Singleton
