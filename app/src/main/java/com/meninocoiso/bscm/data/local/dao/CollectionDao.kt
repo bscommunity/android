@@ -11,6 +11,7 @@ import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.CollectionItemCrossRef
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDateTime
 
 @Dao
 interface CollectionDao {
@@ -33,19 +34,20 @@ interface CollectionDao {
     @Query("DELETE FROM collections WHERE id = :collectionId")
     suspend fun deleteCollectionById(collectionId: String)
 
-    @Query("UPDATE collections SET name = COALESCE(:name, name), is_public = COALESCE(:isPublic, is_public), updated_at = :updatedAt WHERE id = :collectionId")
+    @Query("UPDATE collections SET name = COALESCE(:name, name), is_public = COALESCE(:isPublic, is_public), slug = COALESCE(:slug, slug), updated_at = :updatedAt WHERE id = :collectionId")
     suspend fun updateCollectionMetadata(
         collectionId: String,
         name: String?,
         isPublic: Boolean?,
-        updatedAt: java.time.LocalDateTime
+        slug: String?,
+        updatedAt: LocalDateTime
     )
 
     @Query("UPDATE collections SET chart_count = chart_count + 1, updated_at = :updatedAt WHERE id = :collectionId")
-    suspend fun incrementCollectionChartCount(collectionId: String, updatedAt: java.time.LocalDateTime)
+    suspend fun incrementCollectionChartCount(collectionId: String, updatedAt: LocalDateTime)
 
     @Query("UPDATE collections SET chart_count = MAX(chart_count - 1, 0), updated_at = :updatedAt WHERE id = :collectionId")
-    suspend fun decrementCollectionChartCount(collectionId: String, updatedAt: java.time.LocalDateTime)
+    suspend fun decrementCollectionChartCount(collectionId: String, updatedAt: LocalDateTime)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertCrossRef(crossRef: CollectionItemCrossRef)
@@ -74,20 +76,23 @@ interface CollectionDao {
     @Query("DELETE FROM collection_item_cross_ref WHERE collection_id = :collectionId")
     suspend fun deleteAllCrossRefsForCollection(collectionId: String)
 
-    @Query("""
+    @Query(
+        """
         SELECT id, kind FROM collections c
         INNER JOIN collection_item_cross_ref ref 
             ON c.id = ref.collection_id
         WHERE ref.content_id = :contentId
         LIMIT 1
-    """)
+    """
+    )
     fun getCollectionForContent(contentId: String): Flow<SimplifiedCollection?>
 
     @Query("SELECT * FROM collections WHERE kind = 'USER' ORDER BY updated_at DESC")
     fun observeUserCollections(): Flow<List<Collection>>
 
     @Transaction
-    @Query("""
+    @Query(
+        """
         SELECT c.* FROM charts c
         INNER JOIN collection_item_cross_ref ref 
             ON c.content_id = ref.content_id
@@ -95,7 +100,8 @@ interface CollectionDao {
         AND ref.content_type = 'CHART'
         ORDER BY ref.added_at DESC
         LIMIT :limit OFFSET :offset
-    """)
+    """
+    )
     suspend fun getChartItems(
         collectionId: String,
         limit: Int,

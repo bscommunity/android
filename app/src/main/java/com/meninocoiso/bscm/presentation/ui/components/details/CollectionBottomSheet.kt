@@ -195,8 +195,16 @@ fun CollectionEditBottomSheet(
 
     ModalBottomSheet(
         sheetState = sheetState,
-        onDismissRequest = { if (!isLoading) onDismissRequest() },
+        onDismissRequest = { onDismissRequest() },
+        properties = ModalBottomSheetProperties(
+            securePolicy = SecureFlagPolicy.SecureOn,
+            shouldDismissOnBackPress = !isLoading,
+            shouldDismissOnClickOutside = !isLoading,
+        ),
+        sheetGesturesEnabled = !isLoading
     ) {
+        BackHandler(enabled = isLoading) { /* block back press */ }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()

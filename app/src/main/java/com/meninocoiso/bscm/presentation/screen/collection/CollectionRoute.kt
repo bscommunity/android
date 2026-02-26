@@ -21,6 +21,7 @@ import com.meninocoiso.bscm.presentation.viewmodel.CollectionViewModel
 
 @Composable
 fun CollectionRoute(
+    loggedUserId: String?,
     username: String,
     slug: String,
     onReturn: () -> Unit,
@@ -44,8 +45,10 @@ fun CollectionRoute(
             }
 
             is ContentResult.Success<SimplifiedCollection> -> {
+                val collection = (state as ContentResult.Success<SimplifiedCollection>).data
                 CollectionScreen(
-                    collection = (state as ContentResult.Success<SimplifiedCollection>).data,
+                    collection = collection,
+                    isOwner = loggedUserId == collection.owner.id,
                     onReturn = onReturn,
                     onNavigateToDetails = onNavigateToDetails,
                     viewModel = viewModel

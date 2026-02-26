@@ -19,17 +19,17 @@ data class SimplifiedCollection(
     val slug: String? = null,
     val coverUrl: String? = null,
     val isPublic: Boolean,
-    val owner: SimplifiedUser? = null,
+    val owner: SimplifiedUser,
     val itemCount: Triple<Int, Int, Int> = Triple(0, 0, 0), // chartCount, tourPassCount, themeCount
 ) : Parcelable
 
-fun Collection.toSimplifiedCollection() = SimplifiedCollection(
+fun Collection.toSimplifiedCollection(user: SimplifiedUser) = SimplifiedCollection(
     id = id,
     name = name,
     slug = slug,
     isPublic = isPublic,
     coverUrl = coverUrl,
-    owner = owner,
+    owner = user,
     itemCount = Triple(chartCount, tourPassCount, themeCount)
 )
 

@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.model.SimplifiedCollection
+import com.meninocoiso.bscm.domain.model.toSimplifiedCollection
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileActivity
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileHeaderIdentity
@@ -74,6 +75,7 @@ fun PublicProfileScreen(
 
     val activityListState = rememberLazyListState()
     val libraryListState = rememberLazyListState()
+    val collectionsListState = rememberLazyListState()
 
     ProfileSectionsLayout(
         user = user,
@@ -176,18 +178,31 @@ fun PublicProfileScreen(
                 ProfileLibrary(
                     items = uiState.library.items,
                     state = uiState.library.state,
+                    customCollections = uiState.customCollections,
                     onFetch = {
                         profileViewModel.refreshLibrary(userId)
+                        profileViewModel.refreshCollections(userId)
                     },
                     onNavigateToDetails = onNavigateToDetails,
+                    onNavigateToCollection = { collection ->
+                        onNavigateToCollection(
+                            /*if (collection.owner == null)
+                                collection.copy(owner = user)
+                            else collection*/
+                            collection.toSimplifiedCollection(user)
+                        )
+                    },
                     listState = libraryListState,
+                    collectionsListState = collectionsListState,
                     isLoadingMore = uiState.library.isLoadingMore,
                     hasMore = uiState.library.hasMore,
                     onLoadMore = { profileViewModel.loadMoreLibrary(userId) },
+                    isLoadingMoreCollections = uiState.customCollections.isLoadingMore,
+                    hasMoreCollections = uiState.customCollections.hasMore,
+                    onLoadMoreCollections = { profileViewModel.loadMoreCollections(userId) },
                     modifier = Modifier.fillMaxSize()
                 )
             }
         }
     }
 }
-

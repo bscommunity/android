@@ -14,6 +14,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,6 +35,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,10 +50,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.ButtonVariant
 import com.meninocoiso.bscm.domain.model.SimplifiedCollection
+import com.meninocoiso.bscm.presentation.screen.details.DropdownItemPadding
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.ButtonUI
+import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.details.CollectionEditBottomSheet
+import com.meninocoiso.bscm.presentation.ui.components.dialog.ConfirmationDialog
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 import com.meninocoiso.bscm.presentation.ui.components.profile.BaseContainer
 import com.meninocoiso.bscm.presentation.ui.components.profile.CatalogFilters
@@ -57,6 +65,7 @@ import com.meninocoiso.bscm.presentation.ui.components.profile.contentList
 import com.meninocoiso.bscm.presentation.ui.components.profile.pagination
 import com.meninocoiso.bscm.presentation.viewmodel.CollectionViewModel
 import com.meninocoiso.bscm.util.LinkingUtils
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -65,10 +74,13 @@ data class Collection(val collection: SimplifiedCollection)
 @Serializable
 data class DeepLinkCollection(val username: String, val slug: String)
 
+private enum class CollectionDialog { None, DeleteConfirmation }
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun CollectionScreen(
     collection: SimplifiedCollection,
+    isOwner: Boolean,
     onReturn: () -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
     viewModel: CollectionViewModel = hiltViewModel()
@@ -76,8 +88,10 @@ fun CollectionScreen(
     val context = LocalContext.current
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     var currentCollection by remember { mutableStateOf(collection) }
+    var isDeleting by remember { mutableStateOf(false) }
 
     println("CollectionScreen: collection=${collection}")
 
@@ -110,6 +124,38 @@ fun CollectionScreen(
         onLoadMore = { viewModel.loadMoreItems(collection.id) },
     )
 
+    // -------------------------------------------------------------------------
+    // Dialog management
+    // -------------------------------------------------------------------------
+    var currentDialog by rememberSaveable { mutableStateOf(CollectionDialog.None) }
+
+    when (currentDialog) {
+        CollectionDialog.DeleteConfirmation -> {
+            ConfirmationDialog(
+                title = "Delete collection",
+                message = "Are you sure you want to delete this collection? This action cannot be undone.",
+                onDismiss = {
+                    currentDialog = CollectionDialog.None
+                    isDeleting = false
+                },
+                onConfirm = {
+                    scope.launch {
+                        isDeleting = true
+                        val result = viewModel.deleteCollection(collection.id)
+                        isDeleting = false
+                        if (result.isSuccess) {
+                            currentDialog = CollectionDialog.None
+                            onReturn()
+                        }
+                    }
+                },
+                isLoading = isDeleting
+            )
+        }
+
+        CollectionDialog.None -> {}
+    }
+
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
@@ -134,15 +180,44 @@ fun CollectionScreen(
                     }
                 },
                 actions = {
-                    // Only show share button if slug and owner are available
-                    val slug = collection.slug
-                    val owner = collection.owner
-                    if (slug != null && owner != null) {
+                    if (isOwner) {
+                        DropdownMenuUI { dismiss ->
+                            if (currentCollection.slug != null) {
+                                DropdownMenuItem(
+                                    contentPadding = DropdownItemPadding,
+                                    text = { Text(stringResource(R.string.share)) },
+                                    leadingIcon = {
+                                        Icon(Icons.Outlined.Share, contentDescription = null)
+                                    },
+                                    onClick = {
+                                        dismiss()
+                                        LinkingUtils.shareCollection(
+                                            context = context,
+                                            username = currentCollection.owner.username,
+                                            slug = currentCollection.slug!!,
+                                        )
+                                    }
+                                )
+                            }
+
+                            DropdownMenuItem(
+                                contentPadding = DropdownItemPadding,
+                                text = { Text("Delete collection") },
+                                leadingIcon = {
+                                    Icon(Icons.Outlined.Delete, contentDescription = null)
+                                },
+                                onClick = {
+                                    dismiss()
+                                    currentDialog = CollectionDialog.DeleteConfirmation
+                                }
+                            )
+                        }
+                    } else if (currentCollection.slug != null) {
                         IconButton(onClick = {
                             LinkingUtils.shareCollection(
                                 context = context,
-                                username = owner.username,
-                                slug = slug,
+                                username = currentCollection.owner.username,
+                                slug = currentCollection.slug,
                             )
                         }) {
                             Icon(
@@ -162,27 +237,7 @@ fun CollectionScreen(
                         Text(currentCollection.name, style = MaterialTheme.typography.headlineSmall)
 
 
-                        if (collection.owner != null) {
-                            Row(
-                                modifier = Modifier
-                                    .padding(start = 6.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Avatar(
-                                    url = collection.owner.avatarUrl,
-                                    alt = collection.owner.username.first().toString(),
-                                    size = 16.dp
-                                )
-                                Text(
-                                    style = MaterialTheme.typography.bodySmall,
-                                    text = "Collection by ${collection.owner.username}",
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f, fill = false)
-                                )
-                            }
-                        } else if (itemCount > 0) {
+                        if (itemCount > 0) {
                             Text(
                                 "$itemCount items",
                                 style = MaterialTheme.typography.labelMedium,
@@ -224,16 +279,39 @@ fun CollectionScreen(
                 horizontalAlignment = Alignment.Start,
             ) {
                 item {
-                    ButtonUI(
-                        text = "Manage collection",
-                        icon = R.drawable.outline_settings_24,
-                        onClick = {
-                            showBottomSheet = true
-                        },
-                        modifier = Modifier.padding(start = 16.dp),
-                        variant = ButtonVariant.Tonal
-                    )
+                    if (isOwner) {
+                        ButtonUI(
+                            text = "Manage collection",
+                            icon = R.drawable.outline_settings_24,
+                            onClick = {
+                                showBottomSheet = true
+                            },
+                            modifier = Modifier.padding(start = 16.dp),
+                            variant = ButtonVariant.Tonal
+                        )
+                    } else {
+                        Row(
+                            modifier = Modifier
+                                .padding(top = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Avatar(
+                                url = collection.owner.avatarUrl,
+                                alt = collection.owner.username.first().toString(),
+                                size = 16.dp
+                            )
+                            Text(
+                                style = MaterialTheme.typography.bodySmall,
+                                text = "Collection by ${collection.owner.username}",
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                        }
+                    }
                 }
+
                 item {
                     CatalogFilters(
                         collection.itemCount,
@@ -261,11 +339,12 @@ fun CollectionScreen(
                 sheetState = sheetState,
                 onDismissRequest = { showBottomSheet = false },
                 onClose = { showBottomSheet = false },
-                collection = collection,
+                collection = currentCollection,
                 onSaveChanges = { name, isPublic ->
                     val result = viewModel.updateCollection(collection.id, name, isPublic)
                     if (result.isSuccess) {
-                        currentCollection = currentCollection.copy(name = name, isPublic = isPublic)
+                        val slug = result.getOrNull()
+                        currentCollection = currentCollection.copy(name = name, isPublic = isPublic, slug = slug)
                     }
                 },
                 isLoading = uiState.isUpdating

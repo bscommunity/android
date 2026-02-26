@@ -22,10 +22,8 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
-import com.meninocoiso.bscm.domain.model.SimplifiedCollection
 import com.meninocoiso.bscm.domain.model.Theme
 import com.meninocoiso.bscm.domain.model.TourPass
-import com.meninocoiso.bscm.domain.model.toSimplifiedCollection
 import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageSize
@@ -42,7 +40,7 @@ fun ProfileCollections(
     isRefreshing: Boolean = false,
     onFetch: (reset: Boolean) -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
-    onNavigateToCollection: (SimplifiedCollection) -> Unit,
+    onNavigateToCollection: (Collection) -> Unit,
     bookmarksListState: LazyListState,
     collectionsListState: LazyListState,
     isLoadingMoreBookmarks: Boolean,
@@ -206,7 +204,7 @@ fun ProfileCollectionTabContent(
             contentList(items, onNavigateToDetails)
             pagination(
                 isLoadingMore = isLoadingMore,
-                message = if (!hasMore) "Fim da lista" else ""
+                message = if (!hasMore) "End of list" else ""
             )
         }
     }
@@ -219,7 +217,7 @@ fun ProfileCollectionList(
     state: ContentState,
     isRefreshing: Boolean = false,
     onFetch: (reset: Boolean) -> Unit,
-    onNavigateToCollection: (SimplifiedCollection) -> Unit,
+    onNavigateToCollection: (Collection) -> Unit,
     listState: LazyListState,
     isLoadingMore: Boolean,
     hasMore: Boolean,
@@ -256,7 +254,7 @@ fun ProfileCollectionList(
                 val item = items[index]
                 CollectionPreview(
                     collection = item,
-                    onPress = { onNavigateToCollection(item.toSimplifiedCollection()) }
+                    onPress = { onNavigateToCollection(item) }
                 )
             }
             pagination(

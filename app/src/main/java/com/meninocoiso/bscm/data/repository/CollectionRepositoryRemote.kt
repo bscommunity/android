@@ -100,17 +100,20 @@ class CollectionRepositoryRemote @Inject constructor(
         collectionId: String,
         name: String?,
         isPublic: Boolean?
-    ): Result<Unit> =
+    ): Result<String?> =
         runCatching {
-            val result = apiClient.updateCollection(collectionId, name, isPublic)
-            if (!result) throw Exception("API failed to update collection $collectionId")
+            val slug = apiClient.updateCollection(collectionId, name, isPublic)
+            println("Updated collection $collectionId with name=$name, isPublic=$isPublic, new slug=$slug")
 
             collectionDao.updateCollectionMetadata(
                 collectionId = collectionId,
                 name = name,
                 isPublic = isPublic,
+                slug = slug,
                 updatedAt = LocalDateTime.now()
             )
+
+            slug
         }
 
     override suspend fun deleteCollection(collectionId: String): Result<Unit> = runCatching {

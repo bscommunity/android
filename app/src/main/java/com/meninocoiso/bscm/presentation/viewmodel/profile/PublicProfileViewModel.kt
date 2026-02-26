@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.domain.model.CatalogItem
+import com.meninocoiso.bscm.domain.model.Collection
+import com.meninocoiso.bscm.domain.repository.CollectionRepository
 import com.meninocoiso.bscm.domain.repository.ProfileRepository
 import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.presentation.viewmodel.profile.BaseProfileViewModel
@@ -28,6 +30,7 @@ private const val TAG = "PublicProfileViewModel"
 @HiltViewModel
 class PublicProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
+    private val collectionRepository: CollectionRepository,
 ) : BaseProfileViewModel() {
 
     // -------------------------------------------------------------------------
@@ -45,6 +48,7 @@ class PublicProfileViewModel @Inject constructor(
     data class PublicProfileUiState(
         val activity: PagedSection<ActivityItemResponse> = PagedSection(),
         val library: PagedSection<CatalogItem> = PagedSection(),
+        val customCollections: PagedSection<Collection> = PagedSection(),
         val isFollowing: Boolean = false,
     )
 
@@ -57,6 +61,7 @@ class PublicProfileViewModel @Inject constructor(
 
     private val activityPagination = PaginationState(pageSize = 20)
     private val libraryPagination = PaginationState(pageSize = 20)
+    private val collectionsPagination = PaginationState(pageSize = 20)
 
     // -------------------------------------------------------------------------
     // Public API
@@ -87,7 +92,10 @@ class PublicProfileViewModel @Inject constructor(
     fun onTabSelected(userId: String, index: Int) {
         when (index) {
             0 -> if (_uiState.value.activity.isEmpty) fetchActivity(userId)
-            1 -> if (_uiState.value.library.isEmpty) fetchLibrary(userId)
+            1 -> {
+                if (_uiState.value.library.isEmpty) fetchLibrary(userId)
+                if (_uiState.value.customCollections.isEmpty) fetchCollections(userId)
+            }
         }
     }
 
@@ -155,12 +163,39 @@ class PublicProfileViewModel @Inject constructor(
         onFailureWithData = { emitSnackbar("Falha ao atualizar biblioteca") },
     )
 
+    fun fetchCollections(userId: String) = fetchPaged(
+        pagination = collectionsPagination,
+        fetch = { limit, offset, _ ->
+            collectionRepository.getUserCollections(userId = userId, limit = limit, offset = offset)
+        },
+        getItems = { _uiState.value.customCollections.items },
+        setSection = { section ->
+            _uiState.update { it.copy(customCollections = section) }
+            Log.d(TAG, "Collections updated: ${section.items.size} items for $userId")
+        },
+    )
+
+    fun refreshCollections(userId: String) = refreshPaged(
+        pagination = collectionsPagination,
+        fetch = { limit, offset, _ ->
+            collectionRepository.getUserCollections(userId = userId, limit = limit, offset = offset)
+        },
+        getItems = { _uiState.value.customCollections.items },
+        getSection = { _uiState.value.customCollections },
+        setSection = { section -> _uiState.update { it.copy(customCollections = section) } },
+        onFailureWithData = { emitSnackbar("Falha ao atualizar coleções") },
+    )
+
     fun loadMoreActivity(userId: String) {
         if (_uiState.value.activity.isIdle) fetchActivity(userId)
     }
 
     fun loadMoreLibrary(userId: String) {
         if (_uiState.value.library.isIdle) fetchLibrary(userId)
+    }
+
+    fun loadMoreCollections(userId: String) {
+        if (_uiState.value.customCollections.isIdle) fetchCollections(userId)
     }
 
     // -------------------------------------------------------------------------
@@ -170,6 +205,7 @@ class PublicProfileViewModel @Inject constructor(
     private fun resetAll() {
         activityPagination.reset()
         libraryPagination.reset()
+        collectionsPagination.reset()
         _profile.value = ContentResult.Loading
         _uiState.value = PublicProfileUiState()
     }

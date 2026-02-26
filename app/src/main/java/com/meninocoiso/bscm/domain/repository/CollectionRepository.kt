@@ -9,7 +9,7 @@ interface CollectionRepository {
     suspend fun getCollectionById(collectionId: String): Result<Collection>
     suspend fun getCollectionBySlug(username: String, slug: String): Result<Collection>
     suspend fun createCollection(name: String, isPublic: Boolean): Result<Collection>
-    suspend fun updateCollection(collectionId: String, name: String?, isPublic: Boolean?): Result<Unit>
+    suspend fun updateCollection(collectionId: String, name: String?, isPublic: Boolean?): Result<String?>
     suspend fun deleteCollection(collectionId: String): Result<Unit>
 
     suspend fun getCollectionItems(

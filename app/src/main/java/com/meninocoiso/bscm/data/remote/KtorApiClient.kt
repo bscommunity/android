@@ -141,7 +141,7 @@ class KtorApiClient @Inject constructor(
         limit: Int?,
         offset: Int
     ): List<Chart> {
-        val body = client.get("charts"){
+        val body = client.get("charts") {
             url {
                 query?.let { parameters.append("query", it) }
                 sortBy?.let { parameters.append("sortBy", it.toString()) }
@@ -156,15 +156,15 @@ class KtorApiClient @Inject constructor(
     }
 
     override suspend fun getChartsByIds(ids: List<String>): List<Chart> {
-        return client.get("charts"){
+        return client.get("charts") {
             url {
                 parameters.append("ids", ids.joinToString(","))
             }
         }.body()
     }
-    
+
     override suspend fun getSuggestions(query: String, limit: Int?): List<String> {
-        return client.get("charts/suggestions"){
+        return client.get("charts/suggestions") {
             url {
                 parameters.append("query", query)
                 limit?.let { parameters.append("limit", it.toString()) }
@@ -173,7 +173,7 @@ class KtorApiClient @Inject constructor(
     }
 
     override suspend fun getLatestVersionsByChartIds(ids: List<String>): List<Version> {
-        return client.get("charts/latest-versions"){
+        return client.get("charts/latest-versions") {
             url {
                 parameters.append("chartIds", ids.joinToString(","))
             }
@@ -191,7 +191,10 @@ class KtorApiClient @Inject constructor(
 
     // Authentication methods
     override suspend fun authenticateWithDiscord(authRequest: AuthRequest): AuthResponse {
-        Log.d(TAG, "authenticateWithDiscord: Sending request with code=${authRequest.code.take(10)}..., redirectUri=${authRequest.redirectUri}")
+        Log.d(
+            TAG,
+            "authenticateWithDiscord: Sending request with code=${authRequest.code.take(10)}..., redirectUri=${authRequest.redirectUri}"
+        )
         val response = client.post("auth/discord") {
             setBody(authRequest)
         }.body<AuthResponse>()
@@ -282,7 +285,11 @@ class KtorApiClient @Inject constructor(
         return client.get("users/username/$username").body()
     }
 
-    override suspend fun getUserActivity(id: String, limit: Int?, offset: Int?): List<ActivityItemResponse> {
+    override suspend fun getUserActivity(
+        id: String,
+        limit: Int?,
+        offset: Int?
+    ): List<ActivityItemResponse> {
         return client.get("users/$id/activity") {
             url {
                 limit?.let { parameters.append("limit", it.toString()) }
@@ -370,7 +377,11 @@ class KtorApiClient @Inject constructor(
         return response.status.isSuccess()
     }
 
-    override suspend fun getUserCollections(userId: String, limit: Int?, offset: Int?): List<Collection> {
+    override suspend fun getUserCollections(
+        userId: String,
+        limit: Int?,
+        offset: Int?
+    ): List<Collection> {
         return client.get("collections/$userId") {
             url {
                 limit?.let { parameters.append("limit", it.toString()) }
@@ -393,11 +404,15 @@ class KtorApiClient @Inject constructor(
         }.body()
     }
 
-    override suspend fun updateCollection(collectionId: String, name: String?, isPublic: Boolean?): Boolean {
+    override suspend fun updateCollection(
+        collectionId: String,
+        name: String?,
+        isPublic: Boolean?
+    ): String? {
         val response = client.put("collections/$collectionId") {
             setBody(UpdateCollectionRequest(name = name, isPublic = isPublic))
         }
-        return response.status.isSuccess()
+        return response.body<Map<String, String?>>()["slug"]
     }
 
     override suspend fun deleteCollection(collectionId: String): Boolean {
@@ -422,15 +437,20 @@ class KtorApiClient @Inject constructor(
 
     override suspend fun addItemToCollection(collectionId: String, contentId: String): Boolean {
         val response = client.post("collections/$collectionId/items") {
-            setBody(CreateCollectionItemRequest(
-                contentId = contentId,
-                action = ActionType.ADD
-            ))
+            setBody(
+                CreateCollectionItemRequest(
+                    contentId = contentId,
+                    action = ActionType.ADD
+                )
+            )
         }
         return response.status.isSuccess()
     }
 
-    override suspend fun removeItemFromCollection(collectionId: String, contentId: String): Boolean {
+    override suspend fun removeItemFromCollection(
+        collectionId: String,
+        contentId: String
+    ): Boolean {
         val response = client.delete("collections/$collectionId/items/$contentId")
         return response.status.isSuccess()
     }

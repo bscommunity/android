@@ -140,33 +140,20 @@ class CollectionViewModel @Inject constructor(
     // Public API
     // -------------------------------------------------------------------------
 
-    fun fetchCollectionById(collectionId: String?) {
-        if (collectionId.isNullOrEmpty()) {
-            _collectionResult.value = ContentResult.Error("Invalid collection ID")
-            return
-        }
-        viewModelScope.launch {
-            _collectionResult.value = ContentResult.Loading
-            collectionRepository.getCollectionById(collectionId)
-                .onSuccess { collection ->
-                    _collectionResult.value =
-                        ContentResult.Success(collection.toSimplifiedCollection())
-                }
-                .onFailure { e ->
-                    Log.e(TAG, "Failed to fetch collection $collectionId", e)
-                    _collectionResult.value =
-                        ContentResult.Error(e.message ?: "Unknown error", e)
-                }
-        }
-    }
-
     fun fetchCollectionBySlug(username: String, slug: String) {
         viewModelScope.launch {
             _collectionResult.value = ContentResult.Loading
             collectionRepository.getCollectionBySlug(username, slug)
                 .onSuccess { collection ->
+                    // If the server didn't returned an owner, something went wrong
+                    if (collection.owner == null) {
+                        Log.e(TAG, "Collection $username/$slug has no owner in response")
+                        _collectionResult.value =
+                            ContentResult.Error("Collection data is incomplete: missing owner")
+                        return@onSuccess
+                    }
                     _collectionResult.value =
-                        ContentResult.Success(collection.toSimplifiedCollection())
+                        ContentResult.Success(collection.toSimplifiedCollection(collection.owner!!))
                 }
                 .onFailure { e ->
                     Log.e(TAG, "Failed to fetch collection $username/$slug", e)
@@ -214,7 +201,7 @@ class CollectionViewModel @Inject constructor(
     /**
      * Updates an existing collection.
      */
-    suspend fun updateCollection(collectionId: String, name: String, isPublic: Boolean): Result<Unit> {
+    suspend fun updateCollection(collectionId: String, name: String?, isPublic: Boolean?): Result<String?> {
         _uiState.update { it.copy(isUpdating = true) }
         try {
             val result = collectionRepository.updateCollection(collectionId, name, isPublic)
@@ -229,6 +216,36 @@ class CollectionViewModel @Inject constructor(
             return result
         } finally {
             _uiState.update { it.copy(isUpdating = false) }
+        }
+    }
+
+    /**
+     *  Deletes a collection by ID. On success, removes it from the user's collections list.
+     */
+    suspend fun deleteCollection(collectionId: String): Result<Unit> {
+        try {
+            val result = collectionRepository.deleteCollection(collectionId)
+            result.onSuccess {
+                Log.d(TAG, "Deleted collection: $collectionId")
+                // Remove the deleted collection from the list
+                _uiState.update { state ->
+                    state.copy(
+                        userCollections = state.userCollections.copy(
+                            items = state.userCollections.items.filterNot { it.id == collectionId }
+                        )
+                    )
+                }
+                emitSnackbar("Collection deleted successfully")
+            }
+                .onFailure { e ->
+                    Log.e(TAG, "Failed to delete collection", e)
+                    emitSnackbar("Failed to delete collection")
+                }
+            return result
+        } catch (e: Exception) {
+            Log.e(TAG, "Error deleting collection", e)
+            emitSnackbar("Failed to delete collection")
+            return Result.failure(e)
         }
     }
 }

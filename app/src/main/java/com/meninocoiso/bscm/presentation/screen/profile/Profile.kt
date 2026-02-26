@@ -23,6 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.model.SimplifiedCollection
+import com.meninocoiso.bscm.domain.model.toSimplifiedCollection
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileCollections
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileHeaderIdentity
@@ -124,7 +125,14 @@ fun ProfileScreen(
                     isRefreshing = uiState.collections.isRefreshing,
                     onFetch = { profileViewModel.refreshUserCollections() },
                     onNavigateToDetails = onNavigateToDetails,
-                    onNavigateToCollection = onNavigateToCollection,
+                    onNavigateToCollection = { collection ->
+                        onNavigateToCollection(
+                            /*if (collection.owner == null)
+                                collection.copy(owner = user)
+                            else collection*/
+                            collection.toSimplifiedCollection(user)
+                        )
+                    },
                     bookmarksListState = bookmarksListState,
                     collectionsListState = collectionsListState,
                     isLoadingMoreBookmarks = uiState.collections.bookmarks.isLoadingMore,

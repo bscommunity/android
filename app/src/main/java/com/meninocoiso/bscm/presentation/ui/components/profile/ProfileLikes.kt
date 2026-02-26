@@ -64,7 +64,7 @@ fun ProfileLikes(
             contentList(items, onNavigateToDetails)
             pagination(
                 isLoadingMore = isLoadingMore,
-                message = if (!hasMore) "Fim da lista" else ""
+                message = if (!hasMore) "End of list" else ""
             )
         }
     }

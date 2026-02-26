@@ -162,6 +162,7 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
                 ) { backStackEntry ->
                     val route: DeepLinkCollection = backStackEntry.toRoute()
                     CollectionRoute(
+                        loggedUserId = user?.id,
                         username = route.username,
                         slug = route.slug,
                         onReturn = {
@@ -222,6 +223,7 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
                     val route: Collection = backStackEntry.toRoute()
                     CollectionScreen(
                         collection = route.collection,
+                        isOwner = user?.id == route.collection.owner?.id,
                         onNavigateToDetails = { chart ->
                             onNavigateToDetails(chart)
                         },

@@ -124,8 +124,6 @@ fun ChartDetailsScreen(
     val isGameplayVideoPreviewEnabled = contentViewModel.isGameplayVideoPreviewEnabled
         .collectAsStateWithLifecycle()
 
-    var currentDialog by rememberSaveable { mutableStateOf(ChartDialog.None) }
-
     var optimisticLiked by rememberSaveable { mutableStateOf<Boolean?>(null) }
     val isLiked = optimisticLiked ?: (chart.likedAt != null)
 
@@ -191,6 +189,8 @@ fun ChartDetailsScreen(
     // -------------------------------------------------------------------------
     // Dialog management
     // -------------------------------------------------------------------------
+    var currentDialog by rememberSaveable { mutableStateOf(ChartDialog.None) }
+
     when (currentDialog) {
         ChartDialog.DeleteConfirmation -> {
             ConfirmationDialog(
@@ -262,7 +262,7 @@ fun ChartDetailsScreen(
                     }
                 },
                 actions = {
-                    DropdownMenuUI {
+                    DropdownMenuUI { dismiss ->
                         if (chart.contentId != null) {
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,
@@ -271,6 +271,7 @@ fun ChartDetailsScreen(
                                     Icon(Icons.Outlined.Share, contentDescription = null)
                                 },
                                 onClick = {
+                                    dismiss()
                                     LinkingUtils.shareChart(context, chart.contentId)
                                 }
                             )
@@ -283,7 +284,10 @@ fun ChartDetailsScreen(
                                         contentDescription = null
                                     )
                                 },
-                                onClick = { currentDialog = ChartDialog.Report }
+                                onClick = {
+                                    dismiss()
+                                    currentDialog = ChartDialog.Report
+                                }
                             )
                         }
                         if (chartState == DownloadState.Installed(chart.id)) {
@@ -293,7 +297,10 @@ fun ChartDetailsScreen(
                                 leadingIcon = {
                                     Icon(Icons.Outlined.Delete, contentDescription = null)
                                 },
-                                onClick = { currentDialog = ChartDialog.DeleteConfirmation }
+                                onClick = {
+                                    dismiss()
+                                    currentDialog = ChartDialog.DeleteConfirmation
+                                }
                             )
                         }
                     }
