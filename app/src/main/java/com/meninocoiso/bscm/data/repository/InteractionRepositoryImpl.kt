@@ -13,10 +13,7 @@ import com.meninocoiso.bscm.domain.repository.InteractionRepository
 import com.meninocoiso.bscm.domain.result.ContentResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,81 +28,87 @@ class InteractionRepositoryImpl @Inject constructor(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : InteractionRepository {
 
-    override suspend fun likeContent(id: String, contentId: String): Flow<Result<Unit>> = flow {
-        updateLocalState(id = id, operation = OperationOption.LIKE)
-        queueManager.queueAndSyncLike(contentId, isLike = true)
-        emit(Result.success(Unit))
-    }.catch { e ->
-        Log.e(TAG, "Unexpected error in likeContent for contentId: $contentId", e)
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
+    override suspend fun likeContent(id: String, contentId: String): Result<Unit> =
+        withContext(dispatcher) {
+            runCatching {
+                updateLocalState(id = id, operation = OperationOption.LIKE)
+                queueManager.queueAndSyncLike(contentId, isLike = true)
+            }.onFailure { e ->
+                Log.e(TAG, "Unexpected error in likeContent for contentId: $contentId", e)
+            }
+        }
 
-    override suspend fun unlikeContent(id: String, contentId: String): Flow<Result<Unit>> = flow {
-        updateLocalState(id = id, operation = OperationOption.UNLIKE)
-        queueManager.queueAndSyncLike(contentId, isLike = false)
-        emit(Result.success(Unit))
-    }.catch { e ->
-        Log.e(TAG, "Unexpected error in unlikeContent for contentId: $contentId", e)
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
+    override suspend fun unlikeContent(id: String, contentId: String): Result<Unit> =
+        withContext(dispatcher) {
+            runCatching {
+                updateLocalState(id = id, operation = OperationOption.UNLIKE)
+                queueManager.queueAndSyncLike(contentId, isLike = false)
+            }.onFailure { e ->
+                Log.e(TAG, "Unexpected error in unlikeContent for contentId: $contentId", e)
+            }
+        }
 
-    override suspend fun bookmarkContent(id: String, contentId: String): Flow<Result<Unit>> = flow {
-        // Insert cross-ref for BOOKMARKS collection
-        collectionDao.upsertCrossRef(
-            CollectionItemCrossRef(
-                collectionId = "bookmarks",
-                contentId = contentId,
-                contentType = ContentType.CHART
-            )
-        )
-        queueManager.queueAndSyncBookmark(contentId, isBookmarked = true)
-        emit(Result.success(Unit))
-    }.catch { e ->
-        Log.e(TAG, "Unexpected error in bookmarkContent for contentId: $contentId", e)
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
+    override suspend fun bookmarkContent(id: String, contentId: String): Result<Unit> =
+        withContext(dispatcher) {
+            runCatching {
+                // Insert cross-ref for BOOKMARKS collection
+                collectionDao.upsertCrossRef(
+                    CollectionItemCrossRef(
+                        collectionId = "bookmarks",
+                        contentId = contentId,
+                        contentType = ContentType.CHART
+                    )
+                )
+                queueManager.queueAndSyncBookmark(contentId, isBookmarked = true)
+            }.onFailure { e ->
+                Log.e(TAG, "Unexpected error in bookmarkContent for contentId: $contentId", e)
+            }
+        }
 
-    override suspend fun unbookmarkContent(id: String, contentId: String): Flow<Result<Unit>> = flow {
-        // Remove cross-ref from BOOKMARKS collection
-        collectionDao.deleteCrossRef("bookmarks", contentId)
-        queueManager.queueAndSyncBookmark(contentId, isBookmarked = false)
-        emit(Result.success(Unit))
-    }.catch { e ->
-        Log.e(TAG, "Unexpected error in unbookmarkContent for contentId: $contentId", e)
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
+    override suspend fun unbookmarkContent(id: String, contentId: String): Result<Unit> =
+        withContext(dispatcher) {
+            runCatching {
+                // Remove cross-ref from BOOKMARKS collection
+                collectionDao.deleteCrossRef("bookmarks", contentId)
+                queueManager.queueAndSyncBookmark(contentId, isBookmarked = false)
+            }.onFailure { e ->
+                Log.e(TAG, "Unexpected error in unbookmarkContent for contentId: $contentId", e)
+            }
+        }
 
     override suspend fun addToCollection(
         contentId: String,
         collectionId: String
-    ): Flow<Result<Unit>> = flow {
-        collectionDao.upsertCrossRef(
-            CollectionItemCrossRef(
-                collectionId = collectionId,
-                contentId = contentId,
-                contentType = ContentType.CHART
-            )
-        )
-        collectionDao.incrementCollectionChartCount(collectionId, java.time.LocalDateTime.now())
-        queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = true)
-        emit(Result.success(Unit))
-    }.catch { e ->
-        Log.e(TAG, "Failed to add to collection for contentId: $contentId, collectionId: $collectionId", e)
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
+    ): Result<Unit> =
+        withContext(dispatcher) {
+            runCatching {
+                collectionDao.upsertCrossRef(
+                    CollectionItemCrossRef(
+                        collectionId = collectionId,
+                        contentId = contentId,
+                        contentType = ContentType.CHART
+                    )
+                )
+                collectionDao.incrementCollectionChartCount(collectionId, java.time.LocalDateTime.now())
+                queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = true)
+            }.onFailure { e ->
+                Log.e(TAG, "Failed to add to collection for contentId: $contentId, collectionId: $collectionId", e)
+            }
+        }
 
     override suspend fun removeFromCollection(
         contentId: String,
         collectionId: String
-    ): Flow<Result<Unit>> = flow {
-        collectionDao.deleteCrossRef(collectionId, contentId)
-        collectionDao.decrementCollectionChartCount(collectionId, java.time.LocalDateTime.now())
-        queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = false)
-        emit(Result.success(Unit))
-    }.catch { e ->
-        Log.e(TAG, "Failed to remove from collection for contentId: $contentId, collectionId: $collectionId", e)
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
+    ): Result<Unit> =
+        withContext(dispatcher) {
+            runCatching {
+                collectionDao.deleteCrossRef(collectionId, contentId)
+                collectionDao.decrementCollectionChartCount(collectionId, java.time.LocalDateTime.now())
+                queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = false)
+            }.onFailure { e ->
+                Log.e(TAG, "Failed to remove from collection for contentId: $contentId, collectionId: $collectionId", e)
+            }
+        }
 
     /**
      * Moves content from BOOKMARKS into a custom USER collection (or vice-versa).
@@ -124,61 +127,43 @@ class InteractionRepositoryImpl @Inject constructor(
         contentId: String,
         targetCollectionId: String,
         targetCollectionKind: CollectionKind
-    ): Flow<Result<Unit>> = flow {
-        when (targetCollectionKind) {
-            CollectionKind.USER -> {
-                // Moving OUT of bookmarks INTO a custom collection.
-                // Remove cross-ref from BOOKMARKS
-                collectionDao.deleteCrossRef("bookmarks", contentId)
+    ): Result<Unit> =
+        withContext(dispatcher) {
+            runCatching {
+                when (targetCollectionKind) {
+                    CollectionKind.USER -> {
+                        // Moving OUT of bookmarks INTO a custom collection.
+                        // Remove cross-ref from BOOKMARKS
+                        collectionDao.deleteCrossRef("bookmarks", contentId)
 
-                // Write the cross-ref so the item appears in the collection immediately
-                collectionDao.upsertCrossRef(
-                    CollectionItemCrossRef(
-                        collectionId = targetCollectionId,
-                        contentId = contentId,
-                        contentType = ContentType.CHART
-                    )
-                )
-                collectionDao.incrementCollectionChartCount(
-                    targetCollectionId,
-                    java.time.LocalDateTime.now()
-                )
-            }
+                        // Write the cross-ref so the item appears in the collection immediately
+                        collectionDao.upsertCrossRef(
+                            CollectionItemCrossRef(
+                                collectionId = targetCollectionId,
+                                contentId = contentId,
+                                contentType = ContentType.CHART
+                            )
+                        )
+                        collectionDao.incrementCollectionChartCount(
+                            targetCollectionId,
+                            java.time.LocalDateTime.now()
+                        )
+                    }
 
-            CollectionKind.BOOKMARKS -> {
-                // Moving OUT of a custom collection INTO bookmarks.
-                // Remove cross-ref from the source collection and decrement its count
-                collectionDao.deleteCrossRef(targetCollectionId, contentId)
-                collectionDao.decrementCollectionChartCount(
-                    targetCollectionId,
-                    java.time.LocalDateTime.now()
-                )
+                    else -> {
+                        // BOOKMARKS reverse-move not yet implemented — throw so it's not silently swallowed
+                        error("changeContentCollection: unsupported targetCollectionKind=$targetCollectionKind")
+                    }
+                }
 
-                // Write the cross-ref so the item appears in BOOKMARKS immediately
-                collectionDao.upsertCrossRef(
-                    CollectionItemCrossRef(
-                        collectionId = "bookmarks",
-                        contentId = contentId,
-                        contentType = ContentType.CHART
-                    )
-                )
-            }
-
-            else -> {
-                // LIKES or other system kinds — no local state change needed here
-                Log.w(TAG, "changeContentCollection called with unexpected kind: $targetCollectionKind")
+                // Always defer remote sync to the queue manager — handles conflict resolution
+                // and ensures offline-first behaviour is preserved.
+                queueManager.clearConflictingInteractions(contentId, targetCollectionKind)
+                queueManager.queueAndSyncCollection(contentId, targetCollectionId, isAdd = true)
+            }.onFailure { e ->
+                Log.e(TAG, "Failed to change content collection for contentId: $contentId", e)
             }
         }
-
-        // Always defer remote sync to the queue manager — handles conflict resolution
-        // and ensures offline-first behaviour is preserved.
-        queueManager.clearConflictingInteractions(contentId, targetCollectionKind)
-        queueManager.queueAndSyncCollection(contentId, targetCollectionId, isAdd = true)
-        emit(Result.success(Unit))
-    }.catch { e ->
-        Log.e(TAG, "Failed to change content collection for contentId: $contentId", e)
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
 
     override suspend fun getQueueSize(): Int = queueManager.getQueueSize()
 

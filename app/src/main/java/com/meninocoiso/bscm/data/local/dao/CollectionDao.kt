@@ -59,6 +59,21 @@ interface CollectionDao {
     @Query("DELETE FROM collection_item_cross_ref WHERE collection_id = :collectionId AND content_id = :contentId")
     suspend fun deleteCrossRef(collectionId: String, contentId: String)
 
+    /**
+     * Removes all cross-refs for [collectionId] whose content_id is NOT in [retainedContentIds].
+     * Use this after a full remote sync to evict stale local entries (e.g. items moved out of
+     * Bookmarks into a custom collection that the server no longer returns in the bookmarks list).
+     */
+    @Query("DELETE FROM collection_item_cross_ref WHERE collection_id = :collectionId AND content_id NOT IN (:retainedContentIds)")
+    suspend fun deleteStaleBookmarkCrossRefs(collectionId: String, retainedContentIds: List<String>)
+
+    /**
+     * Removes ALL cross-refs for [collectionId]. Used when the server returns an empty list
+     * (so retainedContentIds would be empty, which is not valid for a SQL IN clause).
+     */
+    @Query("DELETE FROM collection_item_cross_ref WHERE collection_id = :collectionId")
+    suspend fun deleteAllCrossRefsForCollection(collectionId: String)
+
     @Query("""
         SELECT id, kind FROM collections c
         INNER JOIN collection_item_cross_ref ref 

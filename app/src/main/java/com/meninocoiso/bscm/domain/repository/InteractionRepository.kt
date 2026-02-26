@@ -1,29 +1,28 @@
 package com.meninocoiso.bscm.domain.repository
 
 import com.meninocoiso.bscm.domain.enums.CollectionKind
-import kotlinx.coroutines.flow.Flow
 
 interface InteractionRepository {
     
     /**
      * Queues a like interaction for offline-first processing
      */
-    suspend fun likeContent(id: String, contentId: String): Flow<Result<Unit>>
+    suspend fun likeContent(id: String, contentId: String): Result<Unit>
 
     /**
      * Queues an unlike interaction for offline-first processing
      */
-    suspend fun unlikeContent(id: String, contentId: String): Flow<Result<Unit>>
+    suspend fun unlikeContent(id: String, contentId: String): Result<Unit>
 
     /**
      * Queues a bookmark interaction for offline-first processing
      */
-    suspend fun bookmarkContent(id: String, contentId: String): Flow<Result<Unit>>
-    
+    suspend fun bookmarkContent(id: String, contentId: String): Result<Unit>
+
     /**
      * Queues an unbookmark interaction for offline-first processing
      */
-    suspend fun unbookmarkContent(id: String, contentId: String): Flow<Result<Unit>>
+    suspend fun unbookmarkContent(id: String, contentId: String): Result<Unit>
 
     /**
      * Queues adding content to a custom collection
@@ -31,15 +30,15 @@ interface InteractionRepository {
     suspend fun addToCollection(
         contentId: String,
         collectionId: String
-    ): Flow<Result<Unit>>
-    
+    ): Result<Unit>
+
     /**
      * Removes content from a custom collection
      */
     suspend fun removeFromCollection(
         contentId: String,
         collectionId: String
-    ): Flow<Result<Unit>>
+    ): Result<Unit>
 
     /**
      * Changes the collection of content, removing it from the previous collection
@@ -51,7 +50,7 @@ interface InteractionRepository {
         contentId: String,
         targetCollectionId: String,
         targetCollectionKind: CollectionKind
-    ): Flow<Result<Unit>>
+    ): Result<Unit>
 
     /**
      * Gets the current interaction queue size

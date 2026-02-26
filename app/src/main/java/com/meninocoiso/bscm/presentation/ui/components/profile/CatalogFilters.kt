@@ -38,7 +38,7 @@ fun CatalogFilters(
             ContentFilterOption(
                 id = 3,
                 title = "Collections",
-                count = if (collectionsAmount != null && collectionsAmount > 0) collectionsAmount else null,
+                count = collectionsAmount ?: 0,
             )
         )
     }

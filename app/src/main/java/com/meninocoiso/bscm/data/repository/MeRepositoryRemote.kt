@@ -44,7 +44,11 @@ class MeRepositoryRemote @Inject constructor(
         profile
     }
 
-    override suspend fun getActivity(limit: Int, offset: Int, useCache: Boolean): Result<List<ActivityItemResponse>> = runCatching {
+    override suspend fun getActivity(
+        limit: Int,
+        offset: Int,
+        useCache: Boolean
+    ): Result<List<ActivityItemResponse>> = runCatching {
         if (useCache && offset == 0) {
             profileCacheRepository.getActivity()?.let { cached ->
                 Log.d(TAG, "Returning cached activity")
@@ -61,36 +65,42 @@ class MeRepositoryRemote @Inject constructor(
         activity
     }
 
-    override suspend fun getLikes(limit: Int, offset: Int, useCache: Boolean): Result<List<Chart>> = runCatching {
-        Log.d(TAG, "getLikes called with limit=$limit, offset=$offset, useCache=$useCache")
-        val localLikes = withContext(Dispatchers.IO) { chartDao.getLikedCharts(limit, offset) }
-        Log.d(TAG, "Found ${localLikes.size} liked charts in Room for offset=$offset")
-        if (useCache && offset == 0 && localLikes.isNotEmpty()) {
-            Log.d(TAG, "Returning likes from Room (${localLikes.size} items)")
-            return@runCatching localLikes
+    override suspend fun getLikes(limit: Int, offset: Int, useCache: Boolean): Result<List<Chart>> =
+        runCatching {
+            Log.d(TAG, "getLikes called with limit=$limit, offset=$offset, useCache=$useCache")
+            val localLikes = withContext(Dispatchers.IO) { chartDao.getLikedCharts(limit, offset) }
+            Log.d(TAG, "Found ${localLikes.size} liked charts in Room for offset=$offset")
+            if (useCache && offset == 0 && localLikes.isNotEmpty()) {
+                Log.d(TAG, "Returning likes from Room (${localLikes.size} items)")
+                return@runCatching localLikes
+            }
+
+            val likes = apiClient.getMyLikes(limit, offset)
+            Log.d(TAG, "Fetched ${likes.size} likes from API")
+
+            coroutineScope.launch { chartManager.persistCharts(likes) }
+
+            likes
         }
 
-        val likes = apiClient.getMyLikes(limit, offset)
-        Log.d(TAG, "Fetched ${likes.size} likes from API")
-
-        coroutineScope.launch { chartManager.persistCharts(likes) }
-
-        likes
-    }
-
-    override suspend fun getBookmarks(limit: Int, offset: Int, useCache: Boolean): Result<List<Chart>> = runCatching {
-        Log.d(TAG, "getBookmarks called with limit=$limit, offset=$offset, useCache=$useCache")
-        val localBookmarks = withContext(Dispatchers.IO) { chartDao.getBookmarkedCharts(limit, offset) }
+    override suspend fun getBookmarks(
+        limit: Int,
+        offset: Int,
+        useCache: Boolean
+    ): Result<List<Chart>> = runCatching {
+        val localBookmarks =
+            withContext(Dispatchers.IO) { chartDao.getBookmarkedCharts(limit, offset) }
         if (useCache && offset == 0 && localBookmarks.isNotEmpty()) {
-            Log.d(TAG, "Returning bookmarks from Room (${localBookmarks.size} items)")
             return@runCatching localBookmarks
         }
 
         val bookmarks = apiClient.getMyBookmarks(limit, offset)
-        Log.d(TAG, "Fetched ${bookmarks.size} bookmarks from API")
 
-        coroutineScope.launch {
-            // 1. Ensure the 'bookmarks' collection row exists first (FK parent required by cross-ref).
+        // Do the stale eviction synchronously before returning — this is what
+        // prevents the observer from seeing an intermediate state with ghost items.
+        // The writes are cheap (single-page DB ops) and must happen before the
+        // caller considers this fetch complete.
+        withContext(Dispatchers.IO) {
             collectionDao.upsertCollection(
                 Collection(
                     id = "bookmarks",
@@ -102,9 +112,7 @@ class MeRepositoryRemote @Inject constructor(
                     updatedAt = java.time.LocalDateTime.now(),
                 )
             )
-            // 2. Persist chart rows so FK on content_id is satisfied.
-            chartManager.persistCharts(bookmarks)
-            // 3. Now it's safe to insert cross-refs.
+
             val crossRefs = bookmarks.mapNotNull { chart ->
                 chart.contentId?.let { contentId ->
                     CollectionItemCrossRef(
@@ -114,11 +122,23 @@ class MeRepositoryRemote @Inject constructor(
                     )
                 }
             }
+            val retainedContentIds = crossRefs.map { it.contentId }
+
+            if (offset == 0) {
+                if (retainedContentIds.isNotEmpty()) {
+                    collectionDao.deleteStaleBookmarkCrossRefs("bookmarks", retainedContentIds)
+                } else {
+                    collectionDao.deleteAllCrossRefsForCollection("bookmarks")
+                }
+            }
+
             if (crossRefs.isNotEmpty()) {
                 collectionDao.upsertCrossRefs(crossRefs)
             }
-            Log.d(TAG, "Persisted ${bookmarks.size} bookmarks and ${crossRefs.size} cross-refs")
         }
+
+        // Chart rows are idempotent — safe to persist in background even if caller is cancelled
+        coroutineScope.launch { chartManager.persistCharts(bookmarks) }
 
         bookmarks
     }

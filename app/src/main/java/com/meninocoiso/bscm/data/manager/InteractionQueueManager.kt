@@ -170,6 +170,10 @@ class InteractionQueueManager @Inject constructor(
                 return@withContext
             }
 
+            // Capture PKs before the network call — anything queued after this
+            // point gets a new ID and won't be touched by our delete below
+            val processedIds = allInteractions.map { it.id }
+
             Log.d(TAG, "Processing ${allInteractions.size} queued interactions")
 
             // Deduplicate: for each contentId + collectionId, keep only the latest interaction.
@@ -200,7 +204,7 @@ class InteractionQueueManager @Inject constructor(
                 if (success) {
                     // Only delete the interactions we fetched — not any that arrived
                     // concurrently since we read allInteractions above
-                    queueDao.delete(allInteractions)
+                    queueDao.deleteByIds(processedIds)
                     Log.d(TAG, "Batch succeeded, removed ${allInteractions.size} interactions")
                 } else {
                     Log.w(TAG, "Batch returned false, keeping items for next attempt")

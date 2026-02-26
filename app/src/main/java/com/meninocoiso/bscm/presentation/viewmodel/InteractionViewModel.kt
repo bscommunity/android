@@ -40,12 +40,10 @@ class InteractionViewModel @Inject constructor(
     fun likeContent(id: String, contentId: String) {
         viewModelScope.launch {
             interactionRepository.likeContent(id, contentId)
-                .collect { result ->
-                    result.onSuccess {
-                        updateQueueSize()
-                    }.onFailure { error ->
-                        // Handle error if needed
-                    }
+                .onSuccess {
+                    updateQueueSize()
+                }.onFailure { error ->
+                    // Handle error if needed
                 }
         }
     }
@@ -57,12 +55,10 @@ class InteractionViewModel @Inject constructor(
     fun unlikeContent(id: String, contentId: String) {
         viewModelScope.launch {
             interactionRepository.unlikeContent(id, contentId)
-                .collect { result ->
-                    result.onSuccess {
-                        updateQueueSize()
-                    }.onFailure { error ->
-                        // Handle error if needed
-                    }
+                .onSuccess {
+                    updateQueueSize()
+                }.onFailure { error ->
+                    // Handle error if needed
                 }
         }
     }
@@ -74,13 +70,10 @@ class InteractionViewModel @Inject constructor(
     fun bookmarkContent(id: String, contentId: String) {
         viewModelScope.launch {
             interactionRepository.bookmarkContent(id, contentId)
-                .collect { result ->
-                    result.onSuccess {
-                        updateQueueSize()
-                    }.onFailure {
-                        // Handle error if needed
-                    }
-
+                .onSuccess {
+                    updateQueueSize()
+                }.onFailure {
+                    // Handle error if needed
                 }
         }
     }
@@ -93,12 +86,10 @@ class InteractionViewModel @Inject constructor(
         viewModelScope.launch {
             Log.d("InteractionViewModel", "Attempting to unbookmark contentId=$contentId for id=$id")
             interactionRepository.unbookmarkContent(id, contentId)
-                .collect { result ->
-                    result.onSuccess {
-                        updateQueueSize()
-                    }.onFailure {
-                        // Handle error if needed
-                    }
+                .onSuccess {
+                    updateQueueSize()
+                }.onFailure {
+                    // Handle error if needed
                 }
         }
     }
@@ -109,13 +100,10 @@ class InteractionViewModel @Inject constructor(
     fun addToCollection(contentId: String, collectionId: String) {
         viewModelScope.launch {
             interactionRepository.addToCollection(contentId, collectionId)
-                .collect { result ->
-                    result.onSuccess {
-                        updateQueueSize()
-                    }.onFailure {
-                        // Handle error if needed
-                    }
-
+                .onSuccess {
+                    updateQueueSize()
+                }.onFailure {
+                    // Handle error if needed
                 }
         }
     }
@@ -127,12 +115,10 @@ class InteractionViewModel @Inject constructor(
         viewModelScope.launch {
             Log.d("InteractionViewModel", "Attempting to remove contentId=$contentId from collectionId=$collectionId")
             interactionRepository.removeFromCollection(contentId, collectionId)
-                .collect { result ->
-                    result.onSuccess {
-                        updateQueueSize()
-                    }.onFailure {
-                        // Handle error if needed
-                    }
+                .onSuccess {
+                    updateQueueSize()
+                }.onFailure {
+                    // Handle error if needed
                 }
         }
     }
@@ -145,17 +131,24 @@ class InteractionViewModel @Inject constructor(
     fun changeContentCollection(contentId: String, targetCollectionId: String, targetCollectionKind: CollectionKind) {
         viewModelScope.launch {
             interactionRepository.changeContentCollection(contentId, targetCollectionId, targetCollectionKind)
-                .collect { result ->
-                    result.onSuccess {
-                        updateQueueSize()
-                    }.onFailure {
-                        // Handle error if needed
-                    }
+                .onSuccess {
+                    updateQueueSize()
+                }.onFailure {
+                    // Handle error if needed
                 }
         }
     }
 
-    private val contentCollectionCache = mutableMapOf<String, StateFlow<SimplifiedCollection?>>()
+    // Keeps at most 10 entries; evicts least-recently-used when full
+    private val contentCollectionCache = object : LinkedHashMap<String, StateFlow<SimplifiedCollection?>>(
+        16,       // initial capacity
+        0.75f,    // load factor
+        true      // accessOrder = true → makes it LRU
+    ) {
+        override fun removeEldestEntry(
+            eldest: MutableMap.MutableEntry<String, StateFlow<SimplifiedCollection?>>
+        ) = size > 10
+    }
 
     fun getContentCollection(contentId: String): StateFlow<SimplifiedCollection?> =
         contentCollectionCache.getOrPut(contentId) {

@@ -135,11 +135,15 @@ fun ChartDetailsScreen(
         }
     }
 
+
     var optimisticBookmarked by rememberSaveable { mutableStateOf<Boolean?>(null) }
-    val isBookmarked = optimisticBookmarked ?: (contentCollection?.kind != CollectionKind.LIKES)
+    val isBookmarked = optimisticBookmarked
+        ?: (contentCollection != null && contentCollection?.kind != CollectionKind.LIKES)
+
+    println("ChartDetailsScreen: contentCollection = $contentCollection, isBookmarked = $isBookmarked")
 
     LaunchedEffect(contentCollection) {
-        if (optimisticBookmarked != null && contentCollection?.kind != CollectionKind.LIKES) {
+        if (optimisticBookmarked != null && contentCollection != null && contentCollection?.kind != CollectionKind.LIKES) {
             optimisticBookmarked = null
         }
     }
@@ -176,8 +180,10 @@ fun ChartDetailsScreen(
             when (event) {
                 is DownloadEvent.Complete ->
                     snackbarHostState.showSnackbar(downloadCompleteMsg)
+
                 is DownloadEvent.Error ->
                     snackbarHostState.showSnackbar("$errorTitleMsg: ${event.message}")
+
                 else -> {}
             }
         }
@@ -205,18 +211,21 @@ fun ChartDetailsScreen(
                 }
             )
         }
+
         ChartDialog.Report -> {
             ReportDialog(
                 onSubmit = {},
                 onDismiss = { currentDialog = ChartDialog.None },
             )
         }
+
         ChartDialog.ListenTrack -> {
             ListenTrackDialog(
                 streamingLinks = chart.trackUrls,
                 onDismiss = { currentDialog = ChartDialog.None }
             )
         }
+
         ChartDialog.None -> {}
     }
 
@@ -328,10 +337,12 @@ fun ChartDetailsScreen(
                             optimisticBookmarked = newValue
 
                             if (newValue) {
-                                interactionViewModel.bookmarkContent(
-                                    chart.id,
-                                    chart.contentId
-                                )
+                                scope.launch {
+                                    interactionViewModel.bookmarkContent(
+                                        chart.id,
+                                        chart.contentId
+                                    )
+                                }
                                 scope.launch {
                                     val result = snackbarHostState.showSnackbar(
                                         "Added to Favorites",
@@ -353,6 +364,7 @@ fun ChartDetailsScreen(
                                         contentId = chart.contentId,
                                         collectionId = contentCollection!!.id
                                     )
+
                                     else -> interactionViewModel.unbookmarkContent(
                                         chart.id,
                                         chart.contentId
@@ -553,7 +565,15 @@ fun ChartDetailsScreen(
                     val newCollectionId = collectionViewModel.createCollection(name, isPublic)
                     Log.d("ChartDetailsScreen", "Created collection with ID: $newCollectionId")
                     chart.contentId?.let { contentId ->
-                        interactionViewModel.addToCollection(contentId, newCollectionId)
+                        if (wasBookmarkedWhenSheetOpened) {
+                            interactionViewModel.changeContentCollection(
+                                contentId = contentId,
+                                targetCollectionId = newCollectionId,
+                                targetCollectionKind = CollectionKind.USER
+                            )
+                        } else {
+                            interactionViewModel.addToCollection(contentId, newCollectionId)
+                        }
                     }
                     scope.launch {
                         snackbarHostState.showSnackbar("Saved to \"$name\"!")

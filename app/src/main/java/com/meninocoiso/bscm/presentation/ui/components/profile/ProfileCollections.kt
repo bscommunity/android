@@ -239,7 +239,7 @@ fun ProfileCollectionList(
         empty = {
             StatusMessageUI(
                 modifier = Modifier.fillMaxSize(),
-                message = "No content in library",
+                message = "No custom collections created",
                 icon = R.drawable.outline_library_music_24
             )
         }

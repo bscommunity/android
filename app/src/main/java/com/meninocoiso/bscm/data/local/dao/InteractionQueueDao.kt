@@ -25,6 +25,9 @@ interface InteractionQueueDao {
     
     @Delete
     suspend fun delete(interactions: List<QueuedInteractionEntity>)
+
+    @Query("DELETE FROM interaction_queue WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
     
     @Query("SELECT COUNT(*) FROM interaction_queue")
     suspend fun getQueueSize(): Int
