@@ -126,6 +126,7 @@ class UserProfileViewModel @Inject constructor(
             1 -> if (_uiState.value.collections.bookmarks.items.isEmpty()) {
                 fetchUserCollections()
                 startBookmarksObserver()
+                startCollectionsObserver()
             }
         }
     }
@@ -370,6 +371,29 @@ class UserProfileViewModel @Inject constructor(
         }
     }
 
+    private var collectionsObserverJob: Job? = null
+
+    private fun startCollectionsObserver() {
+        if (collectionsObserverJob?.isActive == true) return
+
+        collectionsObserverJob = viewModelScope.launch {
+            collectionRepository.observeUserCollections()
+                .drop(1)
+                .catch { e -> Log.e(TAG, "Collections observer error", e) }
+                .collect { freshCollections ->
+                    _uiState.update { state ->
+                        state.copy(
+                            collections = state.collections.copy(
+                                customCollections = state.collections.customCollections
+                                    .copy(items = freshCollections),
+                                items = mergeCollections(customCollections = freshCollections),
+                            )
+                        )
+                    }
+                }
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Reset
     // -------------------------------------------------------------------------
@@ -377,9 +401,11 @@ class UserProfileViewModel @Inject constructor(
     private fun resetAll() {
         // Cancel observers — they'll be restarted when tabs are visited again
         likesObserverJob?.cancel()
-        bookmarksObserverJob?.cancel()
         likesObserverJob = null
+        bookmarksObserverJob?.cancel()
         bookmarksObserverJob = null
+        collectionsObserverJob?.cancel()
+        collectionsObserverJob = null
 
         likesPagination.reset()
         bookmarksPagination.reset()

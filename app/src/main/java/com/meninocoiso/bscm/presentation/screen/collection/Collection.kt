@@ -77,6 +77,10 @@ fun CollectionScreen(
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    var currentCollection by remember { mutableStateOf(collection) }
+
+    println("CollectionScreen: collection=${collection}")
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val items = uiState.items
     val itemCount = collection.itemCount.toList().sum()
@@ -155,7 +159,7 @@ fun CollectionScreen(
                     ) {
                         // Name is available immediately from the route parameter —
                         // no loading state needed for the header.
-                        Text(collection.name, style = MaterialTheme.typography.headlineSmall)
+                        Text(currentCollection.name, style = MaterialTheme.typography.headlineSmall)
 
 
                         if (collection.owner != null) {
@@ -259,7 +263,10 @@ fun CollectionScreen(
                 onClose = { showBottomSheet = false },
                 collection = collection,
                 onSaveChanges = { name, isPublic ->
-                    viewModel.updateCollection(collection.id, name, isPublic)
+                    val result = viewModel.updateCollection(collection.id, name, isPublic)
+                    if (result.isSuccess) {
+                        currentCollection = currentCollection.copy(name = name, isPublic = isPublic)
+                    }
                 },
                 isLoading = uiState.isUpdating
             )

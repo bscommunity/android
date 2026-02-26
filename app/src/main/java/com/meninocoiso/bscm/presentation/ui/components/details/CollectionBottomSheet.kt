@@ -1,5 +1,6 @@
 package com.meninocoiso.bscm.presentation.ui.components.details
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -29,6 +30,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
@@ -46,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.SecureFlagPolicy
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.SimplifiedCollection
@@ -65,6 +68,7 @@ fun CollectionCreateBottomSheet(
     onClose: () -> Unit,
     collections: List<Collection>,
     isLoading: Boolean = false,
+    isMutating: Boolean = false,
     onCollectionSelected: (collectionId: String, collectionName: String) -> Unit,
     onCreateCollection: suspend (name: String, isPublic: Boolean) -> Unit,
 ) {
@@ -77,10 +81,20 @@ fun CollectionCreateBottomSheet(
         else -> ""
     }
 
+    println("Is Mutating: $isMutating, Is Loading: $isLoading")
+
     ModalBottomSheet(
         sheetState = sheetState,
-        onDismissRequest = { if (!isLoading) onDismissRequest() },
+        onDismissRequest = { onDismissRequest() },
+        properties = ModalBottomSheetProperties(
+            securePolicy = SecureFlagPolicy.SecureOn,
+            shouldDismissOnBackPress = !isMutating,
+            shouldDismissOnClickOutside = !isMutating,
+        ),
+        sheetGesturesEnabled = !isMutating
     ) {
+        BackHandler(enabled = isMutating) { /* block back press */ }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -90,7 +104,7 @@ fun CollectionCreateBottomSheet(
         ) {
             if (horizontalPagerState.currentPage > 0) {
                 IconButton(
-                    enabled = !isLoading,
+                    enabled = !isMutating,
                     onClick = {
                         coroutineScope.launch {
                             horizontalPagerState.scrollToPage(
@@ -111,8 +125,8 @@ fun CollectionCreateBottomSheet(
                 text = currentTitle,
                 style = MaterialTheme.typography.titleMedium
             )
-            if (horizontalPagerState.currentPage == 0) {
-                IconButton(onClick = onClose) {
+            if (horizontalPagerState.currentPage == 0 && !isLoading) {
+                IconButton(enabled = !isMutating, onClick = onClose) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = stringResource(R.string.close_bottomsheet)
@@ -133,7 +147,8 @@ fun CollectionCreateBottomSheet(
                 beyondViewportPageCount = 0,
                 userScrollEnabled = false,
                 modifier = Modifier
-                    .wrapContentHeight()
+                    .wrapContentHeight(),
+                verticalAlignment = Alignment.Top
             ) { index ->
                 when (index) {
                     0 -> CollectionsListSection(
@@ -150,7 +165,7 @@ fun CollectionCreateBottomSheet(
                     )
 
                     1 -> CollectionFormSection(
-                        isLoading = isLoading,
+                        isLoading = isMutating,
                         onSave = { name, isPublic ->
                             onCreateCollection(name, isPublic)
                             coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
@@ -194,7 +209,7 @@ fun CollectionEditBottomSheet(
                 text = "Edit collection",
                 style = MaterialTheme.typography.titleMedium
             )
-            IconButton(onClick = onClose) {
+            IconButton(enabled = !isLoading, onClick = onClose) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = stringResource(R.string.close_bottomsheet)

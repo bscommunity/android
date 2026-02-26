@@ -83,6 +83,9 @@ interface CollectionDao {
     """)
     fun getCollectionForContent(contentId: String): Flow<SimplifiedCollection?>
 
+    @Query("SELECT * FROM collections WHERE kind = 'USER' ORDER BY updated_at DESC")
+    fun observeUserCollections(): Flow<List<Collection>>
+
     @Transaction
     @Query("""
         SELECT c.* FROM charts c

@@ -10,6 +10,7 @@ import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.CollectionItemCrossRef
 import com.meninocoiso.bscm.domain.repository.CollectionRepository
 import jakarta.inject.Inject
+import kotlinx.coroutines.flow.Flow
 import java.time.LocalDateTime
 
 private const val TAG = "CollectionRepositoryRemote"
@@ -101,7 +102,8 @@ class CollectionRepositoryRemote @Inject constructor(
         isPublic: Boolean?
     ): Result<Unit> =
         runCatching {
-            apiClient.updateCollection(collectionId, name, isPublic)
+            val result = apiClient.updateCollection(collectionId, name, isPublic)
+            if (!result) throw Exception("API failed to update collection $collectionId")
 
             collectionDao.updateCollectionMetadata(
                 collectionId = collectionId,
@@ -168,4 +170,7 @@ class CollectionRepositoryRemote @Inject constructor(
     ): Result<Unit> = runCatching {
         apiClient.removeItemFromCollection(collectionId, contentId)
     }
+
+    override fun observeUserCollections(): Flow<List<Collection>> =
+        collectionDao.observeUserCollections()
 }

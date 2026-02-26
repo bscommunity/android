@@ -2,6 +2,7 @@ package com.meninocoiso.bscm.domain.repository
 
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
+import kotlinx.coroutines.flow.Flow
 
 interface CollectionRepository {
     suspend fun getUserCollections(userId: String = "user", limit: Int, offset: Int, useCache: Boolean = true): Result<List<Collection>>
@@ -21,4 +22,6 @@ interface CollectionRepository {
 
     suspend fun addItemToCollection(collectionId: String, contentId: String): Result<Unit>
     suspend fun removeItemFromCollection(collectionId: String, contentId: String): Result<Unit>
+
+    fun observeUserCollections(): Flow<List<Collection>>
 }

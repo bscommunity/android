@@ -214,19 +214,19 @@ class CollectionViewModel @Inject constructor(
     /**
      * Updates an existing collection.
      */
-    suspend fun updateCollection(collectionId: String, name: String, isPublic: Boolean) {
+    suspend fun updateCollection(collectionId: String, name: String, isPublic: Boolean): Result<Unit> {
         _uiState.update { it.copy(isUpdating = true) }
         try {
-            collectionRepository.updateCollection(collectionId, name, isPublic)
-                .onSuccess {
-                    Log.d(TAG, "Updated collection: $collectionId")
-                    emitSnackbar("Collection updated successfully")
-                }
-                .onFailure { e ->
-                    Log.e(TAG, "Failed to update collection", e)
-                    emitSnackbar("Failed to update collection")
-                    throw e
-                }
+            val result = collectionRepository.updateCollection(collectionId, name, isPublic)
+            result.onSuccess {
+                Log.d(TAG, "Updated collection: $collectionId")
+                emitSnackbar("Collection updated successfully")
+            }
+            .onFailure { e ->
+                Log.e(TAG, "Failed to update collection", e)
+                emitSnackbar("Failed to update collection")
+            }
+            return result
         } finally {
             _uiState.update { it.copy(isUpdating = false) }
         }
