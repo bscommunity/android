@@ -102,7 +102,11 @@ abstract class BaseProfileViewModel : ViewModel() {
         // Show skeleton only when the list is genuinely empty (first ever load)
         if (showSkeletonWhen()) {
             setSection(
-                PagedSection(items = getItems(), state = ContentState.Loading)
+                PagedSection(
+                    items = getItems(),
+                    state = ContentState.Loading,
+                    isRefreshing = reset,
+                )
             )
         }
 
@@ -139,7 +143,7 @@ abstract class BaseProfileViewModel : ViewModel() {
                     if (getItems().isNotEmpty()) {
                         // Preserve existing content; surface a snackbar instead
                         onFailureWithData?.invoke()
-                            ?: emitSnackbar("Falha ao carregar dados")
+                            ?: emitSnackbar("Failed to load more: ${error.localizedMessage ?: "Unknown error"}")
                         setSection(
                             PagedSection(
                                 items = getItems(),

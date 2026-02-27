@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 fun ProfileLibrary(
     items: List<CatalogItem>,
     state: ContentState,
+    isRefreshing: Boolean,
     customCollections: PagedSection<Collection>,
     onFetch: (reset: Boolean) -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
@@ -89,6 +90,7 @@ fun ProfileLibrary(
                     BaseContainer(
                         isEmpty = items.filterIsInstance<Chart>().isEmpty(),
                         state = state,
+                        isRefreshing = isRefreshing,
                         onRetry = onFetch,
                         empty = {
                             StatusMessageUI(
@@ -152,6 +154,7 @@ fun ProfileLibrary(
                         isEmpty = items.filterIsInstance<Theme>().isEmpty(),
                         state = state,
                         onRetry = onFetch,
+                        isRefreshing = isRefreshing,
                         empty = {
                             StatusMessageUI(
                                 modifier = Modifier.fillMaxSize(),

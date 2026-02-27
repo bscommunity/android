@@ -25,6 +25,13 @@ class ContentMemoryStore<T> @Inject constructor(
     private val _searchResultIds = MutableStateFlow<List<String>>(emptyList())
     val searchResultIds: StateFlow<List<String>> = _searchResultIds.asStateFlow()
 
+    /**
+     * IDs added via [addWithoutAffectingFeed] (e.g. profile library, likes, bookmarks).
+     * These must survive [replaceFeed]'s stale-removal pass — they don't belong to the
+     * Workshop feed order but are still needed by profile/details screens.
+     */
+    private val pinnedIds = mutableSetOf<String>()
+
     fun replaceFeed(
         newContent: List<T>,
         getId: (T) -> String,
@@ -36,7 +43,8 @@ class ContentMemoryStore<T> @Inject constructor(
             newContent = newContent,
             currentContent = _contentById.value,
             getId = getId,
-            isInstalled = isInstalled
+            isInstalled = isInstalled,
+            pinnedIds = pinnedIds
         )
 
         // Apply state changes atomically
@@ -84,6 +92,9 @@ class ContentMemoryStore<T> @Inject constructor(
         getId: (T) -> String
     ) {
         if (newContent.isEmpty()) return
+
+        // Pin these IDs so replaceFeed never evicts them as stale feed items
+        newContent.forEach { pinnedIds.add(getId(it)) }
 
         val updatedMap = feedOrchestrator.computeUpsertContent(
             newContent = newContent,

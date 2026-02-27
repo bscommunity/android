@@ -180,6 +180,7 @@ fun PublicProfileScreen(
                 ProfileLibrary(
                     items = uiState.library.items,
                     state = uiState.library.state,
+                    isRefreshing = uiState.library.isRefreshing,
                     customCollections = uiState.customCollections,
                     onFetch = {
                         profileViewModel.refreshLibrary(userId)

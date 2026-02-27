@@ -137,8 +137,9 @@ class PublicProfileViewModel @Inject constructor(
 
     fun refreshActivity(userId: String) = refreshPaged(
         pagination = activityPagination,
+        useCache = false,
         fetch = { limit, offset, _ ->
-            profileRepository.getActivity(userId = userId, limit = limit, offset = offset)
+            profileRepository.getActivity(userId = userId, limit = limit, offset = offset, useCache = false)
         },
         getItems = { _uiState.value.activity.items },
         getSection = { _uiState.value.activity },
@@ -160,8 +161,9 @@ class PublicProfileViewModel @Inject constructor(
 
     fun refreshLibrary(userId: String) = refreshPaged(
         pagination = libraryPagination,
+        useCache = false,
         fetch = { limit, offset, _ ->
-            profileRepository.getUserCharts(userId = userId, limit = limit, offset = offset)
+            profileRepository.getUserCharts(userId = userId, limit = limit, offset = offset, useCache = false)
         },
         getItems = { _uiState.value.library.items },
         getSection = { _uiState.value.library },
@@ -183,8 +185,9 @@ class PublicProfileViewModel @Inject constructor(
 
     fun refreshCollections(userId: String) = refreshPaged(
         pagination = collectionsPagination,
+        useCache = false,
         fetch = { limit, offset, _ ->
-            collectionRepository.getUserCollections(userId = userId, limit = limit, offset = offset)
+            collectionRepository.getUserCollections(userId = userId, limit = limit, offset = offset, useCache = false)
         },
         getItems = { _uiState.value.customCollections.items },
         getSection = { _uiState.value.customCollections },

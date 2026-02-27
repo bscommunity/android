@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
@@ -197,10 +196,10 @@ class UserProfileViewModel @Inject constructor(
     /**
      * Starts observing liked charts from Room.
      *
-     * We `drop(1)` to skip the initial emission — [fetchUserLikes] already
-     * populates the list via the paginated API fetch. Without the drop, the
-     * observer would immediately overwrite the fetched items with whatever
-     * is currently in Room (which may be stale / smaller until the API syncs).
+     * Instead of blindly dropping the first emission with `drop(1)`, we check
+     * whether the initial paginated fetch is still in flight. This handles
+     * the deep-link flow where Room already has fresh data when the observer
+     * starts — in that case, the first emission should be applied, not skipped.
      *
      * On subsequent emissions (i.e. a real change happened), we surgically
      * update only [PagedSection.items] while preserving all other pagination
@@ -211,14 +210,18 @@ class UserProfileViewModel @Inject constructor(
 
         likesObserverJob = viewModelScope.launch {
             meRepository.observeLikes()
-                .drop(1) // skip initial snapshot; fetchUserLikes handles first load
                 .catch { e -> Log.e(TAG, "Likes observer error", e) }
                 .collect { freshLikes ->
-                    Log.d(TAG, "Likes observer fired: ${freshLikes.size} items")
-                    _uiState.update { state ->
-                        state.copy(
-                            likes = state.likes.copy(items = freshLikes)
-                        )
+                    // Only apply if we already have a stable first page,
+                    // otherwise we race with fetchPaged and may flash empty→full→correct
+                    val current = _uiState.value.likes
+                    if (current.state !is ContentState.Loading || current.items.isNotEmpty()) {
+                        Log.d(TAG, "Likes observer fired: ${freshLikes.size} items")
+                        _uiState.update { state ->
+                            state.copy(
+                                likes = state.likes.copy(items = freshLikes)
+                            )
+                        }
                     }
                 }
         }
@@ -227,7 +230,11 @@ class UserProfileViewModel @Inject constructor(
     /**
      * Starts observing bookmarked charts from Room.
      *
-     * Same `drop(1)` rationale as [startLikesObserver].
+     * Instead of blindly dropping the first emission with `drop(1)`, we check
+     * whether the initial paginated fetch is still in flight. This handles
+     * the deep-link flow where Room already has fresh data when the observer
+     * starts — in that case, the first emission should be applied, not skipped.
+     *
      * Only the bookmark items inside [CollectionSectionState.bookmarks] are
      * updated; the custom-collections section is left untouched.
      */
@@ -236,23 +243,27 @@ class UserProfileViewModel @Inject constructor(
 
         bookmarksObserverJob = viewModelScope.launch {
             meRepository.observeBookmarks()
-                .drop(1)
                 .catch { e -> Log.e(TAG, "Bookmarks observer error", e) }
                 .collect { freshBookmarks ->
-                    Log.d(TAG, "Bookmarks observer fired: ${freshBookmarks.size} items")
-                    _uiState.update { state ->
-                        val updatedBookmarksSection = state.collections.bookmarks
-                            .copy(items = freshBookmarks)
-                        val bookmarksCollection = buildBookmarksCollection()
-                        state.copy(
-                            collections = state.collections.copy(
-                                bookmarks = updatedBookmarksSection,
-                                items = mergeCollections(
-                                    bookmarksCollection = bookmarksCollection,
-                                    customCollections = null,
-                                ),
+                    // Only apply if we already have a stable first page,
+                    // otherwise we race with fetchPaged and may flash empty→full→correct
+                    val current = _uiState.value.collections.bookmarks
+                    if (current.state !is ContentState.Loading || current.items.isNotEmpty()) {
+                        Log.d(TAG, "Bookmarks observer fired: ${freshBookmarks.size} items")
+                        _uiState.update { state ->
+                            val updatedBookmarksSection = state.collections.bookmarks
+                                .copy(items = freshBookmarks)
+                            val bookmarksCollection = buildBookmarksCollection()
+                            state.copy(
+                                collections = state.collections.copy(
+                                    bookmarks = updatedBookmarksSection,
+                                    items = mergeCollections(
+                                        bookmarksCollection = bookmarksCollection,
+                                        customCollections = null,
+                                    ),
+                                )
                             )
-                        )
+                        }
                     }
                 }
         }
@@ -378,17 +389,20 @@ class UserProfileViewModel @Inject constructor(
 
         collectionsObserverJob = viewModelScope.launch {
             collectionRepository.observeUserCollections()
-                .drop(1)
                 .catch { e -> Log.e(TAG, "Collections observer error", e) }
                 .collect { freshCollections ->
-                    _uiState.update { state ->
-                        state.copy(
-                            collections = state.collections.copy(
-                                customCollections = state.collections.customCollections
-                                    .copy(items = freshCollections),
-                                items = mergeCollections(customCollections = freshCollections),
+                    // Only apply if we already have a stable first page
+                    val current = _uiState.value.collections.customCollections
+                    if (current.state !is ContentState.Loading || current.items.isNotEmpty()) {
+                        _uiState.update { state ->
+                            state.copy(
+                                collections = state.collections.copy(
+                                    customCollections = state.collections.customCollections
+                                        .copy(items = freshCollections),
+                                    items = mergeCollections(customCollections = freshCollections),
+                                )
                             )
-                        )
+                        }
                     }
                 }
         }

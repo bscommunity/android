@@ -7,7 +7,9 @@ import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.repository.ProfileRepository
+import com.meninocoiso.bscm.domain.result.ContentResult
 import jakarta.inject.Inject
+import kotlinx.coroutines.flow.first
 
 private const val TAG = "ProfileRepositoryRemote"
 
@@ -30,6 +32,7 @@ class ProfileRepositoryRemote @Inject constructor(
 
         // Fetch from API
         val profile = apiClient.getUserProfileByUsername(username)
+        Log.d(TAG, "Fetched profile for user $username from API: $profile")
 
         // Cache the result
         profileCacheRepository.cacheProfile(username, profile)
@@ -64,7 +67,7 @@ class ProfileRepositoryRemote @Inject constructor(
             Log.d(TAG, "Getting library for user $userId (limit=$limit, offset=$offset, useCache=$useCache)")
 
             // Only use cache for first page
-            /*if (useCache && offset == 0) {
+            if (useCache && offset == 0) {
                 val cached = profileCacheRepository.getLibrary(userId)
                 if (cached != null) {
                     Log.d(TAG, "Returning cached library for user: $userId")
@@ -74,15 +77,17 @@ class ProfileRepositoryRemote @Inject constructor(
                         else -> {}
                     }
                 }
-            }*/
+            }
 
             // Fetch from API
             val charts = apiClient.getUserCharts(userId, limit, offset)
             Log.d(TAG, "Fetched library charts for user $userId from API (${charts.size} items)")
             Log.d(TAG, "Charts: ${charts}")
 
-            // Cache only first page
+            // Cache only first page — persist must complete before caching IDs so
+            // that a subsequent getChartsById() call finds the rows in the DB/memory store.
             if (offset == 0) {
+                chartManager.persistCharts(charts)
                 profileCacheRepository.cacheLibrary(userId, charts.map { it.id })
             }
 
