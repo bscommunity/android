@@ -144,6 +144,7 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
                     ProfileRoute(
                         username = profileRoute.username,
                         user = if (user?.username == profileRoute.username) user.toSimplifiedUser() else null,
+                        isLoggedIn = user != null,
                         onNavigateToDetails = { chart ->
                             onNavigateToDetails(chart)
                         },

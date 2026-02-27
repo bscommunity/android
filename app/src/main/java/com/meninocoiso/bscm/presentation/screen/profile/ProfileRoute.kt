@@ -25,6 +25,7 @@ import com.meninocoiso.bscm.presentation.viewmodel.PublicProfileViewModel
 fun ProfileRoute(
     username: String,
     user: SimplifiedUser?,
+    isLoggedIn: Boolean,
     onReturn: () -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
     onNavigateToCollection: (SimplifiedCollection) -> Unit,
@@ -60,6 +61,7 @@ fun ProfileRoute(
                 is ContentResult.Success -> {
                     val data = (state as ContentResult.Success<UserProfileResponse>).data
                     PublicProfileScreen(
+                        isLoggedIn = isLoggedIn,
                         user = data.user,
                         onReturn = onReturn,
                         onNavigateToDetails = onNavigateToDetails,

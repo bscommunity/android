@@ -28,16 +28,16 @@ class CollectionRepositoryRemote @Inject constructor(
     ): Result<List<Collection>> = runCatching {
         Log.d(TAG, "Getting collections for user $userId (limit=$limit, offset=$offset, useCache=$useCache)")
 
-        if (userId == "user") {
+        if (userId == "user" && useCache && offset == 0) {
             val localCollections = collectionDao.getUserCollections(limit, offset)
-            if (useCache && offset == 0 && localCollections.isNotEmpty()) {
+            if (localCollections.isNotEmpty()) {
                 Log.d(TAG, "Returning owner collections from Room (${localCollections.size} items)")
                 return@runCatching localCollections
             }
         }
 
         // Other profiles: quick cache by IDs + Room hydration
-        if (userId != "user" && useCache && offset == 0) {
+        /*if (userId != "user" && useCache && offset == 0) {
             val cachedIds = profileCacheRepository.getCollections(userId)
             if (!cachedIds.isNullOrEmpty()) {
                 val cachedCollections = collectionDao.getCollectionsByIds(cachedIds)
@@ -47,7 +47,7 @@ class CollectionRepositoryRemote @Inject constructor(
                     return@runCatching cachedCollections
                 }
             }
-        }
+        }*/
 
         // Fetch from API
         val collections = if (userId == "user") {

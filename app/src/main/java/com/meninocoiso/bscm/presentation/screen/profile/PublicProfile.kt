@@ -17,25 +17,26 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.model.SimplifiedCollection
 import com.meninocoiso.bscm.domain.model.toSimplifiedCollection
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
+import com.meninocoiso.bscm.presentation.ui.components.dialog.ReportDialog
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileActivity
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileHeaderIdentity
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileLibrary
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileSectionsLayout
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileTabItem
-import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.PublicProfileViewModel
 import com.meninocoiso.bscm.util.LinkingUtils
 import kotlinx.serialization.Serializable
@@ -49,12 +50,12 @@ data class DeepLinkProfile(val username: String)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PublicProfileScreen(
+    isLoggedIn: Boolean,
     user: SimplifiedUser,
     onReturn: () -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
     onNavigateToCollection: (SimplifiedCollection) -> Unit,
     profileViewModel: PublicProfileViewModel,
-    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val userId = user.id
     val context = LocalContext.current
@@ -71,7 +72,8 @@ fun PublicProfileScreen(
     )
 
     val uiState by profileViewModel.uiState.collectAsStateWithLifecycle()
-    val isLoggedIn by authViewModel.isLoggedInFlow.collectAsStateWithLifecycle(false)
+
+    val isReportDialogOpen = remember { mutableStateOf(false) }
 
     val activityListState = rememberLazyListState()
     val libraryListState = rememberLazyListState()
@@ -185,12 +187,7 @@ fun PublicProfileScreen(
                     },
                     onNavigateToDetails = onNavigateToDetails,
                     onNavigateToCollection = { collection ->
-                        onNavigateToCollection(
-                            /*if (collection.owner == null)
-                                collection.copy(owner = user)
-                            else collection*/
-                            collection.toSimplifiedCollection(user)
-                        )
+                        onNavigateToCollection(collection.toSimplifiedCollection(user))
                     },
                     listState = libraryListState,
                     collectionsListState = collectionsListState,
@@ -204,5 +201,12 @@ fun PublicProfileScreen(
                 )
             }
         }
+    }
+
+    if (isReportDialogOpen.value) {
+        ReportDialog(
+            onSubmit = {},
+            onDismiss = { isReportDialogOpen.value = false },
+        )
     }
 }

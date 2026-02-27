@@ -382,7 +382,7 @@ class KtorApiClient @Inject constructor(
         limit: Int?,
         offset: Int?
     ): List<Collection> {
-        return client.get("collections/$userId") {
+        return client.get("users/$userId/collections") {
             url {
                 limit?.let { parameters.append("limit", it.toString()) }
                 offset?.let { parameters.append("offset", it.toString()) }

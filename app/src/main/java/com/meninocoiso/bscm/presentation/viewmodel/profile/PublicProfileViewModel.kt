@@ -68,6 +68,12 @@ class PublicProfileViewModel @Inject constructor(
     // -------------------------------------------------------------------------
 
     fun loadProfile(username: String) {
+        // Skip reload if the profile is already successfully loaded for this username.
+        val current = _profile.value
+        if (current is ContentResult.Success && current.data.user.username == username) {
+            Log.d(TAG, "Profile already loaded for: $username, skipping reload")
+            return
+        }
         resetAll()
         viewModelScope.launch {
             Log.d(TAG, "Loading profile for: $username")
@@ -148,7 +154,7 @@ class PublicProfileViewModel @Inject constructor(
         getItems = { _uiState.value.library.items },
         setSection = { section ->
             _uiState.update { it.copy(library = section) }
-            Log.d(TAG, "Library updated: ${section.items.size} items for $userId")
+            // Log.d(TAG, "Library updated: ${section.items.size} items for $userId")
         },
     )
 
@@ -160,7 +166,7 @@ class PublicProfileViewModel @Inject constructor(
         getItems = { _uiState.value.library.items },
         getSection = { _uiState.value.library },
         setSection = { section -> _uiState.update { it.copy(library = section) } },
-        onFailureWithData = { emitSnackbar("Falha ao atualizar biblioteca") },
+        onFailureWithData = { emitSnackbar("Failed to update library") },
     )
 
     fun fetchCollections(userId: String) = fetchPaged(
@@ -171,7 +177,7 @@ class PublicProfileViewModel @Inject constructor(
         getItems = { _uiState.value.customCollections.items },
         setSection = { section ->
             _uiState.update { it.copy(customCollections = section) }
-            Log.d(TAG, "Collections updated: ${section.items.size} items for $userId")
+            // Log.d(TAG, "Collections updated: ${section.items.size} items for $userId")
         },
     )
 
@@ -183,7 +189,7 @@ class PublicProfileViewModel @Inject constructor(
         getItems = { _uiState.value.customCollections.items },
         getSection = { _uiState.value.customCollections },
         setSection = { section -> _uiState.update { it.copy(customCollections = section) } },
-        onFailureWithData = { emitSnackbar("Falha ao atualizar coleções") },
+        onFailureWithData = { emitSnackbar("Failed to update collections") },
     )
 
     fun loadMoreActivity(userId: String) {
