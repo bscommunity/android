@@ -69,6 +69,7 @@ fun CollectionCreateBottomSheet(
     collections: List<Collection>,
     isLoading: Boolean = false,
     isMutating: Boolean = false,
+    errorMessage: String? = null,
     onCollectionSelected: (collectionId: String, collectionName: String) -> Unit,
     onCreateCollection: suspend (name: String, isPublic: Boolean) -> Unit,
 ) {
@@ -154,6 +155,7 @@ fun CollectionCreateBottomSheet(
                     0 -> CollectionsListSection(
                         collections = collections,
                         isLoading = isLoading,
+                        errorMessage = errorMessage,
                         onCollectionClick = onCollectionSelected,
                         onCreateNewCollectionClick = {
                             coroutineScope.launch {
@@ -245,6 +247,7 @@ fun CollectionsListSection(
     modifier: Modifier = Modifier,
     collections: List<Collection>,
     isLoading: Boolean,
+    errorMessage: String? = null,
     onCollectionClick: (String, String) -> Unit,
     onCreateNewCollectionClick: () -> Unit
 ) {
@@ -281,7 +284,17 @@ fun CollectionsListSection(
                 Text("Create new collection", style = MaterialTheme.typography.titleMedium)
             }
         }
-        if (isLoading && collections.isEmpty()) {
+        if (errorMessage != null) {
+            item {
+                StatusMessageUI(
+                    modifier = Modifier.padding(vertical = 32.dp),
+                    icon = R.drawable.rounded_error_24,
+                    title = "Error",
+                    message = errorMessage,
+                    size = StatusMessageSize.Small
+                )
+            }
+        } else if (isLoading && collections.isEmpty()) {
             item {
                 Box(
                     modifier = Modifier

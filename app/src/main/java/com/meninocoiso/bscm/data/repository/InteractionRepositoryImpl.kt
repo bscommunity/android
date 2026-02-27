@@ -14,6 +14,7 @@ import com.meninocoiso.bscm.domain.result.ContentResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.time.LocalDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -59,6 +60,8 @@ class InteractionRepositoryImpl @Inject constructor(
                         contentType = ContentType.CHART
                     )
                 )
+                // Update local chart state so UI reflects bookmark immediately
+                updateLocalState(id = id, operation = OperationOption.BOOKMARK)
                 queueManager.queueAndSyncBookmark(contentId, isBookmarked = true)
             }.onFailure { e ->
                 Log.e(TAG, "Unexpected error in bookmarkContent for contentId: $contentId", e)
@@ -70,6 +73,8 @@ class InteractionRepositoryImpl @Inject constructor(
             runCatching {
                 // Remove cross-ref from BOOKMARKS collection
                 collectionDao.deleteCrossRef("bookmarks", contentId)
+                // Update local chart state so UI reflects unbookmark immediately
+                updateLocalState(id = id, operation = OperationOption.UNBOOKMARK)
                 queueManager.queueAndSyncBookmark(contentId, isBookmarked = false)
             }.onFailure { e ->
                 Log.e(TAG, "Unexpected error in unbookmarkContent for contentId: $contentId", e)
@@ -77,6 +82,7 @@ class InteractionRepositoryImpl @Inject constructor(
         }
 
     override suspend fun addToCollection(
+        id: String,
         contentId: String,
         collectionId: String
     ): Result<Unit> =
@@ -89,7 +95,8 @@ class InteractionRepositoryImpl @Inject constructor(
                         contentType = ContentType.CHART
                     )
                 )
-                collectionDao.incrementCollectionChartCount(collectionId, java.time.LocalDateTime.now())
+                collectionDao.incrementCollectionChartCount(collectionId, LocalDateTime.now())
+                updateLocalState(contentId, OperationOption.BOOKMARK)
                 queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = true)
             }.onFailure { e ->
                 Log.e(TAG, "Failed to add to collection for contentId: $contentId, collectionId: $collectionId", e)
@@ -97,13 +104,15 @@ class InteractionRepositoryImpl @Inject constructor(
         }
 
     override suspend fun removeFromCollection(
+        id: String,
         contentId: String,
         collectionId: String
     ): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
                 collectionDao.deleteCrossRef(collectionId, contentId)
-                collectionDao.decrementCollectionChartCount(collectionId, java.time.LocalDateTime.now())
+                collectionDao.decrementCollectionChartCount(collectionId, LocalDateTime.now())
+                updateLocalState(id, OperationOption.UNBOOKMARK)
                 queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = false)
             }.onFailure { e ->
                 Log.e(TAG, "Failed to remove from collection for contentId: $contentId, collectionId: $collectionId", e)
@@ -146,7 +155,7 @@ class InteractionRepositoryImpl @Inject constructor(
                         )
                         collectionDao.incrementCollectionChartCount(
                             targetCollectionId,
-                            java.time.LocalDateTime.now()
+                            LocalDateTime.now()
                         )
                     }
 

@@ -28,6 +28,7 @@ interface InteractionRepository {
      * Queues adding content to a custom collection
      */
     suspend fun addToCollection(
+        id: String,
         contentId: String,
         collectionId: String
     ): Result<Unit>
@@ -36,6 +37,7 @@ interface InteractionRepository {
      * Removes content from a custom collection
      */
     suspend fun removeFromCollection(
+        id: String,
         contentId: String,
         collectionId: String
     ): Result<Unit>

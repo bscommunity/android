@@ -155,6 +155,8 @@ fun ChartDetailsScreen(
     val collectionUiState by collectionViewModel.uiState.collectAsStateWithLifecycle()
     val userCollections = collectionUiState.userCollections.items
     val isCollectionsLoading = collectionUiState.userCollections.state is ContentState.Loading
+    val hasError = collectionUiState.userCollections.state is ContentState.Error
+    val errorMessage = if (hasError) "Failed to load collections. Please check your connection and try again." else null
 
     LaunchedEffect(showCollectionSheet) {
         if (showCollectionSheet) {
@@ -365,6 +367,7 @@ fun ChartDetailsScreen(
                                 // for contentCollection, completing the circle.
                                 when (contentCollection?.kind) {
                                     CollectionKind.USER -> interactionViewModel.removeFromCollection(
+                                        id = chart.id,
                                         contentId = chart.contentId,
                                         collectionId = contentCollection!!.id
                                     )
@@ -544,6 +547,7 @@ fun ChartDetailsScreen(
             collections = userCollections.filter { it.id != contentCollection?.id },
             isLoading = isCollectionsLoading,
             isMutating = collectionUiState.isCreating,
+            errorMessage = errorMessage,
             onCollectionSelected = { collectionId, collectionName ->
                 scope.launch {
                     snackbarHostState.showSnackbar(
@@ -559,7 +563,7 @@ fun ChartDetailsScreen(
                             targetCollectionKind = CollectionKind.USER
                         )
                     } else {
-                        interactionViewModel.addToCollection(contentId, collectionId)
+                        interactionViewModel.addToCollection(chart.id, contentId, collectionId)
                     }
                 }
                 wasBookmarkedWhenSheetOpened = false
@@ -577,7 +581,7 @@ fun ChartDetailsScreen(
                                 targetCollectionKind = CollectionKind.USER
                             )
                         } else {
-                            interactionViewModel.addToCollection(contentId, newCollectionId)
+                            interactionViewModel.addToCollection(chart.id, contentId, newCollectionId)
                         }
                     }
                     scope.launch {

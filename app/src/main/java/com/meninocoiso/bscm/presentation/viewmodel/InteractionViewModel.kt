@@ -97,9 +97,9 @@ class InteractionViewModel @Inject constructor(
     /**
      * Adds content to a custom collection using the offline-first queue system
      */
-    fun addToCollection(contentId: String, collectionId: String) {
+    fun addToCollection(id: String, contentId: String, collectionId: String) {
         viewModelScope.launch {
-            interactionRepository.addToCollection(contentId, collectionId)
+            interactionRepository.addToCollection(id, contentId, collectionId)
                 .onSuccess {
                     updateQueueSize()
                 }.onFailure {
@@ -111,10 +111,10 @@ class InteractionViewModel @Inject constructor(
     /**
      * Removes content from a custom collection using the offline-first queue system
      */
-    fun removeFromCollection(contentId: String, collectionId: String) {
+    fun removeFromCollection(id: String, contentId: String, collectionId: String) {
         viewModelScope.launch {
             Log.d("InteractionViewModel", "Attempting to remove contentId=$contentId from collectionId=$collectionId")
-            interactionRepository.removeFromCollection(contentId, collectionId)
+            interactionRepository.removeFromCollection(id, contentId, collectionId)
                 .onSuccess {
                     updateQueueSize()
                 }.onFailure {
