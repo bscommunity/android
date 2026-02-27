@@ -11,7 +11,6 @@ import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.serialization.LocalDateTimeSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
-import kotlinx.serialization.Transient
 import java.time.LocalDateTime
 
 @Entity(tableName = "collections")
@@ -29,12 +28,38 @@ data class Collection(
     @ColumnInfo(name = "theme_count") val themeCount: Int = 0,
     @ColumnInfo(name = "created_at") val createdAt: LocalDateTime,
     @ColumnInfo(name = "updated_at") val updatedAt: LocalDateTime,
+    // Server-side gathered field — not persisted in Room, but deserialized from API responses
+    // when fetching a specific collection (e.g. deep-link). Profile screens provide the owner
+    // themselves since the collections-list API does not return it.
+    @Ignore val owner: SimplifiedUser? = null,
 ) {
-    @Ignore
-    @Transient
-    var owner: SimplifiedUser? = null
-
-    @Ignore
-    @Transient
-    var items: List<CatalogItem> = emptyList()
+    // Secondary constructor required by Room (which ignores @Ignore fields)
+    constructor(
+        id: String,
+        userId: String,
+        kind: CollectionKind,
+        name: String,
+        slug: String?,
+        isPublic: Boolean,
+        coverUrl: String?,
+        chartCount: Int,
+        tourPassCount: Int,
+        themeCount: Int,
+        createdAt: LocalDateTime,
+        updatedAt: LocalDateTime,
+    ) : this(
+        id = id,
+        userId = userId,
+        kind = kind,
+        name = name,
+        slug = slug,
+        isPublic = isPublic,
+        coverUrl = coverUrl,
+        chartCount = chartCount,
+        tourPassCount = tourPassCount,
+        themeCount = themeCount,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+        owner = null,
+    )
 }

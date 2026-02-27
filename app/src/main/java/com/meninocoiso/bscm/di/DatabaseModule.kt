@@ -16,9 +16,9 @@ import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.repository.ChartLocalRepository
 import com.meninocoiso.bscm.domain.repository.ChartQuery
 import com.meninocoiso.bscm.domain.repository.ChartRemoteRepository
-import com.meninocoiso.bscm.domain.repository.ContentOperationPolicy
 import com.meninocoiso.bscm.domain.repository.ContentFeedRepository
 import com.meninocoiso.bscm.domain.repository.ContentLocalRepository
+import com.meninocoiso.bscm.domain.repository.ContentOperationPolicy
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

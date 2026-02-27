@@ -23,6 +23,24 @@ data class SimplifiedCollection(
     val itemCount: Triple<Int, Int, Int> = Triple(0, 0, 0), // chartCount, tourPassCount, themeCount
 ) : Parcelable
 
+/**
+ * Converts a [Collection] that already carries its [owner] (e.g. fetched via a deep-link
+ * where the server includes the owner in the response).
+ *
+ * @throws IllegalStateException if the collection has no owner.
+ */
+fun Collection.toSimplifiedCollection(): SimplifiedCollection {
+    val resolvedOwner = checkNotNull(owner) {
+        "Collection '$id' has no owner — use toSimplifiedCollection(user) to supply one explicitly."
+    }
+    return toSimplifiedCollection(resolvedOwner)
+}
+
+/**
+ * Converts a [Collection] using an explicitly provided [user] as the owner.
+ * Use this when the owner is already known in the call site (e.g. Profile screens)
+ * and the server did not return the owner inside the collection payload.
+ */
 fun Collection.toSimplifiedCollection(user: SimplifiedUser) = SimplifiedCollection(
     id = id,
     name = name,
@@ -32,5 +50,4 @@ fun Collection.toSimplifiedCollection(user: SimplifiedUser) = SimplifiedCollecti
     owner = user,
     itemCount = Triple(chartCount, tourPassCount, themeCount)
 )
-
 

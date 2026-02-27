@@ -145,7 +145,7 @@ class CollectionViewModel @Inject constructor(
             _collectionResult.value = ContentResult.Loading
             collectionRepository.getCollectionBySlug(username, slug)
                 .onSuccess { collection ->
-                    // If the server didn't returned an owner, something went wrong
+                    Log.d(TAG, "Fetched collection: $collection")
                     if (collection.owner == null) {
                         Log.e(TAG, "Collection $username/$slug has no owner in response")
                         _collectionResult.value =
@@ -153,7 +153,7 @@ class CollectionViewModel @Inject constructor(
                         return@onSuccess
                     }
                     _collectionResult.value =
-                        ContentResult.Success(collection.toSimplifiedCollection(collection.owner!!))
+                        ContentResult.Success(collection.toSimplifiedCollection())
                 }
                 .onFailure { e ->
                     Log.e(TAG, "Failed to fetch collection $username/$slug", e)

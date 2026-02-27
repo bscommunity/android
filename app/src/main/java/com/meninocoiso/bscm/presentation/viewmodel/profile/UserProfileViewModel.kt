@@ -243,7 +243,7 @@ class UserProfileViewModel @Inject constructor(
                     _uiState.update { state ->
                         val updatedBookmarksSection = state.collections.bookmarks
                             .copy(items = freshBookmarks)
-                        val bookmarksCollection = buildBookmarksCollection(freshBookmarks)
+                        val bookmarksCollection = buildBookmarksCollection()
                         state.copy(
                             collections = state.collections.copy(
                                 bookmarks = updatedBookmarksSection,
@@ -277,7 +277,7 @@ class UserProfileViewModel @Inject constructor(
         },
         setSection = { section ->
             _uiState.update { state ->
-                val bookmarksCollection = buildBookmarksCollection(section.items)
+                val bookmarksCollection = buildBookmarksCollection()
                 state.copy(
                     collections = state.collections.copy(
                         items = mergeCollections(bookmarksCollection, customCollections = null),
@@ -333,11 +333,11 @@ class UserProfileViewModel @Inject constructor(
      * If a Bookmarks collection already exists in state it is reused (preserving its
      * server-side id / metadata); otherwise a local placeholder is created.
      */
-    private fun buildBookmarksCollection(items: List<CatalogItem>): Collection {
+    private fun buildBookmarksCollection(): Collection {
         val existing = _uiState.value.collections.items
             .firstOrNull { it.kind == CollectionKind.BOOKMARKS }
 
-        return existing?.copy()?.also { it.items = items }
+        return existing?.copy()
             ?: Collection(
                 id        = "bookmarks",
                 userId    = (_profile.value as? ContentResult.Success)?.data?.user?.id ?: "unknown",
@@ -346,7 +346,7 @@ class UserProfileViewModel @Inject constructor(
                 isPublic  = false,
                 createdAt = LocalDateTime.now(),
                 updatedAt = LocalDateTime.now(),
-            ).also { it.items = items }
+            )
     }
 
     /**
