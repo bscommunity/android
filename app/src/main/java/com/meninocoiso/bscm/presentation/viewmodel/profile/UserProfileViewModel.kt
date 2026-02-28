@@ -297,7 +297,6 @@ class UserProfileViewModel @Inject constructor(
                     )
                 )
             }
-            Log.d(TAG, "Bookmarks updated: ${section.items.size} items")
         },
         onFailureWithData = onFailureWithData,
     )
@@ -319,7 +318,6 @@ class UserProfileViewModel @Inject constructor(
         },
         setSection = { section ->
             _uiState.update { state ->
-                Log.d(TAG, "Merging ${section.items} custom collections with existing bookmarks")
                 state.copy(
                     collections = state.collections.copy(
                         items = mergeCollections(customCollections = section.items),
@@ -328,7 +326,6 @@ class UserProfileViewModel @Inject constructor(
                     )
                 )
             }
-            Log.d(TAG, "Custom collections updated: ${section.items.size} items")
         },
         onFailureWithData = onFailureWithData,
     )

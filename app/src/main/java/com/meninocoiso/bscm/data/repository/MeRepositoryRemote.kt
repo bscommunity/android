@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.LocalDateTime
 
 private const val TAG = "MeRepositoryRemote"
 
@@ -86,10 +87,17 @@ class MeRepositoryRemote @Inject constructor(
         offset: Int,
         useCache: Boolean
     ): Result<List<Chart>> = runCatching {
-        val localBookmarks =
-            withContext(Dispatchers.IO) { chartDao.getBookmarkedCharts(limit, offset) }
-        if (useCache && offset == 0 && localBookmarks.isNotEmpty()) {
-            return@runCatching localBookmarks
+        Log.d(TAG, "getBookmarks called with limit=$limit, offset=$offset, useCache=$useCache")
+
+        if (useCache && offset == 0) {
+            val localBookmarks =
+                withContext(Dispatchers.IO) { chartDao.getBookmarkedCharts(limit, offset) }
+            Log.d(TAG, "Found ${localBookmarks.size} bookmarked charts in Room for offset=$offset")
+
+            if (localBookmarks.isNotEmpty()) {
+                Log.d(TAG, "Returning bookmarks from Room (${localBookmarks.size} items)")
+                return@runCatching localBookmarks
+            }
         }
 
         val bookmarks = apiClient.getMyBookmarks(limit, offset)
@@ -102,12 +110,12 @@ class MeRepositoryRemote @Inject constructor(
             collectionDao.upsertCollection(
                 Collection(
                     id = "bookmarks",
-                    userId = "me",
+                    userId = "user",
                     kind = CollectionKind.BOOKMARKS,
                     name = "Bookmarks",
                     isPublic = false,
-                    createdAt = java.time.LocalDateTime.now(),
-                    updatedAt = java.time.LocalDateTime.now(),
+                    createdAt = LocalDateTime.now(),
+                    updatedAt = LocalDateTime.now(),
                 )
             )
 

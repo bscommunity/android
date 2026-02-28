@@ -23,6 +23,7 @@ import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
+import com.meninocoiso.bscm.presentation.ui.components.StatusMessageSize
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
 import com.meninocoiso.bscm.util.DateUtils.DateFormat
@@ -50,6 +51,7 @@ fun BaseContainer(
                 ContentState.Error -> {
                     StatusMessageUI(
                         modifier = Modifier.fillMaxSize(),
+                        size = StatusMessageSize.Small,
                         title = stringResource(R.string.something_went_wrong),
                         message = stringResource(R.string.check_connection),
                         icon = R.drawable.rounded_emergency_home_24,

@@ -174,7 +174,7 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
                             navController.navigateUp()
                         },
                         onNavigateToSettings = {
-                            navController.navigateUp()
+                            navController.popBackStack<MainRoute>(inclusive = false)
                             onNavigateToSettings()
                         }
                     )
@@ -234,7 +234,7 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
                             navController.navigateUp()
                         },
                         onNavigateToSettings = {
-                            navController.navigateUp()
+                            navController.popBackStack<MainRoute>(inclusive = false)
                             onNavigateToSettings()
                         }
                     )
