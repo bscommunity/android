@@ -65,16 +65,6 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
         _feedState.value = newState
     }
 
-    /**
-     * Clears the in-memory feed so the next [fetchFeed] call always goes to the remote source.
-     * Call this when the user's auth state changes so personal fields (isLiked, isBookmarked)
-     * are re-fetched with the correct identity.
-     */
-    fun invalidateFeed() {
-        memoryStore.clearFeed()
-        _feedState.value = ContentState.Loading
-    }
-
     fun getItem(id: String): Flow<ContentResult<T>> = flow {
         emit(ContentResult.Loading)
 

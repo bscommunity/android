@@ -1,7 +1,6 @@
 package com.meninocoiso.bscm.data.manager
 
 import com.meninocoiso.bscm.data.service.FeedOrchestrator
-import com.meninocoiso.bscm.domain.model.CatalogItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +13,7 @@ import javax.inject.Inject
  * Generic in-memory store that centralizes content and feed state management.
  * Delegates feed computation to [FeedOrchestrator] and applies updates atomically.
  */
-class ContentMemoryStore<T : CatalogItem> @Inject constructor(
+class ContentMemoryStore<T> @Inject constructor(
     private val feedOrchestrator: FeedOrchestrator<T>
 ) {
     private val _contentById = MutableStateFlow<Map<String, T>>(emptyMap())
@@ -119,17 +118,4 @@ class ContentMemoryStore<T : CatalogItem> @Inject constructor(
     fun hasFeedItems(): Boolean = _feedOrderIds.value.isNotEmpty()
 
     fun currentFeedItems(): List<T> = _feedOrderIds.value.mapNotNull { _contentById.value[it] }
-
-    /**
-     * Clears all in-memory feed data so the next fetch will always hit the remote source.
-     * Installed items are preserved so downloads/updates are not lost.
-     */
-    fun clearFeed() {
-        _feedOrderIds.update { emptyList() }
-        _contentById.update { current ->
-            // Keep only installed items so downloads/updates are not lost
-            current.filter { (_, item) -> item.isInstalled == true }
-        }
-        clearSearchResults()
-    }
 }

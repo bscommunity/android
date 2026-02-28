@@ -64,7 +64,6 @@ class ChartManager @Inject constructor(
 
     fun updateCacheState(newState: ContentState) = contentManager.updateCacheState(newState)
     fun updateFeedState(newState: ContentState) = contentManager.updateFeedState(newState)
-    fun invalidateFeed() = contentManager.invalidateFeed()
 
     // Delegate generic operations to ContentManager
     suspend fun loadCachedCharts(sortBy: SortOption) = contentManager.loadCachedContent(sortBy)
