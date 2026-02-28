@@ -31,20 +31,17 @@ class FeedOrchestrator<T> @Inject constructor() {
         currentContent: Map<String, T>,
         // currentFeedOrder unused, removed
         getId: (T) -> String,
-        isInstalled: (T) -> Boolean,
-        pinnedIds: Set<String> = emptySet()
+        isInstalled: (T) -> Boolean
     ): FeedUpdateResult<T> {
         val newFeedIds = newContent.map { getId(it) }.toSet()
 
-        // Find stale non-installed content — but never evict pinned items (profile
-        // library, likes, bookmarks) since they were added outside the feed order.
+        // Find stale non-installed content
         val contentToRemove = currentContent.values.filter { content ->
-            val id = getId(content)
-            id !in newFeedIds && !isInstalled(content) && id !in pinnedIds
+            getId(content) !in newFeedIds && !isInstalled(content)
         }
 
         // Start with current content, remove stale items, then upsert new items
-        val updatedMap = currentContent.toMutableMap()
+        var updatedMap = currentContent.toMutableMap()
         if (contentToRemove.isNotEmpty()) {
             Log.d(TAG, "Removing ${contentToRemove.size} stale non-installed items from cache")
             contentToRemove.forEach { updatedMap.remove(getId(it)) }
@@ -54,7 +51,7 @@ class FeedOrchestrator<T> @Inject constructor() {
         newContent.forEach { content -> updatedMap[getId(content)] = content }
 
         // Apply cache limit
-        val feedOrder = newContent.map { getId(it) }
+        var feedOrder = newContent.map { getId(it) }
         val (limitedOrder, limitedMap) = applyCacheLimit(
             feedOrder,
             updatedMap,

@@ -267,9 +267,7 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
                         newContent = items,
                         getId = { it.id },
                         isInstalled = { it.isInstalled == true },
-                        onStaleRemove = { stale ->
-                            coroutineScope.launch { localRepository.delete(stale).first() }
-                        },
+                        // no onStaleRemove
                         coroutineScope = coroutineScope
                     )
                 } else {

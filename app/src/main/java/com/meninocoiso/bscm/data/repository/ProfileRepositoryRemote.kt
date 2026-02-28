@@ -1,24 +1,27 @@
 package com.meninocoiso.bscm.data.repository
 
 import android.util.Log
-import com.meninocoiso.bscm.data.manager.ChartManager
+import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.repository.ProfileRepository
-import com.meninocoiso.bscm.domain.result.ContentResult
 import jakarta.inject.Inject
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private const val TAG = "ProfileRepositoryRemote"
 
 class ProfileRepositoryRemote @Inject constructor(
     private val apiClient: ApiClient,
     private val profileCacheRepository: ProfileCacheRepository,
-    private val chartManager: ChartManager
+    private val chartDao: ChartDao
 ) : ProfileRepository {
-    override suspend fun getProfileHeader(username: String, useCache: Boolean): Result<UserProfileResponse> = runCatching {
+    override suspend fun getProfileHeader(
+        username: String,
+        useCache: Boolean
+    ): Result<UserProfileResponse> = runCatching {
 
         Log.d(TAG, "Fetching profile for user: $username (useCache=$useCache)")
 
@@ -40,7 +43,12 @@ class ProfileRepositoryRemote @Inject constructor(
         profile
     }
 
-    override suspend fun getActivity(userId: String, limit: Int, offset: Int, useCache: Boolean): Result<List<ActivityItemResponse>> =
+    override suspend fun getActivity(
+        userId: String,
+        limit: Int,
+        offset: Int,
+        useCache: Boolean
+    ): Result<List<ActivityItemResponse>> =
         runCatching {
             // Only use cache for first page
             if (useCache && offset == 0) {
@@ -62,32 +70,41 @@ class ProfileRepositoryRemote @Inject constructor(
             activity
         }
 
-    override suspend fun getUserCharts(userId: String, limit: Int, offset: Int, useCache: Boolean): Result<List<Chart>> =
+    override suspend fun getUserCharts(
+        userId: String,
+        limit: Int,
+        offset: Int,
+        useCache: Boolean
+    ): Result<List<Chart>> =
         runCatching {
-            Log.d(TAG, "Getting library for user $userId (limit=$limit, offset=$offset, useCache=$useCache)")
+            Log.d(
+                TAG,
+                "Getting library for user $userId (limit=$limit, offset=$offset, useCache=$useCache)"
+            )
 
             // Only use cache for first page
             if (useCache && offset == 0) {
                 val cached = profileCacheRepository.getLibrary(userId)
                 if (cached != null) {
                     Log.d(TAG, "Returning cached library for user: $userId")
-                    when (val charts = chartManager.getChartsById(cached).first { it !is ContentResult.Loading }) {
-                        is ContentResult.Success -> return@runCatching charts.data
-                        is ContentResult.Error -> Log.e(TAG, "Error fetching charts for cached library: ${charts.message}")
-                        else -> {}
-                    }
+                    val cachedCharts = withContext(Dispatchers.IO) { chartDao.getChartsByIds(cached) }
+                    Log.d(TAG, "Cached charts for user $userId: ${cachedCharts.size} items")
+                    return@runCatching cachedCharts
                 }
             }
 
             // Fetch from API
             val charts = apiClient.getUserCharts(userId, limit, offset)
-            Log.d(TAG, "Fetched library charts for user $userId from API (${charts.size} items)")
+            Log.d(
+                TAG,
+                "Fetched library charts for user $userId from API (${charts.size} items)"
+            )
             Log.d(TAG, "Charts: ${charts}")
 
             // Cache only first page — persist must complete before caching IDs so
             // that a subsequent getChartsById() call finds the rows in the DB/memory store.
             if (offset == 0) {
-                chartManager.persistCharts(charts)
+                withContext(Dispatchers.IO) { chartDao.insert(charts) }
                 profileCacheRepository.cacheLibrary(userId, charts.map { it.id })
             }
 

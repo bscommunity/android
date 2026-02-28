@@ -3,7 +3,6 @@ package com.meninocoiso.bscm.data.repository
 import android.util.Log
 import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.data.local.dao.CollectionDao
-import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
@@ -27,7 +26,6 @@ class MeRepositoryRemote @Inject constructor(
     @param:ApplicationScope private val coroutineScope: CoroutineScope,
     private val apiClient: ApiClient,
     private val profileCacheRepository: ProfileCacheRepository,
-    private val chartManager: ChartManager,
     private val chartDao: ChartDao,
     private val collectionDao: CollectionDao
 ) : MeRepository {
@@ -78,7 +76,7 @@ class MeRepositoryRemote @Inject constructor(
             val likes = apiClient.getMyLikes(limit, offset)
             Log.d(TAG, "Fetched ${likes.size} likes from API")
 
-            coroutineScope.launch { chartManager.persistCharts(likes) }
+            coroutineScope.launch { chartDao.insert(likes) }
 
             likes
         }
@@ -138,7 +136,7 @@ class MeRepositoryRemote @Inject constructor(
         }
 
         // Chart rows are idempotent — safe to persist in background even if caller is cancelled
-        coroutineScope.launch { chartManager.persistCharts(bookmarks) }
+        coroutineScope.launch { chartDao.insert(bookmarks) }
 
         bookmarks
     }
