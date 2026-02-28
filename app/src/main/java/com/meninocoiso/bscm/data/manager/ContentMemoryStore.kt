@@ -22,8 +22,8 @@ class ContentMemoryStore<T> @Inject constructor(
     private val _feedOrderIds = MutableStateFlow<List<String>>(emptyList())
     val feedOrderIds: StateFlow<List<String>> = _feedOrderIds.asStateFlow()
 
-    private val _searchResultIds = MutableStateFlow<List<String>>(emptyList())
-    val searchResultIds: StateFlow<List<String>> = _searchResultIds.asStateFlow()
+    private val _searchResultIds = MutableStateFlow<List<String>?>(null)
+    val searchResultIds: StateFlow<List<String>?> = _searchResultIds.asStateFlow()
 
     fun replaceFeed(
         newContent: List<T>,
@@ -112,7 +112,7 @@ class ContentMemoryStore<T> @Inject constructor(
     }
 
     fun clearSearchResults() {
-        _searchResultIds.update { current -> if (current.isEmpty()) current else emptyList() }
+        _searchResultIds.update { current -> if (current == null) current else null }
     }
 
     fun hasFeedItems(): Boolean = _feedOrderIds.value.isNotEmpty()

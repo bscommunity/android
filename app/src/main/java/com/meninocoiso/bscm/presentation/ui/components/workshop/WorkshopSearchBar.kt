@@ -24,6 +24,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.SearchBarState
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -77,9 +78,9 @@ fun WorkshopSearchBar(
     suggestions: List<String>?,
     onHistoryItemDelete: (String) -> Unit,
     onSearch: (query: String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    searchBarState: SearchBarState = rememberSearchBarState(),
 ) {
-    val searchBarState = rememberSearchBarState()
     val scope = rememberCoroutineScope()
 
     val haptics = LocalHapticFeedback.current

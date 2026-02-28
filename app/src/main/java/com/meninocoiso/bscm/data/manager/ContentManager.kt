@@ -55,7 +55,7 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
     val installedContent: Flow<List<T>> =
         memoryStore.contentById.mapValuesList { it.isInstalled == true }
     val searchContent: Flow<List<T>> =
-        memoryStore.searchResultIds.combineWith(memoryStore.contentById)
+        memoryStore.searchResultIds.combineWithNullable(memoryStore.contentById)
 
     fun updateCacheState(newState: ContentState) {
         _cacheState.value = newState
@@ -144,7 +144,10 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
                 val remoteResult = remoteItemRepository.getItems(ids).first()
                 remoteResult.fold(
                     onSuccess = { items ->
-                        Log.d("ContentManager", "Fetched ${items.size} items from remote for IDs: $ids")
+                        Log.d(
+                            "ContentManager",
+                            "Fetched ${items.size} items from remote for IDs: $ids"
+                        )
                         memoryStore.upsertContent(items) { it.id }
                         coroutineScope.launch { localRepository.insert(items).first() }
                         emit(ContentResult.Success(items))
@@ -318,8 +321,10 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
             onSuccess = { items ->
                 memoryStore.addWithoutAffectingFeed(items, getId = { it.id })
                 val newIds =
-                    if (offset == 0) items.map { it.id } else memoryStore.searchResultIds.value + items.map { it.id }
+                    if (offset == 0) items.map { it.id } else memoryStore.searchResultIds.value?.plus(
+                        items.map { it.id }) ?: items.map { it.id }
                 memoryStore.setSearchResults(newIds)
+                Log.d("ContentManager", "Search for '$query' returned ${items.size} items")
                 emit(ContentResult.Success(items))
             },
             onFailure = { err ->
@@ -339,6 +344,13 @@ private fun <T> StateFlow<List<String>>.combineWith(
     contentFlow: StateFlow<Map<String, T>>
 ): Flow<List<T>> = kotlinx.coroutines.flow.combine(this, contentFlow) { order, map ->
     if (order.isEmpty()) map.values.toList() else order.mapNotNull { map[it] }
+}
+
+// Nullable variant: null order = no active search (empty), empty list = 0 results (empty)
+private fun <T> StateFlow<List<String>?>.combineWithNullable(
+    contentFlow: StateFlow<Map<String, T>>
+): Flow<List<T>> = kotlinx.coroutines.flow.combine(this, contentFlow) { order, map ->
+    if (order == null) emptyList() else order.mapNotNull { map[it] }
 }
 
 private fun <T> StateFlow<Map<String, T>>.mapValuesList(predicate: (T) -> Boolean): Flow<List<T>> =

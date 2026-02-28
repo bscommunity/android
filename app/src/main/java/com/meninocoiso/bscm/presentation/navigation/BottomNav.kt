@@ -130,6 +130,8 @@ fun BottomNav(
 
     var fabExtended by remember { mutableStateOf(true) }
 
+    var onWorkshopReselectCallback by remember { mutableStateOf<(() -> Unit)?>(null) }
+
     val onSnackbar: OnSnackbar = { message, actionLabel, withDismissAction, duration, onAction, onDismiss ->
         coroutineScope.launch {
             val result = snackbarHostState.showSnackbar(
@@ -184,6 +186,11 @@ fun BottomNav(
                         restoreState = true
                     }
                 },
+                onReselect = { route ->
+                    if (route is Route.Workshop) {
+                        onWorkshopReselectCallback?.invoke()
+                    }
+                },
                 bottomNavigationItems = updatedBottomNavigationItems,
             )
         },
@@ -217,6 +224,9 @@ fun BottomNav(
                     onFabStateChange = onFabStateChange,
                     onNavigateToSettings = onNavigateToSettings,
                     onNavigateToDetails = onNavigateToDetails,
+                    onWorkshopReselected = { callback ->
+                        onWorkshopReselectCallback = callback
+                    },
                 )
             }
             composableWithFade<Route.Updates> { backStackEntry ->
