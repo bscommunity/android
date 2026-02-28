@@ -87,7 +87,8 @@ class ProfileRepositoryRemote @Inject constructor(
                 val cached = profileCacheRepository.getLibrary(userId)
                 if (cached != null) {
                     Log.d(TAG, "Returning cached library for user: $userId")
-                    val cachedCharts = withContext(Dispatchers.IO) { chartDao.getChartsByIds(cached) }
+                    val cachedCharts =
+                        withContext(Dispatchers.IO) { chartDao.getChartsByIds(cached) }
                     Log.d(TAG, "Cached charts for user $userId: ${cachedCharts.size} items")
                     return@runCatching cachedCharts
                 }
@@ -99,7 +100,6 @@ class ProfileRepositoryRemote @Inject constructor(
                 TAG,
                 "Fetched library charts for user $userId from API (${charts.size} items)"
             )
-            Log.d(TAG, "Charts: ${charts}")
 
             // Cache only first page — persist must complete before caching IDs so
             // that a subsequent getChartsById() call finds the rows in the DB/memory store.
@@ -111,15 +111,25 @@ class ProfileRepositoryRemote @Inject constructor(
             charts
         }
 
-    override suspend fun followUser(userId: String): Result<Unit> = runCatching {
+    override suspend fun followUser(userId: String, username: String): Result<Unit> = runCatching {
         apiClient.followUser(userId)
 
-        profileCacheRepository.invalidateProfile(userId)
+        val profile = profileCacheRepository.getProfile(username) ?: return@runCatching
+
+        profileCacheRepository.cacheProfile(
+            username,
+            profile.copy(isFollowing = true)
+        )
     }
 
-    override suspend fun unfollowUser(userId: String): Result<Unit> = runCatching {
+    override suspend fun unfollowUser(userId: String, username: String): Result<Unit> = runCatching {
         apiClient.unfollowUser(userId)
 
-        profileCacheRepository.invalidateProfile(userId)
+        val profile = profileCacheRepository.getProfile(username) ?: return@runCatching
+
+        profileCacheRepository.cacheProfile(
+            username,
+            profile.copy(isFollowing = false)
+        )
     }
 }

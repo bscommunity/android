@@ -106,6 +106,7 @@ class ProfileCacheRepository @Inject constructor(
             preferences.remove(profileKey(userId))
             preferences.remove(profileTimestampKey(userId))
         }
+        Log.d(TAG, "Cleared profile cache for user: $userId")
     }
 
     suspend fun clearProfile() = clearProfile(OWNER_ID)
@@ -199,12 +200,6 @@ class ProfileCacheRepository @Inject constructor(
             preferences.remove(collectionsIdsKey(userId))
             preferences.remove(activityKey(userId))
             preferences.remove(libraryIdsKey(userId))
-        }
-    }
-
-    suspend fun clearAllCache() {
-        dataStore.edit { preferences ->
-            preferences.clear()
         }
     }
 

@@ -14,11 +14,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -28,9 +32,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
+import com.meninocoiso.bscm.domain.enums.ButtonVariant
 import com.meninocoiso.bscm.domain.model.SimplifiedCollection
 import com.meninocoiso.bscm.domain.model.toSimplifiedCollection
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
+import com.meninocoiso.bscm.presentation.ui.components.ButtonUI
+import com.meninocoiso.bscm.presentation.ui.components.dialog.ConfirmationDialog
 import com.meninocoiso.bscm.presentation.ui.components.dialog.ReportDialog
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileActivity
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileHeaderIdentity
@@ -47,6 +54,8 @@ data class PublicProfile(val user: SimplifiedUser, val isFollowing: Boolean)
 @Serializable
 data class DeepLinkProfile(val username: String)
 
+private enum class PublicProfileDialog { None, Report, UnfollowConfirmation }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PublicProfileScreen(
@@ -59,6 +68,7 @@ fun PublicProfileScreen(
 ) {
     val userId = user.id
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val tabItems = listOf(
         ProfileTabItem(
@@ -73,15 +83,45 @@ fun PublicProfileScreen(
 
     val uiState by profileViewModel.uiState.collectAsStateWithLifecycle()
 
-    val isReportDialogOpen = remember { mutableStateOf(false) }
-
     val activityListState = rememberLazyListState()
     val libraryListState = rememberLazyListState()
     val collectionsListState = rememberLazyListState()
 
+    var currentDialog by rememberSaveable { mutableStateOf(PublicProfileDialog.None) }
+
+    when (currentDialog) {
+        PublicProfileDialog.UnfollowConfirmation -> {
+            ConfirmationDialog(
+                title = "Unfollow ${user.username}?",
+                message = "You will no longer see ${user.username}'s activity in your feed.",
+                onDismiss = { currentDialog = PublicProfileDialog.None },
+                onConfirm = {
+                    profileViewModel.toggleFollow(userId, user.username)
+                    currentDialog = PublicProfileDialog.None
+                }
+            )
+        }
+
+        PublicProfileDialog.Report -> {
+            ReportDialog(
+                onSubmit = {},
+                onDismiss = { currentDialog = PublicProfileDialog.None },
+            )
+        }
+
+        PublicProfileDialog.None -> {}
+    }
+
+    LaunchedEffect(profileViewModel) {
+        profileViewModel.snackbarEvents.collect { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
     ProfileSectionsLayout(
         user = user,
         tabItems = tabItems,
+        snackbarHostState = snackbarHostState,
         onReturn = onReturn,
         headerIdentity = { ProfileHeaderIdentity(user = user) },
         headerActions = {
@@ -91,23 +131,18 @@ fun PublicProfileScreen(
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 if (isLoggedIn) {
-                    Button(
-                        onClick = { profileViewModel.toggleFollow(userId) },
+                    ButtonUI(
+                        onClick = {
+                            if (uiState.isFollowing) currentDialog =
+                                PublicProfileDialog.UnfollowConfirmation else
+                                profileViewModel.toggleFollow(userId, user.username)
+                        },
+                        isLoading = uiState.isFollowLoading,
+                        text = if (uiState.isFollowing) "Following" else "Follow",
+                        icon = if (uiState.isFollowing) null else R.drawable.baseline_stars_24,
+                        variant = if (uiState.isFollowing) ButtonVariant.Outlined else ButtonVariant.Filled,
                         modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(20.dp),
-                            painter = if (uiState.isFollowing)
-                                painterResource(R.drawable.baseline_stars_24)
-                            else
-                                painterResource(R.drawable.rounded_stars_24),
-                            contentDescription = null
-                        )
-                        Text(
-                            modifier = Modifier.padding(start = 8.dp),
-                            text = if (uiState.isFollowing) "Following" else "Follow"
-                        )
-                    }
+                    )
                     IconButton(
                         onClick = {
                             LinkingUtils.shareProfile(
@@ -127,7 +162,8 @@ fun PublicProfileScreen(
                     }
                     if (!uiState.isFollowing) {
                         IconButton(
-                            onClick = {}, colors = IconButtonDefaults.iconButtonColors(
+                            onClick = { currentDialog = PublicProfileDialog.Report },
+                            colors = IconButtonDefaults.iconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary
                             )
@@ -202,12 +238,5 @@ fun PublicProfileScreen(
                 )
             }
         }
-    }
-
-    if (isReportDialogOpen.value) {
-        ReportDialog(
-            onSubmit = {},
-            onDismiss = { isReportDialogOpen.value = false },
-        )
     }
 }

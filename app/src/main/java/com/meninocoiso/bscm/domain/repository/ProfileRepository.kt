@@ -8,6 +8,6 @@ interface ProfileRepository {
     suspend fun getProfileHeader(username: String, useCache: Boolean = true): Result<UserProfileResponse>
     suspend fun getActivity(userId: String, limit: Int, offset: Int, useCache: Boolean = true): Result<List<ActivityItemResponse>>
     suspend fun getUserCharts(userId: String, limit: Int, offset: Int, useCache: Boolean = true): Result<List<Chart>>
-    suspend fun followUser(userId: String): Result<Unit>
-    suspend fun unfollowUser(userId: String): Result<Unit>
+    suspend fun followUser(userId: String, username: String): Result<Unit>
+    suspend fun unfollowUser(userId: String, username: String): Result<Unit>
 }

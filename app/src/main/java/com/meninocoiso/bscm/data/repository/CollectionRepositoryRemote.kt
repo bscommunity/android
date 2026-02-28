@@ -37,7 +37,7 @@ class CollectionRepositoryRemote @Inject constructor(
         }
 
         // Other profiles: quick cache by IDs + Room hydration
-        /*if (userId != "user" && useCache && offset == 0) {
+        if (userId != "user" && useCache && offset == 0) {
             val cachedIds = profileCacheRepository.getCollections(userId)
             if (!cachedIds.isNullOrEmpty()) {
                 val cachedCollections = collectionDao.getCollectionsByIds(cachedIds)
@@ -47,7 +47,7 @@ class CollectionRepositoryRemote @Inject constructor(
                     return@runCatching cachedCollections
                 }
             }
-        }*/
+        }
 
         // Fetch from API
         val collections = if (userId == "user") {

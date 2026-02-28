@@ -2,6 +2,7 @@ package com.meninocoiso.bscm.presentation.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.meninocoiso.bscm.data.remote.ApiException
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.domain.model.CatalogItem
@@ -50,6 +51,7 @@ class PublicProfileViewModel @Inject constructor(
         val library: PagedSection<CatalogItem> = PagedSection(),
         val customCollections: PagedSection<Collection> = PagedSection(),
         val isFollowing: Boolean = false,
+        val isFollowLoading: Boolean = false,
     )
 
     private val _uiState = MutableStateFlow(PublicProfileUiState())
@@ -106,23 +108,37 @@ class PublicProfileViewModel @Inject constructor(
     }
 
     /**
-     * Optimistic follow toggle — flips local state immediately, reverts on failure.
-     * This is faster-feeling than waiting for the network round-trip.
+     * Follow toggle — waits for the server response before updating local state.
+     * Shows a loading indicator while the request is in flight.
      */
-    fun toggleFollow(userId: String) = viewModelScope.launch {
+    fun toggleFollow(userId: String, username: String) = viewModelScope.launch {
         val target = !_uiState.value.isFollowing
-        _uiState.update { it.copy(isFollowing = target) } // optimistic update
+        _uiState.update { it.copy(isFollowLoading = true) }
         Log.d(TAG, "Toggling follow → $target for $userId")
 
-        val result = if (target) profileRepository.followUser(userId)
-        else profileRepository.unfollowUser(userId)
+        val result = if (target) profileRepository.followUser(userId, username)
+        else profileRepository.unfollowUser(userId, username)
 
         result
-            .onSuccess { Log.d(TAG, "Follow toggled → $target for $userId") }
+            .onSuccess {
+                _uiState.update { it.copy(isFollowing = target, isFollowLoading = false) }
+                Log.d(TAG, "Follow toggled → $target for $userId")
+            }
             .onFailure { error ->
-                _uiState.update { it.copy(isFollowing = !target) } // revert
-                emitSnackbar("Falha ao atualizar seguidor")
-                Log.e(TAG, "Toggle follow failed for $userId", error)
+                if (error is ApiException && error.status.value == 400) {
+                    Log.w(
+                        TAG,
+                        "Received 400 Bad Request when trying to ${if (target) "follow" else "unfollow"} user $userId. " +
+                                "This may be due to an optimistic UI update that is now out of sync with the server state. Reverting to previous state.",
+                        error
+                    )
+                    // Handle 400 Bad Request (e.g. trying to follow an already-followed user) as a non-error by reverting the optimistic UI change.
+                    _uiState.update { it.copy(isFollowing = target, isFollowLoading = false) }
+                } else {
+                    _uiState.update { it.copy(isFollowLoading = false) }
+                    emitSnackbar("Failed to ${if (target) "follow" else "unfollow"} user")
+                    Log.e(TAG, "Toggle follow failed for $userId", error)
+                }
             }
     }
 
@@ -139,7 +155,12 @@ class PublicProfileViewModel @Inject constructor(
         pagination = activityPagination,
         useCache = false,
         fetch = { limit, offset, _ ->
-            profileRepository.getActivity(userId = userId, limit = limit, offset = offset, useCache = false)
+            profileRepository.getActivity(
+                userId = userId,
+                limit = limit,
+                offset = offset,
+                useCache = false
+            )
         },
         getItems = { _uiState.value.activity.items },
         getSection = { _uiState.value.activity },
@@ -163,7 +184,12 @@ class PublicProfileViewModel @Inject constructor(
         pagination = libraryPagination,
         useCache = false,
         fetch = { limit, offset, _ ->
-            profileRepository.getUserCharts(userId = userId, limit = limit, offset = offset, useCache = false)
+            profileRepository.getUserCharts(
+                userId = userId,
+                limit = limit,
+                offset = offset,
+                useCache = false
+            )
         },
         getItems = { _uiState.value.library.items },
         getSection = { _uiState.value.library },
@@ -187,7 +213,12 @@ class PublicProfileViewModel @Inject constructor(
         pagination = collectionsPagination,
         useCache = false,
         fetch = { limit, offset, _ ->
-            collectionRepository.getUserCollections(userId = userId, limit = limit, offset = offset, useCache = false)
+            collectionRepository.getUserCollections(
+                userId = userId,
+                limit = limit,
+                offset = offset,
+                useCache = false
+            )
         },
         getItems = { _uiState.value.customCollections.items },
         getSection = { _uiState.value.customCollections },
