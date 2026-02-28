@@ -178,6 +178,11 @@ class ChartManager @Inject constructor(
         }
     }
 
+    suspend fun clearCache() {
+        memoryStore.clearAll()
+        updateFeedState(ContentState.Loading)
+    }
+
     private fun hydrateMissingInstalledCharts(
         entries: Map<String, InstalledContentEntry<ExternalContentMetadata>>
     ): List<Chart> {

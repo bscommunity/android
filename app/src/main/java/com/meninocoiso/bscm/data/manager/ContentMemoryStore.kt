@@ -1,6 +1,7 @@
 package com.meninocoiso.bscm.data.manager
 
 import com.meninocoiso.bscm.data.service.FeedOrchestrator
+import com.meninocoiso.bscm.domain.model.CatalogItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +14,7 @@ import javax.inject.Inject
  * Generic in-memory store that centralizes content and feed state management.
  * Delegates feed computation to [FeedOrchestrator] and applies updates atomically.
  */
-class ContentMemoryStore<T> @Inject constructor(
+class ContentMemoryStore<T : CatalogItem> @Inject constructor(
     private val feedOrchestrator: FeedOrchestrator<T>
 ) {
     private val _contentById = MutableStateFlow<Map<String, T>>(emptyMap())
@@ -118,4 +119,15 @@ class ContentMemoryStore<T> @Inject constructor(
     fun hasFeedItems(): Boolean = _feedOrderIds.value.isNotEmpty()
 
     fun currentFeedItems(): List<T> = _feedOrderIds.value.mapNotNull { _contentById.value[it] }
+
+    fun clearAll() {
+        // Keep installed charts in contentById, just clear the feed order
+        // so installed charts are preserved but remote feed is gone
+        val installedOnly = _contentById.value.filter { (_, chart) ->
+            chart.isInstalled == true
+        }
+        _contentById.value = installedOnly
+        _feedOrderIds.value = emptyList()
+        _searchResultIds.value = null
+    }
 }

@@ -57,9 +57,6 @@ class WorkshopViewModel @Inject constructor(
     val isExplicitAllowed: Flow<Boolean> = settingsRepository.settingsFlow
         .map { it.allowExplicitContent }
 
-    val isAuthenticated: Flow<Boolean> = cacheRepository.cacheFlow
-        .map { it.user != null }
-
     // Updated to use the new ChartManager flows
     val feedCharts: Flow<List<Chart>> = chartManager.feedCharts
     val searchCharts: Flow<List<Chart>> = chartManager.searchCharts
@@ -101,6 +98,8 @@ class WorkshopViewModel @Inject constructor(
 
     // Track current search query to know when we're in search mode
     private var currentSearchQuery by mutableStateOf("")
+    // Track previous auth state to detect transitions
+    private var wasAuthenticated: Boolean? = null // null = not yet observed
 
     init {
         // Observe ChartManager feed state (separate from cache state used by updates)
@@ -141,6 +140,29 @@ class WorkshopViewModel @Inject constructor(
         // Observe suggestions
         viewModelScope.launch {
             observeSuggestions()
+        }
+
+        // Observe auth state changes to invalidate data on login
+        viewModelScope.launch {
+            cacheRepository.cacheFlow
+                .map { it.user != null }
+                .distinctUntilChanged() // Only emit when auth state actually changes
+                .collect { isNowAuthenticated ->
+                    val previousState = wasAuthenticated
+                    wasAuthenticated = isNowAuthenticated
+
+                    // Only invalidate on LOGIN (false -> true), not on initial load or logout
+                    if (previousState == false && isNowAuthenticated) {
+                        Log.d(TAG, "User logged in, invalidating workshop data")
+                        invalidateAndRefresh()
+                    }
+
+                    // On logout, you may also want to refresh to strip personal data
+                    if (previousState == true && !isNowAuthenticated) {
+                        Log.d(TAG, "User logged out, invalidating workshop data")
+                        invalidateAndRefresh()
+                    }
+                }
         }
     }
 
@@ -424,6 +446,27 @@ class WorkshopViewModel @Inject constructor(
         viewModelScope.launch {
             searchHistory = searchHistory.filter { it != search }
             cacheRepository.setSearchHistory(searchHistory)
+        }
+    }
+
+    private fun invalidateAndRefresh() {
+        viewModelScope.launch {
+            // 1. Clear the cached charts so stale data isn't shown
+            chartManager.clearCache()
+
+            // 2. Reset all pagination state
+            currentFeedPage = 0
+            currentSearchPage = 0
+            isLoadingMore = false
+            hasMoreData = true
+
+            // 3. Clear any active search so we go back to the feed
+            if (currentSearchQuery.isNotEmpty()) {
+                clearSearch()
+            }
+
+            // 4. Re-fetch fresh data (which will now include auth headers)
+            fetchFeedCharts(true)
         }
     }
 }

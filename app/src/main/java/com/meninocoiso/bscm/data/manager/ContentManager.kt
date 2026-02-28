@@ -350,7 +350,7 @@ private fun <T> StateFlow<List<String>>.combineWith(
 private fun <T> StateFlow<List<String>?>.combineWithNullable(
     contentFlow: StateFlow<Map<String, T>>
 ): Flow<List<T>> = kotlinx.coroutines.flow.combine(this, contentFlow) { order, map ->
-    if (order == null) emptyList() else order.mapNotNull { map[it] }
+    order?.mapNotNull { map[it] } ?: emptyList()
 }
 
 private fun <T> StateFlow<Map<String, T>>.mapValuesList(predicate: (T) -> Boolean): Flow<List<T>> =
