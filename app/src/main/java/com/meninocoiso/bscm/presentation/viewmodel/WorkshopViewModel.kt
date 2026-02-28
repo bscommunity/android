@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -141,6 +142,19 @@ class WorkshopViewModel @Inject constructor(
         // Observe suggestions
         viewModelScope.launch {
             observeSuggestions()
+        }
+
+        // When the user logs in or out, the feed may contain stale personal data
+        // (isLiked, isBookmarked). Invalidate and re-fetch so fresh data is loaded.
+        viewModelScope.launch {
+            isAuthenticated
+                .distinctUntilChanged()
+                .drop(1) // skip the initial emission; the init block already loads on startup
+                .collect {
+                    Log.d(TAG, "Auth state changed – invalidating feed cache")
+                    chartManager.invalidateFeed()
+                    fetchFeedCharts(true)
+                }
         }
     }
 
