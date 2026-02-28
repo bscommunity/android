@@ -321,7 +321,7 @@ fun CollectionScreen(
                 contentList(items = items.items, onNavigateToDetails = onNavigateToDetails)
                 pagination(
                     isLoadingMore = items.isLoadingMore,
-                    message = if (items.hasMore) "Carregando..." else "Fim da coleção",
+                    message = if (items.hasMore) "Loading" else "No more items",
                 )
                 // TODO: Workaround to avoid bugging the scroll when the list has few items
                 item {

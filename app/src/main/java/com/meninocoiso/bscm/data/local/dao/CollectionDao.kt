@@ -34,7 +34,7 @@ interface CollectionDao {
     @Query("DELETE FROM collections WHERE id = :collectionId")
     suspend fun deleteCollectionById(collectionId: String)
 
-    @Query("UPDATE collections SET name = COALESCE(:name, name), is_public = COALESCE(:isPublic, is_public), slug = COALESCE(:slug, slug), updated_at = :updatedAt WHERE id = :collectionId")
+    @Query("UPDATE collections SET name = COALESCE(:name, name), is_public = COALESCE(:isPublic, is_public), slug = :slug, updated_at = :updatedAt WHERE id = :collectionId")
     suspend fun updateCollectionMetadata(
         collectionId: String,
         name: String?,
