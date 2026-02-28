@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.core.net.toUri
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -94,10 +95,41 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
         }
     }
 
+    fun navigateToDeepLink(navController: NavController, uri: Uri) {
+        val pathSegments = uri.pathSegments
+
+        when (uri.host) {
+            "chart" -> {
+                val contentId = pathSegments.getOrNull(0) ?: return
+                navController.navigate(DeepLinkChartDetails(contentId = contentId)) {
+                    launchSingleTop = true
+                    // KEY: make sure MainRoute stays at the bottom of the stack
+                    restoreState = true
+                }
+            }
+            "profile" -> {
+                val username = pathSegments.getOrNull(0) ?: return
+                navController.navigate(DeepLinkProfile(username = username)) {
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+            "collection" -> {
+                val username = pathSegments.getOrNull(0) ?: return
+                val slug = pathSegments.getOrNull(1) ?: return
+                navController.navigate(DeepLinkCollection(username = username, slug = slug)) {
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         intentFlow.collect { intent ->
             // Handle deep links while the app is running
-            navController.handleDeepLink(intent)
+            val uri = intent.data ?: return@collect
+            navigateToDeepLink(navController, uri)
         }
     }
 
@@ -115,6 +147,20 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
             ) {
+                composable<MainRoute> {
+                    BottomNav(
+                        this@SharedTransitionLayout,
+                        this,
+                        bottomNavController,
+                        navController,
+                        onNavigateToDetails,
+                        onNavigateToSettings,
+                        hasUpdate,
+                        user,
+                        startOAuth,
+                    )
+                }
+
                 // Deep link to chart details
                 composableWithTransitions<DeepLinkChartDetails>(
                     deepLinks = listOf(
@@ -231,20 +277,6 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
                         onReturn = {
                             navController.navigateUp()
                         }
-                    )
-                }
-
-                composable<MainRoute> {
-                    BottomNav(
-                        this@SharedTransitionLayout,
-                        this,
-                        bottomNavController,
-                        navController,
-                        onNavigateToDetails,
-                        onNavigateToSettings,
-                        hasUpdate,
-                        user,
-                        startOAuth,
                     )
                 }
             }

@@ -1,19 +1,15 @@
 package com.meninocoiso.bscm.presentation.screen.details
 
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.result.ContentResult
+import com.meninocoiso.bscm.presentation.ui.components.Loading
 import com.meninocoiso.bscm.presentation.ui.components.RouteUI
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.viewmodel.ChartDetailsViewModel
@@ -34,12 +30,7 @@ fun ChartDetailsRoute(
 
     RouteUI {
         when (state) {
-            is ContentResult.Loading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
+            is ContentResult.Loading -> { Loading() }
 
             is ContentResult.Success -> {
                 ChartDetailsScreen(
@@ -60,7 +51,6 @@ fun ChartDetailsRoute(
                     },
                     buttonLabel = stringResource(R.string.retry),
                 )
-
             }
         }
     }
