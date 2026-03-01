@@ -88,7 +88,7 @@ class PublicProfileViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isFollowing = profile.isFollowing == true,
-                            libraryCounts = profile.counts.library!!
+                            libraryCounts = profile.counts?.library!!
                         )
                     }
                     Log.d(TAG, "Profile loaded: $username")

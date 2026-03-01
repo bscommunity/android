@@ -8,7 +8,6 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.meninocoiso.bscm.data.manager.SecureTokenManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
-import com.meninocoiso.bscm.data.remote.dto.user.UserProfileCounts
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.auth.AuthRequest
@@ -73,10 +72,7 @@ class AuthRepository @Inject constructor(
 
             // Cache user
             profileCacheRepository.cacheProfile(
-                profile = UserProfileResponse(
-                    user = user.toSimplifiedUser(),
-                    counts = UserProfileCounts()
-                )
+                profile = UserProfileResponse(user = user.toSimplifiedUser())
             )
             Log.d(TAG, "authenticateWithDiscord: Authentication completed successfully")
             emit(Result.success(user))
