@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.CatalogItem
@@ -20,6 +20,7 @@ import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 fun ProfileLikes(
     modifier: Modifier = Modifier,
     items: List<CatalogItem>,
+    counts: Triple<Int, Int, Int>,
     state: ContentState,
     isRefreshing: Boolean,
     onFetch: (reset: Boolean) -> Unit,
@@ -58,9 +59,9 @@ fun ProfileLikes(
             item {
                 SegmentedButtonUI(
                     options = listOf(
-                        stringResource(R.string.charts),
-                        stringResource(R.string.tour_passes),
-                        stringResource(R.string.themes)
+                        stringResource(R.string.charts) + " (${counts.first})",
+                        stringResource(R.string.tour_passes) + " (${counts.second})",
+                        stringResource(R.string.themes) + " (${counts.third})"
                     ),
                     disabled = true,
                     onSelected = {}

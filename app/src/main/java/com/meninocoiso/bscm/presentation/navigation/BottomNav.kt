@@ -107,7 +107,7 @@ fun BottomNav(
     onNavigateToDetails: OnNavigateToDetails,
     onNavigateToSettings: () -> Unit,
     hasUpdate: Boolean = false,
-    user: User?,
+    user: SimplifiedUser?,
     startOAuth: (Uri) -> Unit,
 ) {
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()

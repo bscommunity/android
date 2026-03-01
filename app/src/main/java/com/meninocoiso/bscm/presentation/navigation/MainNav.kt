@@ -50,7 +50,7 @@ object MainRoute
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFlow: Flow<Intent>) {
+fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean, intentFlow: Flow<Intent>) {
     val navController = rememberNavController()
     val bottomNavController = rememberNavController()
 
@@ -189,7 +189,7 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
                     val profileRoute: DeepLinkProfile = backStackEntry.toRoute()
                     ProfileRoute(
                         username = profileRoute.username,
-                        user = if (user?.username == profileRoute.username) user.toSimplifiedUser() else null,
+                        user = if (user?.username == profileRoute.username) user else null,
                         isLoggedIn = user != null,
                         onNavigateToDetails = { chart ->
                             onNavigateToDetails(chart)

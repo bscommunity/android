@@ -14,12 +14,12 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
-import com.meninocoiso.bscm.R
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
@@ -37,7 +37,9 @@ import kotlinx.coroutines.launch
 fun ProfileCollections(
     modifier: Modifier = Modifier,
     bookmarks: PagedSection<CatalogItem>,
+    bookmarksCounts: Triple<Int, Int, Int>,
     customCollections: PagedSection<Collection>,
+    collectionsCount: Int,
     isRefreshing: Boolean = false,
     onFetch: (reset: Boolean) -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
@@ -61,20 +63,14 @@ fun ProfileCollections(
 
     val horizontalPagerState = rememberPagerState { tabItems.size }
 
-    val bookmarksLoaded = bookmarks.state == ContentState.Success
-    val collectionsLoaded = customCollections.state == ContentState.Success
+    // val bookmarksLoaded = bookmarks.state == ContentState.Success
+    // val collectionsLoaded = customCollections.state == ContentState.Success
 
     Column(modifier) {
         CatalogFilters(
-            // TODO: Get these counts from the API instead of estimating them here,
-            //  since we might not be fetching all items at once
-            itemsAmount = Triple(
-                if (bookmarksLoaded) bookmarks.items.count { it is Chart } else 0,
-                if (bookmarksLoaded) bookmarks.items.count { it is TourPass } else 0,
-                if (bookmarksLoaded) bookmarks.items.count { it is Theme } else 0
-            ),
+            itemsAmount = bookmarksCounts,
             showCollection = true,
-            collectionsAmount = if (collectionsLoaded) customCollections.items.size else null,
+            collectionsAmount = collectionsCount,
             currentSelected = horizontalPagerState.currentPage,
             onFilterSelected = { index ->
                 coroutineScope.launch {

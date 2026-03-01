@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.domain.model.User
+import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.presentation.navigation.OnSnackbar
 import com.meninocoiso.bscm.presentation.navigation.show
 import com.meninocoiso.bscm.presentation.screen.profile.OnNavigateToProfile
@@ -48,7 +48,7 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
-    user: User?,
+    user: SimplifiedUser?,
     startOAuth: (Uri) -> Unit,
     onFabStateChange: (Boolean) -> Unit,
     onSnackbar: OnSnackbar,

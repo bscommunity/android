@@ -3,13 +3,11 @@ package com.meninocoiso.bscm.presentation.viewmodel.profile
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.repository.CollectionRepository
 import com.meninocoiso.bscm.domain.repository.MeRepository
-import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.domain.result.UiText
 import com.meninocoiso.bscm.presentation.viewmodel.PaginationState
@@ -56,8 +54,9 @@ class UserProfileViewModel @Inject constructor(
     // Profile header
     // -------------------------------------------------------------------------
 
-    private val _profile = MutableStateFlow<ContentResult<UserProfileResponse>>(ContentResult.Loading)
-    val profile: StateFlow<ContentResult<UserProfileResponse>> = _profile.asStateFlow()
+    /*private val _profile =
+        MutableStateFlow<ContentResult<UserProfileCounts>>(ContentResult.Loading)
+    val profile: StateFlow<ContentResult<UserProfileCounts>> = _profile.asStateFlow()*/
 
     // -------------------------------------------------------------------------
     // UI state
@@ -78,6 +77,11 @@ class UserProfileViewModel @Inject constructor(
     data class UserProfileUiState(
         val likes: PagedSection<CatalogItem> = PagedSection(),
         val collections: CollectionSectionState = CollectionSectionState(),
+        val likesCounts: Triple<Int, Int, Int> = Triple(0, 0, 0),
+        val bookmarksCounts: Triple<Int, Int, Int> = Triple(0, 0, 0),
+        val collectionsCount: Int = 0,
+        val followersCount: Int = 0,
+        val followingCount: Int = 0,
     )
 
     private val _uiState = MutableStateFlow(UserProfileUiState())
@@ -87,9 +91,9 @@ class UserProfileViewModel @Inject constructor(
     // Pagination cursors (mutable bookmarks — not part of UI state)
     // -------------------------------------------------------------------------
 
-    private val likesPagination        = PaginationState(pageSize = 20)
-    private val bookmarksPagination    = PaginationState(pageSize = 20)
-    private val collectionsPagination  = PaginationState(pageSize = 20)
+    private val likesPagination = PaginationState(pageSize = 20)
+    private val bookmarksPagination = PaginationState(pageSize = 20)
+    private val collectionsPagination = PaginationState(pageSize = 20)
 
     // -------------------------------------------------------------------------
     // Observer jobs — kept so we can cancel/restart on resetAll()
@@ -102,16 +106,55 @@ class UserProfileViewModel @Inject constructor(
     // Public API
     // -------------------------------------------------------------------------
 
-    fun loadProfile() {
-        resetAll()
+    /*fun loadProfile() {
+        // resetAll()
         viewModelScope.launch {
             meRepository.getProfile()
-                    .onSuccess { _profile.value = ContentResult.Success(it) }
-                    .onFailure { err ->
-                        _profile.value = ContentResult.Error(
-                            err.message?.let { UiText.Plain(it) } ?: UiText.Res(R.string.failed_to_load_profile)
+                .onSuccess {
+                    _profile.value = ContentResult.Success(
+                        UserProfileCounts(
+                            likes = it.counts.likes ?: Triple(0, 0, 0),
+                            bookmarks = it.counts.bookmarks ?: Triple(0, 0, 0),
+                            collections = it.counts.collections ?: 0,
+                            followers = it.counts.followers ?: 0,
+                            following = it.counts.following ?: 0,
+                        )
+                    )
+                }
+                .onFailure { err ->
+                    _profile.value = ContentResult.Error(
+                        err.message?.let { UiText.Plain(it) }
+                            ?: UiText.Res(R.string.failed_to_load_profile)
+                    )
+                }
+        }
+    }*/
+
+    init {
+        loadProfile()
+    }
+
+    fun loadProfile() {
+        // resetAll()
+        viewModelScope.launch {
+            meRepository.getProfile(false)
+                .onSuccess { profile ->
+                    val counts = profile.counts
+                    Log.d(TAG, "Profile loaded: $profile")
+                    _uiState.update { state ->
+                        state.copy(
+                            likesCounts = counts.likes!!,
+                            bookmarksCounts = counts.bookmarks!!,
+                            collectionsCount = counts.collections!!,
+                            followersCount = counts.followers!!,
+                            followingCount = counts.following!!,
                         )
                     }
+                }
+                .onFailure { err ->
+                    Log.e(TAG, "Failed to load profile", err)
+                    emitSnackbar(UiText.Res(R.string.failed_to_load_profile))
+                }
         }
     }
 
@@ -128,6 +171,7 @@ class UserProfileViewModel @Inject constructor(
                 fetchUserLikes()
                 startLikesObserver()
             }
+
             1 -> if (_uiState.value.collections.bookmarks.items.isEmpty()) {
                 fetchUserCollections()
                 startBookmarksObserver()
@@ -161,8 +205,8 @@ class UserProfileViewModel @Inject constructor(
      * This cuts wall-clock time roughly in half compared to sequential fetches.
      */
     fun fetchUserCollections() = viewModelScope.launch {
-        val bookmarksJob    = fetchBookmarks()
-        val collectionsJob  = fetchCustomCollections()
+        val bookmarksJob = fetchBookmarks()
+        val collectionsJob = fetchCustomCollections()
         bookmarksJob.join()
         collectionsJob.join()
     }
@@ -172,9 +216,11 @@ class UserProfileViewModel @Inject constructor(
         var anyFailed = false
 
         try {
-            val b = fetchBookmarks(reset = true, useCache = false,
+            val b = fetchBookmarks(
+                reset = true, useCache = false,
                 onFailureWithData = { anyFailed = true })
-            val c = fetchCustomCollections(reset = true, useCache = false,
+            val c = fetchCustomCollections(
+                reset = true, useCache = false,
                 onFailureWithData = { anyFailed = true })
             b.join(); c.join()
             if (anyFailed) emitSnackbar(UiText.Res(R.string.failed_to_refresh_collections))
@@ -317,7 +363,11 @@ class UserProfileViewModel @Inject constructor(
         useCache = useCache,
         showSkeletonWhen = { _uiState.value.collections.customCollections.items.isEmpty() },
         fetch = { limit, offset, cache ->
-            collectionRepository.getUserCollections(limit = limit, offset = offset, useCache = cache)
+            collectionRepository.getUserCollections(
+                limit = limit,
+                offset = offset,
+                useCache = cache
+            )
         },
         getItems = {
             _uiState.value.collections.customCollections.items
@@ -353,11 +403,11 @@ class UserProfileViewModel @Inject constructor(
 
         return existing?.copy()
             ?: Collection(
-                id        = "bookmarks",
-                userId    = (_profile.value as? ContentResult.Success)?.data?.user?.id ?: "unknown",
-                kind      = CollectionKind.BOOKMARKS,
-                name      = "Bookmarks",
-                isPublic  = false,
+                id = "bookmarks",
+                userId = "user",
+                kind = CollectionKind.BOOKMARKS,
+                name = "Bookmarks",
+                isPublic = false,
                 createdAt = LocalDateTime.now(),
                 updatedAt = LocalDateTime.now(),
             )
@@ -427,7 +477,6 @@ class UserProfileViewModel @Inject constructor(
         likesPagination.reset()
         bookmarksPagination.reset()
         collectionsPagination.reset()
-        _profile.value = ContentResult.Loading
         _uiState.value = UserProfileUiState()
     }
 }

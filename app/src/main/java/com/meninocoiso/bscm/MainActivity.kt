@@ -26,7 +26,6 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.domain.enums.ThemePreference
 import com.meninocoiso.bscm.domain.state.MainActivityState
 import com.meninocoiso.bscm.domain.state.MainActivityState.Loading
@@ -42,14 +41,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
-
-    @Inject
-    lateinit var cacheRepository: CacheRepository
-
     private lateinit var authTabLauncher: ActivityResultLauncher<Intent>
     private lateinit var fallbackLauncher: ActivityResultLauncher<Intent>
 
@@ -269,7 +263,7 @@ class MainActivity : AppCompatActivity() {
 
         // Validate state token to protect against spurious redirects
         lifecycleScope.launch {
-            val pendingState = cacheRepository.getPendingOAuthState()
+            val pendingState = authViewModel.getPendingOAuthState()
             val incomingState = uri.getQueryParameter("state")
 
             if (!pendingState.isNullOrBlank()) {
@@ -278,7 +272,7 @@ class MainActivity : AppCompatActivity() {
                     println("OAuth state mismatch: expected=$pendingState incoming=$incomingState")
                     // Treat as error
                     authViewModel.setError("Unexpected OAuth redirect")
-                    cacheRepository.clearPendingOAuthState()
+                    authViewModel.clearPendingOAuthState()
                     return@launch
                 }
             }
@@ -303,7 +297,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             // clear persisted state after handling
-            cacheRepository.clearPendingOAuthState()
+            authViewModel.clearPendingOAuthState()
         }
     }
 

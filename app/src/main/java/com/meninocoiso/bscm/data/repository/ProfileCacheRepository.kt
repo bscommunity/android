@@ -4,11 +4,14 @@ import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
@@ -55,6 +58,27 @@ class ProfileCacheRepository @Inject constructor(
             preferences[profileTimestampKey(userId)] = System.currentTimeMillis()
         }
     }
+
+    val ownerProfileFlow = dataStore.data
+        .catch { exception ->
+            when (exception) {
+                is Exception -> {
+                    Log.e(TAG, "Error reading owner profile cache", exception)
+                    emit(emptyPreferences())
+                }
+
+                else -> throw exception
+            }
+        }
+        .map { preferences ->
+            val encoded = preferences[profileKey(OWNER_ID)] ?: return@map null
+            try {
+                json.decodeFromString(UserProfileResponse.serializer(), encoded)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error decoding cached owner profile", e)
+                null
+            }
+        }
 
     // -------------------- Profile Header --------------------
     suspend fun cacheProfile(username: String, profile: UserProfileResponse) {

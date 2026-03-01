@@ -64,6 +64,7 @@ import com.meninocoiso.bscm.presentation.ui.components.profile.CatalogFilters
 import com.meninocoiso.bscm.presentation.ui.components.profile.OnScrollLoadMore
 import com.meninocoiso.bscm.presentation.ui.components.profile.contentList
 import com.meninocoiso.bscm.presentation.ui.components.profile.pagination
+import com.meninocoiso.bscm.presentation.ui.utils.resolve
 import com.meninocoiso.bscm.presentation.viewmodel.CollectionViewModel
 import com.meninocoiso.bscm.util.LinkingUtils
 import kotlinx.coroutines.launch
@@ -107,7 +108,7 @@ fun CollectionScreen(
 
     // Wire snackbar events from the ViewModel
     LaunchedEffect(viewModel) {
-        viewModel.snackbarEvents.collect { snackbarHostState.showSnackbar(it) }
+        viewModel.snackbarEvents.collect { snackbarHostState.showSnackbar(it.resolve(context)) }
     }
 
     // Initial load — resets automatically when collection.id changes

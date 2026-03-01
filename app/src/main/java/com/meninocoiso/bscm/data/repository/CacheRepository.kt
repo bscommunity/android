@@ -7,7 +7,6 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.meninocoiso.bscm.domain.enums.SortOption
-import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.internal.Cache
 import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
 import kotlinx.coroutines.flow.Flow
@@ -28,10 +27,7 @@ class CacheRepository @Inject constructor(
     companion object CacheKeys {
         val SEARCH_HISTORY = stringPreferencesKey("search_history")
         val WORKSHOP_SORT = stringPreferencesKey("workshop_sort")
-        val USER_JSON = stringPreferencesKey("user_json")
         val CONTRIBUTORS_JSON = stringPreferencesKey("contributors_json")
-        // OAuth pending state token (used to validate incoming OAuth redirect)
-        val OAUTH_STATE = stringPreferencesKey("oauth_state")
     }
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -69,27 +65,6 @@ class CacheRepository @Inject constructor(
         dataStore.edit { it[WORKSHOP_SORT] = sort }
     }
 
-    // -------------------- User cache -------------------------
-    suspend fun setUser(user: User) {
-        val encoded = json.encodeToString(User.serializer(), user)
-        dataStore.edit { it[USER_JSON] = encoded }
-    }
-
-    suspend fun getUser(): User? {
-        val encoded = dataStore.data.first()[USER_JSON] ?: return null
-        if (encoded.isBlank()) return null
-        return try {
-            json.decodeFromString(User.serializer(), encoded)
-        } catch (e: SerializationException) {
-            Log.e("CacheRepository", "Falha ao decodificar usuário cacheado", e)
-            null
-        }
-    }
-
-    suspend fun clearUser() {
-        dataStore.edit { it.remove(USER_JSON) }
-    }
-
     suspend fun setContributors(contributors: List<ContributionCategory>) {
         val jsonStr =
             json.encodeToString(ListSerializer(ContributionCategory.serializer()), contributors)
@@ -107,34 +82,10 @@ class CacheRepository @Inject constructor(
         } else emptyList()
     }
 
-    // -------------------- OAuth pending state -----------------
-    suspend fun setPendingOAuthState(state: String) {
-        dataStore.edit { it[OAUTH_STATE] = state }
-    }
-
-    suspend fun getPendingOAuthState(): String? {
-        return try {
-            val prefs = dataStore.data.first()
-            prefs[OAUTH_STATE]
-        } catch (t: Throwable) {
-            null
-        }
-    }
-
-    suspend fun clearPendingOAuthState() {
-        dataStore.edit { it.remove(OAUTH_STATE) }
-    }
 
     private fun mapCache(preferences: Preferences): Cache = Cache(
         searchHistory = preferences[SEARCH_HISTORY]?.split("|") ?: emptyList(),
         latestWorkshopSort = preferences[WORKSHOP_SORT]?.let { SortOption.valueOf(it) }
             ?: Cache().latestWorkshopSort,
-        user = preferences[USER_JSON]?.let { encoded ->
-            try {
-                json.decodeFromString(User.serializer(), encoded)
-            } catch (_: Exception) {
-                null
-            }
-        }
     )
 }

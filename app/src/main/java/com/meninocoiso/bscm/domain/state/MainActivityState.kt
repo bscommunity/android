@@ -1,6 +1,6 @@
 package com.meninocoiso.bscm.domain.state
 
-import com.meninocoiso.bscm.domain.model.User
+import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.model.internal.Settings
 
 sealed interface MainActivityState {
@@ -8,6 +8,6 @@ sealed interface MainActivityState {
     data class Success(
         val settings: Settings,
         val latestUpdateVersion: String,
-        val user: User? = null,
+        val user: SimplifiedUser? = null,
     ) : MainActivityState
 }

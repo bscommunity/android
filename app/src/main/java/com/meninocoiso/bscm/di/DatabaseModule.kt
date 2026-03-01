@@ -70,7 +70,6 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideChartContentManager(
-        @ApplicationContext context: Context,
         remote: ContentFeedRepository<Chart, SortOption, ChartQuery>,
         local: ContentLocalRepository<Chart, SortOption, ChartQuery>,
         remoteItemRepository: ChartRemoteRepository,
@@ -81,7 +80,6 @@ object DatabaseModule {
         memoryStore: ContentMemoryStore<Chart>,
         @ApplicationScope coroutineScope: CoroutineScope
     ): ContentManager<Chart, SortOption, ChartQuery> = ContentManager(
-        context = context,
         remoteRepository = remote,
         localRepository = local,
         remoteItemRepository = remoteItemRepository,

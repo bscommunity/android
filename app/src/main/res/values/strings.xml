@@ -445,7 +445,6 @@
     <string name="failed_to_follow_user">Failed to follow user</string>
     <string name="failed_to_unfollow_user">Failed to unfollow user</string>
     <string name="failed_to_load_more">Failed to load more: %1$s</string>
-    <string name="failed_to_load_collections">Failed to load collections</string>
     <string name="failed_to_load_items">Failed to load items</string>
     <string name="failed_to_update_collection">Failed to update collection</string>
     <string name="collection_data_incomplete_missing_owner">Collection data is incomplete: missing owner</string>

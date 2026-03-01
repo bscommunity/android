@@ -30,6 +30,7 @@ import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileHeaderIden
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileLikes
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileSectionsLayout
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileTabItem
+import com.meninocoiso.bscm.presentation.ui.utils.resolve
 import com.meninocoiso.bscm.presentation.viewmodel.profile.UserProfileViewModel
 import com.meninocoiso.bscm.util.LinkingUtils
 import kotlinx.serialization.Serializable
@@ -62,6 +63,7 @@ fun ProfileScreen(
     )
 
     val uiState by profileViewModel.uiState.collectAsStateWithLifecycle()
+    // val profile by profileViewModel.profile.collectAsStateWithLifecycle()
 
     val likesListState = rememberLazyListState()
     val bookmarksListState = rememberLazyListState()
@@ -70,7 +72,7 @@ fun ProfileScreen(
 
     LaunchedEffect(profileViewModel) {
         profileViewModel.snackbarEvents.collect { message ->
-            snackbarHostState.showSnackbar(message)
+            snackbarHostState.showSnackbar(message.resolve(context))
         }
     }
 
@@ -105,6 +107,8 @@ fun ProfileScreen(
             0 -> {
                 ProfileLikes(
                     items = uiState.likes.items,
+                    // counts = (profile as ContentResult.Success).data.likes!!,
+                    counts = uiState.likesCounts,
                     state = uiState.likes.state,
                     isRefreshing = uiState.likes.isRefreshing,
                     onFetch = { profileViewModel.refreshUserLikes() },
@@ -121,7 +125,9 @@ fun ProfileScreen(
                 ProfileCollections(
                     modifier = Modifier.fillMaxSize(),
                     bookmarks = uiState.collections.bookmarks,
+                    bookmarksCounts = uiState.bookmarksCounts,
                     customCollections = uiState.collections.customCollections,
+                    collectionsCount = uiState.collectionsCount,
                     isRefreshing = uiState.collections.isRefreshing,
                     onFetch = { profileViewModel.refreshUserCollections() },
                     onNavigateToDetails = onNavigateToDetails,

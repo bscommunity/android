@@ -18,8 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.meninocoiso.bscm.domain.model.User
-import com.meninocoiso.bscm.domain.model.toSimplifiedUser
+import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.presentation.screen.profile.OnNavigateToProfile
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileIndicator
@@ -29,7 +28,7 @@ import com.meninocoiso.bscm.presentation.ui.modifiers.roundedPolygonShape
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun AnimatedAccountHeader(
-    user: User,
+    user: SimplifiedUser,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
     onNavigateToProfile: OnNavigateToProfile
@@ -55,7 +54,7 @@ fun AnimatedAccountHeader(
                     .roundedPolygonClip()
                     .clickable(
                         onClick = {
-                            onNavigateToProfile(user.toSimplifiedUser())
+                            onNavigateToProfile(user)
                         },
                         indication = ripple(
                             bounded = true,

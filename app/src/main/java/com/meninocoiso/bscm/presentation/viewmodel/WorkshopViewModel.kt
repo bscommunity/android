@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.repository.CacheRepository
+import com.meninocoiso.bscm.data.repository.ProfileCacheRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
@@ -51,6 +52,7 @@ private const val SUGGESTION_DEBOUNCE_MILLIS = 600L
 class WorkshopViewModel @Inject constructor(
     private val chartManager: ChartManager,
     private val cacheRepository: CacheRepository,
+    private val profileCacheRepository: ProfileCacheRepository,
     private val settingsRepository: SettingsRepository,
     @param:ApplicationContext private val context: Context
 ) : ViewModel() {
@@ -144,8 +146,8 @@ class WorkshopViewModel @Inject constructor(
 
         // Observe auth state changes to invalidate data on login
         viewModelScope.launch {
-            cacheRepository.cacheFlow
-                .map { it.user != null }
+            profileCacheRepository.ownerProfileFlow
+                .map { it?.user != null }
                 .distinctUntilChanged() // Only emit when auth state actually changes
                 .collect { isNowAuthenticated ->
                     val previousState = wasAuthenticated
@@ -157,7 +159,7 @@ class WorkshopViewModel @Inject constructor(
                         invalidateAndRefresh()
                     }
 
-                    // On logout, you may also want to refresh to strip personal data
+                    // On logout, we want to refresh to strip personal data
                     if (previousState == true && !isNowAuthenticated) {
                         Log.d(TAG, "User logged out, invalidating workshop data")
                         invalidateAndRefresh()

@@ -33,10 +33,6 @@ class AuthViewModel @Inject constructor(
 
     val isLoggedInFlow = authRepository.isLoggedInFlow()
 
-    suspend fun getCurrentUserId(): String? {
-        return authRepository.getCurrentUserId()
-    }
-
     private val _snackbarEvents = MutableSharedFlow<UiText>()
     val snackbarEvents: SharedFlow<UiText> = _snackbarEvents.shareIn(
         viewModelScope,
@@ -93,6 +89,10 @@ class AuthViewModel @Inject constructor(
             authRepository.clearPendingOAuthState()
         }
     }
+
+    suspend fun getPendingOAuthState(): String? = authRepository.getPendingOAuthState()
+
+    suspend fun clearPendingOAuthState() = authRepository.clearPendingOAuthState()
 
     fun handleAuthCallback(code: String) {
         if (code.isBlank()) {

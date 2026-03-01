@@ -22,7 +22,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.domain.model.User
+import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.presentation.screen.profile.OnNavigateToProfile
 import com.meninocoiso.bscm.presentation.ui.components.SwitchUI
 import com.meninocoiso.bscm.presentation.ui.components.settings.AnimatedAccountHeader
@@ -34,7 +34,7 @@ import com.meninocoiso.bscm.presentation.ui.components.settings.settingsCard
 
 @Composable
 fun AccountSection(
-    user: User?,
+    user: SimplifiedUser?,
     isLoading: Boolean,
     login: () -> Unit,
     logout: () -> Unit,

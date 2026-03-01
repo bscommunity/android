@@ -12,8 +12,10 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.meninocoiso.bscm.BuildConfig
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.manager.DownloadManager
 import com.meninocoiso.bscm.domain.model.internal.UpdateCache
+import com.meninocoiso.bscm.domain.result.UiText
 import com.meninocoiso.bscm.domain.state.AppUpdateState
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -66,6 +68,7 @@ class AppUpdateRepository @Inject constructor(
                     Log.e("SettingsRepository", "Error reading preferences", exception)
                     emit(emptyPreferences())
                 }
+
                 else -> throw exception
             }
         }
@@ -97,14 +100,14 @@ class AppUpdateRepository @Inject constructor(
             latestCleanedVersion = preferences[LATEST_CLEANED_VERSION]?.toIntOrNull()
                 ?: UpdateCache().latestCleanedVersion,
         )
-    
+
     /* Helper Functions */
-    
+
     fun hasUpdate(fetchedVersion: String): Boolean {
         // Log.d(TAG, "Fetched version: $fetchedVersion, Current version: v$currentVersion")
         return fetchedVersion > "v$currentVersion"
     }
-    
+
     /**
      * Helper function to compare versions and update cacheState
      */
@@ -123,16 +126,16 @@ class AppUpdateRepository @Inject constructor(
             AppUpdateState.UpToDate
         }
     }
-    
+
     /**
      * Fetches the latest version from GitHub releases API
      * @return Flow emitting the latest version string
      */
     fun fetchLatestVersion(): Flow<String> = flow {
         val url = "https://api.github.com/repos/bscommunity/android/releases/latest"
-        
+
         Log.d(TAG, "Fetching latest version from $url")
-        
+
         val request = Request.Builder()
             .url(url)
             .header("Accept", "application/vnd.github.v3+json")
@@ -174,8 +177,9 @@ class AppUpdateRepository @Inject constructor(
         versionName: String,
         onProgress: (AppUpdateState) -> Unit
     ): File = withContext(Dispatchers.IO) {
-        val downloadUrl = "https://github.com/bscommunity/android/releases/download/${versionName}/app-release.apk"
-        
+        val downloadUrl =
+            "https://github.com/bscommunity/android/releases/download/${versionName}/app-release.apk"
+
         try {
             onProgress(AppUpdateState.Downloading(0f))
 
@@ -193,7 +197,11 @@ class AppUpdateRepository @Inject constructor(
             return@withContext apkFile
         } catch (e: Exception) {
             Log.e(TAG, "APK download failed", e)
-            onProgress(AppUpdateState.Error(e.message ?: "Unknown error"))
+            onProgress(
+                AppUpdateState.Error(
+                e.message?.let { UiText.Plain(it) }
+                    ?: UiText.Res(R.string.unknown_error)
+            ))
             throw e
         }
     }
