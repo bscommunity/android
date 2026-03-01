@@ -13,6 +13,7 @@ import com.meninocoiso.bscm.presentation.ui.components.Loading
 import com.meninocoiso.bscm.presentation.ui.components.RouteUI
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.viewmodel.ChartDetailsViewModel
+import com.meninocoiso.bscm.presentation.ui.utils.asString
 
 @Composable
 fun ChartDetailsRoute(
@@ -43,8 +44,7 @@ fun ChartDetailsRoute(
             is ContentResult.Error -> {
                 StatusMessageUI(
                     title = stringResource(R.string.failed_to_load_chart_details),
-                    message = (state as ContentResult.Error).message
-                        ?: stringResource(R.string.failed_to_load_chart_details_description),
+                    message = (state as ContentResult.Error).message.asString(),
                     icon = R.drawable.rounded_error_24,
                     onClick = {
                         viewModel.fetchChartById(contentId)

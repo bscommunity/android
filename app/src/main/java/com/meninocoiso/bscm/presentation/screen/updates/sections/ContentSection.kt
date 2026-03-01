@@ -147,8 +147,8 @@ internal fun ContentSection(
     if (showLocalItemDialog.value) {
         ConfirmationDialog(
             onDismiss = { showLocalItemDialog.value = false },
-            title = "Local item",
-            message = "This chart was added manually and is not managed by the app.\nYou'll need to update or remove it manually."
+            title = stringResource(R.string.local_item_title),
+            message = stringResource(R.string.local_item_message)
         )
     }
 }

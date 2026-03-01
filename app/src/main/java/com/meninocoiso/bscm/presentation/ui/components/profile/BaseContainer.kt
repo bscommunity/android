@@ -98,24 +98,26 @@ private fun PaginationLoadingIndicator(
 
 fun LazyListScope.pagination(
     isLoadingMore: Boolean,
-    message: String
+    showMessage: Boolean?
 ) {
     item {
+        val message = stringResource(R.string.end_of_list)
         PaginationLoadingIndicator(
             isLoadingMore = isLoadingMore,
-            message = message
+            message = if (showMessage == true) message else ""
         )
     }
 }
 
 fun LazyGridScope.pagination(
     isLoadingMore: Boolean,
-    message: String
+    showMessage: Boolean?
 ) {
     item(span = { GridItemSpan(maxLineSpan) }) {
+        val message = stringResource(R.string.end_of_list)
         PaginationLoadingIndicator(
             isLoadingMore = isLoadingMore,
-            message = message
+            message = if (showMessage == true) message else ""
         )
     }
 }

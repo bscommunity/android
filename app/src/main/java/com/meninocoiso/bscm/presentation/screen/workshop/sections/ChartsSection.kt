@@ -37,6 +37,7 @@ import com.meninocoiso.bscm.presentation.ui.components.layout.SectionWrapper
 import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
 import com.meninocoiso.bscm.presentation.ui.components.workshop.WorkshopChips
 import com.meninocoiso.bscm.presentation.ui.modifiers.fabScrollObserver
+import com.meninocoiso.bscm.presentation.ui.utils.resolve
 import com.meninocoiso.bscm.presentation.viewmodel.WorkshopViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,7 +74,7 @@ internal fun ChartsSection(
             when (event) {
                 is ContentEvent.Error -> {
                     println("Triggering snackbar: ${event.message}")
-                    onSnackbar.show(event.message)
+                    onSnackbar.show(event.message.resolve(context))
                 }
             }
         }
@@ -81,6 +82,9 @@ internal fun ChartsSection(
 
     val isExplicitAllowed =
         viewModel.isExplicitAllowed.collectAsStateWithLifecycle(initialValue = false)
+
+    val explicitContentDisabledMsg = stringResource(R.string.explicit_content_disabled)
+    val explicitContentDisabledAction = stringResource(R.string.go_to_settings)
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -151,8 +155,8 @@ internal fun ChartsSection(
                             isDisabled = chart.latestVersion.isExplicit && !isExplicitAllowed.value,
                             onDisabled = {
                                 onSnackbar.show(
-                                    message = context.getString(R.string.explicit_content_disabled),
-                                    actionLabel = "Go to Settings",
+                                    message = explicitContentDisabledMsg,
+                                    actionLabel = explicitContentDisabledAction,
                                     onAction = {
                                         onNavigateToSettings()
                                     })

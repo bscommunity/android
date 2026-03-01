@@ -1,6 +1,8 @@
 package com.meninocoiso.bscm.presentation.ui.components.profile
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.ui.components.ContentFilterOption
 import com.meninocoiso.bscm.presentation.ui.components.ContentFilterUI
 
@@ -15,17 +17,17 @@ fun CatalogFilters(
     val options = mutableListOf(
         ContentFilterOption(
             id = 0,
-            title = "Charts",
+            title = stringResource(R.string.charts),
             count = itemsAmount.first,
         ),
         ContentFilterOption(
             id = 1,
-            title = "Tour Passes",
+            title = stringResource(R.string.tour_passes),
             count = itemsAmount.second,
         ),
         ContentFilterOption(
             id = 2,
-            title = "Themes",
+            title = stringResource(R.string.themes),
             count = itemsAmount.third,
         )
     )
@@ -35,9 +37,9 @@ fun CatalogFilters(
     if (showCollection) {
         options.add(
             options.size,
-            ContentFilterOption(
+                ContentFilterOption(
                 id = 3,
-                title = "Collections",
+                title = stringResource(R.string.collections),
                 count = collectionsAmount ?: 0,
             )
         )

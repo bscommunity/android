@@ -9,6 +9,8 @@ import com.meninocoiso.bscm.domain.model.SimplifiedCollection
 import com.meninocoiso.bscm.domain.model.toSimplifiedCollection
 import com.meninocoiso.bscm.domain.repository.CollectionRepository
 import com.meninocoiso.bscm.domain.result.ContentResult
+import com.meninocoiso.bscm.domain.result.UiText
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.viewmodel.profile.BaseProfileViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedSection
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -149,7 +151,7 @@ class CollectionViewModel @Inject constructor(
                     if (collection.owner == null) {
                         Log.e(TAG, "Collection $username/$slug has no owner in response")
                         _collectionResult.value =
-                            ContentResult.Error("Collection data is incomplete: missing owner")
+                            ContentResult.Error(UiText.DynamicString("Collection data is incomplete: missing owner"))
                         return@onSuccess
                     }
                     _collectionResult.value =
@@ -158,7 +160,10 @@ class CollectionViewModel @Inject constructor(
                 .onFailure { e ->
                     Log.e(TAG, "Failed to fetch collection $username/$slug", e)
                     _collectionResult.value =
-                        ContentResult.Error(e.message ?: "Unknown error", e)
+                        ContentResult.Error(
+                            e.message?.let { UiText.DynamicString(it) } ?: UiText.StringResource(R.string.unknown_error),
+                            e
+                        )
                 }
         }
     }

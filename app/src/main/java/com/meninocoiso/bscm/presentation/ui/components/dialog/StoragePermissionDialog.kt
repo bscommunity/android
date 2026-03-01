@@ -46,7 +46,7 @@ fun StoragePermissionDialog(
                     R.drawable.rounded_folder_limited_24
                 ),
                 modifier = Modifier.size(24.dp),
-                contentDescription = "Storage permission icon"
+                contentDescription = null
             )
         },
         title = {

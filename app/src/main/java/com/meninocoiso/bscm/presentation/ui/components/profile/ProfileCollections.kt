@@ -14,11 +14,12 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.meninocoiso.bscm.R
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
@@ -51,7 +52,12 @@ fun ProfileCollections(
     onLoadMoreCollections: () -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val tabItems = listOf("Charts", "Tour Passes", "Themes", "Collections")
+    val tabItems = listOf(
+        stringResource(R.string.charts),
+        stringResource(R.string.tour_passes),
+        stringResource(R.string.themes),
+        stringResource(R.string.collections)
+    )
 
     val horizontalPagerState = rememberPagerState { tabItems.size }
 
@@ -156,7 +162,7 @@ fun ProfileCollections(
                     } else {
                         StatusMessageUI(
                             modifier = Modifier.fillMaxWidth(),
-                            message = "No content available",
+                            message = stringResource(R.string.no_content_available),
                             icon = R.drawable.outline_library_music_24
                         )
                     }
@@ -195,17 +201,14 @@ fun ProfileCollectionTabContent(
             StatusMessageUI(
                 modifier = Modifier.fillMaxSize(),
                 size = StatusMessageSize.Medium,
-                message = "No bookmarked content",
+                message = stringResource(R.string.no_bookmarked_content),
                 icon = R.drawable.outline_library_music_24
             )
         }
     ) {
         LazyColumn(modifier = modifier, state = listState) {
             contentList(items, onNavigateToDetails)
-            pagination(
-                isLoadingMore = isLoadingMore,
-                message = if (!hasMore) "End of list" else ""
-            )
+            pagination(isLoadingMore = isLoadingMore, showMessage = !hasMore)
         }
     }
 }
@@ -238,7 +241,7 @@ fun ProfileCollectionList(
         empty = {
             StatusMessageUI(
                 modifier = Modifier.fillMaxSize(),
-                message = "No custom collections created",
+                message = stringResource(R.string.no_custom_collections),
                 icon = R.drawable.outline_library_music_24
             )
         }
@@ -257,10 +260,7 @@ fun ProfileCollectionList(
                     onPress = { onNavigateToCollection(item) }
                 )
             }
-            pagination(
-                isLoadingMore = isLoadingMore,
-                message = if (!hasMore) "End of list" else ""
-            )
+            pagination(isLoadingMore = isLoadingMore, showMessage = !hasMore)
         }
     }
 }

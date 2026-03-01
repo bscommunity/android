@@ -5,6 +5,6 @@ package com.meninocoiso.bscm.domain.result
  */
 sealed class ContentResult<out T> {
     data class Success<T>(val data: T) : ContentResult<T>()
-    data class Error(val message: String, val cause: Throwable? = null) : ContentResult<Nothing>()
+    data class Error(val message: UiText, val cause: Throwable? = null) : ContentResult<Nothing>()
     data object Loading : ContentResult<Nothing>()
 }

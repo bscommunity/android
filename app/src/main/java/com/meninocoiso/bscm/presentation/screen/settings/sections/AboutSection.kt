@@ -26,7 +26,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.ui.components.CollapsableSection
@@ -44,7 +44,7 @@ fun AboutSection(
     // Dialog state
     var showContributorsDialog by rememberSaveable { mutableStateOf(false) }
 
-    SettingsCard(title = "About") {
+    SettingsCard(title = stringResource(R.string.about)) {
         ListItem(
             modifier = Modifier.settingsCard(
                 padding = PaddingValues(top = 8.dp, bottom = 0.dp, start = 8.dp, end = 8.dp)
@@ -70,9 +70,9 @@ fun AboutSection(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(text = "Contributors")
+                            Text(text = stringResource(R.string.contributors))
                             Text(
-                                text = "Check out the amazing people we have contributing to bscm",
+                                text = stringResource(R.string.contributors_description),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -94,34 +94,37 @@ fun AboutSection(
                     header = { trigger, interactionSource ->
                         Row(
                             modifier = Modifier
+                                .background(MaterialTheme.colorScheme.surfaceContainerLow)
                                 .fillMaxWidth()
                                 .indication(interactionSource, ripple())
                                 .padding(vertical = 16.dp, horizontal = 24.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(text = "Socials", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                text = stringResource(R.string.socials),
+                                style = MaterialTheme.typography.titleMedium
+                            )
                             trigger()
                         }
                     },
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerLow),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerLow),
                     initExpanded = false
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         SocialsRow(
                             icon = R.drawable.rounded_web_24,
-                            title = "Website",
+                            title = stringResource(R.string.website),
                             url = "https://bscm.netlify.app"
                         )
                         SocialsRow(
                             icon = R.drawable.discord,
-                            title = "Discord",
+                            title = stringResource(R.string.discord),
                             url = "https://discord.gg/NNvzMAT6dS"
                         )
                         SocialsRow(
                             icon = R.drawable.github,
-                            title = "GitHub",
+                            title = stringResource(R.string.github),
                             url = "https://github.com/bscommunity"
                         )
                     }

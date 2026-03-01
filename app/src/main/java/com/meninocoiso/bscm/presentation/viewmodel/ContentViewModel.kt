@@ -13,7 +13,6 @@ import com.meninocoiso.bscm.domain.enums.ErrorType
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.internal.Settings
-import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.state.DownloadState
 import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -281,12 +280,7 @@ class ContentViewModel @Inject constructor(
                 }
 
                 // Update the chart in local database
-                val updateResult = chartManager
-                    .updateContentByContentId(contentId, OperationOption.DELETE)
-
-                if (updateResult is ContentResult.Error) {
-                    throw IllegalStateException(updateResult.message)
-                }
+                chartManager.updateContentByContentId(contentId, OperationOption.DELETE)
 
                 // Reset the state and clear operation
                 updateState(contentId, DownloadState.Idle)

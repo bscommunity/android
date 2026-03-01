@@ -62,7 +62,6 @@ fun UpdatesScreen(
     
 	// Scroll (horizontally) to the correct section
 	LaunchedEffect(section) {
-		println("UpdatesScreen LaunchedEffect: section = $section")
 		val pageIndex = when (section) {
 			UpdatesSection.Workshop -> 0
 			UpdatesSection.Installations -> 1

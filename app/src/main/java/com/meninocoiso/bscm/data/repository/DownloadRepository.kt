@@ -7,6 +7,7 @@ import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.manager.DownloadManager
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.result.ContentResult
+import com.meninocoiso.bscm.domain.result.UiText
 import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
 import com.meninocoiso.bscm.util.StorageUtils
 import com.meninocoiso.bscm.util.StorageUtils.BEATSTAR_URI
@@ -76,7 +77,11 @@ class DownloadRepository @Inject constructor(
         // Update the chart list
         val updateResult = chartManager.updateContentByContentId(contentId, operation)
         if (updateResult is ContentResult.Error) {
-            throw Exception(updateResult.message)
+            val msg = when (val m = updateResult.message) {
+                is UiText.DynamicString -> m.value
+                is UiText.StringResource -> context.getString(m.resId, *m.args.toTypedArray())
+            }
+            throw Exception(msg)
         }
     }
 
@@ -97,7 +102,11 @@ class DownloadRepository @Inject constructor(
         // Update the chart list
         val updateResult = chartManager.updateContentByContentId(contentId, OperationOption.DELETE)
         if (updateResult is ContentResult.Error) {
-            throw Exception(updateResult.message)
+            val msg = when (val m = updateResult.message) {
+                is UiText.DynamicString -> m.value
+                is UiText.StringResource -> context.getString(m.resId, *m.args.toTypedArray())
+            }
+            throw Exception(msg)
         }
     }
 }

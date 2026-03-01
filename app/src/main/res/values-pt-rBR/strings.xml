@@ -5,10 +5,64 @@
     <string name="workshop">Oficina</string>
     <string name="updates">Atualizações</string>
     <string name="settings">Configurações</string>
-    <string name="charts">Listas</string>
+    <string name="charts">Charts</string>
     <string name="installations">Instalações</string>
     <string name="back">Voltar</string>
     <string name="return_screen">Voltar</string>
+    <!-- 📊 Counts & Quantities (Formatted) -->
+    <string name="charts_count">%1$d charts</string>
+    <string name="tourpasses_count">%1$d passes de turnê</string>
+    <string name="themes_count">%1$d temas</string>
+    <!-- 🔢 Plurals - Quantities -->
+    <plurals name="notes_amount">
+        <item quantity="one">%1$d nota</item>
+        <item quantity="other">%1$d notas</item>
+    </plurals>
+    <plurals name="effects_amount">
+        <item quantity="one">%1$d efeito</item>
+        <item quantity="other">%1$d efeitos</item>
+    </plurals>
+    <plurals name="downloads_amount">
+        <item quantity="one">+ %1$d download</item>
+        <item quantity="other">+ %1$d downloads</item>
+    </plurals>
+    <plurals name="items_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d itens</item>
+    </plurals>
+    <!-- ⏰ Time Expressions -->
+    <string name="today">hoje</string>
+    <string name="yesterday">ontem</string>
+    <string name="just_now">Agora</string>
+    <string name="this_week">Essa semana</string>
+    <string name="last_week">Semana passada</string>
+    <string name="this_month">Esse mês</string>
+    <string name="last_month">Mês passado</string>
+    <string name="date_unknown">Desconhecido</string>
+    <plurals name="days_ago">
+        <item quantity="one">há %1$d dia</item>
+        <item quantity="other">há %1$d dias</item>
+    </plurals>
+    <plurals name="hours_ago">
+        <item quantity="one">%1$d hora atrás</item>
+        <item quantity="other">%1$d horas atrás</item>
+    </plurals>
+    <plurals name="minutes_ago">
+        <item quantity="one">%1$d minuto atrás</item>
+        <item quantity="other">%1$d minutos atrás</item>
+    </plurals>
+    <plurals name="weeks_ago">
+        <item quantity="one">há %1$d semana</item>
+        <item quantity="other">há %1$d semanas</item>
+    </plurals>
+    <plurals name="months_ago">
+        <item quantity="one">há %1$d mês</item>
+        <item quantity="other">há %1$d semanas</item>
+    </plurals>
+    <plurals name="years_ago">
+        <item quantity="one">há %1$d ano</item>
+        <item quantity="other">há %1$d semanas</item>
+    </plurals>
     <!-- 📥 Download & Update States -->
     <string name="download">Baixar</string>
     <string name="downloading">Baixando…</string>
@@ -21,6 +75,8 @@
     <string name="download_complete">Download concluído</string>
     <string name="download_chart">Baixar chart</string>
     <string name="downloaded">Baixado (%1$s)</string>
+    <string name="concluded_progress">%1$d concluído</string>
+    <string name="installed">Instalado</string>
     <string name="update">Atualizar</string>
     <string name="update_chart">Atualizar chart</string>
     <string name="update_ready">Atualização pronta</string>
@@ -38,8 +94,6 @@
     <string name="fetch_updates_error">Não conseguimos obter as atualizações…</string>
     <string name="up_to_date">App já está atualizado</string>
     <string name="client_outdated">Cliente desatualizado</string>
-    <string name="concluded_progress">%1$d%% concluído</string>
-    <string name="installed">Instalado</string>
     <!-- 📊 Chart Information & Statistics -->
     <string name="chart_by">Criado por %1$s</string>
     <string name="contributors_list_title">Esses usuários ajudaram a criar este chart:</string>
@@ -63,10 +117,12 @@
     <string name="listen">Ouvir</string>
     <string name="listen_to_track">Ouvir música</string>
     <string name="support_the_artist">Apoie o artista</string>
-    <string name="support_the_artist_description">Curta a música completa desse chart no seu streaming favorito e apoie o artista</string>
+    <string name="support_the_artist_description">Confira a música completa deste chart no seu serviço
+        favorito de streaming e apoie o artista</string>
     <string name="empty_streaming_links">Nenhum link de streaming disponível</string>
     <string name="minutes_seconds">%1$dmin %2$ds</string>
     <!-- 🎨 Music Genres -->
+    <string name="genre">Gênero</string>
     <string name="hip_hop">Hip-hop</string>
     <string name="pop">Estrume</string>
     <string name="r_b"><![CDATA[R&B]]></string>
@@ -74,7 +130,6 @@
     <string name="dance">Dança</string>
     <string name="alternative">Alternativo</string>
     <string name="classical">Clássica</string>
-    <string name="genre">Gênero</string>
     <!-- 🏆 Features & Categories -->
     <string name="awarded">Premiado</string>
     <string name="editors_choice">Escolha da Equipe</string>
@@ -84,6 +139,7 @@
     <string name="most_downloaded">Mais baixados</string>
     <string name="most_liked">Mais curtidos</string>
     <string name="last_updated">Última atualização</string>
+    <string name="multiple_artists">Múltiplos Artistas</string>
     <!-- 👥 User Roles & Contributions -->
     <string name="author_role">Autor</string>
     <string name="chart_role">Gráfico</string>
@@ -92,38 +148,7 @@
     <string name="effects_role">Efeitos</string>
     <string name="sync_role">Sincronização</string>
     <string name="gameplay_role">Jogabilidade</string>
-    <!-- 🔢 Plurals - Quantities -->
-    <plurals name="notes_amount">
-        <item quantity="one">%1$d nota</item>
-        <item quantity="other">%1$d notas</item>
-    </plurals>
-    <plurals name="effects_amount">
-        <item quantity="one">%1$d efeito</item>
-        <item quantity="other">%1$d efeitos</item>
-    </plurals>
-    <plurals name="downloads_amount">
-        <item quantity="one">+ %1$d download</item>
-        <item quantity="other">+ %1$d downloads</item>
-    </plurals>
-    <!-- ⏰ Time Expressions -->
-    <string name="today">hoje</string>
-    <string name="yesterday">ontem</string>
-    <plurals name="days_ago">
-        <item quantity="one">há %1$d dia</item>
-        <item quantity="other">há %1$d dias</item>
-    </plurals>
-    <plurals name="weeks_ago">
-        <item quantity="one">há %1$d semana</item>
-        <item quantity="other">há %1$d semanas</item>
-    </plurals>
-    <plurals name="months_ago">
-        <item quantity="one">há %1$d mês</item>
-        <item quantity="other">há %1$d semanas</item>
-    </plurals>
-    <plurals name="years_ago">
-        <item quantity="one">há %1$d ano</item>
-        <item quantity="other">há %1$d semanas</item>
-    </plurals>
+    <string name="version_format">v%1$d</string>
     <!-- 🔍 Search & Filtering -->
     <string name="search">Pesquisar</string>
     <string name="search_in_workshop">Buscar no workshop</string>
@@ -133,14 +158,10 @@
     <string name="history">Histórico</string>
     <string name="delete_history_item">Apagar item</string>
     <string name="remove_history_item">Remover %1$s</string>
-    <string name="remove_history_item_description">Tem certeza que quer remover esse item do histórico de busca?</string>
+    <string name="remove_history_item_description">Tem certeza que deseja remover este item de
+        seu histórico de pesquisa?</string>
     <string name="search_failed">Erro na busca</string>
     <string name="filters">Filtros</string>
-    <!-- ❌ Delete & Remove Actions -->
-    <string name="delete_chart">Apagar chart</string>
-    <string name="delete_chart_description">Tem certeza que quer apagar esse chart?\nVocê ainda poderá baixar de novo depois.</string>
-    <string name="chart_deleted">Chart apagado</string>
-    <string name="failed_to_delete_chart">Erro ao apagar chart</string>
     <!-- 🔄 Common Actions -->
     <string name="share">Compartilhar</string>
     <string name="share_via">Compartilhar via</string>
@@ -151,6 +172,14 @@
     <string name="cancel">Cancelar</string>
     <string name="confirm">Confirmar</string>
     <string name="dismiss">Fechar</string>
+    <string name="save">Salvar</string>
+    <string name="manage">Gerenciar</string>
+    <string name="close">Fechar</string>
+    <!-- ❌ Delete & Remove Actions -->
+    <string name="delete_chart">Apagar chart</string>
+    <string name="delete_chart_description">Tem certeza que quer apagar esse chart?\nVocê ainda poderá baixar de novo depois.</string>
+    <string name="chart_deleted">Chart apagado</string>
+    <string name="failed_to_delete_chart">Erro ao apagar chart</string>
     <!-- 📋 Menu & Interface Elements -->
     <string name="more_options_menu">Mais opções</string>
     <string name="collapse_expand_chart_contributors">Mostrar/ocultar colaboradores</string>
@@ -162,6 +191,59 @@
     <!-- ⚠️ Confirmations & Dialogs -->
     <string name="confirmation_title">Você tem certeza?</string>
     <string name="confirmation_description">Essa ação não pode ser desfeita</string>
+    <!-- 📭 Empty States -->
+    <string name="empty_downloads">Nenhum download ainda</string>
+    <string name="empty_downloads_description">Baixe alguns charts para começar</string>
+    <string name="no_charts_found">Nenhum chart encontrado</string>
+    <string name="no_charts_found_description">Tente buscar alguma outra coisa</string>
+    <string name="workshop_feed_end">Fim do feed</string>
+    <string name="no_liked_content">Nenhum conteúdo curtido</string>
+    <string name="no_bookmarked_content">Nenhum conteúdo favorito</string>
+    <string name="no_custom_collections">Nenhuma coleção criada</string>
+    <string name="no_charts_in_library">Nenhum chart na biblioteca</string>
+    <string name="no_tour_passes_in_library">Nenhum passe de turnê na biblioteca</string>
+    <string name="no_themes_in_library">Nenhum tema na biblioteca</string>
+    <string name="no_recent_activity">Nenhuma atividade recente</string>
+    <string name="no_collections_yet">Ainda não há coleções</string>
+    <string name="collections_will_appear">Suas coleções aparecerão aqui. Crie a sua primeira!</string>
+    <string name="no_content_available">Nenhum conteúdo disponível</string>
+    <string name="end_of_list">Fim da lista</string>
+    <string name="loading">Carregando...</string>
+    <!-- ⚙️ Operation States -->
+    <string name="operation_in_progress">Esta ação já está em andamento.</string>
+    <string name="cannot_delete_during_download">Você não pode excluir um chart durante o download ou a extração.</string>
+    <string name="permission_denied_delete">Permissão negada. Não é possível excluir o chart.</string>
+    <string name="storage_error_delete">Não foi possível excluir o chart devido a um problema de armazenamento.</string>
+    <!-- ⚠️ Error Messages -->
+    <string name="error">Erro: %1$s</string>
+    <string name="something_went_wrong">Parece que algo deu errado…</string>
+    <string name="check_connection">Confira sua conexão e tente de novo</string>
+    <string name="failed_to_load_chart_details">Erro ao carregar detalhes do chart</string>
+    <string name="failed_to_load_chart_details_description">Algo deu errado ao tentar carregar as informações desse chart</string>
+    <string name="failed_to_load_collection">Falha ao carregar a coleção</string>
+    <string name="failed_to_load_collection_description">Ocorreu um erro ao carregar a coleção</string>
+    <string name="failed_to_load_collections">Não foi possível carregar as coleções. Verifique sua conexão
+        e tente novamente.</string>
+    <string name="failed_to_load_profile">Falha ao carregar o perfil</string>
+    <string name="failed_to_load_cached_charts">Erro ao carregar charts salvos</string>
+    <string name="failed_to_fetch_feed_charts">Erro ao buscar charts do feed</string>
+    <string name="invalid_chart_id">ID do chart inválido</string>
+    <string name="chart_not_found">Chart não encontrado</string>
+    <string name="content_not_found">Conteúdo não encontrado</string>
+    <string name="failed_to_update">Erro ao atualizar o chart</string>
+    <string name="no_available_version">Nenhuma versão disponível para atualizar</string>
+    <string name="failed_to_start_download">Erro ao iniciar o download</string>
+    <string name="no_internet_connection">Sem conexão com a internet</string>
+    <string name="no_internet_connection_description">Verifique sua conexão e tente de novo</string>
+    <string name="error_network_connection">Sem conexão com a internet. Verifique sua rede.</string>
+    <string name="error_file_not_found">O arquivo não foi encontrado.</string>
+    <string name="error_server_problem">O servidor não está respondendo. Tente novamente mais tarde.</string>
+    <string name="error_permission_denied">Permissão negada. Permita o acesso nas configurações.</string>
+    <string name="error_storage_full">Espaço insuficiente. Libere espaço de armazenamento e tente novamente.</string>
+    <string name="error_storage_problem">Ocorreu um problema ao acessar o armazenamento.</string>
+    <string name="error_extraction_failed">Não foi possível extrair os arquivos baixados.</string>
+    <string name="error_download_failed">O download não pôde ser concluído.</string>
+    <string name="unknown_error">Algo deu errado</string>
     <!-- 📱 App & System Settings -->
     <string name="preferences">Preferências</string>
     <string name="customization">Personalização</string>
@@ -169,6 +251,7 @@
     <string name="launch_app">Abrir app</string>
     <string name="reopen_app">Por favor, reabra o app e tente de novo</string>
     <string name="open_settings">Abrir configurações</string>
+    <string name="go_to_settings">Ir para Configurações</string>
     <!-- 🎨 Theme & Appearance -->
     <string name="material_you_description">Alterne o uso da cor de destaque do sistema</string>
     <string name="theme">Tema</string>
@@ -183,13 +266,14 @@
     <string name="app_language">Idioma do app</string>
     <string name="language_description">Escolha o idioma de exibição do app</string>
     <string name="system_default_language">Padrão do sistema</string>
-    <string name="language_dialog_info">Confira as pessoas incríveis que ajudaram a traduzir o aplicativo para o seu idioma</string>
+    <string name="language_dialog_info">Confira as incríveis pessoas que ajudaram a traduzir o aplicativo
+        para o seu idioma</string>
     <!-- 🔞 Content Settings -->
     <string name="explicit_content">Conteúdo explícito</string>
     <string name="explicit_content_description">Permitir exibição de charts com músicas explícitas</string>
     <string name="explicit_content_disabled">Conteúdo explícito desativado nas configurações</string>
     <string name="gameplay_preview">Prévia de gameplay</string>
-    <string name="gameplay_preview_description">Ativa vídeos de prévia do gameplay\nPode impactar a performance</string>
+    <string name="gameplay_preview_description">Ativar visualizações de vídeo de gameplay\nIsso pode afetar o desempenho</string>
     <!-- 🔐 Authentication & Account -->
     <string name="account">Conta</string>
     <string name="link_account">Vincular conta</string>
@@ -208,78 +292,103 @@
     <string name="error_logout">Erro durante logout: %1$s</string>
     <string name="error_invalid_auth_code">Erro durante login: código de autorização inválido</string>
     <string name="auth_cancelled">Autenticação cancelada</string>
-    <!-- 📄 Legal & Documentation -->
-    <string name="legal">Informações</string>
-    <string name="terms_of_use">Termos de Uso</string>
-    <string name="privacy_police">Política de Privacidade</string>
-    <string name="read_changelog">Ver notas de lançamento</string>
-    <!-- 📝 Feedback & Reporting -->
-    <string name="feedback">Comentarios</string>
-    <string name="feedback_description">Ajude os contribuidores do chart a melhorar reportando erros ou sugerindo melhorias.</string>
-    <string name="bug">Inseto</string>
-    <string name="suggestion">Sugestão</string>
-    <string name="report_description">Ajude a comunidade sinalizando conteúdos impróprios. Seu relato é anônimo.</string>
-    <string name="violent_content">Conteúdo violento</string>
-    <string name="spam">Spam</string>
-    <string name="intellectual_property">Propriedade intelectual</string>
-    <!-- 🎫 Game Features -->
-    <string name="tour_passes">Passes de Turnê</string>
-    <string name="feature_not_implemented">Funcionalidade ainda não implementada</string>
-    <string name="work_in_progress">Em desenvolvimento!</string>
-    <string name="work_in_progress_description">Essa função ainda está sendo desenvolvida\nPor favor, volte aqui futuramente</string>
+    <string name="linked_to">Conectado a @%1$s</string>
+    <string name="unlink_account">Desvincular conta</string>
+    <string name="public_profile">Perfil público</string>
+    <string name="public_profile_description">Outros usuários podem ver sua atividade</string>
+    <!-- 🗂️ Collections & Favorites -->
+    <string name="collections">Coleções</string>
+    <string name="likes">Curtidas</string>
+    <string name="collection_add">Adicionar coleção</string>
+    <string name="collection_create">Criar coleção</string>
+    <string name="collection_edit">Editar coleção</string>
+    <string name="create_new_collection">Criar nova coleção</string>
+    <string name="collection_name_label">Nome</string>
+    <string name="enter_collection_name">Inserir nome da coleção</string>
+    <string name="make_public">Tornar público</string>
+    <string name="make_public_description">Coleções públicas serão mostradas no seu perfil e podem ser
+        compartilhadas com outros</string>
+    <string name="switch_collection">Trocar coleção</string>
+    <string name="added_to_favorites">Adicionado aos Favoritos</string>
+    <string name="saved_to_collection">Salvo em %1$s!</string>
+    <string name="connect_to_manage_favorites">Conecte-se para gerenciar favoritos</string>
+    <string name="connect_to_manage_likes">Conecte-se para gerenciar curtidas</string>
+    <string name="collection_name_exists">Já existe uma coleção com esse nome. Escolha
+        um nome diferente.</string>
+    <string name="error_creating_collection">Erro ao criar coleção: %1$s</string>
+    <string name="collection_delete">Excluir coleção</string>
+    <string name="collection_delete_description">Tem certeza que deseja excluir esta coleção? Essa operação não pode ser desfeita.</string>
+    <string name="manage_collection">Gerenciar coleção</string>
+    <string name="collection_by">Coleção por %1$s</string>
+    <string name="no_content_in_collection">Nenhum conteúdo nesta coleção</string>
+    <!-- 📰 Activity Feed -->
+    <string name="activity_followed_user">Seguiu um usuário</string>
+    <string name="activity_unknown">Atividade</string>
+    <string name="activity_created_content">Criado em %1$s \"%2$s\"</string>
+    <string name="activity_liked_content">Curtiu %1$s \"%2$s\"</string>
+    <string name="activity_bookmarked_content">Marcado %1$s \"%2$s\"</string>
+    <string name="content_type_chart">gráfico</string>
+    <string name="content_type_theme">tema</string>
+    <string name="content_type_tour_pass">passe de turnê</string>
     <!-- 📂 Storage & Permissions -->
     <string name="storage_permission_required">Permissão de armazenamento necessária</string>
     <string name="storage_permission_required_description">Pra baixar charts, o app precisa acessar seu armazenamento.\nSelecione ou crie uma pasta ‘beatstar’ na raiz do celular.</string>
     <string name="select_folder">Selecionar pasta</string>
     <string name="incorrect_storage_permission">Pasta Inválida Selecionada</string>
-    <string name="incorrect_storage_permission_description">A pasta selecionada não é válida.\nSelecione ou crie uma pasta \'beatstar\' no diretório raiz do seu dispositivo e tente novamente.</string>
+    <string name="incorrect_storage_permission_description">A pasta selecionada não é
+        válida.\nPor favor, selecione ou crie uma pasta \'beatstar\' no diretório raiz do seu dispositivo
+        e tente novamente.</string>
     <!-- 🔔 Notifications -->
     <string name="notifications_required">Notificações necessárias</string>
-    <string name="notifications_required_description">As notificações são importantes pra mostrar o status dos seus downloads.\nQuer ativar agora?</string>
+    <string name="notifications_required_description">Notificações são importantes para lhe mostrar o status
+        de seus downloads.\nGostaria de habilitá-las?</string>
     <string name="not_now">Agora não</string>
     <string name="enable_notifications">Ativar notificações</string>
-    <string name="enable_notifications_description">Para ativar, vá nas configurações do app e permita notificações.</string>
+    <string name="enable_notifications_description">Para ativar as notificações, abra as configurações
+        do aplicativo e conceda permissão de notificação.</string>
     <string name="download_failed">Falha no download</string>
     <string name="download_failed_for_chart">Não foi possível baixar o chart: %1$s</string>
     <string name="notification_channel_downloads_name">Downloads</string>
-    <string name="notification_channel_downloads_description">Mostra o progresso e o resultado dos seus downloads</string>
+    <string name="notification_channel_downloads_description">Mostra o progresso e resultados do seu
+        downloads</string>
     <!-- 🏪 App Installation & Updates -->
     <string name="mod_not_installed">App modificado não instalado</string>
     <string name="mod_not_installed_description">Não encontramos o app modificado no seu aparelho. Vá na aba ‘Instalações’ na tela de Atualizações pra baixar a versão mais recente.</string>
     <string name="go_to_updates">Ir para atualizações</string>
-    <!-- 📭 Empty States -->
-    <string name="empty_downloads">Nenhum download ainda</string>
-    <string name="empty_downloads_description">Baixe alguns charts para começar</string>
-    <string name="no_charts_found">Nenhum chart encontrado</string>
-    <string name="no_charts_found_description">Tente buscar alguma outra coisa</string>
-    <string name="workshop_feed_end">Fim do feed</string>
-    <!-- ⚠️ Error Messages -->
-    <string name="error">Erro: %1$s</string>
-    <string name="something_went_wrong">Parece que algo deu errado…</string>
-    <string name="check_connection">Confira sua conexão e tente de novo</string>
-    <string name="failed_to_load_chart_details">Erro ao carregar detalhes do chart</string>
-    <string name="failed_to_load_chart_details_description">Algo deu errado ao tentar carregar as informações desse chart</string>
-    <string name="invalid_chart_id">ID do chart inválido</string>
-    <string name="failed_to_load_cached_charts">Erro ao carregar charts salvos</string>
-    <string name="failed_to_fetch_feed_charts">Erro ao buscar charts do feed</string>
-    <string name="chart_not_found">Chart não encontrado</string>
-    <string name="failed_to_update">Erro ao atualizar o chart</string>
-    <string name="no_available_version">Nenhuma versão disponível para atualizar</string>
-    <string name="failed_to_start_download">Erro ao iniciar o download</string>
-    <string name="no_internet_connection">Sem conexão com a internet</string>
-    <string name="no_internet_connection_description">Verifique sua conexão e tente de novo</string>
-    <string name="error_network_connection">Sem conexão com a internet. Verifique sua rede.</string>
-    <string name="error_file_not_found">O arquivo não foi encontrado.</string>
-    <string name="error_server_problem">O servidor não está respondendo. Tente novamente mais tarde.</string>
-    <string name="error_permission_denied">Permissão negada. Permita o acesso nas configurações.</string>
-    <string name="error_storage_full">Espaço insuficiente. Libere espaço de armazenamento e tente novamente.</string>
-    <string name="error_storage_problem">Ocorreu um problema ao acessar o armazenamento.</string>
-    <string name="error_extraction_failed">Não foi possível extrair os arquivos baixados.</string>
-    <string name="error_download_failed">O download não pôde ser concluído.</string>
-    <string name="unknown_error">Algo deu errado</string>
-    <!-- ⚙️ Operation States -->
-    <string name="operation_in_progress">Esta ação já está em andamento.</string>
-    <string name="cannot_delete_during_download">Você não pode excluir um chart durante o download ou a extração.</string>
-    <string name="permission_denied_delete">Permissão negada. Não é possível excluir o chart.</string>
-    <string name="storage_error_delete">Não foi possível excluir o chart devido a um problema de armazenamento.</string>
+    <!-- 🎫 Game Features -->
+    <string name="tour_passes">Passes de Turnê</string>
+    <string name="feature_not_implemented">Funcionalidade ainda não implementada</string>
+    <string name="work_in_progress">Em desenvolvimento!</string>
+    <string name="work_in_progress_description">Essa função ainda está sendo desenvolvida\nPor favor, volte aqui futuramente</string>
+    <!-- 📝 Feedback & Reporting -->
+    <string name="feedback">Comentarios</string>
+    <string name="feedback_description">Ajude os colaboradores de gráficos a melhorar reportando bugs ou
+        sugerindo novas funcionalidades.</string>
+    <string name="bug">Inseto</string>
+    <string name="suggestion">Sugestão</string>
+    <string name="report_description">Ajude a comunidade marcando conteúdo inapropriado\nSeu
+        relatar é anônimo</string>
+    <string name="violent_content">Conteúdo violento</string>
+    <string name="spam">Spam</string>
+    <string name="intellectual_property">Propriedade intelectual</string>
+    <!-- 📄 Legal & Documentation -->
+    <string name="legal">Informações</string>
+    <string name="terms_of_use">Termos de Uso</string>
+    <string name="privacy_police">Política de Privacidade</string>
+    <string name="read_changelog">Ver notas de lançamento</string>
+    <!-- 🌍 About & Community -->
+    <string name="about">Sobre</string>
+    <string name="contributors">Colaboradores</string>
+    <string name="contributors_description">Confira as pessoas incríveis que apoiaram o
+        bscm</string>
+    <string name="programming">Programação</string>
+    <string name="design">Design</string>
+    <string name="localization">Localização</string>
+    <string name="socials">Redes Sociais</string>
+    <string name="website">Site</string>
+    <string name="discord">Discord</string>
+    <string name="github">GitHub</string>
+    <!-- 🗒️ Local Item -->
+    <string name="local_item_title">Conteúdo local</string>
+    <string name="local_item_message">Este chart foi adicionado manualmente e não é gerenciado pelo aplicativo.\nVocê precisará atualizá-lo ou removê-lo manualmente.</string>
 </resources>

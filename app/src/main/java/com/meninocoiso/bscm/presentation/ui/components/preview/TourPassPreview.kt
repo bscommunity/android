@@ -14,7 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.bscm.presentation.ui.modifiers.debouncedClickable
@@ -86,18 +88,17 @@ fun TourPassPreview(
                             Text(
                                 modifier = Modifier.padding(start = 8.dp),
                                 style = MaterialTheme.typography.labelMedium,
-                                text = "${tourPass.charts.size} charts"
+                                text = stringResource(R.string.charts_count, tourPass.charts.size)
                             )
                         }
                     }
-                    Text(style = MaterialTheme.typography.labelMedium, text = tourPass.artist ?: "Multiple Artists")
+                    Text(style = MaterialTheme.typography.labelMedium, text = tourPass.artist ?: stringResource(R.string.multiple_artists))
                 }
                 PreviewAuthors(
-                    contentString = "Tour Pass by ${tourPass.contributors[0].user.username}",
-                    /*contentString = stringResource(
+                    contentString = stringResource(
                         R.string.chart_by,
                         tourPass.contributors[0].user.username
-                    ),*/
+                    ),
                     authors = tourPass.contributors)
                 if (!isLocal && tourPass.isInstalled == true) PreviewInstalledTag(false)
             }

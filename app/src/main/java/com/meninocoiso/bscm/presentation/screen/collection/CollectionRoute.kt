@@ -14,6 +14,7 @@ import com.meninocoiso.bscm.presentation.ui.components.Loading
 import com.meninocoiso.bscm.presentation.ui.components.RouteUI
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.viewmodel.CollectionViewModel
+import com.meninocoiso.bscm.presentation.ui.utils.asString
 
 @Composable
 fun CollectionRoute(
@@ -49,8 +50,7 @@ fun CollectionRoute(
             is ContentResult.Error -> {
                 StatusMessageUI(
                     title = stringResource(R.string.failed_to_load_collection),
-                    message = (state as ContentResult.Error).message
-                        ?: stringResource(R.string.failed_to_load_collection_description),
+                    message = (state as ContentResult.Error).message.asString(),
                     icon = R.drawable.rounded_error_24,
                     onClick = { viewModel.fetchCollectionBySlug(username, slug) },
                     buttonLabel = stringResource(R.string.retry),

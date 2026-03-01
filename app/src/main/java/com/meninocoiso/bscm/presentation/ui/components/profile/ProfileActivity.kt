@@ -21,6 +21,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
@@ -64,7 +66,7 @@ fun ProfileActivity(
             StatusMessageUI(
                 modifier = Modifier.fillMaxWidth().padding(top = 36.dp),
                 size = StatusMessageSize.Medium,
-                message = "No recent activity",
+                message = stringResource(R.string.no_recent_activity),
                 icon = R.drawable.rounded_update_disabled_24
             )
         }
@@ -163,51 +165,45 @@ fun ProfileActivity(
 
             pagination(
                 isLoadingMore = isLoadingMore,
-                message = if (hasMore) "Loading..." else "End of list"
+                showMessage = !hasMore
             )
         }
     }
 }
 
-/**
- * Returns a human-readable description of the activity
- */
+@Composable
 private fun getActivityText(item: ActivityItemResponse): String {
-    return "teste"
-    /*return when (item.type) {
-        ActivityType.CREATED_CHART -> when (item) {
-            is ChartActivityItem -> "Created chart \"${item.chart.track}\""
-            is ThemeActivityItem -> "Created theme \"${item.theme.name}\""
-            is TourPassActivityItem -> "Created tour pass \"${item.tourPass.name}\""
+    return when (item) {
+        is ChartActivityItem -> {
+            val name = item.chart.track
+            stringResource(R.string.activity_created_content, stringResource(R.string.content_type_chart), name)
         }
-        ActivityType.LIKED_CONTENT -> when (item) {
-            is ChartActivityItem -> "Liked chart \"${item.chart.track}\""
-            is ThemeActivityItem -> "Liked theme \"${item.theme.name}\""
-            is TourPassActivityItem -> "Liked tour pass \"${item.tourPass.name}\""
+        is ThemeActivityItem -> {
+            val name = item.theme.name
+            stringResource(R.string.activity_created_content, stringResource(R.string.content_type_theme), name)
         }
-        ActivityType.BOOKMARKED_CONTENT -> when (item) {
-            is ChartActivityItem -> "Bookmarked chart \"${item.chart.track}\""
-            is ThemeActivityItem -> "Bookmarked theme \"${item.theme.name}\""
-            is TourPassActivityItem -> "Bookmarked tour pass \"${item.tourPass.name}\""
+        is TourPassActivityItem -> {
+            val name = item.tourPass.name
+            stringResource(R.string.activity_created_content, stringResource(R.string.content_type_tour_pass), name)
         }
-        ActivityType.FOLLOWED_USER -> "Followed a user"
-    }*/
+    }
 }
 
 /**
  * Returns a relative time string (e.g., "5 days ago")
  */
+@Composable
 private fun getRelativeTime(createdAt: LocalDateTime): String {
     val now = LocalDateTime.now()
-    val days = ChronoUnit.DAYS.between(createdAt, now)
-    val hours = ChronoUnit.HOURS.between(createdAt, now)
-    val minutes = ChronoUnit.MINUTES.between(createdAt, now)
+    val days = ChronoUnit.DAYS.between(createdAt, now).toInt()
+    val hours = ChronoUnit.HOURS.between(createdAt, now).toInt()
+    val minutes = ChronoUnit.MINUTES.between(createdAt, now).toInt()
 
     return when {
-        days > 0 -> "$days day${if (days > 1) "s" else ""} ago"
-        hours > 0 -> "$hours hour${if (hours > 1) "s" else ""} ago"
-        minutes > 0 -> "$minutes minute${if (minutes > 1) "s" else ""} ago"
-        else -> "Just now"
+        days > 0 -> pluralStringResource(R.plurals.days_ago, days, days)
+        hours > 0 -> pluralStringResource(R.plurals.hours_ago, hours, hours)
+        minutes > 0 -> pluralStringResource(R.plurals.minutes_ago, minutes, minutes)
+        else -> stringResource(R.string.just_now)
     }
 }
 

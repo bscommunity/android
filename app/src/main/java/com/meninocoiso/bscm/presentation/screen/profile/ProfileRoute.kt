@@ -16,6 +16,7 @@ import com.meninocoiso.bscm.presentation.ui.components.Loading
 import com.meninocoiso.bscm.presentation.ui.components.RouteUI
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.viewmodel.PublicProfileViewModel
+import com.meninocoiso.bscm.presentation.ui.utils.asString
 
 @Composable
 fun ProfileRoute(
@@ -63,8 +64,8 @@ fun ProfileRoute(
 
                 is ContentResult.Error -> {
                     StatusMessageUI(
-                        title = "Failed to load profile",
-                        message = (state as ContentResult.Error).message,
+                        title = stringResource(R.string.failed_to_load_profile),
+                        message = (state as ContentResult.Error).message.asString(),
                         icon = R.drawable.rounded_error_24,
                         onClick = {
                             publicViewModel.loadProfile(username)

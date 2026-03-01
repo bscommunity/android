@@ -40,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -103,6 +104,7 @@ fun ChartDetailsScreen(
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
 
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
@@ -137,8 +139,6 @@ fun ChartDetailsScreen(
     var optimisticBookmarked by rememberSaveable { mutableStateOf<Boolean?>(null) }
     val isBookmarked = optimisticBookmarked ?: (chart.bookmarkedAt != null)
 
-    println("ChartDetailsScreen: contentCollection = $contentCollection, isBookmarked = $isBookmarked")
-
     LaunchedEffect(contentCollection) {
         if (optimisticBookmarked != null && chart.bookmarkedAt != null) {
             optimisticBookmarked = null
@@ -156,7 +156,7 @@ fun ChartDetailsScreen(
     val userCollections = collectionUiState.userCollections.items
     val isCollectionsLoading = collectionUiState.userCollections.state is ContentState.Loading
     val hasError = collectionUiState.userCollections.state is ContentState.Error
-    val errorMessage = if (hasError) "Failed to load collections. Please check your connection and try again." else null
+    val errorMessage = if (hasError) stringResource(R.string.failed_to_load_collections) else null
 
     LaunchedEffect(showCollectionSheet) {
         if (showCollectionSheet) {
@@ -164,14 +164,32 @@ fun ChartDetailsScreen(
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Download events
-    // -------------------------------------------------------------------------
     val downloadCompleteMsg = stringResource(R.string.download_complete)
     val errorTitleMsg = stringResource(R.string.error)
     val chartDeletedMsg = stringResource(R.string.chart_deleted)
     val failedToDeleteMsg = stringResource(R.string.failed_to_delete_chart)
 
+    val connectToManageFavoritesMsg = stringResource(R.string.connect_to_manage_favorites)
+    val switchCollectionMsg = stringResource(R.string.switch_collection)
+    val addedToFavoritesMsg = stringResource(R.string.added_to_favorites)
+    val manageMsg = stringResource(R.string.manage)
+    val connectToManageLikesMsg = stringResource(R.string.connect_to_manage_likes)
+    val noKnownIssuesMsg = stringResource(R.string.no_known_issues)
+    val notesAmountText = pluralStringResource(R.plurals.notes_amount, chart.latestVersion.notesAmount, chart.latestVersion.notesAmount)
+    val effectsAmountText = pluralStringResource(R.plurals.effects_amount, chart.latestVersion.effectsAmount, chart.latestVersion.effectsAmount)
+    val downloadsAmountText = pluralStringResource(R.plurals.downloads_amount, chart.downloadsSum, chart.downloadsSum)
+
+    val savedToCollectionMsg = { name: String ->
+        resources.getString(R.string.saved_to_collection, name)
+    }
+    val errorCreatingCollectionMsg = { msg: String ->
+        resources.getString(R.string.error_creating_collection, msg)
+    }
+    val collectionNameExistsMsg = stringResource(R.string.collection_name_exists)
+
+    // -------------------------------------------------------------------------
+    // Download events
+    // -------------------------------------------------------------------------
     LaunchedEffect(Unit) {
         contentViewModel.checkStatus(chart)
 
@@ -232,13 +250,15 @@ fun ChartDetailsScreen(
 
     val lastUpdated = StringUtils.toRelativeString(chart.latestVersion.createdAt)
 
+    val connectLabel = stringResource(R.string.connect)
+
     val onUnauthenticated = { message: String ->
         scope.launch {
             snackbarHostState.currentSnackbarData?.dismiss()
             val result = snackbarHostState.showSnackbar(
                 message,
                 duration = SnackbarDuration.Short,
-                actionLabel = "Connect"
+                actionLabel = connectLabel
             )
             if (result == SnackbarResult.ActionPerformed) {
                 onNavigateToSettings()
@@ -333,12 +353,12 @@ fun ChartDetailsScreen(
                             R.drawable.rounded_bookmark_24,
                             isBookmarked,
                             !isLoggedIn,
-                            onDisabled = { onUnauthenticated("Connect to manage favorites") },
+                            onDisabled = { onUnauthenticated(connectToManageFavoritesMsg) },
                             onHold = {
                                 wasBookmarkedWhenSheetOpened = isBookmarked
                                 showCollectionSheet = true
                             },
-                            onHoldLabel = "Switch Collection"
+                            onHoldLabel = switchCollectionMsg
                         ) { newValue ->
                             // Set optimistic state immediately for instant feedback.
                             // This overrides contentCollection until Room confirms.
@@ -351,8 +371,8 @@ fun ChartDetailsScreen(
                                 )
                                 scope.launch {
                                     val result = snackbarHostState.showSnackbar(
-                                        "Added to Favorites",
-                                        "Manage",
+                                        addedToFavoritesMsg,
+                                        manageMsg,
                                         duration = SnackbarDuration.Short
                                     )
 
@@ -386,7 +406,7 @@ fun ChartDetailsScreen(
                             R.drawable.rounded_favorite_24,
                             isLiked,
                             !isLoggedIn,
-                            onDisabled = { onUnauthenticated("Connect to manage likes") }
+                            onDisabled = { onUnauthenticated(connectToManageLikesMsg) }
                         ) { newValue ->
                             optimisticLiked = newValue
                             if (newValue) {
@@ -443,31 +463,19 @@ fun ChartDetailsScreen(
                     }
                     if (chart.latestVersion.notesAmount > 0) {
                         StatListItem(
-                            title = pluralStringResource(
-                                R.plurals.notes_amount,
-                                chart.latestVersion.notesAmount,
-                                chart.latestVersion.notesAmount
-                            ),
+                            title = notesAmountText,
                             icon = R.drawable.rounded_music_note_24
                         )
                     }
                     if (chart.latestVersion.effectsAmount > 0) {
                         StatListItem(
-                            title = pluralStringResource(
-                                R.plurals.effects_amount,
-                                chart.latestVersion.effectsAmount,
-                                chart.latestVersion.effectsAmount
-                            ),
+                            title = effectsAmountText,
                             icon = R.drawable.rounded_blur_medium_24
                         )
                     }
                     if (chart.downloadsSum > 0) {
                         StatListItem(
-                            title = pluralStringResource(
-                                R.plurals.downloads_amount,
-                                chart.downloadsSum,
-                                chart.downloadsSum
-                            ),
+                            title = downloadsAmountText,
                             icon = R.drawable.rounded_download_24
                         )
                     }
@@ -495,7 +503,7 @@ fun ChartDetailsScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .align(Alignment.CenterHorizontally),
-                                    text = stringResource(R.string.no_known_issues),
+                                    text = noKnownIssuesMsg,
                                     style = MaterialTheme.typography.bodyLarge
                                 )
                             } else {
@@ -549,12 +557,12 @@ fun ChartDetailsScreen(
             isMutating = collectionUiState.isCreating,
             errorMessage = errorMessage,
             onCollectionSelected = { collectionId, collectionName ->
-                scope.launch {
-                    snackbarHostState.showSnackbar(
-                        "Saved to ${collectionName}!",
-                        duration = SnackbarDuration.Short
-                    )
-                }
+                    scope.launch {
+                        snackbarHostState.showSnackbar(
+                            savedToCollectionMsg(collectionName),
+                            duration = SnackbarDuration.Short
+                        )
+                    }
                 chart.contentId?.let { contentId ->
                     if (wasBookmarkedWhenSheetOpened) {
                         interactionViewModel.changeContentCollection(
@@ -572,7 +580,6 @@ fun ChartDetailsScreen(
             onCreateCollection = { name, isPublic ->
                 try {
                     val newCollectionId = collectionViewModel.createCollection(name, isPublic)
-                    Log.d("ChartDetailsScreen", "Created collection with ID: $newCollectionId")
                     chart.contentId?.let { contentId ->
                         if (wasBookmarkedWhenSheetOpened) {
                             interactionViewModel.changeContentCollection(
@@ -585,15 +592,18 @@ fun ChartDetailsScreen(
                         }
                     }
                     scope.launch {
-                        snackbarHostState.showSnackbar("Saved to \"$name\"!")
+                        snackbarHostState.showSnackbar(
+                            savedToCollectionMsg(name),
+                            duration = SnackbarDuration.Short
+                        )
                     }
                 } catch (e: ApiException) {
                     Log.e("ChartDetailsScreen", "Error creating collection", e)
                     scope.launch {
                         if (e.status == HttpStatusCode.BadRequest) {
-                            snackbarHostState.showSnackbar("A collection with that name already exists. Please choose a different name.")
+                            snackbarHostState.showSnackbar(collectionNameExistsMsg)
                         } else {
-                            snackbarHostState.showSnackbar("Error creating collection: ${e.message}")
+                            snackbarHostState.showSnackbar(errorCreatingCollectionMsg(e.message))
                         }
                     }
                 }

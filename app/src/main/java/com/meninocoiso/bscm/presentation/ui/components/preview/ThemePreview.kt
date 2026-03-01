@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Theme
@@ -106,11 +107,10 @@ fun ThemePreview(
                     }
                 }
                 PreviewAuthors(
-                    contentString = "Theme by ${theme.contributors[0].user.username}",
-                    /*contentString = stringResource(
+                    contentString = stringResource(
                         R.string.chart_by,
                         theme.contributors[0].user.username
-                    ),*/
+                    ),
                     authors = theme.contributors
                 )
                 if (!isLocal && theme.isInstalled == true) PreviewInstalledTag(false)

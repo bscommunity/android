@@ -52,11 +52,11 @@ fun ProfileScreen(
 
     val tabItems = listOf(
         ProfileTabItem(
-            contentDescription = "Likes",
+            contentDescription = stringResource(R.string.likes),
             iconResId = R.drawable.rounded_favorite_24
         ),
         ProfileTabItem(
-            contentDescription = "Collections",
+            contentDescription = stringResource(R.string.collections),
             iconResId = R.drawable.rounded_bookmark_24
         )
     )
@@ -127,9 +127,6 @@ fun ProfileScreen(
                     onNavigateToDetails = onNavigateToDetails,
                     onNavigateToCollection = { collection ->
                         onNavigateToCollection(
-                            /*if (collection.owner == null)
-                                collection.copy(owner = user)
-                            else collection*/
                             collection.toSimplifiedCollection(user)
                         )
                     },

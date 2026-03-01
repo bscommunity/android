@@ -4,7 +4,6 @@ import android.content.Context
 import com.meninocoiso.bscm.R
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.time.temporal.WeekFields
 import java.util.Locale
 
 object DateUtils {
@@ -89,25 +88,27 @@ object DateUtils {
     }
 
     /**
-     * Gets a week label (e.g., "Week 1", "Week 1, 2026", "This week", or "Last week")
+     * Gets a week label (e.g., "X weeks ago", "This week", "Last week")
+     * Future dates and dates in other years return the raw yyyy-MM-dd string.
      */
     private fun getWeekLabel(context: Context, itemDate: LocalDate, today: LocalDate): String {
-        val weekFields = WeekFields.of(Locale.getDefault())
-        val itemWeek = itemDate.get(weekFields.weekOfYear())
         val itemYear = itemDate.year
 
+        // Use full-week difference to produce "X weeks ago" for past weeks
+        val weeksBetween = java.time.temporal.ChronoUnit.WEEKS.between(itemDate, today).toInt()
+
         return when {
-            itemDate.year != today.year -> {
-                context.getString(R.string.week_year_format, itemWeek, itemYear)
-            }
-            else -> {
-                val todayWeek = today.get(weekFields.weekOfYear())
-                when (itemWeek) {
-                    todayWeek -> context.getString(R.string.this_week)
-                    todayWeek - 1 -> context.getString(R.string.last_week)
-                    else -> context.getString(R.string.week_format, itemWeek)
-                }
-            }
+            // Future dates: return raw date (future dates are not expected)
+            itemDate.isAfter(today) -> itemDate.toString()
+            // Different year: return raw date (no week-format across years)
+            itemYear != today.year -> itemDate.toString()
+            // This week / last week
+            weeksBetween == 0 -> context.getString(R.string.this_week)
+            weeksBetween == 1 -> context.getString(R.string.last_week)
+            // Any older week in the same year: use Android plurals
+            weeksBetween > 1 -> context.resources.getQuantityString(R.plurals.weeks_ago, weeksBetween, weeksBetween)
+            // Fallback to raw date
+            else -> itemDate.toString()
         }
     }
 

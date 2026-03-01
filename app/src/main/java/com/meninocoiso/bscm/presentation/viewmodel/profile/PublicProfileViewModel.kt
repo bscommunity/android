@@ -10,6 +10,8 @@ import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.repository.CollectionRepository
 import com.meninocoiso.bscm.domain.repository.ProfileRepository
 import com.meninocoiso.bscm.domain.result.ContentResult
+import com.meninocoiso.bscm.domain.result.UiText
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.viewmodel.profile.BaseProfileViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedSection
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -86,7 +88,9 @@ class PublicProfileViewModel @Inject constructor(
                     Log.d(TAG, "Profile loaded: $username")
                 }
                 .onFailure { error ->
-                    _profile.value = ContentResult.Error(error.message ?: "Failed to load profile")
+                    _profile.value = ContentResult.Error(
+                        error.message?.let { UiText.DynamicString(it) } ?: UiText.StringResource(R.string.failed_to_load_profile)
+                    )
                     Log.e(TAG, "Error loading profile: $username", error)
                 }
         }

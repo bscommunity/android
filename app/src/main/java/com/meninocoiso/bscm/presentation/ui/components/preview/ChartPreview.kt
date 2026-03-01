@@ -89,7 +89,7 @@ fun ChartPreview(
                             )
                             Text(
                                 style = MaterialTheme.typography.labelLarge,
-                                text = "v${chart.latestVersion.index}"
+                                text = stringResource(R.string.version_format, chart.latestVersion.index)
                             )
                         }
                     } else {

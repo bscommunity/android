@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
@@ -43,7 +44,7 @@ fun ProfileLikes(
         empty = {
             StatusMessageUI(
                 modifier = Modifier.fillMaxSize(),
-                message = "No liked content",
+                message = stringResource(R.string.no_liked_content),
                 size = StatusMessageSize.Medium,
                 icon = R.drawable.rounded_favorite_24
             )
@@ -56,16 +57,17 @@ fun ProfileLikes(
         ) {
             item {
                 SegmentedButtonUI(
-                    options = listOf("Charts", "Tour Passes", "Themes"),
+                    options = listOf(
+                        stringResource(R.string.charts),
+                        stringResource(R.string.tour_passes),
+                        stringResource(R.string.themes)
+                    ),
                     disabled = true,
                     onSelected = {}
                 )
             }
             contentList(items, onNavigateToDetails)
-            pagination(
-                isLoadingMore = isLoadingMore,
-                message = if (!hasMore) "End of list" else ""
-            )
+            pagination(isLoadingMore = isLoadingMore, showMessage = !hasMore)
         }
     }
 }

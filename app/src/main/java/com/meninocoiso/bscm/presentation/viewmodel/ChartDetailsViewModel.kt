@@ -8,6 +8,7 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.result.ContentResult
+import com.meninocoiso.bscm.domain.result.UiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,7 +29,7 @@ class ChartDetailsViewModel @Inject constructor(
 
     fun fetchChartById(contentId: String?) {
         if (contentId.isNullOrEmpty()) {
-            _chart.value = ContentResult.Error(context.getString(R.string.invalid_chart_id))
+            _chart.value = ContentResult.Error(UiText.StringResource(R.string.invalid_chart_id))
             return
         }
 
@@ -44,8 +45,9 @@ class ChartDetailsViewModel @Inject constructor(
                         }
 
                         is ContentResult.Error -> {
-                            Log.e(TAG, "Error fetching chart: ${result.message}", result.cause)
-                            _chart.value = ContentResult.Error(result.message)
+                            val msg = result.message
+                            Log.e(TAG, "Error fetching chart: $msg", result.cause)
+                            _chart.value = ContentResult.Error(msg)
                         }
 
                         is ContentResult.Loading -> {
@@ -55,8 +57,10 @@ class ChartDetailsViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error fetching data", e)
-                _chart.value =
-                    ContentResult.Error(e.message ?: context.getString(R.string.unknown_error), e)
+                _chart.value = ContentResult.Error(
+                    UiText.DynamicString(e.message ?: context.getString(R.string.unknown_error)),
+                    e
+                )
             }
         }
     }

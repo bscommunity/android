@@ -2,13 +2,67 @@
 <resources>
     <!-- 📱 App Basic Information -->
     <!-- 🧭 Navigation & Main Sections -->
-    <string name="workshop">Werkstatt</string>
+    <string name="workshop">Workshop</string>
     <string name="updates">Updates</string>
     <string name="settings">Einstellungen</string>
     <string name="charts">Level</string>
     <string name="installations">Installationen</string>
     <string name="back">Zurück</string>
     <string name="return_screen">Zurück</string>
+    <!-- 📊 Counts & Quantities (Formatted) -->
+    <string name="charts_count">%1$d charts</string>
+    <string name="tourpasses_count">%1$d tour passes</string>
+    <string name="themes_count">%1$d themes</string>
+    <!-- 🔢 Plurals - Quantities -->
+    <plurals name="notes_amount">
+        <item quantity="one">%1$d Note</item>
+        <item quantity="other">%1$d Noten</item>
+    </plurals>
+    <plurals name="effects_amount">
+        <item quantity="one">%1$d Effekt</item>
+        <item quantity="other">%1$d Effekte</item>
+    </plurals>
+    <plurals name="downloads_amount">
+        <item quantity="one">+%1$d Download</item>
+        <item quantity="other">+%1$d Downloads</item>
+    </plurals>
+    <plurals name="items_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <!-- ⏰ Time Expressions -->
+    <string name="today">Heute</string>
+    <string name="yesterday">Gestern</string>
+    <string name="just_now">Just now</string>
+    <string name="this_week">This week</string>
+    <string name="last_week">Last week</string>
+    <string name="this_month">This month</string>
+    <string name="last_month">Last month</string>
+    <string name="date_unknown">Unknown</string>
+    <plurals name="days_ago">
+        <item quantity="one">Vor einem Tag</item>
+        <item quantity="other">Vor %1$d Tagen</item>
+    </plurals>
+    <plurals name="hours_ago">
+        <item quantity="one">%1$d hour ago</item>
+        <item quantity="other">%1$d hours ago</item>
+    </plurals>
+    <plurals name="minutes_ago">
+        <item quantity="one">%1$d minute ago</item>
+        <item quantity="other">%1$d minutes ago</item>
+    </plurals>
+    <plurals name="weeks_ago">
+        <item quantity="one">Vor einer Woche</item>
+        <item quantity="other">Vor %1$d Wochen</item>
+    </plurals>
+    <plurals name="months_ago">
+        <item quantity="one">Vor einem Monat</item>
+        <item quantity="other">Vor %1$d Monaten</item>
+    </plurals>
+    <plurals name="years_ago">
+        <item quantity="one">Vor einem Jahr</item>
+        <item quantity="other">Vor %1$d Jahren</item>
+    </plurals>
     <!-- 📥 Download & Update States -->
     <string name="download">Herunterladen</string>
     <string name="downloading">Lädt runter…</string>
@@ -19,8 +73,10 @@
     <string name="extracting_progress_title">Extrahiert… %1$s</string>
     <string name="extracting_progress_description">Extrahiert Dateien… %1$d%%</string>
     <string name="download_complete">Download abgeschlossen</string>
-    <string name="download_chart">Level runterladen</string>
+    <string name="download_chart">Level heruntergeladen</string>
     <string name="downloaded">Heruntergeladen (%1$s)</string>
+    <string name="concluded_progress">%1$d%% concluded</string>
+    <string name="installed">Installiert</string>
     <string name="update">Aktualisieren</string>
     <string name="update_chart">Level updaten</string>
     <string name="update_ready">Update bereit</string>
@@ -30,22 +86,20 @@
     <string name="install_update">Update installieren</string>
     <string name="update_from_to">Update von v%1$d → v%2$d</string>
     <string name="update_complete">Update abgeschlossen</string>
-    <string name="updates_available">Updates verfügbar (%1$s)</string>
+    <string name="updates_available">Updates verfügbar (%1$d)</string>
     <string name="no_updates_available">Keine Updates verfügbar</string>
     <string name="checking_for_updates">Sucht nach Updates…</string>
     <string name="check_for_updates">Nach Updates suchen</string>
     <string name="failed_to_check_for_updates">Update Suche fehlgeschlagen</string>
-    <string name="fetch_updates_error">Wir konnten das Update nicht fetchen…</string>
-    <string name="up_to_date">BSCM ist auf dem neustem Stand :D</string>
+    <string name="fetch_updates_error">Wir konnten das Update nicht abrufen…</string>
+    <string name="up_to_date">bscm ist auf dem neuesten Stand</string>
     <string name="client_outdated">Veralteter Client</string>
-    <string name="concluded_progress">%1$d%% abgeschlossen</string>
-    <string name="installed">Installiert</string>
     <!-- 📊 Chart Information & Statistics -->
     <string name="chart_by">Level von %1$s</string>
-    <string name="contributors_list_title">Folgende Nutzer trugen beim erstellen des Levels bei:</string>
+    <string name="contributors_list_title">Folgende Nutzer trugen beim Erstellen des Levels bei:</string>
     <string name="credits">Credits:</string>
     <string name="stats">Statistiken</string>
-    <string name="updated_at">%1$s geupdated</string>
+    <string name="updated_at">%1$s aktualisiert</string>
     <string name="known_issues">Bekannte Probleme</string>
     <string name="no_known_issues">Keine bekannten Probleme</string>
     <string name="explicit">Explizit</string>
@@ -62,11 +116,13 @@
     <!-- 🎵 Music & Audio -->
     <string name="listen">Anhören</string>
     <string name="listen_to_track">Song anhören</string>
-    <string name="support_the_artist">Künster unterstützen</string>
-    <string name="support_the_artist_description">Check die Vollversion des Songs aus. Nutze den Streaming-Service deiner Wahl und unterstütze den Künstler</string>
+    <string name="support_the_artist">Künstler unterstützen</string>
+    <string name="support_the_artist_description">Check out the full song from this chart on your
+        favorite streaming service and support the artist work</string>
     <string name="empty_streaming_links">Keine Streaming-Links verfügbar</string>
     <string name="minutes_seconds">%1$dm%2$ds</string>
     <!-- 🎨 Music Genres -->
+    <string name="genre">Genre</string>
     <string name="hip_hop">Hip-Hop</string>
     <string name="pop">Pop</string>
     <string name="r_b"><![CDATA[&B]]></string>
@@ -74,16 +130,16 @@
     <string name="dance">Tanz</string>
     <string name="alternative">Alternativ</string>
     <string name="classical">Klassisch</string>
-    <string name="genre">Genre</string>
     <!-- 🏆 Features & Categories -->
     <string name="awarded">Ausgezeichnet</string>
-    <string name="editors_choice">Editors Wahl</string>
+    <string name="editors_choice">Editor\'s Choice</string>
     <string name="featured">Vorgestellt</string>
     <string name="trending">Beliebt</string>
     <string name="weekly_rank">Wöchentlicher Rang</string>
     <string name="most_downloaded">Meist gedownloaded</string>
     <string name="most_liked">Meist geliked</string>
-    <string name="last_updated">Zuletzt geupdated</string>
+    <string name="last_updated">Zuletzt aktualisiert</string>
+    <string name="multiple_artists">Multiple Artists</string>
     <!-- 👥 User Roles & Contributions -->
     <string name="author_role">Autor</string>
     <string name="chart_role">Level</string>
@@ -92,38 +148,7 @@
     <string name="effects_role">Effekte</string>
     <string name="sync_role">Sync</string>
     <string name="gameplay_role">Spiel</string>
-    <!-- 🔢 Plurals - Quantities -->
-    <plurals name="notes_amount">
-        <item quantity="one">%1$d Note</item>
-        <item quantity="other">%1$d Noten</item>
-    </plurals>
-    <plurals name="effects_amount">
-        <item quantity="one">%1$d Effekt</item>
-        <item quantity="other">%1$d Effekte</item>
-    </plurals>
-    <plurals name="downloads_amount">
-        <item quantity="one">+%1$d Download</item>
-        <item quantity="other">+%1$d Downloads</item>
-    </plurals>
-    <!-- ⏰ Time Expressions -->
-    <string name="today">Heute</string>
-    <string name="yesterday">Gestern</string>
-    <plurals name="days_ago">
-        <item quantity="one">Vor einem Tag</item>
-        <item quantity="other">Vor %1$d Tagen</item>
-    </plurals>
-    <plurals name="weeks_ago">
-        <item quantity="one">Vor einer Woche</item>
-        <item quantity="other">Vor %1$d Wochen</item>
-    </plurals>
-    <plurals name="months_ago">
-        <item quantity="one">Vor einem Monat</item>
-        <item quantity="other">Vor %1$d Monaten</item>
-    </plurals>
-    <plurals name="years_ago">
-        <item quantity="one">Vor einem Jahr</item>
-        <item quantity="other">Vor %1$d Jahren</item>
-    </plurals>
+    <string name="version_format">v%1$d</string>
     <!-- 🔍 Search & Filtering -->
     <string name="search">Suche</string>
     <string name="search_in_workshop">Suche im Workshop</string>
@@ -133,14 +158,10 @@
     <string name="history">Verlauf</string>
     <string name="delete_history_item">Einen Verlauf löschen</string>
     <string name="remove_history_item">Entferne %1$s</string>
-    <string name="remove_history_item_description">Bist du sicher dass du diese Suche löschen möchtest?</string>
+    <string name="remove_history_item_description">Are you sure you want to remove this item from
+        your search history?</string>
     <string name="search_failed">Suche fehlgeschlagen :(</string>
     <string name="filters">Filter</string>
-    <!-- ❌ Delete & Remove Actions -->
-    <string name="delete_chart">Level löschen</string>
-    <string name="delete_chart_description">Bist du sicher dass du dieses Level löschen möchtest?\nDu kannst es später wieder herunterladen.</string>
-    <string name="chart_deleted">Level gelöscht</string>
-    <string name="failed_to_delete_chart">Level löschen fehlgeschlagen</string>
     <!-- 🔄 Common Actions -->
     <string name="share">Teilen</string>
     <string name="share_via">Teilen über</string>
@@ -149,8 +170,17 @@
     <string name="retry">Erneut</string>
     <string name="try_again">Erneut versuchen</string>
     <string name="cancel">Abbrechen</string>
-    <string name="confirm">Annehmen</string>
-    <string name="dismiss">Ignoieren</string>
+    <string name="confirm">Bestätigen</string>
+    <string name="dismiss">Ignorieren</string>
+    <string name="save">Save</string>
+    <string name="manage">Manage</string>
+    <string name="close">Close</string>
+    <!-- ❌ Delete & Remove Actions -->
+    <string name="delete_chart">Level löschen</string>
+    <string name="delete_chart_description">Are you sure you want to delete this chart?\nYou\'ll be
+        able to download it again later.</string>
+    <string name="chart_deleted">Level gelöscht</string>
+    <string name="failed_to_delete_chart">Level löschen fehlgeschlagen</string>
     <!-- 📋 Menu & Interface Elements -->
     <string name="more_options_menu">Mehr Optionen Menü</string>
     <string name="collapse_expand_chart_contributors">Level Mithelfer anzeigen/verstecken</string>
@@ -162,109 +192,50 @@
     <!-- ⚠️ Confirmations & Dialogs -->
     <string name="confirmation_title">BIST DU SICHER?</string>
     <string name="confirmation_description">Das kann nicht rückgängig gemacht werden</string>
-    <!-- 📱 App & System Settings -->
-    <string name="preferences">Präferenzen</string>
-    <string name="customization">Anpassungen</string>
-    <string name="version">Version</string>
-    <string name="launch_app">App öffnen</string>
-    <string name="reopen_app">Bitte App neu öffnen und erneut versuchen</string>
-    <string name="open_settings">Einstellungen öffnen</string>
-    <!-- 🎨 Theme & Appearance -->
-    <string name="material_you_description">Die Akzentfarbe deines Systems benutzen</string>
-    <string name="theme">Thema</string>
-    <string name="app_theme">App Theme</string>
-    <string name="theme_description">Wähle zwischen deinen Systemeinstellungen, hell- und dunkelmodus</string>
-    <string name="system">Sytem</string>
-    <string name="light">Hell</string>
-    <string name="dark">Dunkel</string>
-    <string name="themes">Themes</string>
-    <!-- 🌐 Language Settings -->
-    <string name="language">Sprache</string>
-    <string name="app_language">App sprache</string>
-    <string name="language_description">Wähle eine App-Sprache</string>
-    <string name="system_default_language">System Standard</string>
-    <string name="language_dialog_info">Schau dir die coolen Leute an die geholfen haben diese App in deine Sprache zu übersetzten (Wenn du das ließt ist es Deutsch :D Crazy dass es Leute gibt die ihre Sprache auf Deutsch stellen)</string>
-    <!-- 🔞 Content Settings -->
-    <string name="explicit_content">Explizite Inhalte</string>
-    <string name="explicit_content_description">Zeige Level mit explizieten Inhalten an</string>
-    <string name="explicit_content_disabled">Expliziete Inhalte wurden in den Einstellungen deaktiviert</string>
-    <string name="gameplay_preview">Gameplay Vorschau</string>
-    <string name="gameplay_preview_description">Aktiviere Gameplay Video Vorschau/nDas beinflusst evtl. die Leistung</string>
-    <!-- 🔐 Authentication & Account -->
-    <string name="account">Konto</string>
-    <string name="link_account">Konto verküpfen</string>
-    <string name="link_account_description">Speicher Level welche du magst und behalte es mit dir (kp wie ich das übersetzen soll)</string>
-    <string name="connect">Verbinden</string>
-    <string name="logout">Abmelden</string>
-    <string name="logged_out_successfully">Erfolgreich abgemeldet</string>
-    <string name="discord_icon">Discord Symbol</string>
-    <string name="no_email_provided">Keine E-Mail angegeben</string>
-    <string name="login_description">Verbinde deinen Discord Account, um auf personalisierte Funktionen zuzugreifen</string>
-    <string name="login_with_discord">Mit Discord anmelden</string>
-    <string name="login_terms">Indem Sie fortfahren, stimmen Sie unseren Nutzungsbedingungen und Datenschutzrichtlinien zu</string>
-    <string name="login_success">Welcome, %1$s!\nYou have successfully logged in.</string>
-    <string name="logout_success">Logout successful</string>
-    <string name="error_login">Error during login: %1$s</string>
-    <string name="error_logout">Error during logout: %1$s</string>
-    <string name="error_invalid_auth_code">Error during login: invalid authorization code</string>
-    <string name="auth_cancelled">Authentication cancelled</string>
-    <!-- 📄 Legal & Documentation -->
-    <string name="legal">Rechtliches</string>
-    <string name="terms_of_use">Nutzungsbedingungen</string>
-    <string name="privacy_police">Datenschutz</string>
-    <string name="read_changelog">Änderungsprotokoll lesen</string>
-    <!-- 📝 Feedback & Reporting -->
-    <string name="feedback">Feedback</string>
-    <string name="feedback_description">Helf den Level-Erstellern sich zu verbessern indem du Bugs sendest oder neue Features vorschlägst</string>
-    <string name="bug">Bug</string>
-    <string name="suggestion">Vorschlag</string>
-    <string name="report_description">Helf der Community indem du verstörende Inhalt meldest (aka Inhalt die gegen die Richtlinien sind)/nDein Bericht ist anonym</string>
-    <string name="violent_content">Gewaltdarstellung</string>
-    <string name="spam">Spam</string>
-    <string name="intellectual_property">Urheberrecht</string>
-    <!-- 🎫 Game Features -->
-    <string name="tour_passes">Tournee Pässe</string>
-    <string name="feature_not_implemented">Funktion noch nicht fertig</string>
-    <string name="work_in_progress">Ist in Arbeit!</string>
-    <string name="work_in_progress_description">Dieses Feature braucht noch arbeit\nBitte später nochmal probieren</string>
-    <!-- 📂 Storage & Permissions -->
-    <string name="storage_permission_required">Speicherberechtigungen benötigt</string>
-    <string name="storage_permission_required_description">Um Level herunterzuladen, bitte wähle bzw. erstelle den Order /\"\"beatstar/\"\" in dem Hauptverzeichnis deines Handys</string>
-    <string name="select_folder">Ordner auswählen</string>
-    <string name="incorrect_storage_permission">Ungüliger Ordner</string>
-    <string name="incorrect_storage_permission_description">Der ausgewählte Ordner ist ungültig.\nBitte wähle oder erstelle den Ordner /\"\"beatstar/\"\" in dem Haupverzeichnis deines Handys</string>
-    <!-- 🔔 Notifications -->
-    <string name="notifications_required">Benachrichtigungen benötigt</string>
-    <string name="notifications_required_description">Benachrichtigungen sind wichtig um den Status deiner Downloads zu zeigen. \n</string>
-    <string name="not_now">Nicht jetzt</string>
-    <string name="enable_notifications">Benachrichtigungen aktivieren</string>
-    <string name="enable_notifications_description">Um Benachrichtigungen einzuschalten, öffne die App-Einstellungen und gebe die Berechtigung für Benachrichtigungen frei</string>
-    <string name="download_failed">Download fehlgeschlagen</string>
-    <string name="download_failed_for_chart">Konnte Level nicht herunterladen: %1$s</string>
-    <string name="notification_channel_downloads_name">Downloads</string>
-    <string name="notification_channel_downloads_description">Zeige den Fortschritt und das Ergebnis deiner Downloads</string>
-    <!-- 🏪 App Installation & Updates -->
-    <string name="mod_not_installed">Gemoddete App nicht installiert</string>
-    <string name="mod_not_installed_description">Wir konnen die gemoddete App nicht auf deinem Gerät finden. Bitte lade dir die neuste Version in /\"\"Installationen/\"\" herunter.</string>
-    <string name="go_to_updates">Gehe zu Updates</string>
     <!-- 📭 Empty States -->
     <string name="empty_downloads">Noch keine Downloads</string>
     <string name="empty_downloads_description">Lade paar Level runter um zu starten :D</string>
     <string name="no_charts_found">Keine Level gefunden</string>
     <string name="no_charts_found_description">Versuch nach etwas anderem zu suchen</string>
     <string name="workshop_feed_end">Ende der Level</string>
+    <string name="no_liked_content">No liked content</string>
+    <string name="no_bookmarked_content">No bookmarked content</string>
+    <string name="no_custom_collections">No custom collections created</string>
+    <string name="no_charts_in_library">No charts in library</string>
+    <string name="no_tour_passes_in_library">No tour passes in library</string>
+    <string name="no_themes_in_library">No themes in library</string>
+    <string name="no_recent_activity">No recent activity</string>
+    <string name="no_collections_yet">No collections yet</string>
+    <string name="collections_will_appear">Your collections will appear here. Create your first one!</string>
+    <string name="no_content_available">No content available</string>
+    <string name="end_of_list">End of list</string>
+    <string name="loading">Loading...</string>
+    <!-- ⚙️ Operation States -->
+    <string name="operation_in_progress">Diese Aktion läuft bereits.</string>
+    <string name="cannot_delete_during_download">You can\'t delete a chart while it\'s downloading
+        or extracting.</string>
+    <string name="permission_denied_delete">Zugriff abgelehnt. Level konnte nicht gelöscht werden.</string>
+    <string name="storage_error_delete">Level konnte aufgrund eines Problems mit deinem Speicher nicht gelöscht werden.</string>
     <!-- ⚠️ Error Messages -->
     <string name="error">Fehler: %1$s</string>
     <string name="something_went_wrong">Sieht so aus als wäre etwas schiefgelaufen…</string>
     <string name="check_connection">Überprüfe deine Verbindung und versuchs nochmal</string>
     <string name="failed_to_load_chart_details">Level Details konnten nicht laden</string>
-    <string name="failed_to_load_chart_details_description">Fehler beim Laden der Level Details</string>
+    <string name="failed_to_load_chart_details_description">An error occurred while loading the
+        chart details</string>
+    <string name="failed_to_load_collection">Failed to load collection</string>
+    <string name="failed_to_load_collection_description">An error occurred while loading the
+        collection</string>
+    <string name="failed_to_load_collections">Failed to load collections. Please check your
+        connection and try again.</string>
+    <string name="failed_to_load_profile">Failed to load profile</string>
+    <string name="failed_to_load_cached_charts">Fehler beim Laden der gecacheten Level</string>
+    <string name="failed_to_fetch_feed_charts">Fehler beim Abrufen des Feeds</string>
     <string name="invalid_chart_id">Ungültige Level-ID</string>
-    <string name="failed_to_load_cached_charts">Fehlgeschlagen gecachete Level zu laden</string>
-    <string name="failed_to_fetch_feed_charts">Fehlgeschlagen Feed zu fetchen</string>
     <string name="chart_not_found">Level nicht gefunden</string>
+    <string name="content_not_found">Content not found</string>
     <string name="failed_to_update">Level-Update fehlgeschlagen</string>
-    <string name="no_available_version">Keine verfügbare Version zum updaten</string>
+    <string name="no_available_version">Keine verfügbare Version zum Updaten</string>
     <string name="failed_to_start_download">Download Start fehlgeschlagen</string>
     <string name="no_internet_connection">Keine Internetverbindung</string>
     <string name="no_internet_connection_description">Bitte prüfe deine Verbindung und versuchs nochmal</string>
@@ -272,14 +243,161 @@
     <string name="error_file_not_found">Die benötigte Datei wurde nicht gefunden</string>
     <string name="error_server_problem">Der Server antwortet nicht :/ Bitte versuch es später erneut</string>
     <string name="error_permission_denied">Berechtigung abgelehnt. Bitte erlaube den Zugriff in den Einstellungen.</string>
-    <string name="error_storage_full">Nicht genug Speicherplatz. Leere etwas Speicher und veruche es erneut.</string>
+    <string name="error_storage_full">Nicht genug Speicherplatz. Leere etwas Speicher und versuche es erneut.</string>
     <string name="error_storage_problem">Es gab ein Problem beim Zugriff auf den Speicher.</string>
     <string name="error_extraction_failed">Konnte heruntergeladene Dateien nicht extrahieren.</string>
     <string name="error_download_failed">Download konnte nicht abgeschlossen werden.</string>
     <string name="unknown_error">Irgendwas ist schiefgelaufen.</string>
-    <!-- ⚙️ Operation States -->
-    <string name="operation_in_progress">Diese Aktion ist läuft schon.</string>
-    <string name="cannot_delete_during_download">Du kannst keine Level löschen während diese downloaden oder extrahieren.</string>
-    <string name="permission_denied_delete">Zugriff abgelehnt. Level konnte nicht gelöscht werden.</string>
-    <string name="storage_error_delete">Level konnte aufgrund eines Spiecherproblems nicht gelöscht werden.</string>
+    <!-- 📱 App & System Settings -->
+    <string name="preferences">Präferenzen</string>
+    <string name="customization">Anpassungen</string>
+    <string name="version">Version</string>
+    <string name="launch_app">App öffnen</string>
+    <string name="reopen_app">Bitte App neu öffnen und erneut versuchen</string>
+    <string name="open_settings">Einstellungen öffnen</string>
+    <string name="go_to_settings">Go to Settings</string>
+    <!-- 🎨 Theme & Appearance -->
+    <string name="material_you_description">Die Akzentfarbe deines Systems benutzen</string>
+    <string name="theme">Thema</string>
+    <string name="app_theme">App Theme</string>
+    <string name="theme_description">Wähle zwischen deinen Systemeinstellungen, hell- und dunkelmodus</string>
+    <string name="system">System</string>
+    <string name="light">Hell</string>
+    <string name="dark">Dunkel</string>
+    <string name="themes">Themes</string>
+    <!-- 🌐 Language Settings -->
+    <string name="language">Sprache</string>
+    <string name="app_language">App-Sprache</string>
+    <string name="language_description">Wähle eine App-Sprache</string>
+    <string name="system_default_language">System Standard</string>
+    <string name="language_dialog_info">Check out the incredible people who helped translate the app
+        into your language</string>
+    <!-- 🔞 Content Settings -->
+    <string name="explicit_content">Explizite Inhalte</string>
+    <string name="explicit_content_description">Zeige Level mit expliziten Inhalten an</string>
+    <string name="explicit_content_disabled">Explizite Inhalte wurden in den Einstellungen deaktiviert</string>
+    <string name="gameplay_preview">Gameplay Vorschau</string>
+    <string name="gameplay_preview_description">Enable gameplay video previews\nThis may affect
+        performance</string>
+    <!-- 🔐 Authentication & Account -->
+    <string name="account">Konto</string>
+    <string name="link_account">Konto verknüpfen</string>
+    <string name="link_account_description">Speichere von dir gelikete Level auf jedem Gerät</string>
+    <string name="connect">Verbinden</string>
+    <string name="logout">Abmelden</string>
+    <string name="logged_out_successfully">Erfolgreich abgemeldet</string>
+    <string name="discord_icon">Discord Symbol</string>
+    <string name="no_email_provided">Keine E-Mail angegeben</string>
+    <string name="login_description">Verbinde deinen Discord Account, um auf personalisierte Funktionen zuzugreifen</string>
+    <string name="login_with_discord">Mit Discord anmelden</string>
+    <string name="login_terms">Indem du fortfährst, stimmst du unseren Nutzungsbedingungen und Datenschutzrichtlinien zu</string>
+    <string name="login_success">Willkommen %1$s!\nDu hast dich erfolgreich angemeldet.</string>
+    <string name="logout_success">Erfolgreich abgemeldet</string>
+    <string name="error_login">Fehler beim Anmelden: %1$s</string>
+    <string name="error_logout">Fehler beim Abmelden: %1$s</string>
+    <string name="error_invalid_auth_code">Fehler beim Anmelden: Ungültiger Autorisierungscode</string>
+    <string name="auth_cancelled">Authentifizierung abgebrochen</string>
+    <string name="linked_to">Linked to @%1$s</string>
+    <string name="unlink_account">Unlink account</string>
+    <string name="public_profile">Public profile</string>
+    <string name="public_profile_description">Other users can see your liked content</string>
+    <!-- 🗂️ Collections & Favorites -->
+    <string name="collections">Collections</string>
+    <string name="likes">Likes</string>
+    <string name="collection_add">Add collection</string>
+    <string name="collection_create">Create collection</string>
+    <string name="collection_edit">Edit collection</string>
+    <string name="create_new_collection">Create new collection</string>
+    <string name="collection_name_label">Name</string>
+    <string name="enter_collection_name">Enter collection name</string>
+    <string name="make_public">Make public</string>
+    <string name="make_public_description">Public collections will be shown in your profile and can
+        be shared with others</string>
+    <string name="switch_collection">Switch Collection</string>
+    <string name="added_to_favorites">Added to Favorites</string>
+    <string name="saved_to_collection">Saved to %1$s!</string>
+    <string name="connect_to_manage_favorites">Connect to manage favorites</string>
+    <string name="connect_to_manage_likes">Connect to manage likes</string>
+    <string name="collection_name_exists">A collection with that name already exists. Please choose
+        a different name.</string>
+    <string name="error_creating_collection">Error creating collection: %1$s</string>
+    <string name="collection_delete">Delete collection</string>
+    <string name="collection_delete_description">Are you sure you want to delete this collection? This action cannot be undone.</string>
+    <string name="manage_collection">Manage collection</string>
+    <string name="collection_by">Collection by %1$s</string>
+    <string name="no_content_in_collection">No content in this collection</string>
+    <!-- 📰 Activity Feed -->
+    <string name="activity_followed_user">Followed a user</string>
+    <string name="activity_unknown">Activity</string>
+    <string name="activity_created_content">Created %1$s \"%2$s\"</string>
+    <string name="activity_liked_content">Liked %1$s \"%2$s\"</string>
+    <string name="activity_bookmarked_content">Bookmarked %1$s \"%2$s\"</string>
+    <string name="content_type_chart">chart</string>
+    <string name="content_type_theme">theme</string>
+    <string name="content_type_tour_pass">tour pass</string>
+    <!-- 📂 Storage & Permissions -->
+    <string name="storage_permission_required">Speicherberechtigungen benötigt</string>
+    <string name="storage_permission_required_description">To download charts, please select or
+        create a folder named \'beatstar\' on the root folder of your device.</string>
+    <string name="select_folder">Ordner auswählen</string>
+    <string name="incorrect_storage_permission">Ungültiger Ordner</string>
+    <string name="incorrect_storage_permission_description">The selected folder is not
+        valid.\nPlease select or create a \'beatstar\' folder in the root directory of your device
+        and try again.</string>
+    <!-- 🔔 Notifications -->
+    <string name="notifications_required">Benachrichtigungen benötigt</string>
+    <string name="notifications_required_description">Notifications are important to show you the
+        status of your downloads.\nWould you like to enable them?</string>
+    <string name="not_now">Nicht jetzt</string>
+    <string name="enable_notifications">Benachrichtigungen aktivieren</string>
+    <string name="enable_notifications_description">To enable notifications, please open app
+        settings and grant notification permission.</string>
+    <string name="download_failed">Download fehlgeschlagen</string>
+    <string name="download_failed_for_chart">Konnte Level nicht herunterladen: %1$s</string>
+    <string name="notification_channel_downloads_name">Downloads</string>
+    <string name="notification_channel_downloads_description">Shows progress and results of your
+        downloads</string>
+    <!-- 🏪 App Installation & Updates -->
+    <string name="mod_not_installed">Gemoddete App nicht installiert</string>
+    <string name="mod_not_installed_description">We couldn\'t find the modded app on your device.
+        Visit the \'Installations\' section on the Updates page to download the latest version.</string>
+    <string name="go_to_updates">Gehe zu Updates</string>
+    <!-- 🎫 Game Features -->
+    <string name="tour_passes">Tournee Pässe</string>
+    <string name="feature_not_implemented">Funktion noch nicht fertig</string>
+    <string name="work_in_progress">Ist in Arbeit!</string>
+    <string name="work_in_progress_description">This feature might be coming sooner than you
+        think\nPlease, check back later</string>
+    <!-- 📝 Feedback & Reporting -->
+    <string name="feedback">Feedback</string>
+    <string name="feedback_description">Help the chart contributors to improve by reporting bugs or
+        suggesting new features.</string>
+    <string name="bug">Bug</string>
+    <string name="suggestion">Vorschlag</string>
+    <string name="report_description">Help the community by flagging inappropriate content\nYour
+        report is anonymous</string>
+    <string name="violent_content">Gewaltdarstellung</string>
+    <string name="spam">Spam</string>
+    <string name="intellectual_property">Urheberrecht</string>
+    <!-- 📄 Legal & Documentation -->
+    <string name="legal">Rechtliches</string>
+    <string name="terms_of_use">Nutzungsbedingungen</string>
+    <string name="privacy_police">Datenschutz</string>
+    <string name="read_changelog">Änderungsprotokoll lesen</string>
+    <!-- 🌍 About & Community -->
+    <string name="about">About</string>
+    <string name="contributors">Contributors</string>
+    <string name="contributors_description">Check out the amazing people we have contributing to
+        bscm</string>
+    <string name="programming">Programming</string>
+    <string name="design">Design</string>
+    <string name="localization">Localization</string>
+    <string name="socials">Socials</string>
+    <string name="website">Website</string>
+    <string name="discord">Discord</string>
+    <string name="github">GitHub</string>
+    <!-- 🗒️ Local Item -->
+    <string name="local_item_title">Local item</string>
+    <string name="local_item_message">This chart was added manually and is not managed by the
+        app.\nYou\'ll need to update or remove it manually.</string>
 </resources>

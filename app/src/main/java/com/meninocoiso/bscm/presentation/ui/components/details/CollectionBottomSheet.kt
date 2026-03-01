@@ -77,8 +77,8 @@ fun CollectionCreateBottomSheet(
     val horizontalPagerState = rememberPagerState { 2 }
 
     val currentTitle = when (horizontalPagerState.currentPage) {
-        0 -> "Add collection"
-        1 -> "Create collection"
+        0 -> stringResource(R.string.collection_add)
+        1 -> stringResource(R.string.collection_create)
         else -> ""
     }
 
@@ -216,7 +216,7 @@ fun CollectionEditBottomSheet(
         ) {
             Spacer(modifier = Modifier.size(48.dp))
             Text(
-                text = "Edit collection",
+                text = stringResource(R.string.collection_edit),
                 style = MaterialTheme.typography.titleMedium
             )
             IconButton(enabled = !isLoading, onClick = onClose) {
@@ -281,7 +281,7 @@ fun CollectionsListSection(
                         modifier = Modifier.size(28.dp)
                     )
                 }
-                Text("Create new collection", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.create_new_collection), style = MaterialTheme.typography.titleMedium)
             }
         }
         if (errorMessage != null) {
@@ -289,7 +289,7 @@ fun CollectionsListSection(
                 StatusMessageUI(
                     modifier = Modifier.padding(vertical = 32.dp),
                     icon = R.drawable.rounded_error_24,
-                    title = "Error",
+                    title = stringResource(R.string.error),
                     message = errorMessage,
                     size = StatusMessageSize.Small
                 )
@@ -312,8 +312,8 @@ fun CollectionsListSection(
                 StatusMessageUI(
                     modifier = Modifier.padding(vertical = 32.dp),
                     icon = R.drawable.outline_deployed_code_24,
-                    title = "No collections yet",
-                    message = "Your collections will appear here. Create your first one!",
+                    title = stringResource(R.string.no_collections_yet),
+                    message = stringResource(R.string.collections_will_appear),
                     size = StatusMessageSize.Small
                 )
             }
@@ -349,24 +349,24 @@ fun CollectionFormSection(
         horizontalAlignment = Alignment.Start,
         modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
     ) {
-        OutlinedTextField(
+                OutlinedTextField(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
             value = name,
             onValueChange = { if (it.length <= MAX_NAME_LENGTH) name = it },
             enabled = !isLoading,
-            label = { Text("Name") },
+            label = { Text(stringResource(R.string.collection_name_label)) },
             singleLine = true,
             supportingText = { Text("${name.length}/${MAX_NAME_LENGTH}") },
-            placeholder = { Text("Enter collection name") }
+            placeholder = { Text(stringResource(R.string.enter_collection_name)) }
         )
         ListItem(
             colors = ListItemDefaults.colors(
                 containerColor = Color.Transparent
             ),
-            headlineContent = { Text("Make public") },
-            supportingContent = { Text("Public collections will be showed in your profile and can be shared with friends") },
+            headlineContent = { Text(stringResource(R.string.make_public)) },
+            supportingContent = { Text(stringResource(R.string.make_public_description)) },
             trailingContent = {
                 SwitchUI(
                     checked = isPublic,
@@ -395,7 +395,7 @@ fun CollectionFormSection(
                     color = ButtonDefaults.buttonColors().disabledContentColor,
                 )
             } else {
-                Text("Save")
+                Text(stringResource(R.string.save))
             }
         }
     }
@@ -446,15 +446,15 @@ fun CollectionItem(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "${contentCounts.first} charts",
+                    text = stringResource(R.string.charts_count, contentCounts.first),
                     style = MaterialTheme.typography.labelLarge
                 )
                 Text(
-                    text = "${contentCounts.second} tour passes",
+                    text = stringResource(R.string.tourpasses_count, contentCounts.second),
                     style = MaterialTheme.typography.labelLarge
                 )
                 Text(
-                    text = "${contentCounts.third} themes",
+                    text = stringResource(R.string.themes_count, contentCounts.third),
                     style = MaterialTheme.typography.labelLarge
                 )
             }

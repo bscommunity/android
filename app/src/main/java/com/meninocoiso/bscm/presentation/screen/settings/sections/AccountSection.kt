@@ -59,10 +59,10 @@ fun AccountSection(
                         )
                     ),
                     headlineContent = {
-                        HeadlineText("Public profile")
+                        HeadlineText(stringResource(R.string.public_profile))
                     },
                     supportingContent = {
-                        SupportingText("Other users can see your liked content")
+                        SupportingText(stringResource(R.string.public_profile_description))
                     },
                     trailingContent = {
                         SwitchUI(
@@ -77,7 +77,7 @@ fun AccountSection(
                     modifier = Modifier.settingsCard(),
                     headlineContent = {
                         Text(
-                            text = "Linked to @${user.username}",
+                            text = stringResource(R.string.linked_to, user.username),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     },
@@ -88,7 +88,7 @@ fun AccountSection(
                                 contentColor = MaterialTheme.colorScheme.error
                             )
                         ) {
-                            Text("Unlink account")
+                            Text(stringResource(R.string.unlink_account))
                         }
                     }
                 )

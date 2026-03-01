@@ -18,6 +18,7 @@ import com.meninocoiso.bscm.domain.repository.ChartQuery
 import com.meninocoiso.bscm.domain.repository.ChartRemoteRepository
 import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.ContentState
+import com.meninocoiso.bscm.domain.result.UiText
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -103,7 +104,8 @@ class ChartManager @Inject constructor(
     suspend fun updateContentByContentId(contentId: String, operation: OperationOption): ContentResult<Chart> {
         val internalId = resolveInternalIdByContentId(contentId).getOrElse { err ->
             return ContentResult.Error(
-                err.message ?: context.getString(R.string.content_not_found),
+                err.message?.let {UiText.DynamicString(it) }
+                    ?: UiText.StringResource(R.string.content_not_found),
                 err
             )
         }
@@ -144,7 +146,15 @@ class ChartManager @Inject constructor(
                 }
                 emit(ContentResult.Success(updated))
             },
-            onFailure = { err -> emit(ContentResult.Error(context.getString(R.string.failed_to_check_for_updates), err)) }
+                onFailure = { err ->
+                    emit(
+                        ContentResult.Error(
+                            err.message?.let { UiText.DynamicString(it) }
+                                ?: UiText.StringResource(R.string.failed_to_check_for_updates),
+                            err
+                        )
+                    )
+                }
         )
     }
 

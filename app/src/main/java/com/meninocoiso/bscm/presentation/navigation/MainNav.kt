@@ -270,7 +270,7 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: User?, hasUpdate: Boolean, intentFl
                     val route: Collection = backStackEntry.toRoute()
                     CollectionScreen(
                         collection = route.collection,
-                        isOwner = user?.id == route.collection.owner?.id,
+                        isOwner = user?.id == route.collection.owner.id,
                         onNavigateToDetails = { chart ->
                             onNavigateToDetails(chart)
                         },

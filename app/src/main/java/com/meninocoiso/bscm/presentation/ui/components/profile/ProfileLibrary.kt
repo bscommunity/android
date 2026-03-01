@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
@@ -46,7 +47,12 @@ fun ProfileLibrary(
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val tabItems = listOf("Charts", "Tour Passes", "Themes", "Collections")
+    val tabItems = listOf(
+        stringResource(R.string.charts),
+        stringResource(R.string.tour_passes),
+        stringResource(R.string.themes),
+        stringResource(R.string.collections)
+    )
 
     val horizontalPagerState = rememberPagerState { tabItems.size }
 
@@ -96,17 +102,14 @@ fun ProfileLibrary(
                             StatusMessageUI(
                                 modifier = Modifier.fillMaxSize(),
                                 size = StatusMessageSize.Medium,
-                                message = "No charts in library",
+                                message = stringResource(R.string.no_charts_in_library),
                                 icon = R.drawable.outline_library_music_24
                             )
                         }
                     ) {
                         LazyColumn(modifier = Modifier.fillMaxWidth(), state = listState) {
                             contentList(items.filterIsInstance<Chart>(), onNavigateToDetails)
-                            pagination(
-                                isLoadingMore = isLoadingMore,
-                                message = if (!hasMore) "End of list" else ""
-                            )
+                            pagination(isLoadingMore = isLoadingMore, showMessage = !hasMore)
                         }
                     }
                 }
@@ -127,17 +130,14 @@ fun ProfileLibrary(
                             StatusMessageUI(
                                 modifier = Modifier.fillMaxSize(),
                                 size = StatusMessageSize.Medium,
-                                message = "No tour passes in library",
+                                message = stringResource(R.string.no_tour_passes_in_library),
                                 icon = R.drawable.outline_library_music_24
                             )
                         }
                     ) {
                         LazyColumn(modifier = Modifier.fillMaxWidth(), state = listState) {
                             contentList(items.filterIsInstance<TourPass>(), onNavigateToDetails)
-                            pagination(
-                                isLoadingMore = isLoadingMore,
-                                message = if (!hasMore) "End of list" else ""
-                            )
+                            pagination(isLoadingMore = isLoadingMore, showMessage = !hasMore)
                         }
                     }
                 }
@@ -159,17 +159,14 @@ fun ProfileLibrary(
                             StatusMessageUI(
                                 modifier = Modifier.fillMaxSize(),
                                 size = StatusMessageSize.Medium,
-                                message = "No themes in library",
+                                message = stringResource(R.string.no_themes_in_library),
                                 icon = R.drawable.outline_library_music_24
                             )
                         }
                     ) {
                         LazyColumn(modifier = Modifier.fillMaxWidth(), state = listState) {
                             contentList(items.filterIsInstance<Theme>(), onNavigateToDetails)
-                            pagination(
-                                isLoadingMore = isLoadingMore,
-                                message = if (!hasMore) "End of list" else ""
-                            )
+                            pagination(isLoadingMore = isLoadingMore, showMessage = !hasMore)
                         }
                     }
                 }
@@ -197,7 +194,7 @@ fun ProfileLibrary(
                     } else {
                         StatusMessageUI(
                             modifier = Modifier.fillMaxWidth(),
-                            message = "No content available",
+                            message = stringResource(R.string.no_content_available),
                             icon = R.drawable.outline_library_music_24
                         )
                     }

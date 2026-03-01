@@ -42,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -93,8 +94,6 @@ fun CollectionScreen(
     var currentCollection by remember { mutableStateOf(collection) }
     var isDeleting by remember { mutableStateOf(false) }
 
-    println("CollectionScreen: collection=${collection}")
-
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val items = uiState.items
     val itemCount = collection.itemCount.toList().sum()
@@ -132,8 +131,8 @@ fun CollectionScreen(
     when (currentDialog) {
         CollectionDialog.DeleteConfirmation -> {
             ConfirmationDialog(
-                title = "Delete collection",
-                message = "Are you sure you want to delete this collection? This action cannot be undone.",
+                title = stringResource(R.string.collection_delete),
+                message = stringResource(R.string.collection_delete_description),
                 onDismiss = {
                     currentDialog = CollectionDialog.None
                     isDeleting = false
@@ -202,7 +201,7 @@ fun CollectionScreen(
 
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,
-                                text = { Text("Delete collection") },
+                                text = { Text(stringResource(R.string.collection_delete)) },
                                 leadingIcon = {
                                     Icon(Icons.Outlined.Delete, contentDescription = null)
                                 },
@@ -239,7 +238,8 @@ fun CollectionScreen(
 
                         if (itemCount > 0) {
                             Text(
-                                "$itemCount items",
+                                // Use plurals resource for proper localization
+                                pluralStringResource(R.plurals.items_count, itemCount, itemCount),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
@@ -266,7 +266,7 @@ fun CollectionScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 48.dp),
-                    message = "No content in this collection",
+                    message = stringResource(R.string.no_content_in_collection),
                     icon = R.drawable.outline_library_music_24,
                 )
             }
@@ -281,7 +281,7 @@ fun CollectionScreen(
                 item {
                     if (isOwner) {
                         ButtonUI(
-                            text = "Manage collection",
+                            text = stringResource(R.string.manage_collection),
                             icon = R.drawable.outline_settings_24,
                             onClick = {
                                 showBottomSheet = true
@@ -303,7 +303,7 @@ fun CollectionScreen(
                             )
                             Text(
                                 style = MaterialTheme.typography.bodySmall,
-                                text = "Collection by ${collection.owner.username}",
+                                text = stringResource(R.string.collection_by, collection.owner.username),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f, fill = false)
@@ -321,7 +321,7 @@ fun CollectionScreen(
                 contentList(items = items.items, onNavigateToDetails = onNavigateToDetails)
                 pagination(
                     isLoadingMore = items.isLoadingMore,
-                    message = if (items.hasMore) "Loading" else "No more items",
+                    showMessage = !items.hasMore
                 )
                 // TODO: Workaround to avoid bugging the scroll when the list has few items
                 item {
