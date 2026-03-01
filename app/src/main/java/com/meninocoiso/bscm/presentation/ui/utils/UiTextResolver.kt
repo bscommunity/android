@@ -10,12 +10,12 @@ import com.meninocoiso.bscm.domain.result.UiText
  */
 @Composable
 fun UiText.asString(): String = when (this) {
-    is UiText.StringResource -> stringResource(this.resId, *this.args.toTypedArray())
-    is UiText.DynamicString -> this.value
+    is UiText.Res -> stringResource(this.resId, *this.args.toTypedArray())
+    is UiText.Plain -> this.value
 }
 
 // For non-Composable contexts (LaunchedEffect, lambdas, ViewModels)
 fun UiText.resolve(context: Context): String = when (this) {
-    is UiText.StringResource -> context.getString(resId, *args.toTypedArray())
-    is UiText.DynamicString -> value
+    is UiText.Res -> context.getString(resId, *args.toTypedArray())
+    is UiText.Plain -> value
 }

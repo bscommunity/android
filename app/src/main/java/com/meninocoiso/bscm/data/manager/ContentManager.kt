@@ -1,6 +1,5 @@
 package com.meninocoiso.bscm.data.manager
 
-import android.content.Context
 import android.util.Log
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.OperationOption
@@ -13,8 +12,8 @@ import com.meninocoiso.bscm.domain.repository.ContentOperationPolicy
 import com.meninocoiso.bscm.domain.repository.ContentQuery
 import com.meninocoiso.bscm.domain.repository.ContentSuggestionsRepository
 import com.meninocoiso.bscm.domain.result.ContentResult
-import com.meninocoiso.bscm.domain.result.UiText
 import com.meninocoiso.bscm.domain.result.ContentState
+import com.meninocoiso.bscm.domain.result.UiText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,7 +33,6 @@ import javax.inject.Singleton
  */
 @Singleton
 class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
-    private val context: Context,
     private val remoteRepository: ContentFeedRepository<T, S, Q>,
     private val localRepository: ContentLocalRepository<T, S, Q>,
     private val remoteItemRepository: ContentItemRepository<T>,
@@ -86,8 +84,8 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
                     onFailure = { err ->
                         emit(
                             ContentResult.Error(
-                                err.message?.let { UiText.DynamicString(it) }
-                                    ?: UiText.StringResource(R.string.content_not_found),
+                                err.message?.let { UiText.Plain(it) }
+                                    ?: UiText.Res(R.string.content_not_found),
                                 err
                             )
                         )
@@ -117,8 +115,8 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
                     onFailure = { err ->
                         emit(
                             ContentResult.Error(
-                                err.message?.let { UiText.DynamicString(it) }
-                                    ?: UiText.StringResource(R.string.content_not_found),
+                                err.message?.let { UiText.Plain(it) }
+                                    ?: UiText.Res(R.string.content_not_found),
                                 err
                             )
                         )
@@ -158,8 +156,8 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
                     onFailure = { err ->
                         emit(
                             ContentResult.Error(
-                                err.message?.let { UiText.DynamicString(it) }
-                                    ?: UiText.StringResource(R.string.content_not_found),
+                                err.message?.let { UiText.Plain(it) }
+                                    ?: UiText.Res(R.string.content_not_found),
                                 err
                             )
                         )
@@ -188,16 +186,16 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
         val existing = memoryStore.contentById.value[id]
             ?: localItemRepository.getItem(id).first().getOrElse { err ->
                 return ContentResult.Error(
-                    err.message?.let { UiText.DynamicString(it) }
-                        ?: UiText.StringResource(R.string.content_not_found),
+                    err.message?.let { UiText.Plain(it) }
+                        ?: UiText.Res(R.string.content_not_found),
                     err
                 )
             }
 
         val updated = operationPolicy.apply(existing, operation).getOrElse { err ->
             return ContentResult.Error(
-                err.message?.let { UiText.DynamicString(it) }
-                    ?: UiText.StringResource(R.string.failed_to_update),
+                err.message?.let { UiText.Plain(it) }
+                    ?: UiText.Res(R.string.failed_to_update),
                 err
             )
         }
@@ -205,7 +203,7 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
         val dbResult = localRepository.update(listOf(updated)).first()
         if (dbResult.isFailure || dbResult.getOrNull() != true) {
             return ContentResult.Error(
-                UiText.StringResource(R.string.failed_to_update),
+                UiText.Res(R.string.failed_to_update),
                 dbResult.exceptionOrNull()
             )
         }
@@ -293,8 +291,8 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
                 _feedState.value = ContentState.Error
                 emit(
                     ContentResult.Error(
-                        err.message?.let { UiText.DynamicString(it) }
-                            ?: UiText.StringResource(R.string.failed_to_fetch_feed_charts),
+                        err.message?.let { UiText.Plain(it) }
+                            ?: UiText.Res(R.string.failed_to_fetch_feed_charts),
                         err
                     )
                 )
@@ -302,7 +300,7 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
         )
     }.catch { e ->
         _feedState.value = ContentState.Error
-        emit(ContentResult.Error(UiText.StringResource(R.string.failed_to_fetch_feed_charts), e))
+        emit(ContentResult.Error(UiText.Res(R.string.failed_to_fetch_feed_charts), e))
     }
 
     fun search(
@@ -338,13 +336,13 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
             onFailure = { err ->
                 emit(
                     ContentResult.Error(
-                        UiText.StringResource(R.string.search_failed),
+                        UiText.Res(R.string.search_failed),
                         err
                     )
                 )
             }
         )
-    }.catch { e -> emit(ContentResult.Error(UiText.StringResource(R.string.search_failed), e)) }
+    }.catch { e -> emit(ContentResult.Error(UiText.Res(R.string.search_failed), e)) }
 }
 
 // -- small collection helpers

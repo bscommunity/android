@@ -78,8 +78,8 @@ class DownloadRepository @Inject constructor(
         val updateResult = chartManager.updateContentByContentId(contentId, operation)
         if (updateResult is ContentResult.Error) {
             val msg = when (val m = updateResult.message) {
-                is UiText.DynamicString -> m.value
-                is UiText.StringResource -> context.getString(m.resId, *m.args.toTypedArray())
+                is UiText.Plain -> m.value
+                is UiText.Res -> context.getString(m.resId, *m.args.toTypedArray())
             }
             throw Exception(msg)
         }
@@ -103,8 +103,8 @@ class DownloadRepository @Inject constructor(
         val updateResult = chartManager.updateContentByContentId(contentId, OperationOption.DELETE)
         if (updateResult is ContentResult.Error) {
             val msg = when (val m = updateResult.message) {
-                is UiText.DynamicString -> m.value
-                is UiText.StringResource -> context.getString(m.resId, *m.args.toTypedArray())
+                is UiText.Plain -> m.value
+                is UiText.Res -> context.getString(m.resId, *m.args.toTypedArray())
             }
             throw Exception(msg)
         }

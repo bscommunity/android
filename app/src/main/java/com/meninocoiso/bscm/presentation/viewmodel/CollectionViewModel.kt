@@ -2,6 +2,7 @@ package com.meninocoiso.bscm.presentation.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.ApiException
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Collection
@@ -10,7 +11,6 @@ import com.meninocoiso.bscm.domain.model.toSimplifiedCollection
 import com.meninocoiso.bscm.domain.repository.CollectionRepository
 import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.UiText
-import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.viewmodel.profile.BaseProfileViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedSection
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -76,7 +76,7 @@ class CollectionViewModel @Inject constructor(
         },
         getItems = { _uiState.value.userCollections.items },
         setSection = { section -> _uiState.update { it.copy(userCollections = section) } },
-        onFailureWithData = { emitSnackbar("Falha ao carregar coleções") },
+        onFailureWithData = { emitSnackbar(UiText.Res(R.string.failed_to_load_collections)) },
     )
 
     // -------------------------------------------------------------------------
@@ -84,7 +84,7 @@ class CollectionViewModel @Inject constructor(
     // -------------------------------------------------------------------------
 
     /**
-     * Entry point called by [CollectionScreen] whenever the collection changes or
+     * Entry point called by [com.meninocoiso.bscm.presentation.screen.collection.CollectionScreen] whenever the collection changes or
      * a pull-to-refresh is triggered. Passing a new [collectionId] automatically
      * resets the cursor so stale data is never shown.
      */
@@ -112,7 +112,7 @@ class CollectionViewModel @Inject constructor(
             },
             getItems = { _uiState.value.items.items },
             setSection = { section -> _uiState.update { it.copy(items = section) } },
-            onFailureWithData = { emitSnackbar("Falha ao carregar itens") },
+            onFailureWithData = { emitSnackbar(UiText.Res(R.string.failed_to_load_items)) },
         )
     }
 
@@ -135,7 +135,7 @@ class CollectionViewModel @Inject constructor(
         getItems = { _uiState.value.items.items },
         getSection = { _uiState.value.items },
         setSection = { section -> _uiState.update { it.copy(items = section) } },
-        onFailureWithData = { emitSnackbar("Falha ao atualizar coleção") },
+        onFailureWithData = { emitSnackbar(UiText.Res(R.string.failed_to_update_collection_items)) },
     )
 
     // -------------------------------------------------------------------------
@@ -151,7 +151,7 @@ class CollectionViewModel @Inject constructor(
                     if (collection.owner == null) {
                         Log.e(TAG, "Collection $username/$slug has no owner in response")
                         _collectionResult.value =
-                            ContentResult.Error(UiText.DynamicString("Collection data is incomplete: missing owner"))
+                            ContentResult.Error(UiText.Res(R.string.collection_data_incomplete_missing_owner))
                         return@onSuccess
                     }
                     _collectionResult.value =
@@ -161,7 +161,7 @@ class CollectionViewModel @Inject constructor(
                     Log.e(TAG, "Failed to fetch collection $username/$slug", e)
                     _collectionResult.value =
                         ContentResult.Error(
-                            e.message?.let { UiText.DynamicString(it) } ?: UiText.StringResource(R.string.unknown_error),
+                            e.message?.let { UiText.Plain(it) } ?: UiText.Res(R.string.unknown_error),
                             e
                         )
                 }
@@ -212,11 +212,11 @@ class CollectionViewModel @Inject constructor(
             val result = collectionRepository.updateCollection(collectionId, name, isPublic)
             result.onSuccess {
                 Log.d(TAG, "Updated collection: $collectionId")
-                emitSnackbar("Collection updated successfully")
+                emitSnackbar(UiText.Res(R.string.collection_updated_successfully))
             }
             .onFailure { e ->
                 Log.e(TAG, "Failed to update collection", e)
-                emitSnackbar("Failed to update collection")
+                emitSnackbar(UiText.Res(R.string.failed_to_update_collection))
             }
             return result
         } finally {
@@ -240,16 +240,16 @@ class CollectionViewModel @Inject constructor(
                         )
                     )
                 }
-                emitSnackbar("Collection deleted successfully")
+                emitSnackbar(UiText.Res(R.string.collection_deleted_successfully))
             }
                 .onFailure { e ->
                     Log.e(TAG, "Failed to delete collection", e)
-                    emitSnackbar("Failed to delete collection")
+                    emitSnackbar(UiText.Res(R.string.failed_to_delete_collection))
                 }
             return result
         } catch (e: Exception) {
             Log.e(TAG, "Error deleting collection", e)
-            emitSnackbar("Failed to delete collection")
+            emitSnackbar(UiText.Res(R.string.failed_to_delete_collection))
             return Result.failure(e)
         }
     }

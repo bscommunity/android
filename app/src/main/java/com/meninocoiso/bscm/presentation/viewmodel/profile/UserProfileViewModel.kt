@@ -2,6 +2,7 @@ package com.meninocoiso.bscm.presentation.viewmodel.profile
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.model.CatalogItem
@@ -9,9 +10,8 @@ import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.repository.CollectionRepository
 import com.meninocoiso.bscm.domain.repository.MeRepository
 import com.meninocoiso.bscm.domain.result.ContentResult
-import com.meninocoiso.bscm.domain.result.UiText
-import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.result.ContentState
+import com.meninocoiso.bscm.domain.result.UiText
 import com.meninocoiso.bscm.presentation.viewmodel.PaginationState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -109,7 +109,7 @@ class UserProfileViewModel @Inject constructor(
                     .onSuccess { _profile.value = ContentResult.Success(it) }
                     .onFailure { err ->
                         _profile.value = ContentResult.Error(
-                            err.message?.let { UiText.DynamicString(it) } ?: UiText.StringResource(R.string.failed_to_load_profile)
+                            err.message?.let { UiText.Plain(it) } ?: UiText.Res(R.string.failed_to_load_profile)
                         )
                     }
         }
@@ -149,7 +149,7 @@ class UserProfileViewModel @Inject constructor(
         getItems = { _uiState.value.likes.items },
         getSection = { _uiState.value.likes },
         setSection = { section -> _uiState.update { it.copy(likes = section) } },
-        onFailureWithData = { emitSnackbar("Falha ao atualizar curtidas") },
+        onFailureWithData = { emitSnackbar(UiText.Res(R.string.failed_to_update_likes)) },
     )
 
     fun loadMoreLikes() {
@@ -177,7 +177,7 @@ class UserProfileViewModel @Inject constructor(
             val c = fetchCustomCollections(reset = true, useCache = false,
                 onFailureWithData = { anyFailed = true })
             b.join(); c.join()
-            if (anyFailed) emitSnackbar("Failed to refresh collections")
+            if (anyFailed) emitSnackbar(UiText.Res(R.string.failed_to_refresh_collections))
         } finally {
             _uiState.update { it.copy(collections = it.collections.copy(isRefreshing = false)) }
         }

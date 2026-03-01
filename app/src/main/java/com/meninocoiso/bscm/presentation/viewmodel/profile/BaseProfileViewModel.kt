@@ -2,7 +2,9 @@ package com.meninocoiso.bscm.presentation.viewmodel.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.result.ContentState
+import com.meninocoiso.bscm.domain.result.UiText
 import com.meninocoiso.bscm.presentation.viewmodel.PaginationState
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,10 +48,10 @@ abstract class BaseProfileViewModel : ViewModel() {
 
     // One-shot events (e.g. snackbar messages) — SharedFlow so they're not replayed
     // on recomposition, unlike StateFlow.
-    private val _snackbarEvents = MutableSharedFlow<String>()
-    val snackbarEvents: SharedFlow<String> = _snackbarEvents.asSharedFlow()
+    private val _snackbarEvents = MutableSharedFlow<UiText>()
+    val snackbarEvents: SharedFlow<UiText> = _snackbarEvents.asSharedFlow()
 
-    protected fun emitSnackbar(message: String) {
+    protected fun emitSnackbar(message: UiText) {
         viewModelScope.launch { _snackbarEvents.emit(message) }
     }
 
@@ -143,7 +145,7 @@ abstract class BaseProfileViewModel : ViewModel() {
                     if (getItems().isNotEmpty()) {
                         // Preserve existing content; surface a snackbar instead
                         onFailureWithData?.invoke()
-                            ?: emitSnackbar("Failed to load more: ${error.localizedMessage ?: "Unknown error"}")
+                            ?: emitSnackbar(UiText.Res(R.string.failed_to_load_more, error.localizedMessage ?: "Unknown error"))
                         setSection(
                             PagedSection(
                                 items = getItems(),

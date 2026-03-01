@@ -1,5 +1,6 @@
 package com.meninocoiso.bscm.domain.state
 
+import com.meninocoiso.bscm.domain.result.UiText
 import java.io.File
 
 sealed class AppUpdateState {
@@ -9,5 +10,5 @@ sealed class AppUpdateState {
     data class Downloading(val progress: Float) : AppUpdateState()
     data class UpdateAvailable(val version: String) : AppUpdateState()
     data class ReadyToInstall(val apkFile: File) : AppUpdateState()
-    data class Error(val message: String) : AppUpdateState()
+    data class Error(val message: UiText) : AppUpdateState()
 }

@@ -29,7 +29,7 @@ class ChartDetailsViewModel @Inject constructor(
 
     fun fetchChartById(contentId: String?) {
         if (contentId.isNullOrEmpty()) {
-            _chart.value = ContentResult.Error(UiText.StringResource(R.string.invalid_chart_id))
+            _chart.value = ContentResult.Error(UiText.Res(R.string.invalid_chart_id))
             return
         }
 
@@ -58,7 +58,7 @@ class ChartDetailsViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "Error fetching data", e)
                 _chart.value = ContentResult.Error(
-                    UiText.DynamicString(e.message ?: context.getString(R.string.unknown_error)),
+                    UiText.Plain(e.message ?: context.getString(R.string.unknown_error)),
                     e
                 )
             }

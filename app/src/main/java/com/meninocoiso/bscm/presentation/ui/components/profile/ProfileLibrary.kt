@@ -33,6 +33,7 @@ fun ProfileLibrary(
     state: ContentState,
     isRefreshing: Boolean,
     customCollections: PagedSection<Collection>,
+    counts: Triple<Int, Int, Int>,
     onFetch: (reset: Boolean) -> Unit,
     onNavigateToDetails: OnNavigateToDetails,
     onNavigateToCollection: (Collection) -> Unit,
@@ -56,20 +57,14 @@ fun ProfileLibrary(
 
     val horizontalPagerState = rememberPagerState { tabItems.size }
 
-    val libraryLoaded = state == ContentState.Success
-    val collectionsLoaded = customCollections.state == ContentState.Success
+    // val libraryLoaded = state == ContentState.Success
+    // val collectionsLoaded = customCollections.state == ContentState.Success
 
     Column(modifier) {
         CatalogFilters(
-            // TODO: Get these counts from the API instead of estimating them here,
-            //  since we might not be fetching all items at once
-            itemsAmount = Triple(
-                items.count { it is Chart },
-                items.count { it is TourPass },
-                items.count { it is Theme }
-            ),
+            itemsAmount = counts,
             showCollection = true,
-            collectionsAmount = if (collectionsLoaded) customCollections.items.size else null,
+            collectionsAmount = customCollections.items.size,
             currentSelected = horizontalPagerState.currentPage,
             onFilterSelected = { index ->
                 coroutineScope.launch {

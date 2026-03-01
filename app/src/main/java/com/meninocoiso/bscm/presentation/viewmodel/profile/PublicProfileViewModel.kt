@@ -2,6 +2,7 @@ package com.meninocoiso.bscm.presentation.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.ApiException
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
@@ -11,7 +12,6 @@ import com.meninocoiso.bscm.domain.repository.CollectionRepository
 import com.meninocoiso.bscm.domain.repository.ProfileRepository
 import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.UiText
-import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.viewmodel.profile.BaseProfileViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedSection
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -52,6 +52,7 @@ class PublicProfileViewModel @Inject constructor(
         val activity: PagedSection<ActivityItemResponse> = PagedSection(),
         val library: PagedSection<CatalogItem> = PagedSection(),
         val customCollections: PagedSection<Collection> = PagedSection(),
+        val libraryCounts: Triple<Int, Int, Int> = Triple(0, 0, 0),
         val isFollowing: Boolean = false,
         val isFollowLoading: Boolean = false,
     )
@@ -84,12 +85,18 @@ class PublicProfileViewModel @Inject constructor(
             profileRepository.getProfileHeader(username)
                 .onSuccess { profile ->
                     _profile.value = ContentResult.Success(profile)
-                    _uiState.update { it.copy(isFollowing = profile.isFollowing == true) }
+                    _uiState.update {
+                        it.copy(
+                            isFollowing = profile.isFollowing == true,
+                            libraryCounts = profile.counts.library!!
+                        )
+                    }
                     Log.d(TAG, "Profile loaded: $username")
                 }
                 .onFailure { error ->
                     _profile.value = ContentResult.Error(
-                        error.message?.let { UiText.DynamicString(it) } ?: UiText.StringResource(R.string.failed_to_load_profile)
+                        error.message?.let { UiText.Plain(it) }
+                            ?: UiText.Res(R.string.failed_to_load_profile)
                     )
                     Log.e(TAG, "Error loading profile: $username", error)
                 }
@@ -140,7 +147,7 @@ class PublicProfileViewModel @Inject constructor(
                     _uiState.update { it.copy(isFollowing = target, isFollowLoading = false) }
                 } else {
                     _uiState.update { it.copy(isFollowLoading = false) }
-                    emitSnackbar("Failed to ${if (target) "follow" else "unfollow"} user")
+                    emitSnackbar(UiText.Res(if (target) R.string.failed_to_follow_user else R.string.failed_to_unfollow_user))
                     Log.e(TAG, "Toggle follow failed for $userId", error)
                 }
             }
@@ -169,7 +176,7 @@ class PublicProfileViewModel @Inject constructor(
         getItems = { _uiState.value.activity.items },
         getSection = { _uiState.value.activity },
         setSection = { section -> _uiState.update { it.copy(activity = section) } },
-        onFailureWithData = { emitSnackbar("Failed to update activity feed") },
+        onFailureWithData = { emitSnackbar(UiText.Res(R.string.failed_to_update_activity_feed)) },
     )
 
     fun fetchLibrary(userId: String) = fetchPaged(
@@ -198,7 +205,7 @@ class PublicProfileViewModel @Inject constructor(
         getItems = { _uiState.value.library.items },
         getSection = { _uiState.value.library },
         setSection = { section -> _uiState.update { it.copy(library = section) } },
-        onFailureWithData = { emitSnackbar("Failed to update library") },
+        onFailureWithData = { emitSnackbar(UiText.Res(R.string.failed_to_update_library)) },
     )
 
     fun fetchCollections(userId: String) = fetchPaged(
@@ -227,7 +234,7 @@ class PublicProfileViewModel @Inject constructor(
         getItems = { _uiState.value.customCollections.items },
         getSection = { _uiState.value.customCollections },
         setSection = { section -> _uiState.update { it.copy(customCollections = section) } },
-        onFailureWithData = { emitSnackbar("Failed to update collections") },
+        onFailureWithData = { emitSnackbar(UiText.Res(R.string.failed_to_update_collections)) },
     )
 
     fun loadMoreActivity(userId: String) {

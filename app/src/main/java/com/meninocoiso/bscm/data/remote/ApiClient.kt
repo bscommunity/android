@@ -45,7 +45,7 @@ interface ApiClient {
     suspend fun getUsers(search: String? = null): List<User>
     suspend fun getUser(id: String): User
     suspend fun getUserProfile(id: String): UserProfileResponse
-    suspend fun getUserProfileByUsername(username: String): UserProfileResponse
+    suspend fun getUserProfileByUsername(username: String, counts: Set<String> = emptySet()): UserProfileResponse
     suspend fun getUserActivity(id: String, limit: Int? = null, offset: Int? = null): List<ActivityItemResponse>
     suspend fun getUserCharts(id: String, limit: Int? = null, offset: Int? = null): List<Chart>
     suspend fun followUser(id: String): Boolean

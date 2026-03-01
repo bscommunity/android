@@ -91,11 +91,12 @@
     <string name="install_update">Install update</string>
     <string name="update_from_to">Update from v%1$d → v%2$d</string>
     <string name="update_complete">Update complete</string>
+    <string name="update_available">Update available</string>
     <string name="updates_available">Updates available (%1$d)</string>
     <string name="no_updates_available">No updates available</string>
     <string name="checking_for_updates">Checking for updates…</string>
     <string name="check_for_updates">Check for updates</string>
-    <string name="failed_to_check_for_updates">Failed to check for updates</string>
+    <string name="failed_to_check_for_updates">Failed to check for updates: %1$s</string>
     <string name="fetch_updates_error">We couldn\'t fetch updates…</string>
     <string name="up_to_date">App is up to date</string>
     <string name="client_outdated">Client outdated</string>
@@ -226,7 +227,7 @@
     <string name="collections_will_appear">Your collections will appear here. Create your first one!</string>
     <string name="no_content_available">No content available</string>
     <string name="end_of_list">End of list</string>
-    <string name="loading">Loading...</string>
+    <string name="loading">Loading…</string>
 
     <!-- ⚙️ Operation States -->
     <string name="operation_in_progress">This action is already in progress.</string>
@@ -435,5 +436,24 @@
     <string name="local_item_title">Local item</string>
     <string name="local_item_message">This chart was added manually and is not managed by the
         app.\nYou\'ll need to update or remove it manually.</string>
+
+    <!-- Profile and Collection Errors -->
+    <string name="failed_to_update_activity_feed">Failed to update activity feed</string>
+    <string name="failed_to_update_library">Failed to update library</string>
+    <string name="failed_to_update_collections">Failed to update collections</string>
+    <string name="failed_to_update_collection_items">Failed to update collection items</string>
+    <string name="failed_to_follow_user">Failed to follow user</string>
+    <string name="failed_to_unfollow_user">Failed to unfollow user</string>
+    <string name="failed_to_load_more">Failed to load more: %1$s</string>
+    <string name="failed_to_load_collections">Failed to load collections</string>
+    <string name="failed_to_load_items">Failed to load items</string>
+    <string name="failed_to_update_collection">Failed to update collection</string>
+    <string name="collection_data_incomplete_missing_owner">Collection data is incomplete: missing owner</string>
+    <string name="collection_updated_successfully">Collection updated successfully</string>
+    <string name="collection_deleted_successfully">Collection deleted successfully</string>
+    <string name="failed_to_delete_collection">Failed to delete collection</string>
+    <string name="failed_to_update_likes">Failed to update likes</string>
+    <string name="failed_to_refresh_collections">Failed to refresh collections</string>
+    <string name="bookmarks">Bookmarks</string>
 
 </resources>

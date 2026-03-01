@@ -22,6 +22,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -38,6 +39,7 @@ import com.meninocoiso.bscm.presentation.screen.settings.sections.PreferencesSec
 import com.meninocoiso.bscm.presentation.screen.settings.sections.UpdateSection
 import com.meninocoiso.bscm.presentation.ui.modifiers.fabScrollObserver
 import com.meninocoiso.bscm.presentation.ui.modifiers.rememberFabNestedScrollConnection
+import com.meninocoiso.bscm.presentation.ui.utils.resolve
 import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
@@ -60,20 +62,21 @@ fun SettingsScreen(
     val activity = LocalActivity.current as ComponentActivity
     val authViewModel: AuthViewModel = hiltViewModel(activity)
 
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isLoading by authViewModel.isLoading.collectAsStateWithLifecycle()
 
     // Collects auth events from AuthViewModel
     LaunchedEffect(Unit) {
         authViewModel.snackbarEvents.collect { message ->
-            onSnackbar.show(message)
+            onSnackbar.show(message.resolve(context))
         }
     }
 
     // Collects update events from SettingsViewModel
     LaunchedEffect(Unit) {
         viewModel.updateEvents.collect { message ->
-            onSnackbar.show(message)
+            onSnackbar.show(message.resolve(context))
         }
     }
 

@@ -34,7 +34,7 @@ class ProfileRepositoryRemote @Inject constructor(
         }
 
         // Fetch from API
-        val profile = apiClient.getUserProfileByUsername(username)
+        val profile = apiClient.getUserProfileByUsername(username, setOf("library"))
         Log.d(TAG, "Fetched profile for user $username from API: $profile")
 
         // Cache the result

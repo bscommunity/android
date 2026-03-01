@@ -1,6 +1,5 @@
 package com.meninocoiso.bscm.presentation.viewmodel
 
-import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -8,12 +7,13 @@ import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.repository.AuthRepository
 import com.meninocoiso.bscm.data.security.DiscordOAuth
+import com.meninocoiso.bscm.domain.result.UiText
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.shareIn
@@ -27,7 +27,6 @@ private const val TAG = "AuthViewModel"
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val discordOAuth: DiscordOAuth,
-    @param:ApplicationContext private val context: Context
 ) : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
@@ -38,8 +37,12 @@ class AuthViewModel @Inject constructor(
         return authRepository.getCurrentUserId()
     }
 
-    private val _snackbarEvents = MutableSharedFlow<String>()
-    val snackbarEvents: SharedFlow<String> = _snackbarEvents.shareIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, replay = 0)
+    private val _snackbarEvents = MutableSharedFlow<UiText>()
+    val snackbarEvents: SharedFlow<UiText> = _snackbarEvents.shareIn(
+        viewModelScope,
+        SharingStarted.Lazily,
+        replay = 0
+    )
 
     // If we ever need to handle errors in other ways (e.g., dialogs, logging, analytics), 
     // keep error-related events separate, in something like errorEvents.
@@ -68,11 +71,11 @@ class AuthViewModel @Inject constructor(
         secureRandom.nextBytes(bytes)
         return bytes.joinToString("") { "%02x".format(it) }
     }
-    
+
     fun setError(message: String) {
         viewModelScope.launch {
             _isLoading.value = false
-            _snackbarEvents.emit(message)
+            _snackbarEvents.emit(UiText.Plain(message))
         }
     }
 
@@ -82,7 +85,7 @@ class AuthViewModel @Inject constructor(
     fun cancelPendingOAuth() {
         Log.d(TAG, "cancelPendingOAuth: Cancelling pending OAuth")
         viewModelScope.launch {
-            _snackbarEvents.emit(context.getString(R.string.auth_cancelled))
+            _snackbarEvents.emit(UiText.Res(R.string.auth_cancelled))
         }
         _isLoading.value = false
         // clear any persisted pending state
@@ -95,7 +98,7 @@ class AuthViewModel @Inject constructor(
         if (code.isBlank()) {
             Log.e(TAG, "handleAuthCallback: Invalid authorization code")
             viewModelScope.launch {
-                _snackbarEvents.emit(context.getString(R.string.error_invalid_auth_code))
+                _snackbarEvents.emit(UiText.Res(R.string.error_invalid_auth_code))
             }
             _isLoading.value = false
             return
@@ -104,7 +107,7 @@ class AuthViewModel @Inject constructor(
             authRepository.authenticateWithDiscord(code, "bscm://auth/callback")
                 .catch { e ->
                     Log.e(TAG, "handleAuthCallback: Flow error - ${e.message}", e)
-                    _snackbarEvents.emit(context.getString(R.string.error_login, e.message ?: ""))
+                    _snackbarEvents.emit(UiText.Res(R.string.error_login, e.message ?: ""))
                     _isLoading.value = false
                 }
                 .collect { result ->
@@ -113,14 +116,28 @@ class AuthViewModel @Inject constructor(
                             Log.d(TAG, "handleAuthCallback: Authentication successful")
                             _isLoading.value = false
 
-                            _snackbarEvents.emit(context.getString(R.string.login_success, user.username))
+                            _snackbarEvents.emit(
+                                UiText.Res(
+                                    R.string.login_success,
+                                    user.username
+                                )
+                            )
 
                             // clear persisted pending state on success
                             authRepository.clearPendingOAuthState()
                         },
                         onFailure = { ex ->
-                            Log.e(TAG, "handleAuthCallback: Authentication failed - ${ex.message}", ex)
-                            _snackbarEvents.emit(context.getString(R.string.error_login, ex.message ?: ""))
+                            Log.e(
+                                TAG,
+                                "handleAuthCallback: Authentication failed - ${ex.message}",
+                                ex
+                            )
+                            _snackbarEvents.emit(
+                                UiText.Res(
+                                    R.string.error_login,
+                                    ex.message ?: ""
+                                )
+                            )
                             _isLoading.value = false
                             // clear persisted pending state on failure as well
                             authRepository.clearPendingOAuthState()
@@ -138,7 +155,7 @@ class AuthViewModel @Inject constructor(
                 .onSuccess {
                     Log.d(TAG, "logout: Logout successful")
                     _isLoading.value = false
-                    _snackbarEvents.emit(context.getString(R.string.logout_success))
+                    _snackbarEvents.emit(UiText.Res(R.string.logout_success))
                 }
                 .onFailure { e ->
                     if (e is CancellationException) {
@@ -146,7 +163,7 @@ class AuthViewModel @Inject constructor(
                         throw e
                     }
                     Log.e(TAG, "logout: Error during logout - ${e.message}", e)
-                    _snackbarEvents.emit(context.getString(R.string.error_logout, e.message ?: ""))
+                    _snackbarEvents.emit(UiText.Res(R.string.error_logout, e.message ?: ""))
                     _isLoading.value = false
                 }
         }

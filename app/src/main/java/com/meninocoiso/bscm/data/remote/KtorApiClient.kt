@@ -281,8 +281,17 @@ class KtorApiClient @Inject constructor(
         return client.get("users/$id").body()
     }
 
-    override suspend fun getUserProfileByUsername(username: String): UserProfileResponse {
-        return client.get("users/username/$username").body()
+    override suspend fun getUserProfileByUsername(
+        username: String,
+        counts: Set<String>
+    ): UserProfileResponse {
+        return client.get("users/profile/$username") {
+            url {
+                if (counts.isNotEmpty()) {
+                    parameters.append("counts", counts.joinToString(","))
+                }
+            }
+        }.body()
     }
 
     override suspend fun getUserActivity(
@@ -318,7 +327,14 @@ class KtorApiClient @Inject constructor(
     }
 
     override suspend fun getMyProfile(): UserProfileResponse {
-        return client.get("me/profile").body()
+        return client.get("me/profile") {
+            url {
+                parameters.append(
+                    "counts",
+                    "likes,bookmarks,collections,followers,following"
+                )
+            }
+        }.body()
     }
 
     override suspend fun getMyCollections(limit: Int?, offset: Int?): List<Collection> {

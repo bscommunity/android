@@ -1,6 +1,5 @@
 package com.meninocoiso.bscm.data.manager
 
-import android.content.Context
 import android.net.Uri
 import android.util.Log
 import com.meninocoiso.bscm.R
@@ -19,7 +18,6 @@ import com.meninocoiso.bscm.domain.repository.ChartRemoteRepository
 import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.domain.result.UiText
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,7 +36,6 @@ private const val TAG = "ChartManager"
  */
 @Singleton
 class ChartManager @Inject constructor(
-    @param:ApplicationContext private val context: Context,
     @param:ApplicationScope private val coroutineScope: CoroutineScope,
     private val remoteChartRepository: ChartRemoteRepository,
     private val localChartRepository: ChartLocalRepository,
@@ -104,8 +101,8 @@ class ChartManager @Inject constructor(
     suspend fun updateContentByContentId(contentId: String, operation: OperationOption): ContentResult<Chart> {
         val internalId = resolveInternalIdByContentId(contentId).getOrElse { err ->
             return ContentResult.Error(
-                err.message?.let {UiText.DynamicString(it) }
-                    ?: UiText.StringResource(R.string.content_not_found),
+                err.message?.let {UiText.Plain(it) }
+                    ?: UiText.Res(R.string.content_not_found),
                 err
             )
         }
@@ -149,8 +146,8 @@ class ChartManager @Inject constructor(
                 onFailure = { err ->
                     emit(
                         ContentResult.Error(
-                            err.message?.let { UiText.DynamicString(it) }
-                                ?: UiText.StringResource(R.string.failed_to_check_for_updates),
+                            err.message?.let { UiText.Plain(it) }
+                                ?: UiText.Res(R.string.failed_to_check_for_updates),
                             err
                         )
                     )
