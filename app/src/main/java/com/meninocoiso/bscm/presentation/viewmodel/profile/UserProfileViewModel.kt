@@ -3,13 +3,11 @@ package com.meninocoiso.bscm.presentation.viewmodel.profile
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.data.remote.dto.user.UserProfileCounts
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.repository.CollectionRepository
 import com.meninocoiso.bscm.domain.repository.MeRepository
-import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.domain.result.UiText
 import com.meninocoiso.bscm.presentation.viewmodel.PaginationState
@@ -56,8 +54,9 @@ class UserProfileViewModel @Inject constructor(
     // Profile header
     // -------------------------------------------------------------------------
 
-    private val _profile = MutableStateFlow<ContentResult<UserProfileCounts>>(ContentResult.Loading)
-    val profile: StateFlow<ContentResult<UserProfileCounts>> = _profile.asStateFlow()
+    /*private val _profile =
+        MutableStateFlow<ContentResult<UserProfileCounts>>(ContentResult.Loading)
+    val profile: StateFlow<ContentResult<UserProfileCounts>> = _profile.asStateFlow()*/
 
     // -------------------------------------------------------------------------
     // UI state
@@ -107,42 +106,35 @@ class UserProfileViewModel @Inject constructor(
     // Public API
     // -------------------------------------------------------------------------
 
-    fun loadProfile() {
+    /*fun loadProfile() {
+        // resetAll()
         viewModelScope.launch {
-            meRepository.getProfile(false)
+            meRepository.getProfile()
                 .onSuccess {
-                    Log.d(TAG, "Profile loaded: $it")
                     _profile.value = ContentResult.Success(
                         UserProfileCounts(
-                            likes = it.counts.likes!!,
-                            bookmarks = it.counts.bookmarks!!,
-                            collections = it.counts.collections!!,
-                            followers = it.counts.followers!!,
-                            following = it.counts.following!!,
+                            likes = it.counts.likes ?: Triple(0, 0, 0),
+                            bookmarks = it.counts.bookmarks ?: Triple(0, 0, 0),
+                            collections = it.counts.collections ?: 0,
+                            followers = it.counts.followers ?: 0,
+                            following = it.counts.following ?: 0,
                         )
                     )
                 }
                 .onFailure { err ->
-                    Log.d(TAG, "Failed to load profile", err)
                     _profile.value = ContentResult.Error(
                         err.message?.let { UiText.Plain(it) }
                             ?: UiText.Res(R.string.failed_to_load_profile)
                     )
-                    emitSnackbar(UiText.Res(R.string.failed_to_load_profile))
                 }
         }
-    }
-
-    fun refreshProfile() {
-        resetAll()
-        loadProfile()
-    }
+    }*/
 
     init {
         loadProfile()
     }
 
-    /*fun loadProfile() {
+    fun loadProfile() {
         // resetAll()
         viewModelScope.launch {
             meRepository.getProfile(false)
@@ -164,7 +156,7 @@ class UserProfileViewModel @Inject constructor(
                     emitSnackbar(UiText.Res(R.string.failed_to_load_profile))
                 }
         }
-    }*/
+    }
 
     /**
      * Called when the user taps a tab. Loads data lazily — only fetches if the
