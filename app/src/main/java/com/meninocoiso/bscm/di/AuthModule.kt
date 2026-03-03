@@ -7,7 +7,7 @@ import com.meninocoiso.bscm.data.manager.CryptoManager
 import com.meninocoiso.bscm.data.manager.SecureTokenManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.repository.AuthRepository
-import com.meninocoiso.bscm.data.repository.ProfileCacheRepository
+import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.data.security.DiscordOAuth
 import dagger.Module
 import dagger.Provides
@@ -41,9 +41,9 @@ object AuthModule {
     fun provideAuthRepository(
         apiClient: ApiClient,
         tokenManager: SecureTokenManager,
-        profileCacheRepository: ProfileCacheRepository,
+        cacheRepository: CacheRepository,
         dataStore: DataStore<Preferences>
     ): AuthRepository {
-        return AuthRepository(apiClient, tokenManager, profileCacheRepository, dataStore)
+        return AuthRepository(apiClient, tokenManager, cacheRepository, dataStore)
     }
 }

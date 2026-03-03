@@ -6,7 +6,9 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.enums.SortOption
+import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.internal.Cache
 import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
 import kotlinx.coroutines.flow.Flow
@@ -27,6 +29,7 @@ class CacheRepository @Inject constructor(
     companion object CacheKeys {
         val SEARCH_HISTORY = stringPreferencesKey("search_history")
         val WORKSHOP_SORT = stringPreferencesKey("workshop_sort")
+        val USER_JSON = stringPreferencesKey("user_json")
         val CONTRIBUTORS_JSON = stringPreferencesKey("contributors_json")
     }
 
@@ -47,6 +50,8 @@ class CacheRepository @Inject constructor(
             mapCache(preferences)
         }
 
+    // -------------------- Search history -------------------------
+
     suspend fun setSearchHistory(songs: List<String>) {
         val serializedSongs = songs.joinToString("|") // "|" is the delimiter
         dataStore.edit { it[SEARCH_HISTORY] = serializedSongs }
@@ -56,13 +61,36 @@ class CacheRepository @Inject constructor(
         val serializedSongs = dataStore.data.first()[SEARCH_HISTORY] ?: ""
         return if (serializedSongs.isNotEmpty()) serializedSongs.split("|") else emptyList()
     }
-    
+
+    //-------------------- Workshop sort option -------------------------
+
     suspend fun getLatestWorkshopSort(): SortOption? {
         return dataStore.data.first()[WORKSHOP_SORT]?.let { SortOption.valueOf(it) }
     }
 
     suspend fun setLatestWorkshopSort(sort: String) {
         dataStore.edit { it[WORKSHOP_SORT] = sort }
+    }
+
+    // -------------------- User cache -------------------------
+    suspend fun setUser(user: User) {
+        val encoded = json.encodeToString(User.serializer(), user)
+        dataStore.edit { it[USER_JSON] = encoded }
+    }
+
+    suspend fun getUser(): User? {
+        val encoded = dataStore.data.first()[USER_JSON] ?: return null
+        if (encoded.isBlank()) return null
+        return try {
+            json.decodeFromString(User.serializer(), encoded)
+        } catch (e: SerializationException) {
+            Log.e("CacheRepository", "Failed to decode user from cache", e)
+            null
+        }
+    }
+
+    suspend fun clearUser() {
+        dataStore.edit { it.remove(USER_JSON) }
     }
 
     suspend fun setContributors(contributors: List<ContributionCategory>) {
@@ -82,10 +110,21 @@ class CacheRepository @Inject constructor(
         } else emptyList()
     }
 
-
+    /**
+     * Maps the raw [Preferences] to a [Cache] object, handling any necessary
+     * deserialization and default values.
+     * These are the values the UI needs instantly on app launch, in a [Flow] instead of suspend
+     * functions,so we can show the cached data immediately while loading the rest.
+     * */
     private fun mapCache(preferences: Preferences): Cache = Cache(
-        searchHistory = preferences[SEARCH_HISTORY]?.split("|") ?: emptyList(),
         latestWorkshopSort = preferences[WORKSHOP_SORT]?.let { SortOption.valueOf(it) }
             ?: Cache().latestWorkshopSort,
+        user = preferences[USER_JSON]?.let { encoded ->
+            try {
+                json.decodeFromString(SimplifiedUser.serializer(), encoded)
+            } catch (_: Exception) {
+                null
+            }
+        }
     )
 }

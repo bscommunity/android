@@ -8,15 +8,18 @@ import com.meninocoiso.bscm.data.remote.dto.collection.BatchCollectionItemReques
 import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionItemRequest
 import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionRequest
 import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionRequest
+import com.meninocoiso.bscm.data.remote.dto.user.ItemsPage
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.data.security.AuthInterceptor
 import com.meninocoiso.bscm.data.security.AuthPlugin
 import com.meninocoiso.bscm.data.security.TokenRefreshPlugin
 import com.meninocoiso.bscm.domain.enums.ActionType
+import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.enums.SortOption
+import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.User
@@ -48,6 +51,8 @@ import io.ktor.serialization.kotlinx.json.json
 import jakarta.inject.Inject
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.polymorphic
 import io.ktor.http.ContentType as KtorContentType
 
 private const val TAG = "KtorApiClient"
@@ -73,6 +78,13 @@ class KtorApiClient @Inject constructor(
         }
     }
 
+    private val catalogItemModule = SerializersModule {
+        polymorphic(CatalogItem::class) {
+            subclass(Chart::class, Chart.serializer())
+            // subclass(TourPass::class, TourPass.serializer()) // add others later
+        }
+    }
+
     private val client = HttpClient(Android) {
         /*install(Logging) {
             level = LogLevel.ALL
@@ -86,6 +98,8 @@ class KtorApiClient @Inject constructor(
             json(Json {
                 ignoreUnknownKeys = true
                 prettyPrint = true
+                serializersModule = catalogItemModule
+                classDiscriminator = "type"
             })
         }
         install(HttpTimeout) {
@@ -99,6 +113,9 @@ class KtorApiClient @Inject constructor(
                 if (response.status.value >= 400) {
                     val message = parseErrorMessage(response)
                     throw ApiException(response.status, message)
+                } else {
+                    // For debugging: log successful responses
+                    Log.d(TAG, "HTTP ${response.status.value} $response")
                 }
             }
         }
@@ -307,7 +324,7 @@ class KtorApiClient @Inject constructor(
         }.body()
     }
 
-    override suspend fun getUserCharts(id: String, limit: Int?, offset: Int?): List<Chart> {
+    override suspend fun getUserCharts(id: String, limit: Int?, offset: Int?): ItemsPage<Chart> {
         return client.get("users/$id/charts") {
             url {
                 limit?.let { parameters.append("limit", it.toString()) }
@@ -337,7 +354,7 @@ class KtorApiClient @Inject constructor(
         }.body()
     }
 
-    override suspend fun getMyCollections(limit: Int?, offset: Int?): List<Collection> {
+    override suspend fun getMyCollections(limit: Int?, offset: Int?): ItemsPage<Collection> {
         return client.get("me/collections") {
             url {
                 limit?.let { parameters.append("limit", it.toString()) }
@@ -355,20 +372,22 @@ class KtorApiClient @Inject constructor(
         }.body()
     }
 
-    override suspend fun getMyLikes(limit: Int?, offset: Int?): List<Chart> {
+    override suspend fun getMyLikes(limit: Int?, offset: Int?, types: List<ContentType>?): ItemsPage<Chart> {
         return client.get("me/likes") {
             url {
                 limit?.let { parameters.append("limit", it.toString()) }
                 offset?.let { parameters.append("offset", it.toString()) }
+                types?.let { parameters.append("types", it.joinToString(",") { t -> t.name }) }
             }
         }.body()
     }
 
-    override suspend fun getMyBookmarks(limit: Int?, offset: Int?): List<Chart> {
+    override suspend fun getMyBookmarks(limit: Int?, offset: Int?, types: List<ContentType>?): ItemsPage<Chart> {
         return client.get("me/bookmarks") {
             url {
                 limit?.let { parameters.append("limit", it.toString()) }
                 offset?.let { parameters.append("offset", it.toString()) }
+                types?.let { parameters.append("types", it.joinToString(",") { t -> t.name }) }
             }
         }.body()
     }
@@ -397,7 +416,7 @@ class KtorApiClient @Inject constructor(
         userId: String,
         limit: Int?,
         offset: Int?
-    ): List<Collection> {
+    ): ItemsPage<Collection> {
         return client.get("users/$userId/collections") {
             url {
                 limit?.let { parameters.append("limit", it.toString()) }
@@ -438,17 +457,30 @@ class KtorApiClient @Inject constructor(
 
     override suspend fun getCollectionItems(
         collectionId: String,
-        contentType: String?,
+        types: List<ContentType>?,
         limit: Int?,
         offset: Int?
-    ): List<Chart> {
-        return client.get("collections/$collectionId/items") {
-            url {
-                contentType?.let { parameters.append("contentType", it) }
-                limit?.let { parameters.append("limit", it.toString()) }
-                offset?.let { parameters.append("offset", it.toString()) }
+    ): ItemsPage<CatalogItem> {
+        return try {
+            val response = client.get("collections/$collectionId/items") {
+                url {
+                    types?.let { parameters.append("types", it.joinToString(",") { t -> t.name }) }
+                    limit?.let { parameters.append("limit", it.toString()) }
+                    offset?.let { parameters.append("offset", it.toString()) }
+                }
             }
-        }.body()
+
+            Log.d(TAG, "status=${response.status}")
+            val bodyText = response.bodyAsText()
+            Log.d(TAG, "raw body=$bodyText")
+
+            // If you still need typed parsing, do it via Json decoder or second request.
+            // bodyAsText() consumes content, so don't call response.body<T>() after this.
+            Json { ignoreUnknownKeys = true }.decodeFromString(bodyText)
+        } catch (e: Exception) {
+            Log.e(TAG, "getCollectionItems failed: ${e.message}", e)
+            throw e
+        }
     }
 
     override suspend fun addItemToCollection(collectionId: String, contentId: String): Boolean {

@@ -1,18 +1,17 @@
 package com.meninocoiso.bscm.domain.repository
 
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
-import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
+import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedResult
 import kotlinx.coroutines.flow.Flow
 
 interface MeRepository {
-    suspend fun getProfile(useCache: Boolean = true): Result<UserProfileResponse>
-
     suspend fun getActivity(limit: Int, offset: Int, useCache: Boolean): Result<List<ActivityItemResponse>>
 
-    suspend fun getLikes(limit: Int, offset: Int, useCache: Boolean): Result<List<Chart>>
+    suspend fun getLikes(limit: Int, offset: Int, useCache: Boolean): Result<PagedResult<CatalogItem>>
 
-    suspend fun getBookmarks(limit: Int, offset: Int, useCache: Boolean): Result<List<Chart>>
+    suspend fun getBookmarks(limit: Int, offset: Int, useCache: Boolean): Result<PagedResult<CatalogItem>>
 
     // -----------------------------------------------------------------
     // Reactive streams — backed by Room so they emit on every local

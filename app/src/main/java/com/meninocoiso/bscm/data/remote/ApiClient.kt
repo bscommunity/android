@@ -2,11 +2,14 @@ package com.meninocoiso.bscm.data.remote
 
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.collection.BatchCollectionItemRequest
+import com.meninocoiso.bscm.data.remote.dto.user.ItemsPage
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
+import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.enums.SortOption
+import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.User
@@ -47,16 +50,19 @@ interface ApiClient {
     suspend fun getUserProfile(id: String): UserProfileResponse
     suspend fun getUserProfileByUsername(username: String, counts: Set<String> = emptySet()): UserProfileResponse
     suspend fun getUserActivity(id: String, limit: Int? = null, offset: Int? = null): List<ActivityItemResponse>
-    suspend fun getUserCharts(id: String, limit: Int? = null, offset: Int? = null): List<Chart>
+    suspend fun getUserCharts(id: String, limit: Int? = null, offset: Int? = null): ItemsPage<Chart>
+    // suspend fun getUserTourPasses(userId: String, limit: Int? = null, offset: Int? = null): ItemsPage<TourPass>
+    // suspend fun getUserThemes(userId: String, limit: Int? = null, offset: Int? = null): ItemsPage<Theme>
+    suspend fun getUserCollections(userId: String, limit: Int? = null, offset: Int? = null): ItemsPage<Collection>
     suspend fun followUser(id: String): Boolean
     suspend fun unfollowUser(id: String): Boolean
 
     // Me
     suspend fun getMyProfile(): UserProfileResponse
     suspend fun getMyActivity(limit: Int? = null, offset: Int? = null): List<ActivityItemResponse>
-    suspend fun getMyCollections(limit: Int? = null, offset: Int? = null): List<Collection>
-    suspend fun getMyLikes(limit: Int? = null, offset: Int? = null): List<Chart>
-    suspend fun getMyBookmarks(limit: Int? = null, offset: Int? = null): List<Chart>
+    suspend fun getMyCollections(limit: Int? = null, offset: Int? = null): ItemsPage<Collection>
+    suspend fun getMyLikes(limit: Int? = null, offset: Int? = null, types: List<ContentType>? = null): ItemsPage<Chart>
+    suspend fun getMyBookmarks(limit: Int? = null, offset: Int? = null, types: List<ContentType>? = null): ItemsPage<Chart>
     suspend fun addLike(contentId: String): Boolean
     suspend fun removeLike(contentId: String): Boolean
     suspend fun addBookmark(contentId: String): Boolean
@@ -65,16 +71,15 @@ interface ApiClient {
     // Collections
     suspend fun getCollection(collectionId: String): Collection
     suspend fun getCollectionBySlug(username: String, slug: String): Collection
-    suspend fun getUserCollections(userId: String, limit: Int? = null, offset: Int? = null): List<Collection>
     suspend fun createCollection(name: String, isPublic: Boolean): Collection
     suspend fun updateCollection(collectionId: String, name: String?, isPublic: Boolean?): String?
     suspend fun deleteCollection(collectionId: String): Boolean
     suspend fun getCollectionItems(
         collectionId: String,
-        contentType: String? = null,
+        types: List<ContentType>? = null,
         limit: Int? = null,
         offset: Int? = null
-    ): List<Chart>
+    ): ItemsPage<CatalogItem>
     suspend fun addItemToCollection(collectionId: String, contentId: String): Boolean
     suspend fun removeItemFromCollection(collectionId: String, contentId: String): Boolean
 

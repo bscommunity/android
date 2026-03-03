@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.BuildConfig
 import com.meninocoiso.bscm.data.repository.AppUpdateRepository
-import com.meninocoiso.bscm.data.repository.ProfileCacheRepository
+import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.state.MainActivityState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,7 +26,7 @@ class MainActivityViewModel @Inject constructor(
 	@param:ApplicationContext private val context: Context,
 	private val appUpdateRepository: AppUpdateRepository,
 	private val settingsRepository: SettingsRepository,
-	private val profileCacheRepository: ProfileCacheRepository
+	private val cacheRepository: CacheRepository
 ) : ViewModel() {
 	
 	// Combine important information into a single state flow
@@ -36,7 +36,7 @@ class MainActivityViewModel @Inject constructor(
 	val uiState: StateFlow<MainActivityState> = combine(
 		settingsRepository.settingsFlow,
 		appUpdateRepository.appUpdateFlow.map { it.latestUpdateVersion },
-        profileCacheRepository.ownerProfileFlow.map { it?.user }
+        cacheRepository.cacheFlow.map { it.user }
 	) { settings, latestUpdateVersion, user ->
 		MainActivityState.Success(
 			settings = settings,

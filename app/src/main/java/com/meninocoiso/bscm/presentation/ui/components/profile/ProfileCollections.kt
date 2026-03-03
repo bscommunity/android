@@ -67,17 +67,19 @@ fun ProfileCollections(
     // val collectionsLoaded = customCollections.state == ContentState.Success
 
     Column(modifier) {
-        CatalogFilters(
-            itemsAmount = bookmarksCounts,
-            showCollection = true,
-            collectionsAmount = collectionsCount,
-            currentSelected = horizontalPagerState.currentPage,
-            onFilterSelected = { index ->
-                coroutineScope.launch {
-                    horizontalPagerState.animateScrollToPage(index)
-                }
-            },
-        )
+        if (bookmarks.state == ContentState.Success || customCollections.state == ContentState.Success) {
+            CatalogFilters(
+                itemsAmount = bookmarksCounts,
+                showCollection = true,
+                collectionsAmount = collectionsCount,
+                currentSelected = horizontalPagerState.currentPage,
+                onFilterSelected = { index ->
+                    coroutineScope.launch {
+                        horizontalPagerState.animateScrollToPage(index)
+                    }
+                },
+            )
+        }
 
         HorizontalPager(
             state = horizontalPagerState,
@@ -152,7 +154,10 @@ fun ProfileCollections(
 
                 else -> {
                     if (bookmarks.state == ContentState.Loading) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             CircularProgressIndicator()
                         }
                     } else {

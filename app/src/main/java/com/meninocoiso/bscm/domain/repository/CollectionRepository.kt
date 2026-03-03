@@ -1,11 +1,13 @@
 package com.meninocoiso.bscm.domain.repository
 
-import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.enums.ContentType
+import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Collection
+import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedResult
 import kotlinx.coroutines.flow.Flow
 
 interface CollectionRepository {
-    suspend fun getUserCollections(userId: String = "user", limit: Int, offset: Int, useCache: Boolean = true): Result<List<Collection>>
+    suspend fun getUserCollections(userId: String = "user", limit: Int, offset: Int, useCache: Boolean = true): Result<PagedResult<Collection>>
     suspend fun getCollectionById(collectionId: String): Result<Collection>
     suspend fun getCollectionBySlug(username: String, slug: String): Result<Collection>
     suspend fun createCollection(name: String, isPublic: Boolean): Result<Collection>
@@ -16,9 +18,9 @@ interface CollectionRepository {
         collectionId: String,
         limit: Int,
         offset: Int,
-        contentType: String? = null,
+        types: List<ContentType>? = null,
         useCache: Boolean = true
-    ): Result<List<Chart>>
+    ): Result<PagedResult<CatalogItem>>
 
     suspend fun addItemToCollection(collectionId: String, contentId: String): Result<Unit>
     suspend fun removeItemFromCollection(collectionId: String, contentId: String): Result<Unit>

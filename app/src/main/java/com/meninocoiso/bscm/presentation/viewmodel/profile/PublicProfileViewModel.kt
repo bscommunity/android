@@ -13,6 +13,7 @@ import com.meninocoiso.bscm.domain.repository.ProfileRepository
 import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.UiText
 import com.meninocoiso.bscm.presentation.viewmodel.profile.BaseProfileViewModel
+import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedResult
 import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedSection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,10 +53,13 @@ class PublicProfileViewModel @Inject constructor(
         val activity: PagedSection<ActivityItemResponse> = PagedSection(),
         val library: PagedSection<CatalogItem> = PagedSection(),
         val customCollections: PagedSection<Collection> = PagedSection(),
-        val libraryCounts: Triple<Int, Int, Int> = Triple(0, 0, 0),
         val isFollowing: Boolean = false,
         val isFollowLoading: Boolean = false,
-    )
+    ) {
+        /** (charts, tourPasses, themes) — only charts are tracked today; others default to 0. */
+        val libraryCounts: Triple<Int, Int, Int>
+            get() = Triple(library.total ?: 0, 0, 0)
+    }
 
     private val _uiState = MutableStateFlow(PublicProfileUiState())
     val uiState: StateFlow<PublicProfileUiState> = _uiState.asStateFlow()
@@ -86,10 +90,7 @@ class PublicProfileViewModel @Inject constructor(
                 .onSuccess { profile ->
                     _profile.value = ContentResult.Success(profile)
                     _uiState.update {
-                        it.copy(
-                            isFollowing = profile.isFollowing == true,
-                            libraryCounts = profile.counts.library!!
-                        )
+                        it.copy(isFollowing = profile.isFollowing == true)
                     }
                     Log.d(TAG, "Profile loaded: $username")
                 }
@@ -156,9 +157,17 @@ class PublicProfileViewModel @Inject constructor(
     fun fetchActivity(userId: String) = fetchPaged(
         pagination = activityPagination,
         fetch = { limit, offset, _ ->
-            profileRepository.getActivity(userId = userId, limit = limit, offset = offset)
+            runCatching {
+                PagedResult(
+                    profileRepository.getActivity(
+                        userId = userId,
+                        limit = limit,
+                        offset = offset
+                    ).getOrThrow()
+                )
+            }
         },
-        getItems = { _uiState.value.activity.items },
+        getSection = { _uiState.value.activity },
         setSection = { section -> _uiState.update { it.copy(activity = section) } },
     )
 
@@ -166,14 +175,17 @@ class PublicProfileViewModel @Inject constructor(
         pagination = activityPagination,
         useCache = false,
         fetch = { limit, offset, _ ->
-            profileRepository.getActivity(
-                userId = userId,
-                limit = limit,
-                offset = offset,
-                useCache = false
-            )
+            runCatching {
+                PagedResult(
+                    profileRepository.getActivity(
+                        userId = userId,
+                        limit = limit,
+                        offset = offset,
+                        useCache = false
+                    ).getOrThrow()
+                )
+            }
         },
-        getItems = { _uiState.value.activity.items },
         getSection = { _uiState.value.activity },
         setSection = { section -> _uiState.update { it.copy(activity = section) } },
         onFailureWithData = { emitSnackbar(UiText.Res(R.string.failed_to_update_activity_feed)) },
@@ -184,10 +196,9 @@ class PublicProfileViewModel @Inject constructor(
         fetch = { limit, offset, _ ->
             profileRepository.getUserCharts(userId = userId, limit = limit, offset = offset)
         },
-        getItems = { _uiState.value.library.items },
+        getSection = { _uiState.value.library },
         setSection = { section ->
             _uiState.update { it.copy(library = section) }
-            // Log.d(TAG, "Library updated: ${section.items.size} items for $userId")
         },
     )
 
@@ -202,7 +213,6 @@ class PublicProfileViewModel @Inject constructor(
                 useCache = false
             )
         },
-        getItems = { _uiState.value.library.items },
         getSection = { _uiState.value.library },
         setSection = { section -> _uiState.update { it.copy(library = section) } },
         onFailureWithData = { emitSnackbar(UiText.Res(R.string.failed_to_update_library)) },
@@ -211,12 +221,16 @@ class PublicProfileViewModel @Inject constructor(
     fun fetchCollections(userId: String) = fetchPaged(
         pagination = collectionsPagination,
         fetch = { limit, offset, _ ->
-            collectionRepository.getUserCollections(userId = userId, limit = limit, offset = offset)
+            val result = collectionRepository.getUserCollections(
+                userId = userId,
+                limit = limit,
+                offset = offset
+            )
+            result
         },
-        getItems = { _uiState.value.customCollections.items },
+        getSection = { _uiState.value.customCollections },
         setSection = { section ->
             _uiState.update { it.copy(customCollections = section) }
-            // Log.d(TAG, "Collections updated: ${section.items.size} items for $userId")
         },
     )
 
@@ -231,7 +245,6 @@ class PublicProfileViewModel @Inject constructor(
                 useCache = false
             )
         },
-        getItems = { _uiState.value.customCollections.items },
         getSection = { _uiState.value.customCollections },
         setSection = { section -> _uiState.update { it.copy(customCollections = section) } },
         onFailureWithData = { emitSnackbar(UiText.Res(R.string.failed_to_update_collections)) },

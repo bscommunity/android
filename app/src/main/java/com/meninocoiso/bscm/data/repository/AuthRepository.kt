@@ -7,18 +7,13 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.meninocoiso.bscm.data.manager.SecureTokenManager
 import com.meninocoiso.bscm.data.remote.ApiClient
-import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
-import com.meninocoiso.bscm.data.remote.dto.user.UserProfileCounts
-import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.auth.AuthRequest
 import com.meninocoiso.bscm.domain.model.auth.AuthResponse
 import com.meninocoiso.bscm.domain.model.auth.RefreshTokenRequest
-import com.meninocoiso.bscm.domain.model.toSimplifiedUser
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,12 +23,10 @@ private const val TAG = "AuthRepository"
 class AuthRepository @Inject constructor(
     private val apiClient: ApiClient,
     private val tokenManager: SecureTokenManager,
-    private val profileCacheRepository: ProfileCacheRepository,
+    private val cacheRepository: CacheRepository,
     private val dataStore: DataStore<Preferences>
 ) {
     fun isLoggedInFlow(): Flow<Boolean> = tokenManager.isLoggedInFlow()
-    fun getCachedUserFlow(): Flow<SimplifiedUser?> =
-        profileCacheRepository.ownerProfileFlow.map { it?.user }
 
     fun authenticateWithDiscord(code: String, redirectUri: String): Flow<Result<User>> = flow {
         Log.d(
@@ -72,12 +65,12 @@ class AuthRepository @Inject constructor(
             }
 
             // Cache user
+            /*val simplifiedUser = user.toSimplifiedUser()
             profileCacheRepository.cacheProfile(
-                profile = UserProfileResponse(
-                    user = user.toSimplifiedUser(),
-                    counts = UserProfileCounts()
-                )
-            )
+                username = simplifiedUser.username,
+                profile = UserProfileResponse(user = simplifiedUser)
+            )*/
+            cacheRepository.setUser(user)
             Log.d(TAG, "authenticateWithDiscord: Authentication completed successfully")
             emit(Result.success(user))
         } catch (t: Throwable) {
@@ -111,7 +104,6 @@ class AuthRepository @Inject constructor(
                 t.message?.contains("expired", ignoreCase = true) == true
             ) {
                 tokenManager.clearTokens()
-                profileCacheRepository.clearProfile()
             }
             emit(Result.failure(t))
         }
@@ -136,7 +128,6 @@ class AuthRepository @Inject constructor(
 
     suspend fun logout() {
         tokenManager.clearTokens()
-        profileCacheRepository.clearProfile()
     }
 
     companion object {

@@ -51,7 +51,7 @@ fun BaseContainer(
                 ContentState.Error -> {
                     StatusMessageUI(
                         modifier = Modifier.fillMaxSize(),
-                        size = StatusMessageSize.Small,
+                        size = StatusMessageSize.Medium,
                         title = stringResource(R.string.something_went_wrong),
                         message = stringResource(R.string.check_connection),
                         icon = R.drawable.rounded_emergency_home_24,

@@ -5,8 +5,9 @@ import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
-import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.repository.ProfileRepository
+import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedResult
 import jakarta.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -75,7 +76,7 @@ class ProfileRepositoryRemote @Inject constructor(
         limit: Int,
         offset: Int,
         useCache: Boolean
-    ): Result<List<Chart>> =
+    ): Result<PagedResult<CatalogItem>> =
         runCatching {
             Log.d(
                 TAG,
@@ -88,14 +89,15 @@ class ProfileRepositoryRemote @Inject constructor(
                 if (cached != null) {
                     Log.d(TAG, "Returning cached library for user: $userId")
                     val cachedCharts =
-                        withContext(Dispatchers.IO) { chartDao.getChartsByIds(cached) }
+                        withContext(Dispatchers.IO) { chartDao.getChartsByIds(cached.items) }
                     Log.d(TAG, "Cached charts for user $userId: ${cachedCharts.size} items")
-                    return@runCatching cachedCharts
+                    return@runCatching PagedResult(cachedCharts, cached.total)
                 }
             }
 
             // Fetch from API
-            val charts = apiClient.getUserCharts(userId, limit, offset)
+            val page = apiClient.getUserCharts(userId, limit, offset)
+            val charts = page.items
             Log.d(
                 TAG,
                 "Fetched library charts for user $userId from API (${charts.size} items)"
@@ -103,12 +105,14 @@ class ProfileRepositoryRemote @Inject constructor(
 
             // Cache only first page — persist must complete before caching IDs so
             // that a subsequent getChartsById() call finds the rows in the DB/memory store.
-            if (offset == 0) {
-                withContext(Dispatchers.IO) { chartDao.insert(charts) }
-                profileCacheRepository.cacheLibrary(userId, charts.map { it.id })
-            }
+            val total = if (offset == 0) {
+                page.counts?.charts?.toLong().also { t ->
+                    withContext(Dispatchers.IO) { chartDao.insert(charts) }
+                    profileCacheRepository.cacheLibrary(userId, charts.map { it.id }, t)
+                }
+            } else null
 
-            charts
+            PagedResult(charts, total?.toInt())
         }
 
     override suspend fun followUser(userId: String, username: String): Result<Unit> = runCatching {

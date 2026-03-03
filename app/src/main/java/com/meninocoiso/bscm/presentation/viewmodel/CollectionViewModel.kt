@@ -68,13 +68,14 @@ class CollectionViewModel @Inject constructor(
     // Public API — user's own collections list (for CollectionBottomSheet)
     // -------------------------------------------------------------------------
 
-    fun fetchUserCollections(reset: Boolean = false) = fetchPaged(
+    fun fetchUserCollections(reset: Boolean = false) = fetchPaged<Collection>(
         pagination = collectionsPagination,
         reset = reset,
         fetch = { limit, offset, cache ->
-            collectionRepository.getUserCollections(limit = limit, offset = offset, useCache = cache)
+            val result = collectionRepository.getUserCollections(limit = limit, offset = offset, useCache = cache)
+            result
         },
-        getItems = { _uiState.value.userCollections.items },
+        getSection = { _uiState.value.userCollections },
         setSection = { section -> _uiState.update { it.copy(userCollections = section) } },
         onFailureWithData = { emitSnackbar(UiText.Res(R.string.failed_to_load_collections)) },
     )
@@ -102,7 +103,6 @@ class CollectionViewModel @Inject constructor(
             pagination = itemsPagination,
             reset = reset || idChanged,
             fetch = { limit, offset, cache ->
-                Log.d(TAG, "Fetching items for collection $collectionId (limit=$limit, offset=$offset, cache=$cache)")
                 collectionRepository.getCollectionItems(
                     collectionId = collectionId,
                     limit = limit,
@@ -110,7 +110,7 @@ class CollectionViewModel @Inject constructor(
                     useCache = cache,
                 )
             },
-            getItems = { _uiState.value.items.items },
+            getSection = { _uiState.value.items },
             setSection = { section -> _uiState.update { it.copy(items = section) } },
             onFailureWithData = { emitSnackbar(UiText.Res(R.string.failed_to_load_items)) },
         )
@@ -132,7 +132,6 @@ class CollectionViewModel @Inject constructor(
                 useCache = cache,
             )
         },
-        getItems = { _uiState.value.items.items },
         getSection = { _uiState.value.items },
         setSection = { section -> _uiState.update { it.copy(items = section) } },
         onFailureWithData = { emitSnackbar(UiText.Res(R.string.failed_to_update_collection_items)) },

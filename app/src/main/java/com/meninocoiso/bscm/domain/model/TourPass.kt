@@ -8,6 +8,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.meninocoiso.bscm.domain.serialization.LocalDateTimeSerializer
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import java.time.LocalDateTime
@@ -15,6 +16,7 @@ import java.time.LocalDateTime
 @Entity(tableName = "tour_passes")
 @Serializable
 @Parcelize
+@SerialName("tour_pass")
 data class TourPass(
     val name: String,
     val artist: String?,

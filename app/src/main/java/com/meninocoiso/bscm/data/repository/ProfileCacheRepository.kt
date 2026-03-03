@@ -4,14 +4,12 @@ import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
-import kotlinx.coroutines.flow.catch
+import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedResult
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
@@ -19,7 +17,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "ProfileCacheRepository"
-private const val QUICK_CACHE_EXPIRATION_MILLIS = 10 * 60 * 1000L // 10 minutes for other profiles
+private const val QUICK_CACHE_EXPIRATION_MILLIS = 10 * 60 * 1000L // 10 minutes
 private const val OWNER_ID = "owner"
 
 @Singleton
@@ -30,9 +28,16 @@ class ProfileCacheRepository @Inject constructor(
         fun profileKey(userId: String) = stringPreferencesKey("profile_$userId")
         fun profileTimestampKey(userId: String) = longPreferencesKey("profile_timestamp_$userId")
 
-        fun collectionsIdsKey(userId: String) = stringPreferencesKey("collections_ids_$userId")
+        // Sections
         fun activityKey(userId: String) = stringPreferencesKey("activity_$userId")
         fun libraryIdsKey(userId: String) = stringPreferencesKey("library_ids_$userId")
+        fun collectionsIdsKey(userId: String) = stringPreferencesKey("collections_ids_$userId")
+
+        // Counts
+        fun libraryCountKey(userId: String) = longPreferencesKey("library_count_$userId")
+        fun collectionsCountKey(userId: String) = longPreferencesKey("collections_count_$userId")
+        val likesCountKey = longPreferencesKey("likes_count")
+        val bookmarksCountKey = longPreferencesKey("bookmarks_count")
     }
 
     private val json = Json {
@@ -59,27 +64,6 @@ class ProfileCacheRepository @Inject constructor(
         }
     }
 
-    val ownerProfileFlow = dataStore.data
-        .catch { exception ->
-            when (exception) {
-                is Exception -> {
-                    Log.e(TAG, "Error reading owner profile cache", exception)
-                    emit(emptyPreferences())
-                }
-
-                else -> throw exception
-            }
-        }
-        .map { preferences ->
-            val encoded = preferences[profileKey(OWNER_ID)] ?: return@map null
-            try {
-                json.decodeFromString(UserProfileResponse.serializer(), encoded)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error decoding cached owner profile", e)
-                null
-            }
-        }
-
     // -------------------- Profile Header --------------------
     suspend fun cacheProfile(username: String, profile: UserProfileResponse) {
         try {
@@ -93,8 +77,6 @@ class ProfileCacheRepository @Inject constructor(
             Log.e(TAG, "Error caching profile header for user: $username", e)
         }
     }
-
-    suspend fun cacheProfile(profile: UserProfileResponse) = cacheProfile(OWNER_ID, profile)
 
     suspend fun getProfile(username: String): UserProfileResponse? {
         return try {
@@ -114,17 +96,6 @@ class ProfileCacheRepository @Inject constructor(
         }
     }
 
-    suspend fun getProfile(): UserProfileResponse? {
-        return try {
-            val preferences = dataStore.data.first()
-            val encoded = preferences[profileKey(OWNER_ID)] ?: return null
-            json.decodeFromString(UserProfileResponse.serializer(), encoded)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error reading owner profile cache", e)
-            null
-        }
-    }
-
     suspend fun clearProfile(userId: String) {
         dataStore.edit { preferences ->
             preferences.remove(profileKey(userId))
@@ -133,26 +104,33 @@ class ProfileCacheRepository @Inject constructor(
         Log.d(TAG, "Cleared profile cache for user: $userId")
     }
 
-    suspend fun clearProfile() = clearProfile(OWNER_ID)
-
     // -------------------- Collections IDs --------------------
-    suspend fun cacheCollectionIds(userId: String, collectionIds: List<String>) {
+    suspend fun cacheCollectionIds(userId: String, collectionIds: List<String>, total: Long?) {
         writeStringList(collectionsIdsKey(userId), collectionIds)
+        total?.let {
+            dataStore.edit { preferences ->
+                preferences[collectionsCountKey(userId)] = it
+            }
+        }
         touchProfileTimestamp(userId)
     }
 
-    suspend fun getCollections(userId: String): List<String>? {
+    suspend fun getCollections(userId: String): PagedResult<String> {
         return try {
             val preferences = dataStore.data.first()
             val timestamp = preferences[profileTimestampKey(userId)] ?: 0L
+
             if (!isQuickCacheValid(timestamp)) {
                 invalidateProfile(userId)
-                return null
+                PagedResult(emptyList(), null)
+            } else {
+                val items = readStringList(collectionsIdsKey(userId)) ?: emptyList()
+                val total = preferences[collectionsCountKey(userId)]?.toInt()
+                PagedResult(items, total)
             }
-            readStringList(collectionsIdsKey(userId))
         } catch (e: Exception) {
             Log.e(TAG, "Error reading collections IDs cache for user: $userId", e)
-            null
+            PagedResult(emptyList(), null)
         }
     }
 
@@ -174,12 +152,10 @@ class ProfileCacheRepository @Inject constructor(
     suspend fun getActivity(userId: String): List<ActivityItemResponse>? {
         return try {
             val preferences = dataStore.data.first()
-            if (userId != OWNER_ID && userId != "user") {
-                val timestamp = preferences[profileTimestampKey(userId)] ?: 0L
-                if (!isQuickCacheValid(timestamp)) {
-                    invalidateProfile(userId)
-                    return null
-                }
+            val timestamp = preferences[profileTimestampKey(userId)] ?: 0L
+            if (!isQuickCacheValid(timestamp)) {
+                invalidateActivity(userId)
+                return null
             }
             val encoded = preferences[activityKey(userId)] ?: return null
             json.decodeFromString(ListSerializer(ActivityItemResponse.serializer()), encoded)
@@ -191,32 +167,78 @@ class ProfileCacheRepository @Inject constructor(
 
     suspend fun getActivity(): List<ActivityItemResponse>? = getActivity(OWNER_ID)
 
-    // -------------------- Library IDs (charts from other profiles) --------------------
-    suspend fun cacheLibrary(userId: String, chartIds: List<String>) {
+    // ------------------ Library IDs (content made by the user) --------------------
+    suspend fun cacheLibrary(userId: String, chartIds: List<String>, total: Long? = null) {
         writeStringList(libraryIdsKey(userId), chartIds)
-        if (userId != OWNER_ID && userId != "user") {
-            touchProfileTimestamp(userId)
+        total?.let {
+            dataStore.edit { preferences ->
+                preferences[libraryCountKey(userId)] = it
+            }
         }
+        touchProfileTimestamp(userId)
     }
 
-    suspend fun getLibrary(userId: String): List<String>? {
+    suspend fun getLibrary(userId: String): PagedResult<String>? {
         return try {
-            if (userId != OWNER_ID && userId != "user") {
-                val preferences = dataStore.data.first()
-                val timestamp = preferences[profileTimestampKey(userId)] ?: 0L
-                if (!isQuickCacheValid(timestamp)) {
-                    invalidateProfile(userId)
-                    return null
-                }
+            val preferences = dataStore.data.first()
+            val timestamp = preferences[profileTimestampKey(userId)] ?: 0L
+
+            if (!isQuickCacheValid(timestamp)) {
+                invalidateProfile(userId)
+                null
+            } else {
+                val items = readStringList(libraryIdsKey(userId))
+                val total = preferences[libraryCountKey(userId)]?.toInt()
+
+                items?.let { PagedResult(it, total) }
             }
-            readStringList(libraryIdsKey(userId))
         } catch (e: Exception) {
             Log.e(TAG, "Error reading library IDs cache for user: $userId", e)
             null
         }
     }
 
+    // ------------------- Likes and Bookmarks counts (used in profile header) --------------------
+    suspend fun cacheLikesCount(count: Long) {
+        dataStore.edit { preferences ->
+            preferences[likesCountKey] = count
+        }
+    }
+
+    suspend fun getLikesCount(): Long? {
+        return try {
+            val preferences = dataStore.data.first()
+            preferences[likesCountKey]
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading likes count from cache", e)
+            null
+        }
+    }
+
+    suspend fun cacheBookmarksCount(count: Long) {
+        dataStore.edit { preferences ->
+            preferences[bookmarksCountKey] = count
+        }
+    }
+
+    suspend fun getBookmarksCount(): Long? {
+        return try {
+            val preferences = dataStore.data.first()
+            preferences[bookmarksCountKey]
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading bookmarks count from cache", e)
+            null
+        }
+    }
+
     // -------------------- Cache Management --------------------
+    suspend fun invalidateActivity(userId: String) {
+        dataStore.edit { preferences ->
+            preferences.remove(activityKey(userId))
+            preferences.remove(profileTimestampKey(userId))
+        }
+    }
+
     suspend fun invalidateProfile(userId: String) {
         dataStore.edit { preferences ->
             preferences.remove(profileKey(userId))

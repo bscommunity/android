@@ -35,28 +35,20 @@ private const val TAG = "UserProfileViewModel"
  * Likes and bookmarks use a two-layer approach:
  *
  *  1. **Paginated fetch** (`fetchPaged`) — handles initial load, "load more", and
- *     pull-to-refresh from the API
+ *     pull-to-refresh from the API.
  *
  *  2. **Room observer** — a `Flow<List<Chart>>` from `ChartDao` that Room re-emits
  *     automatically whenever any coroutine writes `liked_at` or `bookmarked_at`,
  *     including writes made by [InteractionViewModel] from the details screen.
  *
- * The observer skips the very first emission (`drop(1)`) because `fetchPaged`
- * already populates the list on launch; we only want to react to *changes*.
+ * The observer only applies once `fetchPaged` has settled to avoid racing with the
+ * initial load and flashing empty → full → correct.
  */
 @HiltViewModel
 class UserProfileViewModel @Inject constructor(
     private val meRepository: MeRepository,
     private val collectionRepository: CollectionRepository,
 ) : BaseProfileViewModel() {
-
-    // -------------------------------------------------------------------------
-    // Profile header
-    // -------------------------------------------------------------------------
-
-    /*private val _profile =
-        MutableStateFlow<ContentResult<UserProfileCounts>>(ContentResult.Loading)
-    val profile: StateFlow<ContentResult<UserProfileCounts>> = _profile.asStateFlow()*/
 
     // -------------------------------------------------------------------------
     // UI state
@@ -77,12 +69,19 @@ class UserProfileViewModel @Inject constructor(
     data class UserProfileUiState(
         val likes: PagedSection<CatalogItem> = PagedSection(),
         val collections: CollectionSectionState = CollectionSectionState(),
-        val likesCounts: Triple<Int, Int, Int> = Triple(0, 0, 0),
-        val bookmarksCounts: Triple<Int, Int, Int> = Triple(0, 0, 0),
-        val collectionsCount: Int = 0,
-        val followersCount: Int = 0,
-        val followingCount: Int = 0,
-    )
+    ) {
+        /** (charts, tourPasses, themes) — only charts are tracked today; others default to 0. */
+        val likesCounts: Triple<Int, Int, Int>
+            get() = Triple(likes.total ?: 0, 0, 0)
+
+        /** (charts, tourPasses, themes) — only charts are tracked today; others default to 0. */
+        val bookmarksCounts: Triple<Int, Int, Int>
+            get() = Triple(collections.bookmarks.total ?: 0, 0, 0)
+
+        /** Total number of custom collections. */
+        val collectionsCount: Int
+            get() = collections.customCollections.total ?: 0
+    }
 
     private val _uiState = MutableStateFlow(UserProfileUiState())
     val uiState: StateFlow<UserProfileUiState> = _uiState.asStateFlow()
@@ -101,69 +100,15 @@ class UserProfileViewModel @Inject constructor(
 
     private var likesObserverJob: Job? = null
     private var bookmarksObserverJob: Job? = null
+    private var collectionsObserverJob: Job? = null
 
     // -------------------------------------------------------------------------
     // Public API
     // -------------------------------------------------------------------------
 
-    /*fun loadProfile() {
-        // resetAll()
-        viewModelScope.launch {
-            meRepository.getProfile()
-                .onSuccess {
-                    _profile.value = ContentResult.Success(
-                        UserProfileCounts(
-                            likes = it.counts.likes ?: Triple(0, 0, 0),
-                            bookmarks = it.counts.bookmarks ?: Triple(0, 0, 0),
-                            collections = it.counts.collections ?: 0,
-                            followers = it.counts.followers ?: 0,
-                            following = it.counts.following ?: 0,
-                        )
-                    )
-                }
-                .onFailure { err ->
-                    _profile.value = ContentResult.Error(
-                        err.message?.let { UiText.Plain(it) }
-                            ?: UiText.Res(R.string.failed_to_load_profile)
-                    )
-                }
-        }
-    }*/
-
-    init {
-        loadProfile()
-    }
-
-    fun loadProfile() {
-        // resetAll()
-        viewModelScope.launch {
-            meRepository.getProfile(false)
-                .onSuccess { profile ->
-                    val counts = profile.counts
-                    Log.d(TAG, "Profile loaded: $profile")
-                    _uiState.update { state ->
-                        state.copy(
-                            likesCounts = counts.likes!!,
-                            bookmarksCounts = counts.bookmarks!!,
-                            collectionsCount = counts.collections!!,
-                            followersCount = counts.followers!!,
-                            followingCount = counts.following!!,
-                        )
-                    }
-                }
-                .onFailure { err ->
-                    Log.e(TAG, "Failed to load profile", err)
-                    emitSnackbar(UiText.Res(R.string.failed_to_load_profile))
-                }
-        }
-    }
-
     /**
      * Called when the user taps a tab. Loads data lazily — only fetches if the
      * tab's list is still empty (i.e. first visit).
-     *
-     * The Room observers are started here on first visit so they're only active
-     * while the relevant tab has been opened at least once.
      */
     fun onTabSelected(index: Int) {
         when (index) {
@@ -171,7 +116,6 @@ class UserProfileViewModel @Inject constructor(
                 fetchUserLikes()
                 startLikesObserver()
             }
-
             1 -> if (_uiState.value.collections.bookmarks.items.isEmpty()) {
                 fetchUserCollections()
                 startBookmarksObserver()
@@ -183,14 +127,13 @@ class UserProfileViewModel @Inject constructor(
     fun fetchUserLikes() = fetchPaged(
         pagination = likesPagination,
         fetch = { limit, offset, cache -> meRepository.getLikes(limit, offset, cache) },
-        getItems = { _uiState.value.likes.items },
+        getSection = { _uiState.value.likes },
         setSection = { section -> _uiState.update { it.copy(likes = section) } },
     )
 
     fun refreshUserLikes() = refreshPaged(
         pagination = likesPagination,
         fetch = { limit, offset, cache -> meRepository.getLikes(limit, offset, cache) },
-        getItems = { _uiState.value.likes.items },
         getSection = { _uiState.value.likes },
         setSection = { section -> _uiState.update { it.copy(likes = section) } },
         onFailureWithData = { emitSnackbar(UiText.Res(R.string.failed_to_update_likes)) },
@@ -201,14 +144,12 @@ class UserProfileViewModel @Inject constructor(
     }
 
     /**
-     * Fetches both sub-sections of the Collections tab in parallel using [async].
-     * This cuts wall-clock time roughly in half compared to sequential fetches.
+     * Fetches both sub-sections of the Collections tab in parallel.
+     * Cuts wall-clock time roughly in half compared to sequential fetches.
      */
     fun fetchUserCollections() = viewModelScope.launch {
-        val bookmarksJob = fetchBookmarks()
-        val collectionsJob = fetchCustomCollections()
-        bookmarksJob.join()
-        collectionsJob.join()
+        fetchBookmarks().join()
+        fetchCustomCollections().join()
     }
 
     fun refreshUserCollections() = viewModelScope.launch {
@@ -245,51 +186,24 @@ class UserProfileViewModel @Inject constructor(
     // Room observers — react to writes from InteractionViewModel
     // -------------------------------------------------------------------------
 
-    /**
-     * Starts observing liked charts from Room.
-     *
-     * Instead of blindly dropping the first emission with `drop(1)`, we check
-     * whether the initial paginated fetch is still in flight. This handles
-     * the deep-link flow where Room already has fresh data when the observer
-     * starts — in that case, the first emission should be applied, not skipped.
-     *
-     * On subsequent emissions (i.e. a real change happened), we surgically
-     * update only [PagedSection.items] while preserving all other pagination
-     * metadata (hasMore, isLoadingMore, state, etc.) so infinite scroll still works.
-     */
     private fun startLikesObserver() {
-        if (likesObserverJob?.isActive == true) return // already watching
+        if (likesObserverJob?.isActive == true) return
 
         likesObserverJob = viewModelScope.launch {
             meRepository.observeLikes()
                 .catch { e -> Log.e(TAG, "Likes observer error", e) }
                 .collect { freshLikes ->
-                    // Only apply if we already have a stable first page,
-                    // otherwise we race with fetchPaged and may flash empty→full→correct
                     val current = _uiState.value.likes
                     if (current.state !is ContentState.Loading || current.items.isNotEmpty()) {
                         Log.d(TAG, "Likes observer fired: ${freshLikes.size} items")
                         _uiState.update { state ->
-                            state.copy(
-                                likes = state.likes.copy(items = freshLikes)
-                            )
+                            state.copy(likes = state.likes.copy(items = freshLikes))
                         }
                     }
                 }
         }
     }
 
-    /**
-     * Starts observing bookmarked charts from Room.
-     *
-     * Instead of blindly dropping the first emission with `drop(1)`, we check
-     * whether the initial paginated fetch is still in flight. This handles
-     * the deep-link flow where Room already has fresh data when the observer
-     * starts — in that case, the first emission should be applied, not skipped.
-     *
-     * Only the bookmark items inside [CollectionSectionState.bookmarks] are
-     * updated; the custom-collections section is left untouched.
-     */
     private fun startBookmarksObserver() {
         if (bookmarksObserverJob?.isActive == true) return
 
@@ -297,22 +211,42 @@ class UserProfileViewModel @Inject constructor(
             meRepository.observeBookmarks()
                 .catch { e -> Log.e(TAG, "Bookmarks observer error", e) }
                 .collect { freshBookmarks ->
-                    // Only apply if we already have a stable first page,
-                    // otherwise we race with fetchPaged and may flash empty→full→correct
                     val current = _uiState.value.collections.bookmarks
                     if (current.state !is ContentState.Loading || current.items.isNotEmpty()) {
                         Log.d(TAG, "Bookmarks observer fired: ${freshBookmarks.size} items")
                         _uiState.update { state ->
-                            val updatedBookmarksSection = state.collections.bookmarks
+                            val updatedBookmarks = state.collections.bookmarks
                                 .copy(items = freshBookmarks)
-                            val bookmarksCollection = buildBookmarksCollection()
                             state.copy(
                                 collections = state.collections.copy(
-                                    bookmarks = updatedBookmarksSection,
+                                    bookmarks = updatedBookmarks,
                                     items = mergeCollections(
-                                        bookmarksCollection = bookmarksCollection,
+                                        bookmarksCollection = buildBookmarksCollection(),
                                         customCollections = null,
                                     ),
+                                )
+                            )
+                        }
+                    }
+                }
+        }
+    }
+
+    private fun startCollectionsObserver() {
+        if (collectionsObserverJob?.isActive == true) return
+
+        collectionsObserverJob = viewModelScope.launch {
+            collectionRepository.observeUserCollections()
+                .catch { e -> Log.e(TAG, "Collections observer error", e) }
+                .collect { freshCollections ->
+                    val current = _uiState.value.collections.customCollections
+                    if (current.state !is ContentState.Loading || current.items.isNotEmpty()) {
+                        _uiState.update { state ->
+                            state.copy(
+                                collections = state.collections.copy(
+                                    customCollections = state.collections.customCollections
+                                        .copy(items = freshCollections),
+                                    items = mergeCollections(customCollections = freshCollections),
                                 )
                             )
                         }
@@ -335,15 +269,12 @@ class UserProfileViewModel @Inject constructor(
         useCache = useCache,
         showSkeletonWhen = { _uiState.value.collections.bookmarks.items.isEmpty() },
         fetch = { limit, offset, cache -> meRepository.getBookmarks(limit, offset, cache) },
-        getItems = {
-            _uiState.value.collections.bookmarks.items
-        },
+        getSection = { _uiState.value.collections.bookmarks },
         setSection = { section ->
             _uiState.update { state ->
-                val bookmarksCollection = buildBookmarksCollection()
                 state.copy(
                     collections = state.collections.copy(
-                        items = mergeCollections(bookmarksCollection, customCollections = null),
+                        items = mergeCollections(buildBookmarksCollection(), customCollections = null),
                         state = section.state,
                         bookmarks = section,
                     )
@@ -357,21 +288,16 @@ class UserProfileViewModel @Inject constructor(
         reset: Boolean = false,
         useCache: Boolean = true,
         onFailureWithData: (suspend () -> Unit)? = null,
-    ) = fetchPaged(
+    ) = fetchPaged<Collection>(
         pagination = collectionsPagination,
         reset = reset,
         useCache = useCache,
         showSkeletonWhen = { _uiState.value.collections.customCollections.items.isEmpty() },
         fetch = { limit, offset, cache ->
-            collectionRepository.getUserCollections(
-                limit = limit,
-                offset = offset,
-                useCache = cache
-            )
+            val result = collectionRepository.getUserCollections(limit = limit, offset = offset, useCache = cache)
+            result
         },
-        getItems = {
-            _uiState.value.collections.customCollections.items
-        },
+        getSection = { _uiState.value.collections.customCollections },
         setSection = { section ->
             _uiState.update { state ->
                 state.copy(
@@ -391,8 +317,8 @@ class UserProfileViewModel @Inject constructor(
     // -------------------------------------------------------------------------
 
     /**
-     * Converts a raw [List<CatalogItem>] (bookmark items) into a [Collection] wrapper
-     * so it can live alongside custom collections in one unified list.
+     * Converts the raw bookmark items into a [Collection] wrapper so it can live
+     * alongside custom collections in one unified list.
      *
      * If a Bookmarks collection already exists in state it is reused (preserving its
      * server-side id / metadata); otherwise a local placeholder is created.
@@ -417,7 +343,7 @@ class UserProfileViewModel @Inject constructor(
      * Produces the merged [List<Collection>] shown in the UI.
      * Bookmarks always appear first; custom collections follow.
      *
-     * Passing null for either argument keeps the currently stored value for that slot.
+     * Passing null for either argument preserves the currently stored value for that slot.
      */
     private fun mergeCollections(
         bookmarksCollection: Collection? = null,
@@ -435,44 +361,14 @@ class UserProfileViewModel @Inject constructor(
         }
     }
 
-    private var collectionsObserverJob: Job? = null
-
-    private fun startCollectionsObserver() {
-        if (collectionsObserverJob?.isActive == true) return
-
-        collectionsObserverJob = viewModelScope.launch {
-            collectionRepository.observeUserCollections()
-                .catch { e -> Log.e(TAG, "Collections observer error", e) }
-                .collect { freshCollections ->
-                    // Only apply if we already have a stable first page
-                    val current = _uiState.value.collections.customCollections
-                    if (current.state !is ContentState.Loading || current.items.isNotEmpty()) {
-                        _uiState.update { state ->
-                            state.copy(
-                                collections = state.collections.copy(
-                                    customCollections = state.collections.customCollections
-                                        .copy(items = freshCollections),
-                                    items = mergeCollections(customCollections = freshCollections),
-                                )
-                            )
-                        }
-                    }
-                }
-        }
-    }
-
     // -------------------------------------------------------------------------
     // Reset
     // -------------------------------------------------------------------------
 
     private fun resetAll() {
-        // Cancel observers — they'll be restarted when tabs are visited again
-        likesObserverJob?.cancel()
-        likesObserverJob = null
-        bookmarksObserverJob?.cancel()
-        bookmarksObserverJob = null
-        collectionsObserverJob?.cancel()
-        collectionsObserverJob = null
+        likesObserverJob?.cancel(); likesObserverJob = null
+        bookmarksObserverJob?.cancel(); bookmarksObserverJob = null
+        collectionsObserverJob?.cancel(); collectionsObserverJob = null
 
         likesPagination.reset()
         bookmarksPagination.reset()

@@ -64,7 +64,7 @@ fun ProfileLibrary(
         CatalogFilters(
             itemsAmount = counts,
             showCollection = true,
-            collectionsAmount = customCollections.items.size,
+            collectionsAmount = customCollections.total ?: customCollections.items.size,
             currentSelected = horizontalPagerState.currentPage,
             onFilterSelected = { index ->
                 coroutineScope.launch {

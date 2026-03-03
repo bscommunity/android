@@ -9,6 +9,7 @@ import androidx.room.PrimaryKey
 import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.serialization.LocalDateTimeSerializer
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import java.time.LocalDateTime
@@ -16,6 +17,7 @@ import java.time.LocalDateTime
 @Entity(tableName = "charts")
 @Serializable
 @Parcelize
+@SerialName("chart")
 data class Chart(
     val artist: String,
     val track: String,

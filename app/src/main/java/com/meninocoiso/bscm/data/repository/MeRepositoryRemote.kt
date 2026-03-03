@@ -5,14 +5,15 @@ import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
-import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.di.ApplicationScope
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.enums.ContentType
+import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.CollectionItemCrossRef
 import com.meninocoiso.bscm.domain.repository.MeRepository
+import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedResult
 import jakarta.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,19 +31,6 @@ class MeRepositoryRemote @Inject constructor(
     private val chartDao: ChartDao,
     private val collectionDao: CollectionDao
 ) : MeRepository {
-    override suspend fun getProfile(useCache: Boolean): Result<UserProfileResponse> = runCatching {
-        if (useCache) {
-            profileCacheRepository.getProfile()?.let { cached ->
-                Log.d(TAG, "Returning cached profile")
-                return@runCatching cached
-            }
-        }
-
-        val profile = apiClient.getMyProfile()
-        profileCacheRepository.cacheProfile(profile = profile)
-        profile
-    }
-
     override suspend fun getActivity(
         limit: Int,
         offset: Int,
@@ -64,29 +52,53 @@ class MeRepositoryRemote @Inject constructor(
         activity
     }
 
-    override suspend fun getLikes(limit: Int, offset: Int, useCache: Boolean): Result<List<Chart>> =
+    override suspend fun getLikes(
+        limit: Int,
+        offset: Int,
+        useCache: Boolean
+    ): Result<PagedResult<CatalogItem>> =
         runCatching {
             Log.d(TAG, "getLikes called with limit=$limit, offset=$offset, useCache=$useCache")
-            val localLikes = withContext(Dispatchers.IO) { chartDao.getLikedCharts(limit, offset) }
-            Log.d(TAG, "Found ${localLikes.size} liked charts in Room for offset=$offset")
-            if (useCache && offset == 0 && localLikes.isNotEmpty()) {
-                Log.d(TAG, "Returning likes from Room (${localLikes.size} items)")
-                return@runCatching localLikes
+            if (useCache && offset == 0) {
+                val localLikes =
+                    withContext(Dispatchers.IO) { chartDao.getLikedCharts(limit, offset) }
+                if (localLikes.isNotEmpty()) {
+                    Log.d(TAG, "Returning likes from Room (${localLikes.size} items)")
+                    // Restore cached total count so the UI can show it without a network hit
+                    val cachedTotal = profileCacheRepository.getLikesCount()?.toInt()
+                    return@runCatching PagedResult<CatalogItem>(
+                        items = localLikes,
+                        total = cachedTotal
+                    )
+                }
             }
 
-            val likes = apiClient.getMyLikes(limit, offset)
-            Log.d(TAG, "Fetched ${likes.size} likes from API")
+            // First page: fetch all content types to receive ContentCounts
+            // Subsequent pages: filter to CHART only (the only type we persist / display here)
+            val types = if (offset == 0) null else listOf(ContentType.CHART)
+            val page = apiClient.getMyLikes(limit, offset, types)
+            Log.d(TAG, "Fetched ${page.items.size} likes from API (offset=$offset)")
 
-            coroutineScope.launch { chartDao.insert(likes) }
+            // Persist total count from the first-page response
+            if (offset == 0) {
+                page.counts?.charts?.let { count ->
+                    profileCacheRepository.cacheLikesCount(count.toLong())
+                }
+            }
 
-            likes
+            coroutineScope.launch { chartDao.insert(page.items) }
+
+            PagedResult(
+                items = page.items,
+                total = page.counts?.charts,
+            )
         }
 
     override suspend fun getBookmarks(
         limit: Int,
         offset: Int,
         useCache: Boolean
-    ): Result<List<Chart>> = runCatching {
+    ): Result<PagedResult<CatalogItem>> = runCatching {
         Log.d(TAG, "getBookmarks called with limit=$limit, offset=$offset, useCache=$useCache")
 
         if (useCache && offset == 0) {
@@ -96,11 +108,25 @@ class MeRepositoryRemote @Inject constructor(
 
             if (localBookmarks.isNotEmpty()) {
                 Log.d(TAG, "Returning bookmarks from Room (${localBookmarks.size} items)")
-                return@runCatching localBookmarks
+                val cachedTotal = profileCacheRepository.getBookmarksCount()?.toInt()
+                return@runCatching PagedResult(
+                    items = localBookmarks,
+                    total = cachedTotal
+                )
             }
         }
 
-        val bookmarks = apiClient.getMyBookmarks(limit, offset)
+        // First page: fetch all content types to receive ContentCounts
+        // Subsequent pages: filter to CHART only
+        val types = if (offset == 0) null else listOf(ContentType.CHART)
+        val page = apiClient.getMyBookmarks(limit, offset, types)
+
+        // Persist total count from the first-page response
+        if (offset == 0) {
+            page.counts?.charts?.let { count ->
+                profileCacheRepository.cacheBookmarksCount(count.toLong())
+            }
+        }
 
         // Do the stale eviction synchronously before returning — this is what
         // prevents the observer from seeing an intermediate state with ghost items.
@@ -119,7 +145,7 @@ class MeRepositoryRemote @Inject constructor(
                 )
             )
 
-            val crossRefs = bookmarks.mapNotNull { chart ->
+            val crossRefs = page.items.mapNotNull { chart ->
                 chart.contentId?.let { contentId ->
                     CollectionItemCrossRef(
                         collectionId = "bookmarks",
@@ -144,9 +170,12 @@ class MeRepositoryRemote @Inject constructor(
         }
 
         // Chart rows are idempotent — safe to persist in background even if caller is cancelled
-        coroutineScope.launch { chartDao.insert(bookmarks) }
+        coroutineScope.launch { chartDao.insert(page.items) }
 
-        bookmarks
+        PagedResult(
+            items = page.items,
+            total = page.counts?.charts,
+        )
     }
 
     // -----------------------------------------------------------------

@@ -107,7 +107,6 @@ fun ProfileScreen(
             0 -> {
                 ProfileLikes(
                     items = uiState.likes.items,
-                    // counts = (profile as ContentResult.Success).data.likes!!,
                     counts = uiState.likesCounts,
                     state = uiState.likes.state,
                     isRefreshing = uiState.likes.isRefreshing,

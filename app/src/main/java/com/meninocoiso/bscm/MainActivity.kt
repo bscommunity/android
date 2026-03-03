@@ -132,7 +132,7 @@ class MainActivity : AppCompatActivity() {
         splashScreen.setOnExitAnimationListener { splashView ->
             splashView.view.animate()
                 .alpha(0f)
-                .setDuration(175L) // Fade out duration
+                .setDuration(250L) // Fade out duration
                 .withEndAction {
                     splashView.remove()
                 }
