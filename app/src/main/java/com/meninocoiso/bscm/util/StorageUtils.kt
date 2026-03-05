@@ -1,14 +1,28 @@
 package com.meninocoiso.bscm.util
 
 import android.content.Context
+import android.content.Intent
+import android.content.UriPermission
 import android.net.Uri
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.Composable
+import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import kotlinx.io.IOException
 
 private const val TAG = "StorageUtils"
 
 object StorageUtils {
+    val BEATSTAR_URI =
+        "content://com.android.externalstorage.documents/tree/primary%3Abeatstar".toUri()
+
+    // Try to find external storage - typically /storage/emulated/0
+    val INITIAL_URL =
+        "content://com.android.externalstorage.documents/document/primary:".toUri()
+
     /**
      * Enhanced DocumentFile extension with better error handling
      */
@@ -16,10 +30,10 @@ object StorageUtils {
         return findFile(name) ?: createDirectory(name)
         ?: throw IOException("Failed to create/access subfolder: $name")
     }
-    
-    fun getChartFolderName(chartId: String): String {
+
+    fun getChartFolderName(contentId: String): String {
         // Last 4 numbers from the chart ID
-        return "bscm_" + chartId.takeLast(4)
+        return "bscm_$contentId"
     }
 
     fun checkIfExists(uri: Uri, context: Context): Boolean {
@@ -46,33 +60,74 @@ object StorageUtils {
         return destination
     }
 
-    suspend fun checkStoragePermission(
-        getFolderUri: suspend () -> Uri?,
-        context: Context
+    fun getStoragePermission(context: Context): List<UriPermission> {
+        return context.contentResolver.persistedUriPermissions
+    }
+    
+    fun getFolderUri(context: Context, targetUri: Uri): Uri? {
+        val permissions = getStoragePermission(context)
+        return permissions.find { it.uri == targetUri }?.uri
+    }
+
+    fun checkStoragePermission(
+        context: Context,
+        folderUri: Uri,
     ): Boolean {
-        // Check if we already have a valid folder URI
-        val folderUri = getFolderUri()
-        if (folderUri != null) {
-            try {
-                // Check if the folder exists
-                if (!checkIfExists(folderUri, context)) {
-                    Log.e(TAG, "Invalid Document URI")
-                    return false
-                }
-
-                // Check if the permission is still valid
-                val flags = context.contentResolver.persistedUriPermissions
-                    .find { it.uri == folderUri }
-                    ?.let { it.isReadPermission && it.isWritePermission } == true
-
-                if (flags) {
-                    return true
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error checking URI permissions", e)
+        try {
+            // Check if the folder exists
+            if (!checkIfExists(folderUri, context)) {
+                Log.e(TAG, "Invalid Document URI, folder does not exist: $folderUri")
+                throw IllegalStateException("Folder does not exist")
             }
+
+            // Check if the permission is still valid
+            val flags =
+                context.contentResolver.persistedUriPermissions.any {
+                    it.uri == BEATSTAR_URI &&
+                            it.isReadPermission &&
+                            it.isWritePermission
+                }
+
+            /*
+            * .find { it.uri == folderUri }
+                ?.let { it.isReadPermission && it.isWritePermission } == true
+            * */
+
+            // .any { it.uri == BEATSTAR_URI && it.isReadPermission && it.isWritePermission }
+
+            if (flags) {
+                return true
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking URI permissions", e)
         }
 
         return false
+    }
+
+    @Composable
+    fun folderPickerLauncher(
+        context: Context,
+        validate: (Uri?) -> Boolean = { true },
+        onPermissionGranted: (Uri) -> Unit,
+        onInvalidSelection: (() -> Unit)? = null
+    ): ActivityResultLauncher<Uri?> {
+        return rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocumentTree()
+        ) { uri: Uri? ->
+            println("Selected URI: $uri")
+
+            if (!validate(uri)) {
+                onInvalidSelection?.invoke()
+                return@rememberLauncherForActivityResult
+            }
+
+            uri?.let {
+                val takeFlags =
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                context.contentResolver.takePersistableUriPermission(it, takeFlags)
+                onPermissionGranted(it)
+            }
+        }
     }
 }

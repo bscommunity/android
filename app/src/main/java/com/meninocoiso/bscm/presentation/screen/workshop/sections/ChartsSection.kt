@@ -27,8 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.data.manager.ChartState
-import com.meninocoiso.bscm.data.manager.FetchEvent
+import com.meninocoiso.bscm.domain.result.ContentEvent
+import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.navigation.OnSnackbar
 import com.meninocoiso.bscm.presentation.navigation.show
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
@@ -37,6 +37,7 @@ import com.meninocoiso.bscm.presentation.ui.components.layout.SectionWrapper
 import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
 import com.meninocoiso.bscm.presentation.ui.components.workshop.WorkshopChips
 import com.meninocoiso.bscm.presentation.ui.modifiers.fabScrollObserver
+import com.meninocoiso.bscm.presentation.ui.utils.resolve
 import com.meninocoiso.bscm.presentation.viewmodel.WorkshopViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,15 +65,16 @@ internal fun ChartsSection(
         feedCharts
     }
 
-    val workshopState by viewModel.workshopState.collectAsStateWithLifecycle(initialValue = ChartState.Loading)
+    val workshopState by viewModel.workshopState.collectAsStateWithLifecycle(initialValue = ContentState.Loading)
 
     // Collect events for snackbar
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
+            println("ChartsSection received event: $event")
             when (event) {
-                is FetchEvent.Error -> {
+                is ContentEvent.Error -> {
                     println("Triggering snackbar: ${event.message}")
-                    onSnackbar.show(event.message)
+                    onSnackbar.show(event.message.resolve(context))
                 }
             }
         }
@@ -81,26 +83,29 @@ internal fun ChartsSection(
     val isExplicitAllowed =
         viewModel.isExplicitAllowed.collectAsStateWithLifecycle(initialValue = false)
 
+    val explicitContentDisabledMsg = stringResource(R.string.explicit_content_disabled)
+    val explicitContentDisabledAction = stringResource(R.string.go_to_settings)
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.TopCenter,
     ) {
         // If no cache or on search mode, show loading or error status on full page
-        if (feedCharts.isEmpty() || hasActiveQuery && workshopState !is ChartState.Success) {
+        if (feedCharts.isEmpty() || hasActiveQuery && workshopState !is ContentState.Success) {
             when (workshopState) {
-                is ChartState.Loading -> {
+                is ContentState.Loading -> {
                     Box(Modifier.fillMaxSize(), Alignment.Center) {
                         CircularProgressIndicator(Modifier.size(36.dp))
                     }
                 }
 
-                is ChartState.Error -> {
+                is ContentState.Error -> {
                     StatusMessageUI(
+                        modifier = Modifier.fillMaxSize(),
                         title = stringResource(R.string.something_went_wrong),
                         message = stringResource(R.string.check_connection),
                         icon = R.drawable.rounded_emergency_home_24,
-                        onClick = { viewModel.fetchFeedCharts() },
-                        modifier = Modifier.fillMaxSize()
+                        onClick = { viewModel.fetchFeedCharts() }
                     )
                 }
 
@@ -109,17 +114,17 @@ internal fun ChartsSection(
         } else if (hasActiveQuery && searchCharts.isEmpty()) {
             // No charts to display - show empty state
             StatusMessageUI(
+                modifier = Modifier.fillMaxSize(),
                 title = stringResource(R.string.no_charts_found),
                 message = stringResource(R.string.no_charts_found_description),
                 icon = R.drawable.outline_filter_alt_24,
                 onClick = { viewModel.clearSearch() },
-                buttonLabel = stringResource(R.string.clear_search),
-                modifier = Modifier.fillMaxSize()
+                buttonLabel = stringResource(R.string.clear_search)
             )
         } else {
             // We have charts to display - show them with pull-to-refresh
             PullToRefreshBox(
-                isRefreshing = workshopState is ChartState.Loading,
+                isRefreshing = workshopState is ContentState.Loading,
                 onRefresh = { viewModel.fetchFeedCharts() }
             ) {
                 SectionWrapper(
@@ -144,21 +149,21 @@ internal fun ChartsSection(
                         )
                     }
 
-                    itemsIndexed(charts) { index, chart ->
+                    itemsIndexed(charts) { _, chart ->
                         ChartPreview(
                             chart = chart,
                             isDisabled = chart.latestVersion.isExplicit && !isExplicitAllowed.value,
                             onDisabled = {
                                 onSnackbar.show(
-                                    message = context.getString(R.string.explicit_content_disabled),
-                                    actionLabel = "Go to Settings",
+                                    message = explicitContentDisabledMsg,
+                                    actionLabel = explicitContentDisabledAction,
                                     onAction = {
                                         onNavigateToSettings()
                                     })
                             },
-                            onNavigateToDetails = {
+                            onPress = {
                                 onNavigateToDetails(chart)
-                            },
+                            }
                         )
                     }
 

@@ -1,18 +1,19 @@
 package com.meninocoiso.bscm.data.security
 
-import com.meninocoiso.bscm.util.KeystoreUtils
+import android.content.Context
+import com.meninocoiso.bscm.util.SecurityUtils
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpClientPlugin
 import io.ktor.client.request.HttpRequestPipeline
 import io.ktor.util.AttributeKey
-import kotlinx.coroutines.runBlocking
-
 class AuthPlugin private constructor(
-    private val authInterceptor: AuthInterceptor
+    private val authInterceptor: AuthInterceptor,
+    private val context: Context
 ) {
-    
+
     class Config {
         var authInterceptor: AuthInterceptor? = null
+        var context: Context? = null
     }
 
     companion object : HttpClientPlugin<Config, AuthPlugin> {
@@ -21,31 +22,35 @@ class AuthPlugin private constructor(
         override fun prepare(block: Config.() -> Unit): AuthPlugin {
             val config = Config().apply(block)
             return AuthPlugin(
-                authInterceptor = config.authInterceptor 
-                    ?: throw IllegalArgumentException("AuthInterceptor must be provided")
+                authInterceptor = config.authInterceptor
+                    ?: throw IllegalArgumentException("AuthInterceptor must be provided"),
+                context = config.context
+                    ?: throw IllegalArgumentException("Context must be provided")
             )
         }
 
         override fun install(plugin: AuthPlugin, scope: HttpClient) {
             scope.requestPipeline.intercept(HttpRequestPipeline.State) {
-                // --- HMAC Signature ---
-                val timestamp = System.currentTimeMillis().toString()
-                val payload = "$timestamp:"
-                val signature = KeystoreUtils.signData(payload)
-                context.headers.append("X-App-Timestamp", timestamp)
-                context.headers.append("X-App-Signature", signature)
+                // Get app signature
+                val appSignature = SecurityUtils.getAppSignature(plugin.context)
 
-                // --- JWT Token ---
-                val token = runBlocking { plugin.authInterceptor.getAuthToken() }
+                // Create payload with timestamp and signature
+                val timestamp = System.currentTimeMillis().toString()
+                val payload = "$timestamp:$appSignature"
+
+                // Sign the payload
+                val hmacSignature = SecurityUtils.signData(plugin.context, payload)
+
+                // Add security headers
+                context.headers.append("X-App-Signature", appSignature)
+                context.headers.append("X-Timestamp", timestamp)
+                context.headers.append("X-HMAC", hmacSignature)
+
+                // Add JWT token if available - use suspend function properly
+                val token = plugin.authInterceptor.getAuthToken()
                 if (token != null) {
                     context.headers.append("Authorization", "Bearer $token")
                 }
-
-                // --- DEBUG PRINT HEADERS ---
-                /*val headersString = context.headers.entries().joinToString("\n") { (key, values) ->
-                    "$key: ${values.joinToString(", ")}"
-                }
-                Log.d("AuthPlugin", "=== Request Headers ===\n$headersString\n========================")*/
 
                 proceed()
             }

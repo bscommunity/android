@@ -15,7 +15,7 @@ import com.meninocoiso.bscm.R
 
 @Composable
 fun DropdownMenuUI(
-    content: @Composable () -> Unit,
+    content: @Composable (dismiss: () -> Unit) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     
@@ -29,6 +29,6 @@ fun DropdownMenuUI(
         expanded = expanded,
         onDismissRequest = { expanded = false },
     ) {
-        content()
+        content { expanded = false }
     }
 }

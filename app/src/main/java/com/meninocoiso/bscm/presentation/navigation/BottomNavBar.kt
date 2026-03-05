@@ -1,6 +1,5 @@
 package com.meninocoiso.bscm.presentation.navigation
 
-import android.annotation.SuppressLint
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -33,6 +32,7 @@ private fun NavDestination?.isRouteInHierarchy(route: KClass<*>) =
 @Composable
 fun BottomNavBar(
     onClick: (Route) -> Unit,
+    onReselect: (Route) -> Unit = {},
     navBackStackEntry: NavBackStackEntry?,
     bottomNavigationItems: List<BottomNavigationItem>
 ) {
@@ -44,9 +44,11 @@ fun BottomNavBar(
             NavigationBarItem(
                 selected = isSelected,
                 onClick = {
-                    // Prevent navigating to the same destination
-                    if (isSelected) return@NavigationBarItem
-                    
+                    if (isSelected) {
+                        onReselect(item.route)
+                        return@NavigationBarItem
+                    }
+
                     onClick(item.route)
                 },
                 label = {

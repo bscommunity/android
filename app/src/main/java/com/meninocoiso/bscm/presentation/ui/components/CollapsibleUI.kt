@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Icon
@@ -26,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -36,6 +38,7 @@ const val EXPANSION_ANIMATION_DURATION = 300
 @Composable
 fun CollapsableSection(
     modifier: Modifier = Modifier,
+    shape: RoundedCornerShape? = null,
     initExpanded: Boolean? = true,
     header: @Composable (
         trigger: @Composable () -> Unit,
@@ -55,7 +58,7 @@ fun CollapsableSection(
     val interactionSource = remember { MutableInteractionSource() }
 
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .clickable(
                 onClick = {
@@ -63,6 +66,13 @@ fun CollapsableSection(
                 },
                 indication = null /*LocalIndication.current*/,
                 interactionSource = interactionSource
+            )
+            .then(
+                if (shape != null) {
+                    Modifier.clip(shape)
+                } else {
+                    Modifier
+                }
             )
     ) {
         header({
@@ -73,13 +83,17 @@ fun CollapsableSection(
                     .rotate(iconRotationDeg)
             )
         }, interactionSource)
-        CollapsableSectionContent(content = content, isExpanded = isExpanded)
+        CollapsableSectionContent(content = content, isExpanded = isExpanded, modifier = modifier)
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun CollapsableSectionContent(isExpanded: Boolean, content: @Composable () -> Unit) {
+fun CollapsableSectionContent(
+    isExpanded: Boolean,
+    content: @Composable () -> Unit,
+    modifier: Modifier
+) {
     val enterAnimation = remember {
         expandVertically(
             expandFrom = Alignment.Top,
@@ -113,7 +127,7 @@ fun CollapsableSectionContent(isExpanded: Boolean, content: @Composable () -> Un
         exit = exitAnimation
     ) {
         FlowRow(
-            modifier = Modifier.padding(bottom = 16.dp),
+            modifier = modifier.padding(bottom = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp),
         ) {

@@ -4,10 +4,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,7 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.data.remote.dto.ContributorUserDto
+import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.model.Contributor
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 import java.time.LocalDateTime
@@ -33,41 +31,36 @@ fun PreviewAuthors(
 ) {
     if (authors.isEmpty()) return
 
-    BoxWithConstraints {
-        val maxWidthFraction = 0.7f // 70% of the parent's width
-        val maxWidthDp = this.maxWidth * maxWidthFraction
-
-        Box(
-            modifier = Modifier.border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                RoundedCornerShape(150.dp)
-            )
+    Box(
+        modifier = Modifier.border(
+            BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            RoundedCornerShape(150.dp)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(start = 6.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .padding(start = 6.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
-                    for (author in authors) {
-                        Avatar(
-                            url = author.user.imageUrl,
-                            alt = author.user.username.first().toString(),
-                            size = avatarSize
-                        )
-                    }
+            Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
+                for (author in authors) {
+                    Avatar(
+                        url = author.user.avatarUrl,
+                        alt = author.user.username.first().toString(),
+                        size = avatarSize
+                    )
                 }
-                Text(
-                    style = MaterialTheme.typography.bodySmall,
-                    text = "$contentString ${if (authors.size > 1) stringResource(
-                        R.string.and_others
-                    ) else ""}",
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.sizeIn(maxWidth = maxWidthDp)
-                )
             }
+            Text(
+                style = MaterialTheme.typography.bodySmall,
+                text = "$contentString ${if (authors.size > 1) stringResource(
+                    R.string.and_others
+                ) else ""}",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
         }
     }
 }
@@ -82,11 +75,10 @@ fun ChartAuthorsPreview() {
         ),
         authors = listOf(
             Contributor(
-                user = ContributorUserDto(
+                user = SimplifiedUser(
                     id = "1",
                     username = "user1",
-                    imageUrl = "https://example.com/image1.jpg",
-                    createdAt = LocalDateTime.now(),
+                    avatarUrl = "https://example.com/image1.jpg",
                 ),
                 chartId = "1",
                 roles = emptyList(),

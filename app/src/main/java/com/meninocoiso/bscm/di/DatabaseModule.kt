@@ -4,38 +4,98 @@ import android.content.Context
 import androidx.room.Room
 import com.meninocoiso.bscm.data.local.AppDatabase
 import com.meninocoiso.bscm.data.local.dao.ChartDao
+import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
+import com.meninocoiso.bscm.data.manager.ChartOperationPolicy
+import com.meninocoiso.bscm.data.manager.ContentManager
+import com.meninocoiso.bscm.data.manager.ContentMemoryStore
 import com.meninocoiso.bscm.data.repository.ChartRepositoryLocal
-import com.meninocoiso.bscm.domain.repository.ChartRepository
+import com.meninocoiso.bscm.data.service.FeedOrchestrator
+import com.meninocoiso.bscm.domain.enums.SortOption
+import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.repository.ChartLocalRepository
+import com.meninocoiso.bscm.domain.repository.ChartQuery
+import com.meninocoiso.bscm.domain.repository.ChartRemoteRepository
+import com.meninocoiso.bscm.domain.repository.ContentFeedRepository
+import com.meninocoiso.bscm.domain.repository.ContentLocalRepository
+import com.meninocoiso.bscm.domain.repository.ContentOperationPolicy
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Named
+import kotlinx.coroutines.CoroutineScope
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
-    // Chart
     @Provides
     fun provideChartDao(appDatabase: AppDatabase): ChartDao {
         return appDatabase.chartDao()
     }
 
-    // Interaction Queue
     @Provides
     fun provideInteractionQueueDao(appDatabase: AppDatabase): InteractionQueueDao {
         return appDatabase.interactionQueueDao()
     }
 
     @Provides
+    fun provideCollectionDao(appDatabase: AppDatabase): CollectionDao {
+        return appDatabase.collectionDao()
+    }
+
+    // Chart local repository for chart-specific operations
+    @Provides
     @Singleton
-    @Named("Local")
     fun provideLocalChartRepository(
         chartDao: ChartDao
-    ): ChartRepository = ChartRepositoryLocal(chartDao)
+    ): ChartLocalRepository = ChartRepositoryLocal(chartDao)
+
+    @Provides
+    @Singleton
+    fun provideChartLocalContentRepository(
+        repository: ChartLocalRepository
+    ): ContentLocalRepository<Chart, SortOption, ChartQuery> = repository
+
+    @Provides
+    @Singleton
+    fun provideFeedOrchestrator(): FeedOrchestrator<Chart> = FeedOrchestrator()
+
+    @Provides
+    @Singleton
+    fun provideContentMemoryStore(feedOrchestrator: FeedOrchestrator<Chart>): ContentMemoryStore<Chart> =
+        ContentMemoryStore(feedOrchestrator)
+
+    @Provides
+    @Singleton
+    fun provideChartContentManager(
+        remote: ContentFeedRepository<Chart, SortOption, ChartQuery>,
+        local: ContentLocalRepository<Chart, SortOption, ChartQuery>,
+        remoteItemRepository: ChartRemoteRepository,
+        localItemRepository: ChartLocalRepository,
+        operationPolicy: ContentOperationPolicy<Chart>,
+        suggestionsRepository: ChartRemoteRepository,
+        analyticsRepository: ChartRemoteRepository,
+        memoryStore: ContentMemoryStore<Chart>,
+        @ApplicationScope coroutineScope: CoroutineScope
+    ): ContentManager<Chart, SortOption, ChartQuery> = ContentManager(
+        remoteRepository = remote,
+        localRepository = local,
+        remoteItemRepository = remoteItemRepository,
+        localItemRepository = localItemRepository,
+        operationPolicy = operationPolicy,
+        suggestionsRepository = suggestionsRepository,
+        analyticsRepository = analyticsRepository,
+        memoryStore = memoryStore,
+        coroutineScope = coroutineScope
+    )
+
+    @Provides
+    @Singleton
+    fun provideChartOperationPolicy(
+        policy: ChartOperationPolicy
+    ): ContentOperationPolicy<Chart> = policy
 
     /**
      * Provides a singleton instance of AppDatabase.

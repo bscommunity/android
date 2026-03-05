@@ -16,16 +16,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.data.manager.ChartState
 import com.meninocoiso.bscm.domain.model.Chart
-import com.meninocoiso.bscm.presentation.ui.components.Size
+import com.meninocoiso.bscm.domain.result.ContentState
+import com.meninocoiso.bscm.presentation.ui.components.StatusMessageSize
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.layout.Section
 import com.meninocoiso.bscm.presentation.ui.modifiers.shimmerLoading
 import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
 
 fun LazyListScope.remoteSection(
-    state: ChartState,
+    state: ContentState,
     charts: List<Chart>,
     onFetchUpdates: () -> Unit,
     itemsUpdating: MutableList<String>,
@@ -43,18 +43,18 @@ fun LazyListScope.remoteSection(
             modifier = Modifier.padding(top = 24.dp, bottom = 16.dp)
         ) {
             when (state) {
-                is ChartState.Error -> {
+                is ContentState.Error -> {
                     UpdatesPanel {
                         StatusMessageUI(
+                            modifier = Modifier.padding(16.dp),
                             title = stringResource(R.string.fetch_updates_error),
                             message = stringResource(R.string.check_connection),
                             icon = R.drawable.rounded_hourglass_disabled_24,
-                            size = Size.Small,
-                            modifier = Modifier.padding(16.dp)
+                            size = StatusMessageSize.Small
                         )
                     }
                 }
-                is ChartState.Loading -> {
+                is ContentState.Loading -> {
                     UpdatesPanel {
                         Box(
                             modifier = Modifier
@@ -71,7 +71,7 @@ fun LazyListScope.remoteSection(
                         )
                     }
                 }
-                is ChartState.Success -> {
+                is ContentState.Success -> {
                     if (charts.isEmpty()) {
                         UpdatesPanel {
                             Text(text = stringResource(R.string.no_updates_available))
@@ -81,16 +81,16 @@ fun LazyListScope.remoteSection(
             }
 
             UpdatesButton(
-                isLoading = state is ChartState.Loading,
+                isLoading = state is ContentState.Loading,
                 isDisabled = itemsUpdating.isNotEmpty(),
                 onFetchUpdates = onFetchUpdates
             )
         }
     }
 
-    if (state is ChartState.Success && charts.isNotEmpty()) {
+    if (state is ContentState.Success && charts.isNotEmpty()) {
         items(charts) { chart ->
-            val contentState by contentViewModel.getContentState(chart.id)
+            val contentState by contentViewModel.getDownloadState(chart.id)
                 .collectAsStateWithLifecycle()
 
             UpdateListItem(
@@ -99,7 +99,7 @@ fun LazyListScope.remoteSection(
                     itemsUpdating.add(chart.id)
                     contentViewModel.downloadChart(chart)
                 },
-                contentState = contentState
+                downloadState = contentState
             )
         }
     }

@@ -1,523 +1,234 @@
 package com.meninocoiso.bscm.data.manager
 
-import android.content.Context
 import android.net.Uri
 import android.util.Log
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.data.repository.CacheRepository
+import com.meninocoiso.bscm.data.mapper.ChartPlaceholderFactory
+import com.meninocoiso.bscm.data.parser.ExternalContentConfig
+import com.meninocoiso.bscm.data.parser.ExternalContentMetadata
+import com.meninocoiso.bscm.data.service.ChartStorageScanner
 import com.meninocoiso.bscm.di.ApplicationScope
-import com.meninocoiso.bscm.domain.enums.Difficulty
-import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
-import com.meninocoiso.bscm.domain.repository.ChartRepository
-import com.meninocoiso.bscm.util.StorageUtils
-import dagger.hilt.android.qualifiers.ApplicationContext
+import com.meninocoiso.bscm.domain.model.internal.InstalledContentEntry
+import com.meninocoiso.bscm.domain.repository.ChartLocalRepository
+import com.meninocoiso.bscm.domain.repository.ChartQuery
+import com.meninocoiso.bscm.domain.repository.ChartRemoteRepository
+import com.meninocoiso.bscm.domain.result.ContentResult
+import com.meninocoiso.bscm.domain.result.ContentState
+import com.meninocoiso.bscm.domain.result.UiText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import javax.inject.Named
 import javax.inject.Singleton
 
 private const val TAG = "ChartManager"
-private const val MAX_CACHED_CHARTS = 50
 
 /**
- * Result wrapper for chart operations
- */
-sealed class FetchResult<out T> {
-    data class Success<T>(val data: T) : FetchResult<T>()
-    data class Error(val message: String, val cause: Throwable? = null) : FetchResult<Nothing>()
-    data object Loading : FetchResult<Nothing>()
-}
-
-sealed class ChartState {
-    data object Loading : ChartState()
-    data object Success : ChartState()
-    data object Error : ChartState()
-}
-
-// Event for one-time UI actions
-sealed class FetchEvent {
-    data class Error(val message: String) : FetchEvent()
-}
-/**
- * Singleton manager for chart data across the application
+ * Chart-specific manager that handles chart-specific operations.
+ * Delegates generic content operations to ContentManager.
  */
 @Singleton
 class ChartManager @Inject constructor(
-    @param:ApplicationContext private val context: Context,
-    @param:Named("Remote") private val remoteChartRepository: ChartRepository,
-    @param:Named("Local") private val localChartRepository: ChartRepository,
-    private val cacheRepository: CacheRepository,
-    @param:ApplicationScope private val coroutineScope: CoroutineScope)
-{
+    @param:ApplicationScope private val coroutineScope: CoroutineScope,
+    private val remoteChartRepository: ChartRemoteRepository,
+    private val localChartRepository: ChartLocalRepository,
+    private val chartStorageScanner: ChartStorageScanner,
+    private val chartPlaceholderFactory: ChartPlaceholderFactory,
+    private val memoryStore: ContentMemoryStore<Chart>,
+    private val contentManager: ContentManager<Chart, SortOption, ChartQuery>
+) {
+    // Expose ContentManager states
+    val cacheState: StateFlow<ContentState> = contentManager.cacheState
+    val feedState: StateFlow<ContentState> = contentManager.feedState
 
-    // Single source of truth for all charts in memory
-    private val _charts = MutableStateFlow<Map<String, Chart>>(emptyMap())
-    private val charts: StateFlow<Map<String, Chart>> = _charts.asStateFlow()
-
-    // Search-specific state
-    private val _searchResults = MutableStateFlow<List<String>>(emptyList()) // Chart IDs
-    private val searchResults: StateFlow<List<String>> = _searchResults.asStateFlow()
-
-    private val _cacheState = MutableStateFlow<ChartState>(ChartState.Loading)
-    val cacheState: StateFlow<ChartState> = _cacheState.asStateFlow()
-
-    var currentSearchQuery: String = ""
-        private set
-
-    // Derived flows for different chart collections
-    val memoryCharts: Flow<List<Chart>> = charts.map { it.values.toList() }
-
-    val installedCharts: Flow<List<Chart>> = charts.map { chartMap ->
-        chartMap.values.filter { it.isInstalled == true }
+    // Expose ContentManager flows
+    val feedCharts: Flow<List<Chart>> = contentManager.feedContent.map { charts ->
+        charts.filterNot { chart -> chart.isInstalled == true }
     }
-
-    val chartsWithUpdates: Flow<List<Chart>> = charts.map { chartMap ->
-        chartMap.values.filter { it.isInstalled == true && it.availableVersion != null }
+    val installedCharts: Flow<List<Chart>> = contentManager.installedContent
+    val pendingUpdateCharts: Flow<List<Chart>> = installedCharts.map { chartList ->
+        chartList.filter { it.availableVersion != null }
     }
+    val searchCharts: Flow<List<Chart>> = contentManager.searchContent
 
-    val searchCharts: Flow<List<Chart>> = combine(searchResults, charts) { searchIds, chartMap ->
-        searchIds.mapNotNull { chartMap[it] }
-    }
+    fun getChartsLength(): Int = memoryStore.contentById.value.size
 
-    fun updateState(newState: ChartState) {
-        // Log.d(TAG, "Updating cache state to $newState")
-        _cacheState.value = newState
-    }
+    fun updateCacheState(newState: ContentState) = contentManager.updateCacheState(newState)
+    fun updateFeedState(newState: ContentState) = contentManager.updateFeedState(newState)
 
-    fun getChartsLength(): Int = _charts.value.size
+    // Delegate generic operations to ContentManager
+    suspend fun loadCachedCharts(sortBy: SortOption) = contentManager.loadCachedContent(sortBy)
 
-    fun verifyInstalledCharts(chartsToVerify: List<Chart>, rootUri: Uri): List<Chart> {
-        try {
-            val destination = StorageUtils.getFolder(rootUri, listOf("songs"), context)
-
-            return chartsToVerify.map { chart ->
-                val folderName = StorageUtils.getChartFolderName(chart.id)
-                val chartFolder = destination.findFile(folderName)
-                val fileExists = chartFolder != null
-
-                chart.copy(isInstalled = fileExists).also { updatedChart ->
-                    // Update in-memory state if verification changed the status
-                    if (chart.isInstalled != fileExists) {
-                        updateChartInMemory(updatedChart)
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error verifying installed charts", e)
-
-            // If we can't access the root folder, clear the cache
-            // This edge case is very specific but can happen if the user changes storage permissions
-            // We could simply allow the error in background, but clearing the cache ensures it won't
-            // error again while the user don't re-selects the folder
-            coroutineScope.launch {
-                cacheRepository.setFolderUri("")
-            }
-
-            return chartsToVerify
-        }
-    }
-
-    /**
-     * Loads charts from local cache into memory
-     */
-    suspend fun loadCachedCharts(sortBy: SortOption, rootUri: Uri? = null) {
-        _cacheState.value = ChartState.Loading
-
-        try {
-            val cachedCharts = localChartRepository.getChartsSortedBy(sortBy).first()
-
-            cachedCharts.fold(
-                onSuccess = { allCharts ->
-                    Log.d(TAG, "Loading ${allCharts.size} charts from cache")
-
-                    val verifiedCharts = if (rootUri != null) {
-                        verifyInstalledCharts(allCharts, rootUri)
-                    } else {
-                        allCharts
-                    }
-
-                    // Replace all charts in memory
-                    replaceChartsInMemory(verifiedCharts)
-                    _cacheState.value = ChartState.Success
-
-                    Log.d(TAG, "Successfully loaded ${verifiedCharts.size} charts from cache")
-                },
-                onFailure = { error ->
-                    Log.e(TAG, "Failed to load cached charts", error)
-                    _cacheState.value = ChartState.Error
-                }
-            )
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error loading cached charts", e)
-            _cacheState.value = ChartState.Error
-        }
-    }
-
-    /**
-     * Fetches charts in a feed-style format from remote source
-     */
     fun fetchFeedCharts(
         sortBy: SortOption,
         forceRefresh: Boolean = false,
         limit: Int = 10,
-        offset: Int = 0
-    ): Flow<FetchResult<List<Chart>>> = flow {
-        emit(FetchResult.Loading)
+        offset: Int = 0,
+        filters: ChartQuery? = null
+    ): Flow<ContentResult<List<Chart>>> =
+        contentManager.fetchFeed(sortBy, forceRefresh, limit, offset, filters)
 
-        Log.d(TAG, "Fetching feed charts: sortBy=$sortBy, limit=$limit, offset=$offset")
-
-        /*// Check cache for initial load
-        if (offset == 0 && !forceRefresh) {
-            val cachedResult = localChartRepository.getChartsSortedBy(sortBy, limit).first()
-
-            cachedResult.fold(
-                onSuccess = { cached ->
-                    if (cached.isNotEmpty()) {
-                        Log.d(TAG, "Using ${cached.size} cached charts for feed")
-                        updateChartsInMemory(cached)
-                        emit(FetchResult.Success(cached))
-                        return@flow
-                    }
-                },
-                onFailure = { *//* Continue to remote fetch *//* }
-            )
-        }*/
-
-        // Fetch from remote
-        val remoteResult = remoteChartRepository.getChartsSortedBy(
-            sortBy = sortBy,
-            limit = limit,
-            offset = offset
-        ).first()
-
-        remoteResult.fold(
-            onSuccess = { remoteCharts ->
-                Log.d(TAG, "Fetched ${remoteCharts.size} charts from remote")
-                // Log.d(TAG, "Charts: $remoteCharts")
-
-                if (offset == 0) {
-                    // Initial load - update cache and handle deletions
-                    updateChartsInMemory(remoteCharts)
-                    handleDeletedCharts(remoteCharts)
-
-                    // Update local storage in background
-                    coroutineScope.launch {
-                        localChartRepository.updateCharts(remoteCharts).first()
-                        Log.d(TAG, "Updated ${remoteCharts.size} charts in local storage")
-                    }
-                } else {
-                    // Pagination - merge with existing
-                    val currentCharts = _charts.value
-                    val newCharts = remoteCharts.filter { it.id !in currentCharts }
-                    updateChartsInMemory(newCharts)
-                }
-
-                emit(FetchResult.Success(getCurrentChartsList()))
-            },
-            onFailure = { error ->
-                Log.e(TAG, "Failed to fetch feed charts", error)
-                emit(FetchResult.Error(
-                    error.message ?: context.getString(R.string.failed_to_fetch_feed_charts),
-                    error
-                ))
-            }
-        )
-    }.catch { e ->
-        Log.e(TAG, "Exception in fetchFeedCharts", e)
-        emit(FetchResult.Error(context.getString(R.string.failed_to_fetch_feed_charts), e))
-    }
-
-    /**
-     * Handle charts that have been deleted from remote
-     */
-    private suspend fun handleDeletedCharts(remoteCharts: List<Chart>) {
-        val currentCharts = _charts.value
-        val remoteIds = remoteCharts.map { it.id }.toSet()
-
-        // Find non-installed charts that are no longer on remote
-        val deletedCharts = currentCharts.values.filter { chart ->
-            chart.isInstalled != true && chart.id !in remoteIds
-        }
-
-        if (deletedCharts.isNotEmpty()) {
-            Log.d(TAG, "Removing ${deletedCharts.size} deleted charts from cache")
-
-            // Remove from memory
-            val updatedMap = currentCharts.toMutableMap()
-            deletedCharts.forEach { updatedMap.remove(it.id) }
-            _charts.value = updatedMap
-
-            // Remove from local storage
-            coroutineScope.launch {
-                localChartRepository.deleteCharts(deletedCharts).first()
-                Log.d(TAG, "Deleted charts removed from local storage")
-            }
-        }
-    }
-
-    /**
-     * Search for charts with query and filters
-     */
     fun searchCharts(
         query: String,
-        difficulties: List<Difficulty>? = null,
-        genres: List<Genre>? = null,
+        sortBy: SortOption? = null,
         limit: Int = 10,
-        offset: Int = 0
-    ): Flow<FetchResult<List<Chart>>> = flow {
-        currentSearchQuery = query
+        offset: Int = 0,
+        filters: ChartQuery? = null
+    ): Flow<ContentResult<List<Chart>>> =
+        contentManager.search(query, sortBy, limit, offset, filters)
 
-        if (query.isEmpty()) {
-            _searchResults.value = emptyList()
-            emit(FetchResult.Success(emptyList()))
-            return@flow
+    fun getChartsById(ids: List<String>): Flow<ContentResult<List<Chart>>> = contentManager.getItemsById(ids)
+
+    suspend fun persistCharts(charts: List<Chart>) {
+        if (charts.isEmpty()) return
+        memoryStore.addWithoutAffectingFeed(charts, getId = { it.id })
+        val result = localChartRepository.insert(charts).first()
+        if (result.isFailure) {
+            Log.e(TAG, "Failed to persist charts", result.exceptionOrNull())
         }
-
-        emit(FetchResult.Loading)
-
-        val remoteResult = remoteChartRepository.getCharts(
-            query = query,
-            difficulties = difficulties,
-            genres = genres,
-            limit = limit,
-            offset = offset
-        ).first()
-
-        remoteResult.fold(
-            onSuccess = { searchResults ->
-                Log.d(TAG, "Found ${searchResults.size} charts for query: $query")
-
-                // Check if query is still current
-                if (currentSearchQuery != query) {
-                    Log.d(TAG, "Query changed, ignoring results")
-                    return@flow
-                }
-
-                // Update charts in memory and search results
-                updateChartsInMemory(searchResults)
-
-                val currentSearchIds = if (offset == 0) {
-                    searchResults.map { it.id }
-                } else {
-                    _searchResults.value + searchResults.map { it.id }
-                }
-
-                _searchResults.value = currentSearchIds
-                emit(FetchResult.Success(searchResults))
-            },
-            onFailure = { error ->
-                Log.e(TAG, "Search failed for query: $query", error)
-                emit(FetchResult.Error(context.getString(R.string.search_failed), error))
-            }
-        )
-    }.catch { e ->
-        Log.e(TAG, "Exception in searchCharts", e)
-        emit(FetchResult.Error(context.getString(R.string.search_failed), e))
     }
 
-    /**
-     * Check for updates to installed charts
-     */
-    fun checkForUpdates(): Flow<FetchResult<List<Chart>>> = flow {
-        emit(FetchResult.Loading)
+    suspend fun updateContentById(internalId: String, operation: OperationOption): ContentResult<Chart> =
+        contentManager.updateContent(internalId, operation)
 
-        val installedCharts = _charts.value.values.filter { it.isInstalled == true }
-
-        if (installedCharts.isEmpty()) {
-            emit(FetchResult.Success(emptyList<Chart>()))
-            return@flow
+    suspend fun updateContentByContentId(contentId: String, operation: OperationOption): ContentResult<Chart> {
+        val internalId = resolveInternalIdByContentId(contentId).getOrElse { err ->
+            return ContentResult.Error(
+                err.message?.let {UiText.Plain(it) }
+                    ?: UiText.Res(R.string.content_not_found),
+                err
+            )
         }
-
-        val latestVersionsResult = remoteChartRepository
-            .getLatestVersionsByChartIds(installedCharts.map { it.id })
-            .first()
-
-        latestVersionsResult.fold(
-            onSuccess = { latestVersions ->
-                val chartsWithUpdates = mutableListOf<Chart>()
-                val versionMap = latestVersions.associateBy { it.chartId }
-
-                installedCharts.forEach { chart ->
-                    val remoteVersion = versionMap[chart.id]
-
-                    if (remoteVersion != null && remoteVersion.index > chart.latestVersion.index) {
-                        val updatedChart = chart.copy(availableVersion = remoteVersion)
-                        updateChartInMemory(updatedChart)
-                        chartsWithUpdates.add(updatedChart)
-                    }
-                }
-
-                // Update local storage
-                if (chartsWithUpdates.isNotEmpty()) {
-                    coroutineScope.launch {
-                        localChartRepository.updateCharts(chartsWithUpdates.toList()).first()
-                    }
-                }
-
-                emit(FetchResult.Success(chartsWithUpdates.toList()))
-                Log.d(TAG, "Found ${chartsWithUpdates.size} charts with updates")
-            },
-            onFailure = { error ->
-                emit(FetchResult.Error(
-                    context.getString(R.string.failed_to_check_for_updates),
-                    error
-                ))
-            }
-        )
-    }.catch { e ->
-        emit(FetchResult.Error(context.getString(R.string.failed_to_check_for_updates), e))
+        return contentManager.updateContent(internalId, operation)
     }
 
-    /**
-     * Update a single chart with specific operation
-     */
-    fun updateChart(chartId: String, operation: OperationOption): Flow<FetchResult<List<Chart>>> = flow {
-        val existingChart = _charts.value[chartId] ?: run {
-            emit(FetchResult.Error(context.getString(R.string.chart_not_found)))
-            return@flow
-        }
+    fun getChart(chartId: String): Flow<ContentResult<Chart>> = contentManager.getItem(chartId)
 
-        // Update in local repository
-        val result = localChartRepository.updateChart(chartId, operation).first()
+    fun getChartByContentId(contentId: String): Flow<ContentResult<Chart>> = contentManager.getItemByContentId(contentId)
 
-        result.fold(
-            onSuccess = { success ->
-                if (!success) {
-                    emit(FetchResult.Error(context.getString(R.string.failed_to_update)))
-                    return@fold
-                }
+    fun getSuggestions(query: String): Flow<List<String>> = contentManager.getSuggestions(query)
 
-                // Update in-memory state
-                val updatedChart = when (operation) {
-                    OperationOption.INSTALL -> existingChart.copy(isInstalled = true)
-                    OperationOption.UPDATE -> {
-                        val availableVersion = existingChart.availableVersion
-                        if (availableVersion == null) {
-                            emit(FetchResult.Error(context.getString(R.string.no_available_version)))
-                            return@fold
-                        }
-                        existingChart.copy(
-                            latestVersion = availableVersion,
-                            availableVersion = null
-                        )
-                    }
-                    OperationOption.DELETE -> existingChart.copy(isInstalled = false)
-                }
-
-                updateChartInMemory(updatedChart)
-                emit(FetchResult.Success(getCurrentChartsList()))
-
-                Log.d(TAG, "Successfully updated chart $chartId with operation $operation")
-            },
-            onFailure = { error ->
-                emit(FetchResult.Error(context.getString(R.string.failed_to_update), error))
-            }
-        )
-    }.catch { e ->
-        emit(FetchResult.Error(context.getString(R.string.failed_to_update), e))
-    }
-
-    /**
-     * Get search suggestions
-     */
-    fun getSuggestions(query: String): Flow<List<String>> = flow {
-        if (query.isBlank()) {
-            emit(emptyList())
-            return@flow
-        }
-
-        val result = remoteChartRepository.getSuggestions(query).first()
-
-        result.fold(
-            onSuccess = { suggestions -> emit(suggestions) },
-            onFailure = { emit(emptyList()) }
-        )
-    }.catch {
-        emit(emptyList())
-    }
-
-    /**
-     * Post analytics for chart operations
-     */
     fun postAnalytics(chartId: String, operation: OperationOption) {
-        coroutineScope.launch {
+        coroutineScope.launch { contentManager.postAnalytics(chartId, operation).first() }
+    }
+
+    // Chart-specific operations that require ChartRepository methods
+    fun checkForUpdates(): Flow<ContentResult<List<Chart>>> = flow {
+        emit(ContentResult.Loading)
+        val installed = memoryStore.contentById.value.values.filter { it.isInstalled == true && !isLocalOnlyChart(it) }
+        if (installed.isEmpty()) {
+            emit(ContentResult.Success(emptyList()))
+            return@flow
+        }
+        val latestVersionsResult = remoteChartRepository.getLatestVersionsByChartIds(installed.map { it.id }).first()
+        latestVersionsResult.fold(
+            onSuccess = { versions ->
+                val versionMap = versions.associateBy { it.chartId }
+                val updated = installed.mapNotNull { chart ->
+                    val remoteVersion = versionMap[chart.id]
+                    if (remoteVersion != null && remoteVersion.createdAt > chart.latestVersion.createdAt) {
+                        chart.copy(availableVersion = remoteVersion)
+                    } else null
+                }
+                if (updated.isNotEmpty()) {
+                    memoryStore.upsertContent(updated) { it.id }
+                    coroutineScope.launch { localChartRepository.update(updated).first() }
+                }
+                emit(ContentResult.Success(updated))
+            },
+                onFailure = { err ->
+                    emit(
+                        ContentResult.Error(
+                            err.message?.let { UiText.Plain(it) }
+                                ?: UiText.Res(R.string.failed_to_check_for_updates),
+                            err
+                        )
+                    )
+                }
+        )
+    }
+
+    suspend fun scanLocalCharts(rootUri: Uri) {
+        try {
+            // Scan local storage for installed charts
+            val installedEntries = chartStorageScanner.scanInstalledContent(rootUri)
+            if (installedEntries.isEmpty()) return
+
+            // Update existing charts with installed status, and persist any changes to the local repository
+            val current = memoryStore.contentById.value.values.toList()
+            val updatedCharts = current.map { chart ->
+                val isInstalled = chart.id in installedEntries.keys
+                Log.d(TAG, "Chart ${chart.id} installed status: ${chart.isInstalled} -> $isInstalled")
+                if (chart.isInstalled == isInstalled) chart else chart.copy(isInstalled = isInstalled)
+            }
+            persistInstalledChanges(current, updatedCharts)
+            memoryStore.upsertContent(updatedCharts) { it.id }
+
+            // Identify any installed charts that are missing from memory and attempt to hydrate them from storage metadata
+            val existingIds = current.map { it.id }.toSet()
+            Log.d(TAG, "Sync installed charts: found ${installedEntries.size} installed, ${existingIds.size} existing in memory")
+            val missingEntries = installedEntries.filterKeys { it !in existingIds }
+            Log.d(TAG, "Found ${missingEntries.size} missing installed charts to hydrate")
+            if (missingEntries.isNotEmpty()) {
+                val orphan = hydrateMissingInstalledCharts(missingEntries)
+                if (orphan.isNotEmpty()) memoryStore.addWithoutAffectingFeed(orphan, getId = { it.id })
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error syncing installed charts", e)
+        }
+    }
+
+    suspend fun clearCache() {
+        memoryStore.clearAll()
+        updateFeedState(ContentState.Loading)
+    }
+
+    private fun hydrateMissingInstalledCharts(
+        entries: Map<String, InstalledContentEntry<ExternalContentMetadata>>
+    ): List<Chart> {
+        if (entries.isEmpty()) return emptyList()
+        val hydrated = mutableListOf<Chart>()
+        for ((chartId, entry) in entries) {
             try {
-                remoteChartRepository.postAnalytics(chartId, operation).collect { result ->
-                    if (result.isSuccess) {
-                        Log.i(TAG, "Analytics posted for $chartId: $operation")
-                    } else {
-                        Log.w(TAG, "Failed to post analytics for $chartId", result.exceptionOrNull())
-                    }
+                val metadata = entry.metadata
+                val config = entry.config
+                if (metadata != null && config is ExternalContentConfig) {
+                    hydrated.add(chartPlaceholderFactory.createPlaceholderChart(metadata, config))
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Exception posting analytics for $chartId", e)
+                Log.w(TAG, "Failed to hydrate chart $chartId", e)
+            }
+        }
+        return hydrated
+    }
+
+    private suspend fun persistInstalledChanges(original: List<Chart>, updated: List<Chart>) {
+        if (original.size != updated.size) return
+        val changed = updated.mapIndexedNotNull { index, newChart ->
+            val oldChart = original[index]
+            if (oldChart.isInstalled != newChart.isInstalled && !isLocalOnlyChart(newChart)) newChart else null
+        }
+        if (changed.isNotEmpty()) {
+            val result = localChartRepository.update(changed).first()
+            if (result.isFailure) {
+                Log.e(TAG, "Failed to persist installed changes", result.exceptionOrNull())
             }
         }
     }
 
-    // Private helper methods
-    private fun updateChartInMemory(chart: Chart) {
-        _charts.value = _charts.value.toMutableMap().apply {
-            put(chart.id, chart)
-        }
+    private suspend fun resolveInternalIdByContentId(contentId: String): Result<String> {
+        val fromMemory = memoryStore.contentById.value.values.firstOrNull { it.contentId == contentId }
+        if (fromMemory != null) return Result.success(fromMemory.id)
+
+        return localChartRepository.getItemByContentId(contentId).first().map { it.id }
     }
 
-    private fun updateChartsInMemory(charts: List<Chart>) {
-        if (charts.isEmpty()) return
-
-        _charts.value = _charts.value.toMutableMap().apply {
-            charts.forEach { chart ->
-                // Preserve installed status and available version if chart already exists
-                val existing = this[chart.id]
-                val updatedChart = if (existing?.isInstalled == true) {
-                    chart.copy(
-                        isInstalled = true,
-                        availableVersion = existing.availableVersion
-                    )
-                } else {
-                    chart
-                }
-                put(chart.id, updatedChart)
-            }
-        }
-
-        // Apply cache limit for non-installed charts
-        applyCacheLimit()
-
-        Log.d(TAG, "Updated ${charts.size} charts in memory")
-    }
-
-    private fun replaceChartsInMemory(charts: List<Chart>) {
-        _charts.value = charts.associateBy { it.id }
-        Log.d(TAG, "Replaced all charts in memory with ${charts.size} charts")
-    }
-
-    private fun applyCacheLimit() {
-        val currentCharts = _charts.value
-        val installed = currentCharts.values.filter { it.isInstalled == true }
-        val nonInstalled = currentCharts.values.filter { it.isInstalled != true }
-
-        if (nonInstalled.size > MAX_CACHED_CHARTS) {
-            val limitedNonInstalled = nonInstalled.takeLast(MAX_CACHED_CHARTS)
-            val finalCharts = (installed + limitedNonInstalled).associateBy { it.id }
-            _charts.value = finalCharts
-
-            Log.d(TAG, "Applied cache limit: ${installed.size} installed + ${limitedNonInstalled.size} non-installed")
-        }
-    }
-
-    private fun getCurrentChartsList(): List<Chart> = _charts.value.values.toList()
+    private fun isLocalOnlyChart(chart: Chart): Boolean = chart.contentId == null
 }

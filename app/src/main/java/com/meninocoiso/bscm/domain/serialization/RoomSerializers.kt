@@ -1,7 +1,10 @@
 package com.meninocoiso.bscm.domain.serialization
 
 import androidx.room.TypeConverter
+import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.enums.ActionType
+import com.meninocoiso.bscm.domain.enums.CollectionKind
+import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Contributor
@@ -13,7 +16,7 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-class Converters {
+class RoomSerializers {
     @TypeConverter
     fun fromTimestamp(value: Long?): LocalDateTime? {
         return value?.let {
@@ -30,6 +33,21 @@ class Converters {
 
     // Chart
     private val json = Json { ignoreUnknownKeys = true }
+    
+    // String List converters
+    @TypeConverter
+    fun fromStringList(strings: List<String>): String {
+        return json.encodeToString(strings)
+    }
+    
+    @TypeConverter
+    fun toStringList(stringsString: String): List<String> {
+        return if (stringsString.isBlank()) {
+            emptyList()
+        } else {
+            json.decodeFromString(stringsString)
+        }
+    }
 
     // StreamingLink
     @TypeConverter
@@ -128,5 +146,36 @@ class Converters {
     @TypeConverter
     fun toActionType(value: String): ActionType {
         return ActionType.valueOf(value)
+    }
+
+    @TypeConverter
+    fun fromCollectionKind(value: CollectionKind): String {
+        return value.name
+    }
+
+    @TypeConverter
+    fun toCollectionKind(value: String): CollectionKind {
+        return CollectionKind.valueOf(value)
+    }
+
+    @TypeConverter
+    fun fromContentType(value: ContentType): String {
+        return value.name
+    }
+
+    @TypeConverter
+    fun toContentType(value: String): ContentType {
+        return ContentType.valueOf(value)
+    }
+
+    // SimplifiedUser converters
+    @TypeConverter
+    fun fromSimplifiedUser(user: SimplifiedUser): String {
+        return json.encodeToString(user)
+    }
+
+    @TypeConverter
+    fun toSimplifiedUser(userString: String): SimplifiedUser {
+        return json.decodeFromString(userString)
     }
 }

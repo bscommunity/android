@@ -43,52 +43,52 @@ class DownloadServiceMonitor @Inject constructor(
      * Starts a download with improved error handling and duplicate prevention
      */
     suspend fun startDownload(
-        chartId: String,
+        id: String,
+        name: String,
         bundleUrl: String,
-        chartName: String,
         isUpdate: Boolean = false
     ) {
         // Validate inputs
-        require(chartId.isNotBlank()) { "Chart ID cannot be blank" }
+        require(id.isNotBlank()) { "Content ID cannot be blank" }
         require(bundleUrl.isNotBlank()) { "Bundle URL cannot be blank" }
-        require(chartName.isNotBlank()) { "Chart name cannot be blank" }
+        require(name.isNotBlank()) { "Name cannot be blank" }
 
         // Check if download is already active
         activeDownloadsLock.withLock {
-            if (activeDownloads.contains(chartId)) {
-                Log.w(TAG, "Download already in progress for chart: $chartId")
+            if (activeDownloads.contains(id)) {
+                Log.w(TAG, "Download already in progress for chart: $id")
                 sendEvent(DownloadEvent.Error(
-                    chartId,
+                    id,
                     "Download already in progress",
                     ErrorType.DOWNLOAD_ERROR
                 ))
                 return
             }
-            activeDownloads.add(chartId)
+            activeDownloads.add(id)
         }
 
         try {
             val intent = Intent(context, DownloadService::class.java).apply {
-                putExtra(DownloadService.Companion.EXTRA_CHART_ID, chartId)
-                putExtra(DownloadService.Companion.EXTRA_BUNDLE_URL, bundleUrl)
-                putExtra(DownloadService.Companion.EXTRA_CHART_NAME, chartName)
-                putExtra(DownloadService.Companion.EXTRA_IS_UPDATE, isUpdate)
+                putExtra(DownloadService.EXTRA_ID, id)
+                putExtra(DownloadService.EXTRA_BUNDLE_URL, bundleUrl)
+                putExtra(DownloadService.EXTRA_NAME, name)
+                putExtra(DownloadService.EXTRA_IS_UPDATE, isUpdate)
             }
 
             // Start service with retry logic
-            startServiceWithRetry(intent, chartId)
+            startServiceWithRetry(intent, id)
 
-            Log.d(TAG, "Download service started for chart: $chartId")
+            Log.d(TAG, "Download service started for chart: $id")
 
         } catch (e: Exception) {
             // Remove from active downloads on failure
             activeDownloadsLock.withLock {
-                activeDownloads.remove(chartId)
+                activeDownloads.remove(id)
             }
 
-            Log.e(TAG, "Failed to start download service for chart: $chartId", e)
+            Log.e(TAG, "Failed to start download service for chart: $id", e)
             sendEvent(DownloadEvent.Error(
-                chartId,
+                id,
                 "Failed to start download: ${e.message}",
                 ErrorType.UNKNOWN
             ))
@@ -99,7 +99,7 @@ class DownloadServiceMonitor @Inject constructor(
     /**
      * Starts the foreground service with retry logic
      */
-    private suspend fun startServiceWithRetry(intent: Intent, chartId: String) {
+    private suspend fun startServiceWithRetry(intent: Intent, id: String) {
         var lastException: Exception? = null
 
         repeat(MAX_RETRY_ATTEMPTS) { attempt ->
@@ -124,9 +124,9 @@ class DownloadServiceMonitor @Inject constructor(
     /**
      * Checks if a download is currently active for the given chart ID
      */
-    suspend fun isDownloadActive(chartId: String): Boolean {
+    suspend fun isDownloadActive(id: String): Boolean {
         return activeDownloadsLock.withLock {
-            activeDownloads.contains(chartId)
+            activeDownloads.contains(id)
         }
     }
 
@@ -156,7 +156,7 @@ class DownloadServiceMonitor @Inject constructor(
                     // Use a coroutine scope to handle the suspend function
                     CoroutineScope(Dispatchers.IO).launch {
                         activeDownloadsLock.withLock {
-                            activeDownloads.remove(event.chartId)
+                            activeDownloads.remove(event.id)
                         }
                     }
                 }

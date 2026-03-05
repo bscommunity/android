@@ -25,10 +25,16 @@ interface InteractionQueueDao {
     
     @Delete
     suspend fun delete(interactions: List<QueuedInteractionEntity>)
+
+    @Query("DELETE FROM interaction_queue WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
     
     @Query("SELECT COUNT(*) FROM interaction_queue")
     suspend fun getQueueSize(): Int
     
     @Query("SELECT * FROM interaction_queue WHERE contentId = :contentId AND collectionId = :collectionId ORDER BY timestamp DESC LIMIT 1")
     suspend fun getLatestForContent(contentId: String, collectionId: String): QueuedInteractionEntity?
+
+    @Query("SELECT * FROM interaction_queue WHERE contentId = :contentId AND collectionKind = :collectionKind ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getLatestForContentByKind(contentId: String, collectionKind: String): QueuedInteractionEntity?
 }

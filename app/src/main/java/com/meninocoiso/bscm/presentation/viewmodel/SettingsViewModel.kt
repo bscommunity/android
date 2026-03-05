@@ -1,6 +1,5 @@
 package com.meninocoiso.bscm.presentation.viewmodel
 
-import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,8 +11,9 @@ import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.ThemePreference
 import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
 import com.meninocoiso.bscm.domain.model.internal.Settings
+import com.meninocoiso.bscm.domain.result.UiText
+import com.meninocoiso.bscm.domain.state.AppUpdateState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -27,16 +27,6 @@ import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
 
-sealed class AppUpdateState {
-    data object Idle : AppUpdateState()
-    data object UpToDate : AppUpdateState()
-    data object Checking : AppUpdateState()
-    data class Downloading(val progress: Float) : AppUpdateState()
-    data class UpdateAvailable(val version: String) : AppUpdateState()
-    data class ReadyToInstall(val apkFile: File) : AppUpdateState()
-    data class Error(val message: String) : AppUpdateState()
-}
-
 private const val TAG = "SettingsViewModel"
 
 /**
@@ -45,11 +35,10 @@ private const val TAG = "SettingsViewModel"
  */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    @param:ApplicationContext private val context: Context,
+    private val apiClient: ApiClient,
     private val settingsRepository: SettingsRepository,
     private val appUpdateRepository: AppUpdateRepository,
-    private val apiClient: ApiClient,
-    private val cacheRepository: CacheRepository, // Inject CacheRepository
+    private val cacheRepository: CacheRepository,
 ) : ViewModel() {
     /**
      * Expose settings as a StateFlow for reactive UI updates
@@ -66,8 +55,8 @@ class SettingsViewModel @Inject constructor(
     val updateState: StateFlow<AppUpdateState> = _updateState.asStateFlow()
 
     // New: update events for one-off notifications (snackbar, etc.)
-    private val _updateEvents = MutableSharedFlow<String>()
-    val updateEvents: SharedFlow<String> = _updateEvents
+    private val _updateEvents = MutableSharedFlow<UiText>()
+    val updateEvents: SharedFlow<UiText> = _updateEvents
 
     // Contributors state (not persisted)
     data class ContributorsState(
@@ -92,7 +81,7 @@ class SettingsViewModel @Inject constructor(
                 }
                 // Emit event if update is available
                 if (newState is AppUpdateState.UpdateAvailable) {
-                    _updateEvents.emit("Update available: ${newState.version}")
+                    _updateEvents.emit(UiText.Res(R.string.update_available, newState.version))
                 }
             }
         }
@@ -204,7 +193,7 @@ class SettingsViewModel @Inject constructor(
             appUpdateRepository.fetchLatestVersion()
                 .catch { exception ->
                     _updateState.value =
-                        AppUpdateState.Error(exception.message ?: context.getString(R.string.failed_to_check_for_updates))
+                        AppUpdateState.Error(UiText.Res(R.string.failed_to_check_for_updates, exception.localizedMessage ?: ""))
                 }
                 .collect { fetchedVersion ->
                     Log.d(TAG, "Fetched version: $fetchedVersion")
@@ -216,9 +205,6 @@ class SettingsViewModel @Inject constructor(
                 }
         }
     }
-
-    /** Helper to extract shrunk version name (removes suffix after last '-') */
-    fun shrunkVersion(version: String): String = version.substringBeforeLast("-")
 
     fun downloadUpdate(version: String) {
         Log.d(TAG, "Downloading update for version: $version")
@@ -234,7 +220,7 @@ class SettingsViewModel @Inject constructor(
                 _updateState.value = AppUpdateState.ReadyToInstall(apkFile)
             } catch (e: Exception) {
                 Log.e(TAG, "APK download failed", e)
-                _updateState.value = AppUpdateState.Error(e.message ?: context.getString(R.string.unknown_error))
+                _updateState.value = AppUpdateState.Error(UiText.Res(R.string.unknown_error))
             }
         }
     }
@@ -247,7 +233,7 @@ class SettingsViewModel @Inject constructor(
                 appUpdateRepository.installApk(apkFile)
             } catch (e: Exception) {
                 Log.e(TAG, "APK installation failed", e)
-                _updateState.value = AppUpdateState.Error(e.message ?: context.getString(R.string.unknown_error))
+                _updateState.value = AppUpdateState.Error(UiText.Res(R.string.unknown_error))
             }
         }
     }

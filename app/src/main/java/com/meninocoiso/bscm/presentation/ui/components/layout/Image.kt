@@ -3,6 +3,7 @@ package com.meninocoiso.bscm.presentation.ui.components.layout
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -39,7 +40,8 @@ fun CoverArt(
     difficulty: Difficulty? = null,
     borderRadius: Dp = 0.dp,
     size: Dp = 76.dp,
-    url: String
+    url: String,
+    contentScale: ContentScale = ContentScale.Crop
 ) {
     CoverArt(
         modifier = modifier,
@@ -47,7 +49,8 @@ fun CoverArt(
         borderRadius = borderRadius,
         width = size,
         height = size,
-        url = url
+        url = url,
+        contentScale = contentScale
     )
 }
 
@@ -58,9 +61,17 @@ fun CoverArt(
     borderRadius: Dp = 0.dp,
     width: Dp = 76.dp,
     height: Dp = 76.dp,
-    url: String
+    url: String,
+    contentScale: ContentScale = ContentScale.Crop
 ) {
-    val sizeInPx = with(LocalDensity.current) { width.roundToPx() to height.roundToPx() }
+    val hasExplicitSize = width != Dp.Unspecified && height != Dp.Unspecified
+    val sizeModifier = if (hasExplicitSize) Modifier.size(width, height) else Modifier
+    val imageModifier = if (hasExplicitSize) sizeModifier else Modifier.fillMaxSize()
+    val sizeInPx = if (hasExplicitSize) {
+        with(LocalDensity.current) { width.roundToPx() to height.roundToPx() }
+    } else {
+        0 to 0
+    }
 
     val difficultiesList = getDifficultiesList()
 
@@ -70,21 +81,29 @@ fun CoverArt(
 
     Box(
         modifier = modifier
-            .size(width, height)
+            .then(sizeModifier)
             .clip(RoundedCornerShape(borderRadius)),
         contentAlignment = Alignment.BottomEnd
     ) {
+        val imageOptions = if (hasExplicitSize) {
+            ImageOptions(
+                contentScale = contentScale,
+                alignment = Alignment.Center,
+                requestSize = IntSize(sizeInPx.first, sizeInPx.second)
+            )
+        } else {
+            ImageOptions(
+                contentScale = contentScale,
+                alignment = Alignment.Center
+            )
+        }
+
         CoilImage(
             // DEBUG: Slow image loading for Shimmer testing
             // imageModel = { "http://10.255.255.1/slow.jpg" },
             imageModel = { url },
-            modifier = Modifier
-                .size(width, height),
-            imageOptions = ImageOptions(
-                contentScale = ContentScale.Crop,
-                alignment = Alignment.Center,
-                requestSize = IntSize(sizeInPx.first, sizeInPx.second)
-            ),
+            modifier = imageModifier,
+            imageOptions = imageOptions,
             component = rememberImageComponent {
                 +ShimmerPlugin(
                     Shimmer.Resonate(
@@ -97,7 +116,7 @@ fun CoverArt(
                 Box(
                     modifier = Modifier
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                        .matchParentSize(),
+                        .fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -153,7 +172,7 @@ fun Avatar(
                 model = url,
                 contentDescription = null,
                 modifier = Modifier
-                    .matchParentSize(),
+                    .fillMaxSize(),
                 contentScale = ContentScale.Fit,
                 alignment = Alignment.Center,
             )

@@ -1,11 +1,10 @@
 plugins {
 	alias(libs.plugins.android.application)
-	alias(libs.plugins.jetbrains.kotlin.android)
 	alias(libs.plugins.kotlin.serialization)
 	alias(libs.plugins.kotlin.parcelize)
 	alias(libs.plugins.ksp)
 	alias(libs.plugins.hilt)
-	alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
@@ -13,6 +12,7 @@ android {
 	compileSdk = 36
 
 	androidResources {
+        // Enable per-app locale configurations
 		generateLocaleConfig = true
 	}
 	
@@ -24,18 +24,10 @@ android {
 		// to use the new Date API, since desugar is not working
 		minSdk = 26
 		targetSdk = 37
-		versionCode = 15
-		versionName = "0.2.3-beta"
+		versionCode = 16
+		versionName = "0.3.0-beta"
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-		vectorDrawables {
-			useSupportLibrary = true
-		}
-        externalNativeBuild {
-            cmake {
-                cppFlags += ""
-            }
-        }
     }
 
 	signingConfigs {
@@ -69,8 +61,8 @@ android {
 	}
 
 	compileOptions {
-		sourceCompatibility = JavaVersion.VERSION_11
-		targetCompatibility = JavaVersion.VERSION_11
+		sourceCompatibility = JavaVersion.VERSION_17
+		targetCompatibility = JavaVersion.VERSION_17
 
 		// Enable core library desugaring
 		isCoreLibraryDesugaringEnabled = false
@@ -79,10 +71,7 @@ android {
 	buildFeatures {
 		compose = true
 		buildConfig = true
-	}
-
-	composeOptions {
-		kotlinCompilerExtensionVersion = "1.5.1"
+        resValues = true
 	}
 
 	packaging {
@@ -90,15 +79,12 @@ android {
 			excludes += "/META-INF/{AL2.0,LGPL2.1}"
 		}
 	}
-
-	buildToolsVersion = "35.0.0"
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
-        }
-    }
 }
+composeCompiler {
+    reportsDestination = layout.buildDirectory.dir("compose_compiler")
+    metricsDestination = layout.buildDirectory.dir("compose_compiler")
+}
+
 
 dependencies {
 	// Core Android and Kotlin
@@ -163,13 +149,6 @@ dependencies {
 	debugImplementation(libs.androidx.ui.test.manifest)
 
 	implementation(libs.androidxBrowser)
-}
-
-// Java Toolchain Configuration
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(11)
-	}
 }
 
 // Exclude unnecessary annotations

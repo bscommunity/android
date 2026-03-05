@@ -23,11 +23,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.toRoute
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.enums.UpdatesSection
-import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.User
-import com.meninocoiso.bscm.presentation.screen.details.ChartDetails
-import com.meninocoiso.bscm.presentation.screen.settings.Profile
+import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
+import com.meninocoiso.bscm.presentation.screen.profile.Profile
 import com.meninocoiso.bscm.presentation.screen.settings.SettingsScreen
 import com.meninocoiso.bscm.presentation.screen.updates.UpdatesScreen
 import com.meninocoiso.bscm.presentation.screen.workshop.WorkshopScreen
@@ -104,9 +104,11 @@ fun BottomNav(
     animatedContentScope: AnimatedContentScope,
     bottomNavController: NavHostController,
     navController: NavHostController,
+    onNavigateToDetails: OnNavigateToDetails,
+    onNavigateToSettings: () -> Unit,
     hasUpdate: Boolean = false,
+    user: SimplifiedUser?,
     startOAuth: (Uri) -> Unit,
-    cacheUser: User? = null,
 ) {
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
 
@@ -128,6 +130,8 @@ fun BottomNav(
 
     var fabExtended by remember { mutableStateOf(true) }
 
+    var onWorkshopReselectCallback by remember { mutableStateOf<(() -> Unit)?>(null) }
+
     val onSnackbar: OnSnackbar = { message, actionLabel, withDismissAction, duration, onAction, onDismiss ->
         coroutineScope.launch {
             val result = snackbarHostState.showSnackbar(
@@ -148,29 +152,10 @@ fun BottomNav(
         }
     }
 
-    val onNavigateToDetails = { chart: Chart ->
-        navController.navigate(route = ChartDetails(chart = chart)) {
-            // Prevent users from opening multiple details screens
-            launchSingleTop = true
-        }
-    }
-    
-    val onNavigateToSettings = {
-        bottomNavController.navigate(route = Route.Settings) {
-            popUpTo(bottomNavController.graph.startDestinationId) {
-                saveState = true
-            }
-            // Avoid multiple copies of the same destination when
-            // reselecting the same item
-            launchSingleTop = true
-
-            // Restore cacheState when reselecting a previously selected item
-            restoreState = true
-        }
-    }
-
-    val onNavigateToProfile = { user: User ->
-        navController.navigate(route = Profile(user))
+    val onNavigateToProfile = { user: SimplifiedUser ->
+        navController.navigate(route = Profile(
+            user = user,
+        ))
     }
 
     val onFabStateChange: (Boolean) -> Unit = { shouldExtend ->
@@ -199,6 +184,11 @@ fun BottomNav(
 
                         // Restore cacheState when reselecting a previously selected item
                         restoreState = true
+                    }
+                },
+                onReselect = { route ->
+                    if (route is Route.Workshop) {
+                        onWorkshopReselectCallback?.invoke()
                     }
                 },
                 bottomNavigationItems = updatedBottomNavigationItems,
@@ -234,6 +224,9 @@ fun BottomNav(
                     onFabStateChange = onFabStateChange,
                     onNavigateToSettings = onNavigateToSettings,
                     onNavigateToDetails = onNavigateToDetails,
+                    onWorkshopReselected = { callback ->
+                        onWorkshopReselectCallback = callback
+                    },
                 )
             }
             composableWithFade<Route.Updates> { backStackEntry ->
@@ -249,8 +242,8 @@ fun BottomNav(
                 SettingsScreen(
                     sharedTransitionScope = sharedTransitionScope,
                     animatedContentScope = animatedContentScope,
+                    user = user,
                     startOAuth = startOAuth,
-                    cacheUser = cacheUser,
                     onFabStateChange = onFabStateChange,
                     onSnackbar = onSnackbar,
                     onNavigateToProfile = onNavigateToProfile

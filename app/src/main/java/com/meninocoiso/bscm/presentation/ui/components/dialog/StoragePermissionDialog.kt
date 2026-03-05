@@ -1,9 +1,5 @@
 package com.meninocoiso.bscm.presentation.ui.components.dialog
 
-import android.content.Intent
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -14,58 +10,35 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import com.meninocoiso.bscm.R
-import kotlinx.coroutines.launch
-
-private val DESIRED_URI = "content://com.android.externalstorage.documents/tree/primary%3Abeatstar".toUri()
+import com.meninocoiso.bscm.util.StorageUtils
+import com.meninocoiso.bscm.util.StorageUtils.BEATSTAR_URI
+import com.meninocoiso.bscm.util.StorageUtils.INITIAL_URL
 
 @Composable
 fun StoragePermissionDialog(
     onPermissionGranted: () -> Unit,
     onDismiss: () -> Unit,
-    setFolderUri: suspend (Uri) -> Unit
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     
     var incorrectPermissionState by remember {
         mutableStateOf(false)
     }
 
-    // Register file picker launcher
-    val folderPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
-    ) { uri: Uri? ->
-        println("Selected URI: $uri")
-        
-        if (uri != DESIRED_URI) {
-            // If the selected URI is not the desired one, show an error and return
-            println("Selected URI does not match the desired URI.")
-            incorrectPermissionState = true
-            return@rememberLauncherForActivityResult
-        }
-
-        // Take persistent permission
-        val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-
-        context.contentResolver.takePersistableUriPermission(uri, takeFlags)
-
-        // Save the URI
-        scope.launch {
-            setFolderUri(uri)
-            onPermissionGranted()
-        }
-    }
-
+    val folderPickerLauncher = StorageUtils.folderPickerLauncher(
+        context,
+        validate = { uri -> uri == BEATSTAR_URI },
+        onPermissionGranted = { onPermissionGranted() },
+        onInvalidSelection = { incorrectPermissionState = true }
+    )
+    
     AlertDialog(
         icon = {
             Icon(
@@ -73,7 +46,7 @@ fun StoragePermissionDialog(
                     R.drawable.rounded_folder_limited_24
                 ),
                 modifier = Modifier.size(24.dp),
-                contentDescription = "Storage permission icon"
+                contentDescription = null
             )
         },
         title = {
@@ -99,10 +72,7 @@ fun StoragePermissionDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    val initialUri =
-                        // Try to find external storage - typically /storage/emulated/0
-                        "content://com.android.externalstorage.documents/document/primary:".toUri()
-                    folderPickerLauncher.launch(initialUri)
+                    folderPickerLauncher.launch(INITIAL_URL)
                 }
             ) {
                 Text(stringResource(if (incorrectPermissionState) {

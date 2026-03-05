@@ -11,9 +11,35 @@ object LinkingUtils {
         context.startActivity(intent)
     }
 
-    fun shareChartLink(context: Context, chartId: String) {
+    fun shareChart(context: Context, chartId: String) {
         // val deepLink = "bscm://chart/details/$chartId"
         val shareableLink = "https://bscm.netlify.app/link/chart/$chartId"
+
+        val shareIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, shareableLink)
+            type = "text/plain"
+        }
+
+        context.startActivity(Intent.createChooser(shareIntent,
+            context.getString(R.string.share_via)))
+    }
+
+    fun shareProfile(context: Context, username: String) {
+        val shareableLink = "https://bscm.netlify.app/link/profile/$username"
+
+        val shareIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, shareableLink)
+            type = "text/plain"
+        }
+
+        context.startActivity(Intent.createChooser(shareIntent,
+            context.getString(R.string.share_via)))
+    }
+
+    fun shareCollection(context: Context, username: String, slug: String?) {
+        val shareableLink = "https://bscm.netlify.app/link/collection/$username/$slug"
 
         val shareIntent = Intent().apply {
             action = Intent.ACTION_SEND

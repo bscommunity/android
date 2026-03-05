@@ -1,6 +1,8 @@
 package com.meninocoiso.bscm.di
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import com.meninocoiso.bscm.data.manager.CryptoManager
 import com.meninocoiso.bscm.data.manager.SecureTokenManager
 import com.meninocoiso.bscm.data.remote.ApiClient
@@ -39,8 +41,9 @@ object AuthModule {
     fun provideAuthRepository(
         apiClient: ApiClient,
         tokenManager: SecureTokenManager,
-        cacheRepository: CacheRepository
+        cacheRepository: CacheRepository,
+        dataStore: DataStore<Preferences>
     ): AuthRepository {
-        return AuthRepository(apiClient, tokenManager, cacheRepository)
+        return AuthRepository(apiClient, tokenManager, cacheRepository, dataStore)
     }
 }

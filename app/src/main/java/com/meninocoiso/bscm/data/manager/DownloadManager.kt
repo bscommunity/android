@@ -34,7 +34,7 @@ class DownloadManager @Inject constructor(
     private val okHttpClient: OkHttpClient,
 ) {
     /**
-     * Downloads a file from a URL to the app's cache directory with improved error handling and validation
+     * Downloads a file from a URL to the app's cache directory
      */
     suspend fun downloadFileToCache(
         url: String,
@@ -73,7 +73,6 @@ class DownloadManager @Inject constructor(
                 }
 
                 val responseBody = response.body
-                    ?: throw DownloadException("Empty response body")
 
                 val contentLength = responseBody.contentLength()
                 Log.d(TAG, "Content length: $contentLength bytes")

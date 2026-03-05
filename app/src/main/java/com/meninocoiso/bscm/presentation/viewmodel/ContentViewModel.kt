@@ -2,20 +2,18 @@ package com.meninocoiso.bscm.presentation.viewmodel
 
 import DownloadEvent
 import android.content.Context
-import android.net.Uri
 import android.util.Log
-import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.data.repository.CacheRepository
-import com.meninocoiso.bscm.domain.repository.ChartRepository
+import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.repository.DownloadRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.ErrorType
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.internal.Settings
+import com.meninocoiso.bscm.domain.state.DownloadState
 import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -27,7 +25,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -36,7 +33,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.io.IOException
 import javax.inject.Inject
-import javax.inject.Named
 
 private const val TAG = "ContentViewModel"
 
@@ -45,13 +41,12 @@ class ContentViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val downloadServiceMonitor: DownloadServiceMonitor,
     private val downloadRepository: DownloadRepository,
-    private val cacheRepository: CacheRepository,
     private val settingsRepository: SettingsRepository,
-    @param:Named("Local") private val localChartRepository: ChartRepository,
+    private val chartManager: ChartManager,
 ) : ViewModel() {
 
-    private val _contentStates = MutableStateFlow<Map<String, ContentState>>(emptyMap())
-    private val contentStates: StateFlow<Map<String, ContentState>> = _contentStates.asStateFlow()
+    private val _downloadStates = MutableStateFlow<Map<String, DownloadState>>(emptyMap())
+    private val downloadStates: StateFlow<Map<String, DownloadState>> = _downloadStates.asStateFlow()
 
     // Event flow for one-time notifications
     private val _events = MutableSharedFlow<DownloadEvent>(
@@ -59,10 +54,6 @@ class ContentViewModel @Inject constructor(
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
     val events: SharedFlow<DownloadEvent> = _events.asSharedFlow()
-
-    // Cache for folder URI to reduce repository calls
-    private var cachedFolderUri: Uri? = null
-    private val folderUriLock = Mutex()
 
     // Track operation status to prevent concurrent operations on same chart
     private val chartOperations = mutableMapOf<String, String>()
@@ -102,20 +93,20 @@ class ContentViewModel @Inject constructor(
                         // Check what type of download is active
                         val activeDownloads = downloadServiceMonitor.getActiveDownloads()
                         if (chart.id in activeDownloads) {
-                            ContentState.Downloading(chart.id, 0f) // Will be updated by events
+                            DownloadState.Downloading(chart.id, 0f) // Will be updated by events
                         } else {
-                            ContentState.Idle
+                            DownloadState.Idle
                         }
                     }
-                    isInstalled -> ContentState.Installed(chart.id)
-                    else -> ContentState.Idle
+                    isInstalled -> DownloadState.Installed(chart.id)
+                    else -> DownloadState.Idle
                 }
 
                 updateState(chart.id, state)
                 // Log.d(TAG, "Status checked for chart ${chart.id}: $state")
             } catch (e: Exception) {
                 Log.e(TAG, "Error checking chart status for ${chart.id}", e)
-                updateState(chart.id, ContentState.Error(
+                updateState(chart.id, DownloadState.Error(
                     chart.id,
                     "Failed to check chart status",
                     ErrorType.UNKNOWN
@@ -125,32 +116,32 @@ class ContentViewModel @Inject constructor(
     }
 
     private suspend fun handleDownloadEvent(event: DownloadEvent) {
-        val chartId = event.chartId
+        val contentId = event.id
 
         try {
             // Update the state based on the event
             when (event) {
                 is DownloadEvent.Started ->
-                    updateState(chartId, ContentState.Downloading(chartId, 0f))
+                    updateState(contentId, DownloadState.Downloading(contentId, 0f))
 
                 is DownloadEvent.Progress ->
-                    updateState(chartId, ContentState.Downloading(chartId, event.progress))
+                    updateState(contentId, DownloadState.Downloading(contentId, event.progress))
 
                 is DownloadEvent.Extracting ->
-                    updateState(chartId, ContentState.Extracting(chartId, event.progress))
+                    updateState(contentId, DownloadState.Extracting(contentId, event.progress))
 
                 is DownloadEvent.Complete -> {
-                    updateState(chartId, ContentState.Installed(chartId))
+                    updateState(contentId, DownloadState.Installed(contentId))
                     emitEvent(event)
                     // Clear any pending operations
-                    clearChartOperation(chartId)
+                    clearChartOperation(contentId)
                 }
 
                 is DownloadEvent.Error -> {
-                    updateState(chartId, ContentState.Error(chartId, event.message, event.type))
+                    updateState(contentId, DownloadState.Error(contentId, event.message, event.type))
                     emitEvent(event)
                     // Clear any pending operations
-                    clearChartOperation(chartId)
+                    clearChartOperation(contentId)
                 }
             }
         } catch (e: Exception) {
@@ -158,18 +149,18 @@ class ContentViewModel @Inject constructor(
         }
     }
 
-    private suspend fun clearChartOperation(chartId: String) {
+    private suspend fun clearChartOperation(contentId: String) {
         chartOperationsLock.withLock {
-            chartOperations.remove(chartId)
+            chartOperations.remove(contentId)
         }
     }
 
-    private suspend fun setChartOperation(chartId: String, operation: String): Boolean {
+    private suspend fun setChartOperation(contentId: String, operation: String): Boolean {
         return chartOperationsLock.withLock {
-            if (chartOperations.containsKey(chartId)) {
+            if (chartOperations.containsKey(contentId)) {
                 false // Operation already in progress
             } else {
-                chartOperations[chartId] = operation
+                chartOperations[contentId] = operation
                 true
             }
         }
@@ -184,27 +175,27 @@ class ContentViewModel @Inject constructor(
     }
 
     // Update state efficiently with .update
-    private fun updateState(chartId: String, state: ContentState) {
-        _contentStates.update { currentStates ->
+    private fun updateState(contentId: String, state: DownloadState) {
+        _downloadStates.update { currentStates ->
             currentStates.toMutableMap().apply {
-                this[chartId] = state
+                this[contentId] = state
             }
         }
     }
 
     /**
-     * Downloads a chart with improved error handling and duplicate prevention
+     * Downloads a chart
      */
     fun downloadChart(chart: Chart) {
-        val chartId = chart.id
+        val contentId = chart.id
 
         viewModelScope.launch {
             try {
                 // Check if operation is already in progress
-                if (!setChartOperation(chartId, "download")) {
-                    Log.w(TAG, "Download operation already in progress for chart: $chartId")
-                    updateState(chartId, ContentState.Error(
-                        chartId,
+                if (!setChartOperation(contentId, "download")) {
+                    Log.w(TAG, "Download operation already in progress for chart: $contentId")
+                    updateState(contentId, DownloadState.Error(
+                        contentId,
                         context.getString(R.string.operation_in_progress),
                         ErrorType.DOWNLOAD_ERROR
                     ))
@@ -212,7 +203,7 @@ class ContentViewModel @Inject constructor(
                 }
 
                 // Update state immediately for UI feedback
-                updateState(chartId, ContentState.Downloading(chartId, 0f))
+                updateState(contentId, DownloadState.Downloading(contentId, 0f))
 
                 // Validate chart data
                 val version = chart.availableVersion ?: chart.latestVersion
@@ -222,84 +213,85 @@ class ContentViewModel @Inject constructor(
 
                 // Start the download
                 downloadServiceMonitor.startDownload(
-                    chartId = chartId,
+                    id = contentId,
+                    name = "${chart.track} - ${chart.artist}",
                     bundleUrl = version.bundleUrl,
-                    chartName = "${chart.track} - ${chart.artist}",
                     isUpdate = chart.availableVersion != null
                 )
 
-                Log.d(TAG, "Download started for chart: $chartId")
+                Log.d(TAG, "Download started for chart: $contentId")
 
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to start download for chart: $chartId", e)
+                Log.e(TAG, "Failed to start download for chart: $contentId", e)
 
                 // Clear operation and update state
-                clearChartOperation(chartId)
+                clearChartOperation(contentId)
                 val errorMessage = when (e) {
                     is IllegalArgumentException -> e.message ?: "Invalid chart data"
                     else -> context.getString(R.string.failed_to_start_download)
                 }
 
-                updateState(chartId, ContentState.Error(chartId, errorMessage, ErrorType.DOWNLOAD_ERROR))
-                emitEvent(DownloadEvent.Error(chartId, errorMessage, ErrorType.DOWNLOAD_ERROR))
+                updateState(contentId, DownloadState.Error(contentId, errorMessage, ErrorType.DOWNLOAD_ERROR))
+                emitEvent(DownloadEvent.Error(contentId, errorMessage, ErrorType.DOWNLOAD_ERROR))
             }
         }
     }
 
 
     /**
-     * Deletes a chart with improved error handling and validation
+     * Deletes a chart
      */
     fun deleteChart(
         chart: Chart,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        val chartId = chart.id
+        val contentId = chart.contentId
+
+        if (contentId.isNullOrBlank()) {
+            onError("Only charts downloaded via the app can be deleted.")
+            return
+        }
 
         viewModelScope.launch {
             try {
                 // Check if operation is already in progress
-                if (!setChartOperation(chartId, "delete")) {
+                if (!setChartOperation(contentId, "delete")) {
                     val errorMsg = context.getString(R.string.operation_in_progress)
                     onError(errorMsg)
                     return@launch
                 }
 
                 // Validate chart state
-                val currentState = _contentStates.value[chartId]
-                if (currentState is ContentState.Downloading || currentState is ContentState.Extracting) {
-                    clearChartOperation(chartId)
+                val currentState = _downloadStates.value[contentId]
+                if (currentState is DownloadState.Downloading || currentState is DownloadState.Extracting) {
+                    clearChartOperation(contentId)
                     val errorMsg = context.getString(R.string.cannot_delete_during_download)
                     onError(errorMsg)
                     return@launch
                 }
 
-                // Update the chart in local database first
-                val updateResult = localChartRepository
-                    .updateChart(chartId, OperationOption.DELETE)
-                    .first()
-
-                updateResult.getOrThrow() // Will throw if update failed
-
                 // Delete the actual chart files
                 try {
-                    downloadRepository.deleteChart(chartId)
+                    downloadRepository.deleteChart(contentId)
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to delete chart files, but database was updated", e)
                     // Continue - the database update is more important
                 }
 
-                // Reset the state and clear operation
-                updateState(chartId, ContentState.Idle)
-                clearChartOperation(chartId)
+                // Update the chart in local database
+                chartManager.updateContentByContentId(contentId, OperationOption.DELETE)
 
-                Log.d(TAG, "Chart deleted successfully: $chartId")
+                // Reset the state and clear operation
+                updateState(contentId, DownloadState.Idle)
+                clearChartOperation(contentId)
+
+                Log.d(TAG, "Chart deleted successfully: $contentId")
                 onSuccess()
 
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to delete chart: $chartId", e)
-                clearChartOperation(chartId)
+                Log.e(TAG, "Failed to delete chart: $contentId", e)
+                clearChartOperation(contentId)
 
                 val errorMessage = when (e) {
                     is SecurityException -> context.getString(R.string.permission_denied_delete)
@@ -312,131 +304,13 @@ class ContentViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Get chart state efficiently - reusing the existing StateFlow
-     */
-    fun getContentState(chartId: String): StateFlow<ContentState> {
-        return contentStates
-            .map { it[chartId] ?: ContentState.Idle }
+    fun getDownloadState(contentId: String): StateFlow<DownloadState> {
+        return downloadStates
+            .map { it[contentId] ?: DownloadState.Idle }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.Lazily,
-                initialValue = _contentStates.value[chartId] ?: ContentState.Idle
+                initialValue = _downloadStates.value[contentId] ?: DownloadState.Idle
             )
     }
-
-    /**
-     * Gets all content states for batch operations
-     */
-    fun getAllContentStates(): StateFlow<Map<String, ContentState>> = contentStates
-
-    /**
-     * Folder URI handling with caching and improved error handling
-     */
-    suspend fun getFolderUri(): Uri? {
-        return folderUriLock.withLock {
-            try {
-                cachedFolderUri ?: cacheRepository.getFolderUri()?.also { uri ->
-                    // Validate URI is still accessible
-                    if (isUriAccessible(uri)) {
-                        cachedFolderUri = uri
-                    } else {
-                        Log.w(TAG, "Cached folder URI is no longer accessible")
-                        cacheRepository.setFolderUri("") // Clear invalid URI
-                        return@withLock null
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error getting folder URI", e)
-                null
-            }
-        }
-    }
-
-    suspend fun setFolderUri(uri: Uri) {
-        folderUriLock.withLock {
-            try {
-                if (isUriAccessible(uri)) {
-                    cachedFolderUri = uri
-                    cacheRepository.setFolderUri(uri.toString())
-                    Log.d(TAG, "Folder URI updated successfully")
-                } else {
-                    throw IllegalArgumentException("Provided URI is not accessible")
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error setting folder URI", e)
-                throw e
-            }
-        }
-    }
-
-    /**
-     * Validates that a URI is still accessible
-     */
-    private fun isUriAccessible(uri: Uri): Boolean {
-        return try {
-            val documentFile = DocumentFile.fromTreeUri(context, uri)
-            documentFile?.exists() == true && documentFile.canWrite()
-        } catch (e: Exception) {
-            Log.w(TAG, "URI accessibility check failed", e)
-            false
-        }
-    }
-
-    /**
-     * Clears the cached folder URI (useful when permissions are revoked)
-     */
-    suspend fun clearFolderUriCache() {
-        folderUriLock.withLock {
-            cachedFolderUri = null
-        }
-    }
-
-    /**
-     * Gets statistics about download operations
-     */
-    suspend fun getDownloadStatistics(): DownloadStatistics {
-        val states = _contentStates.value
-        return DownloadStatistics(
-            totalCharts = states.size,
-            installedCharts = states.values.count { it is ContentState.Installed },
-            downloadingCharts = states.values.count { it is ContentState.Downloading },
-            extractingCharts = states.values.count { it is ContentState.Extracting },
-            errorCharts = states.values.count { it is ContentState.Error },
-            activeDownloads = downloadServiceMonitor.getActiveDownloads().size
-        )
-    }
-
-    /*override fun onCleared() {
-        super.onCleared()
-        Log.d(TAG, "ContentViewModel cleared")
-    }*/
 }
-
-/**
- * Enhanced ContentState with better error information
- */
-sealed class ContentState {
-    data object Idle : ContentState()
-    data class Downloading(val chartId: String, val progress: Float) : ContentState()
-    data class Extracting(val chartId: String, val progress: Float) : ContentState()
-    data class Error(
-        val chartId: String,
-        val message: String,
-        val type: ErrorType? = null,
-        val timestamp: Long = System.currentTimeMillis()
-    ) : ContentState()
-    data class Installed(val chartId: String) : ContentState()
-}
-
-/**
- * Data class for download statistics
- */
-data class DownloadStatistics(
-    val totalCharts: Int,
-    val installedCharts: Int,
-    val downloadingCharts: Int,
-    val extractingCharts: Int,
-    val errorCharts: Int,
-    val activeDownloads: Int
-)

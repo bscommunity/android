@@ -1,132 +1,216 @@
 package com.meninocoiso.bscm.data.repository
 
-import com.meninocoiso.bscm.data.remote.ApiClient
-import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionItemRequest
-import com.meninocoiso.bscm.domain.enums.ActionType
+import android.util.Log
+import com.meninocoiso.bscm.data.local.dao.ChartDao
+import com.meninocoiso.bscm.data.local.dao.CollectionDao
+import com.meninocoiso.bscm.data.manager.ChartManager
+import com.meninocoiso.bscm.data.manager.InteractionQueueManager
+import com.meninocoiso.bscm.domain.enums.CollectionKind
+import com.meninocoiso.bscm.domain.enums.ContentType
+import com.meninocoiso.bscm.domain.enums.OperationOption
+import com.meninocoiso.bscm.domain.model.CollectionItemCrossRef
 import com.meninocoiso.bscm.domain.repository.InteractionRepository
+import com.meninocoiso.bscm.domain.result.ContentResult
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import java.time.LocalDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "InteractionRepositoryImpl"
-private const val BATCH_DELAY_MS = 3000L // 3 seconds for deduplication
 
 @Singleton
 class InteractionRepositoryImpl @Inject constructor(
-    private val apiClient: ApiClient,
+    private val queueManager: InteractionQueueManager,
+    private val chartManager: ChartManager,
+    private val chartDao: ChartDao,
+    private val collectionDao: CollectionDao,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : InteractionRepository {
-    private val pendingInteractions = mutableMapOf<Pair<String, String>, UpdateCollectionItemRequest>()
-    private val mutex = Mutex()
-    private var batchJob: Job? = null
-    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
 
-    private fun queueInteraction(contentId: String, collectionId: String, action: ActionType) {
-        scope.launch {
-            mutex.withLock {
-                pendingInteractions[Pair(contentId, collectionId)] = UpdateCollectionItemRequest(contentId, collectionId, action)
-                if (batchJob == null || batchJob?.isCompleted == true) {
-                    batchJob = scope.launch {
-                        delay(BATCH_DELAY_MS)
-                        sendBatch()
+    override suspend fun likeContent(id: String, contentId: String): Result<Unit> =
+        withContext(dispatcher) {
+            runCatching {
+                updateLocalState(id = id, operation = OperationOption.LIKE)
+                queueManager.queueAndSyncLike(contentId, isLike = true)
+            }.onFailure { e ->
+                Log.e(TAG, "Unexpected error in likeContent for contentId: $contentId", e)
+            }
+        }
+
+    override suspend fun unlikeContent(id: String, contentId: String): Result<Unit> =
+        withContext(dispatcher) {
+            runCatching {
+                updateLocalState(id = id, operation = OperationOption.UNLIKE)
+                queueManager.queueAndSyncLike(contentId, isLike = false)
+            }.onFailure { e ->
+                Log.e(TAG, "Unexpected error in unlikeContent for contentId: $contentId", e)
+            }
+        }
+
+    override suspend fun bookmarkContent(id: String, contentId: String): Result<Unit> =
+        withContext(dispatcher) {
+            runCatching {
+                // Insert cross-ref for BOOKMARKS collection
+                collectionDao.upsertCrossRef(
+                    CollectionItemCrossRef(
+                        collectionId = "bookmarks",
+                        contentId = contentId,
+                        contentType = ContentType.CHART
+                    )
+                )
+                // Update local chart state so UI reflects bookmark immediately
+                updateLocalState(id = id, operation = OperationOption.BOOKMARK)
+                queueManager.queueAndSyncBookmark(contentId, isBookmarked = true)
+            }.onFailure { e ->
+                Log.e(TAG, "Unexpected error in bookmarkContent for contentId: $contentId", e)
+            }
+        }
+
+    override suspend fun unbookmarkContent(id: String, contentId: String): Result<Unit> =
+        withContext(dispatcher) {
+            runCatching {
+                // Remove cross-ref from BOOKMARKS collection
+                collectionDao.deleteCrossRef("bookmarks", contentId)
+                // Update local chart state so UI reflects unbookmark immediately
+                updateLocalState(id = id, operation = OperationOption.UNBOOKMARK)
+                queueManager.queueAndSyncBookmark(contentId, isBookmarked = false)
+            }.onFailure { e ->
+                Log.e(TAG, "Unexpected error in unbookmarkContent for contentId: $contentId", e)
+            }
+        }
+
+    override suspend fun addToCollection(
+        id: String,
+        contentId: String,
+        collectionId: String
+    ): Result<Unit> =
+        withContext(dispatcher) {
+            runCatching {
+                collectionDao.upsertCrossRef(
+                    CollectionItemCrossRef(
+                        collectionId = collectionId,
+                        contentId = contentId,
+                        contentType = ContentType.CHART
+                    )
+                )
+                collectionDao.incrementCollectionChartCount(collectionId, LocalDateTime.now())
+                updateLocalState(contentId, OperationOption.BOOKMARK)
+                queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = true)
+            }.onFailure { e ->
+                Log.e(TAG, "Failed to add to collection for contentId: $contentId, collectionId: $collectionId", e)
+            }
+        }
+
+    override suspend fun removeFromCollection(
+        id: String,
+        contentId: String,
+        collectionId: String
+    ): Result<Unit> =
+        withContext(dispatcher) {
+            runCatching {
+                collectionDao.deleteCrossRef(collectionId, contentId)
+                collectionDao.decrementCollectionChartCount(collectionId, LocalDateTime.now())
+                updateLocalState(id, OperationOption.UNBOOKMARK)
+                queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = false)
+            }.onFailure { e ->
+                Log.e(TAG, "Failed to remove from collection for contentId: $contentId, collectionId: $collectionId", e)
+            }
+        }
+
+    /**
+     * Moves content from BOOKMARKS into a custom USER collection (or vice-versa).
+     *
+     * BOOKMARKS → USER collection:
+     *   1. Remove cross-ref from BOOKMARKS
+     *   2. Write cross-ref into collection_item_cross_ref (adds to collection)
+     *   3. Increment collection chart count
+     *
+     * USER collection → BOOKMARKS:
+     *   1. Remove cross-ref from the source USER collection
+     *   2. Decrement source collection chart count
+     *   3. Write cross-ref into BOOKMARKS
+     */
+    override suspend fun changeContentCollection(
+        contentId: String,
+        targetCollectionId: String,
+        targetCollectionKind: CollectionKind
+    ): Result<Unit> =
+        withContext(dispatcher) {
+            runCatching {
+                when (targetCollectionKind) {
+                    CollectionKind.USER -> {
+                        // Moving OUT of bookmarks INTO a custom collection.
+                        // Remove cross-ref from BOOKMARKS
+                        collectionDao.deleteCrossRef("bookmarks", contentId)
+
+                        // Write the cross-ref so the item appears in the collection immediately
+                        collectionDao.upsertCrossRef(
+                            CollectionItemCrossRef(
+                                collectionId = targetCollectionId,
+                                contentId = contentId,
+                                contentType = ContentType.CHART
+                            )
+                        )
+                        collectionDao.incrementCollectionChartCount(
+                            targetCollectionId,
+                            LocalDateTime.now()
+                        )
+                    }
+
+                    else -> {
+                        // BOOKMARKS reverse-move not yet implemented — throw so it's not silently swallowed
+                        error("changeContentCollection: unsupported targetCollectionKind=$targetCollectionKind")
                     }
                 }
+
+                // Always defer remote sync to the queue manager — handles conflict resolution
+                // and ensures offline-first behaviour is preserved.
+                queueManager.clearConflictingInteractions(contentId, targetCollectionKind)
+                queueManager.queueAndSyncCollection(contentId, targetCollectionId, isAdd = true)
+            }.onFailure { e ->
+                Log.e(TAG, "Failed to change content collection for contentId: $contentId", e)
             }
         }
-    }
 
-    private suspend fun sendBatch() {
-        val batch: List<UpdateCollectionItemRequest>
-        mutex.withLock {
-            batch = pendingInteractions.values.toList()
-            pendingInteractions.clear()
-        }
-        if (batch.isNotEmpty()) {
-            try {
-                apiClient.batchProcessInteractions(batch)
-            } catch (e: Exception) {
-                // Optionally handle retry logic here
+    override suspend fun getQueueSize(): Int = queueManager.getQueueSize()
+
+    override suspend fun processQueue() = queueManager.processQueuedInteractions()
+
+    /**
+     * Updates local chart state by chart `id` (the primary key).
+     * Used by like/unlike/bookmark/unbookmark where we always have the chart id.
+     */
+    private suspend fun updateLocalState(id: String, operation: OperationOption) {
+        try {
+            val result = chartManager.updateContentById(id, operation)
+            if (result !is ContentResult.Success) {
+                Log.e(TAG, "Failed to update local chart for id=$id, operation=$operation, result=$result")
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception updating local chart for id=$id, operation=$operation", e)
         }
     }
 
-    override suspend fun likeContent(contentId: String): Flow<Result<Unit>> = flow {
-        queueInteraction(contentId, "likes", ActionType.ADD)
-        emit(Result.success(Unit))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
-    override suspend fun unlikeContent(contentId: String): Flow<Result<Unit>> = flow {
-        queueInteraction(contentId, "likes", ActionType.REMOVE)
-        emit(Result.success(Unit))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
-    override suspend fun isContentLiked(contentId: String): Flow<Result<Boolean>> = flow {
-        val latest = mutex.withLock { pendingInteractions[Pair(contentId, "likes")]?.action }
-        emit(Result.success(latest == ActionType.ADD))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
-    override suspend fun favoriteContent(contentId: String): Flow<Result<Unit>> = flow {
-        queueInteraction(contentId, "favorites", ActionType.ADD)
-        emit(Result.success(Unit))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
-    override suspend fun unfavoriteContent(contentId: String): Flow<Result<Unit>> = flow {
-        queueInteraction(contentId, "favorites", ActionType.REMOVE)
-        emit(Result.success(Unit))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
-    override suspend fun isContentFavorited(contentId: String): Flow<Result<Boolean>> = flow {
-        val latest = mutex.withLock { pendingInteractions[Pair(contentId, "favorites")]?.action }
-        emit(Result.success(latest == ActionType.ADD))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
-    override suspend fun addToCollection(contentId: String, collectionId: String): Flow<Result<Unit>> = flow {
-        queueInteraction(contentId, collectionId, ActionType.ADD)
-        emit(Result.success(Unit))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
-    override suspend fun removeFromCollection(contentId: String, collectionId: String): Flow<Result<Unit>> = flow {
-        queueInteraction(contentId, collectionId, ActionType.REMOVE)
-        emit(Result.success(Unit))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
-    override suspend fun getQueueSize(): Int {
-        return mutex.withLock {
-            pendingInteractions.size
+    /**
+     * Updates local chart state by `contentId` (the remote content identifier).
+     * Used by [changeContentCollection] where we only have the contentId, not the
+     * chart's local primary key.
+     *
+     * We look up the chart's local `id` via [CollectionDao] / [ChartDao] first,
+     * then delegate to the existing [updateLocalState] — no new ChartManager method needed.
+     */
+    private suspend fun updateLocalStateByContentId(contentId: String, operation: OperationOption) {
+        try {
+            val chart = chartDao.getChartByContentId(contentId)
+            if (chart == null) {
+                Log.w(TAG, "No local chart found for contentId=$contentId, skipping local state update")
+                return
+            }
+            updateLocalState(id = chart.id, operation = operation)
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception updating local chart for contentId=$contentId, operation=$operation", e)
         }
-    }
-
-    override suspend fun processQueue() {
-        // Cancel any pending batch job and send immediately
-        batchJob?.cancel()
-        sendBatch()
     }
 }

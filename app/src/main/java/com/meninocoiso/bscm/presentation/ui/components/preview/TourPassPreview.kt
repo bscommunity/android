@@ -14,11 +14,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.bscm.presentation.ui.modifiers.debouncedClickable
-import com.meninocoiso.bscm.util.PreviewUtils.localContainer
 import com.meninocoiso.bscm.util.PreviewUtils.titleContent
 import com.meninocoiso.bscm.util.StringUtils
 
@@ -28,14 +29,14 @@ fun TourPassPreview(
     tourPass: TourPass,
     modifier: Modifier = Modifier,
     isLocal: Boolean = false,
+    isSecondary: Boolean = false,
     isDisabled: Boolean = false,
     onDisabled: () -> Unit = {},
-    onNavigateToDetails: () -> Unit
+    onPress: () -> Unit
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .localContainer(isLocal)
             .graphicsLayer {
                 alpha = if ((tourPass.isInstalled == true || isDisabled) && !isLocal) 0.5f else 1f
             }
@@ -44,7 +45,7 @@ fun TourPassPreview(
                     onDisabled()
                     return@debouncedClickable
                 }
-                onNavigateToDetails()
+                onPress()
             })
     ) {
         Column(
@@ -72,7 +73,7 @@ fun TourPassPreview(
                             titleContent(tourPass.name, false, false)
                             Text(
                                 style = MaterialTheme.typography.labelLarge,
-                                text = StringUtils.toRelativeString(tourPass.latestPublishedAt)
+                                text = StringUtils.toRelativeString(tourPass.updatedAt)
                             )
                         }
                     } else {
@@ -87,20 +88,19 @@ fun TourPassPreview(
                             Text(
                                 modifier = Modifier.padding(start = 8.dp),
                                 style = MaterialTheme.typography.labelMedium,
-                                text = "${tourPass.charts.size} charts"
+                                text = stringResource(R.string.charts_count, tourPass.charts.size)
                             )
                         }
                     }
-                    Text(style = MaterialTheme.typography.labelMedium, text = tourPass.artist ?: "Multiple Artists")
+                    Text(style = MaterialTheme.typography.labelMedium, text = tourPass.artist ?: stringResource(R.string.multiple_artists))
                 }
                 PreviewAuthors(
-                    contentString = "Tour Pass by ${tourPass.contributors[0].user.username}",
-                    /*contentString = stringResource(
+                    contentString = stringResource(
                         R.string.chart_by,
                         tourPass.contributors[0].user.username
-                    ),*/
+                    ),
                     authors = tourPass.contributors)
-                if (!isLocal && tourPass.isInstalled == true) PreviewInstalledTag()
+                if (!isLocal && tourPass.isInstalled == true) PreviewInstalledTag(false)
             }
         }
     }

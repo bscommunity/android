@@ -31,10 +31,10 @@ private val CategoryIcons = mapOf(
     "localization" to R.drawable.round_translate_24,
 )
 
-private val CategoryNames = mapOf(
-    "programming" to "Programming",
-    "design" to "Design",
-    "localization" to "Localization",
+private val CategoryNameRes = mapOf(
+    "programming" to R.string.programming,
+    "design" to R.string.design,
+    "localization" to R.string.localization,
 )
 
 @Composable
@@ -47,7 +47,7 @@ fun ContributorsDialog(
         modifier = Modifier.heightIn(max = 650.dp),
         onDismissRequest = onDismiss,
         title = {
-            Text(text = "Contributors")
+            Text(text = androidx.compose.ui.res.stringResource(R.string.contributors))
         },
         text = {
             if (isLoading && items.isEmpty()) {
@@ -67,7 +67,7 @@ fun ContributorsDialog(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Check out the amazing people we have contributing to bscm",
+                        text = androidx.compose.ui.res.stringResource(R.string.contributors_description),
                         style = MaterialTheme.typography.bodyMedium
                     )
 
@@ -83,8 +83,9 @@ fun ContributorsDialog(
                                     )
                                 }
                                 Text(
-                                    text = CategoryNames[category.name.lowercase()]
-                                        ?: category.name.replaceFirstChar { it.uppercase() },
+                                    text = CategoryNameRes[category.name.lowercase()]?.let { id ->
+                                        androidx.compose.ui.res.stringResource(id)
+                                    } ?: category.name.replaceFirstChar { it.uppercase() },
                                     style = MaterialTheme.typography.titleMedium,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
@@ -115,7 +116,7 @@ fun ContributorsDialog(
             Button(
                 onClick = { onDismiss() },
             ) {
-                Text(text = "Close")
+                Text(text = androidx.compose.ui.res.stringResource(R.string.close))
             }
         }
     )

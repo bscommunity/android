@@ -155,7 +155,7 @@ private fun CollapsedContributors(
                                     animatedVisibilityScope = animatedVisibilityScope
                                 ),
                                 // key = "avatar-${author.username}",
-                                url = author.imageUrl,
+                                url = author.avatarUrl,
                                 alt = author.username.first().toString(),
                                 size = 48.dp
                             )
@@ -244,7 +244,7 @@ private fun ExpandedContributors(
                     // println("id from expanded: ${author.user.username} ${author.user.id}")
                     with(sharedTransitionScope) {
                         Avatar(
-                            url = author.user.imageUrl,
+                            url = author.user.avatarUrl,
                             alt = author.user.username.first().toString(),
                             // key = "avatar-${author.user.username}",
                             size = 32.dp,

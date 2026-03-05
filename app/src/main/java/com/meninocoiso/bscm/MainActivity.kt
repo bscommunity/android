@@ -27,28 +27,33 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.meninocoiso.bscm.domain.enums.ThemePreference
+import com.meninocoiso.bscm.domain.state.MainActivityState
+import com.meninocoiso.bscm.domain.state.MainActivityState.Loading
+import com.meninocoiso.bscm.domain.state.MainActivityState.Success
 import com.meninocoiso.bscm.presentation.navigation.MainNav
 import com.meninocoiso.bscm.presentation.ui.components.dialog.NotificationsPermissionDialog
 import com.meninocoiso.bscm.presentation.ui.theme.BeatstarCommunityTheme
 import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
-import com.meninocoiso.bscm.presentation.viewmodel.MainActivityUiState
-import com.meninocoiso.bscm.presentation.viewmodel.MainActivityUiState.Loading
-import com.meninocoiso.bscm.presentation.viewmodel.MainActivityUiState.Success
 import com.meninocoiso.bscm.presentation.viewmodel.MainActivityViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
-
     private lateinit var authTabLauncher: ActivityResultLauncher<Intent>
     private lateinit var fallbackLauncher: ActivityResultLauncher<Intent>
 
     private val viewModel: MainActivityViewModel by viewModels()
     private val authViewModel: AuthViewModel by viewModels()
+
+    private val intentFlow = MutableSharedFlow<Intent>(
+        replay = 0,
+        extraBufferCapacity = 1
+    )
 
     // Coordination state for a single in-flight OAuth flow
     // - oauthInProgress: whether we started a new OAuth flow and are still awaiting outcome
@@ -61,6 +66,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        lifecycleScope.launch {
+            intent?.let { intentFlow.emit(it) }
+        }
 
         // 1) AuthTab launcher - official AuthTab callback registration
         // This launcher is used only when we choose to use AuthTab (see startOAuth).
@@ -93,7 +102,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 })
 
-        var uiState: MainActivityUiState by mutableStateOf(Loading)
+        var uiState: MainActivityState by mutableStateOf(Loading)
 
         // Update the uiState
         lifecycleScope.launch {
@@ -109,8 +118,8 @@ class MainActivity : AppCompatActivity() {
         // Cleanup old updates
         viewModel.cleanupOldUpdates()
 
-        // Keep the splash screen on-screen until the UI cacheState is loaded. 
-        // This condition is evaluated each time the app needs to be redrawn 
+        // Keep the splash screen on-screen until the UI cacheState is loaded.
+        // This condition is evaluated each time the app needs to be redrawn
         // so it should be fast to avoid blocking the UI.
         splashScreen.setKeepOnScreenCondition {
             when (uiState) {
@@ -123,7 +132,7 @@ class MainActivity : AppCompatActivity() {
         splashScreen.setOnExitAnimationListener { splashView ->
             splashView.view.animate()
                 .alpha(0f)
-                .setDuration(175L) // Fade out duration
+                .setDuration(250L) // Fade out duration
                 .withEndAction {
                     splashView.remove()
                 }
@@ -159,15 +168,41 @@ class MainActivity : AppCompatActivity() {
                         Loading -> false
                         is Success -> viewModel.hasUpdate((uiState as Success).latestUpdateVersion)
                     },
-                    cacheUser = when (uiState) {
+                    user = when (uiState) {
                         Loading -> null
-                        is Success -> (uiState as Success).cacheUser
+                        is Success -> (uiState as Success).user
                     },
                     // Pass a lambda to start OAuth so Composables don't need to know launchers
-                    startOAuth = { uri -> startOAuth(uri) }
+                    startOAuth = { uri -> startOAuth(uri) },
+                    intentFlow = intentFlow,
                 )
 
                 NotificationsPermissionDialog()
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+
+        val uri = intent.data ?: return
+
+        when {
+            // OAuth has priority ONLY if a flow is active
+            oauthInProgress && isOAuthCallback(uri) -> {
+                // A deep link arrived — treat as the authoritative success signal.
+                // Clear any pending deferred cancellation and handle success.
+                handleAuthSuccess(uri)
+            }
+
+            // Otherwise: normal app deep link
+            else -> {
+                println("Received non-OAuth deep link: $uri")
+                // Emit the intent to the flow for navigation handling
+                lifecycleScope.launch {
+                    intentFlow.emit(intent)
+                }
             }
         }
     }
@@ -176,7 +211,7 @@ class MainActivity : AppCompatActivity() {
      * Called by SettingsScreen (or any UI) to start an OAuth flow for [uri].
      * This method chooses AuthTab when supported, otherwise uses a CustomTab fallback.
      */
-    fun startOAuth(uri: Uri) {
+    private fun startOAuth(uri: Uri) {
         // mark we started a flow
         oauthInProgress = true
         oauthHandled = false
@@ -212,15 +247,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-
-        val data = intent.data
-        if (data != null) {
-            // A deep link arrived — treat as the authoritative success signal.
-            // Clear any pending deferred cancellation and handle success.
-            handleAuthSuccess(data)
-        }
+    // Example: bscm://auth/callback
+    private fun isOAuthCallback(uri: Uri): Boolean {
+        return uri.host == "auth" && uri.path == "/callback"
     }
 
     /**
@@ -232,23 +261,43 @@ class MainActivity : AppCompatActivity() {
         oauthHandled = true
         oauthInProgress = false
 
-        // Extract code / error, route to current handling logic (keeps behaviour you already had)
-        val code = uri.getQueryParameter("code")
-        val error = uri.getQueryParameter("error")
+        // Validate state token to protect against spurious redirects
+        lifecycleScope.launch {
+            val pendingState = authViewModel.getPendingOAuthState()
+            val incomingState = uri.getQueryParameter("state")
 
-        when {
-            code != null -> {
-                println("OAuth completed with code: $code")
-                authViewModel.handleAuthCallback(code)
+            if (!pendingState.isNullOrBlank()) {
+                if (incomingState == null || incomingState != pendingState) {
+                    // State mismatch -> ignore and log
+                    println("OAuth state mismatch: expected=$pendingState incoming=$incomingState")
+                    // Treat as error
+                    authViewModel.setError("Unexpected OAuth redirect")
+                    authViewModel.clearPendingOAuthState()
+                    return@launch
+                }
             }
-            error != null -> {
-                authViewModel.setError(error)
+
+            // Extract code / error, route to current handling logic (keeps behaviour you already had)
+            val code = uri.getQueryParameter("code")
+            val error = uri.getQueryParameter("error")
+
+            when {
+                code != null -> {
+                    println("OAuth completed with code: $code")
+                    authViewModel.handleAuthCallback(code)
+                }
+                error != null -> {
+                    authViewModel.setError(error)
+                }
+                else -> {
+                    // No code/error in URI - treat as cancelled by provider
+                    println("Callback without code or error")
+                    authViewModel.cancelPendingOAuth()
+                }
             }
-            else -> {
-                // No code/error in URI - treat as cancelled by provider
-                println("OAuth callback without code or error")
-                authViewModel.cancelPendingOAuth()
-            }
+
+            // clear persisted state after handling
+            authViewModel.clearPendingOAuthState()
         }
     }
 
@@ -287,7 +336,7 @@ class MainActivity : AppCompatActivity() {
  */
 @Composable
 private fun shouldUseDynamicTheming(
-    uiState: MainActivityUiState,
+    uiState: MainActivityState,
 ): Boolean = when (uiState) {
     Loading -> true
     is Success -> uiState.settings.useDynamicColors
@@ -299,7 +348,7 @@ private fun shouldUseDynamicTheming(
  */
 @Composable
 private fun shouldUseDarkTheme(
-    uiState: MainActivityUiState,
+    uiState: MainActivityState,
 ): Boolean = when (uiState) {
     Loading -> isSystemInDarkTheme()
     is Success -> when (uiState.settings.theme) {

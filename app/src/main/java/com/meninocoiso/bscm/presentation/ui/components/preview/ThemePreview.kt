@@ -19,12 +19,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Theme
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.bscm.presentation.ui.modifiers.debouncedClickable
-import com.meninocoiso.bscm.util.PreviewUtils.localContainer
 import com.meninocoiso.bscm.util.PreviewUtils.titleContent
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -34,13 +34,13 @@ fun ThemePreview(
     modifier: Modifier = Modifier,
     isLocal: Boolean = false,
     isDisabled: Boolean = false,
+    isSecondary: Boolean = false,
     onDisabled: () -> Unit = {},
-    onNavigateToDetails: () -> Unit
+    onPress: () -> Unit
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .localContainer(isLocal)
             .graphicsLayer {
                 alpha = if ((theme.isInstalled == true || isDisabled) && !isLocal) 0.5f else 1f
             }
@@ -49,7 +49,7 @@ fun ThemePreview(
                     onDisabled()
                     return@debouncedClickable
                 }
-                onNavigateToDetails()
+                onPress()
             })
     ) {
         Column(
@@ -107,14 +107,13 @@ fun ThemePreview(
                     }
                 }
                 PreviewAuthors(
-                    contentString = "Theme by ${theme.contributors[0].user.username}",
-                    /*contentString = stringResource(
+                    contentString = stringResource(
                         R.string.chart_by,
                         theme.contributors[0].user.username
-                    ),*/
+                    ),
                     authors = theme.contributors
                 )
-                if (!isLocal && theme.isInstalled == true) PreviewInstalledTag()
+                if (!isLocal && theme.isInstalled == true) PreviewInstalledTag(false)
             }
         }
     }

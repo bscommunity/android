@@ -10,10 +10,6 @@ class BaseApplication : Application() {
     
     @Inject
     lateinit var interactionSyncService: InteractionSyncService
-    
-    override fun onCreate() {
-        super.onCreate()
-        // InteractionSyncService is initialized automatically via Hilt injection
-        // It will start monitoring network connectivity and process queued interactions
-    }
+    // InteractionSyncService is initialized automatically via Hilt injection
+    // It will start monitoring network connectivity and process queued interactions
 }

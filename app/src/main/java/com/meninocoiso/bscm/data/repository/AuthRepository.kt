@@ -1,6 +1,10 @@
 package com.meninocoiso.bscm.data.repository
 
 import android.util.Log
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.meninocoiso.bscm.data.manager.SecureTokenManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.domain.model.User
@@ -8,6 +12,7 @@ import com.meninocoiso.bscm.domain.model.auth.AuthRequest
 import com.meninocoiso.bscm.domain.model.auth.AuthResponse
 import com.meninocoiso.bscm.domain.model.auth.RefreshTokenRequest
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,22 +24,23 @@ class AuthRepository @Inject constructor(
     private val apiClient: ApiClient,
     private val tokenManager: SecureTokenManager,
     private val cacheRepository: CacheRepository,
+    private val dataStore: DataStore<Preferences>
 ) {
-    suspend fun isLoggedIn(): Boolean = tokenManager.isLoggedIn()
     fun isLoggedInFlow(): Flow<Boolean> = tokenManager.isLoggedInFlow()
 
-    suspend fun getCachedUser(): User? = cacheRepository.getUser()
-
     fun authenticateWithDiscord(code: String, redirectUri: String): Flow<Result<User>> = flow {
-            Log.d(TAG, "authenticateWithDiscord: Starting authentication with code=${code.take(10)}..., redirectUri=$redirectUri")
-            
-            // Retrieve the stored code_verifier for PKCE
-            val codeVerifier = tokenManager.getCodeVerifier()
-            if (codeVerifier.isNullOrBlank()) {
-                Log.e(TAG, "authenticateWithDiscord: Code verifier not found")
-                emit(Result.failure(Exception("Code verifier not found. Please restart the authentication flow.")))
-                return@flow
-            }
+        Log.d(
+            TAG,
+            "authenticateWithDiscord: Starting authentication with code=${code.take(10)}..., redirectUri=$redirectUri"
+        )
+
+        // Retrieve the stored code_verifier for PKCE
+        val codeVerifier = tokenManager.getCodeVerifier()
+        if (codeVerifier.isNullOrBlank()) {
+            Log.e(TAG, "authenticateWithDiscord: Code verifier not found")
+            emit(Result.failure(Exception("Code verifier not found. Please restart the authentication flow.")))
+            return@flow
+        }
 
         try {
             Log.d(TAG, "authenticateWithDiscord: Code verifier found, creating auth request")
@@ -46,16 +52,24 @@ class AuthRepository @Inject constructor(
             Log.d(TAG, "authenticateWithDiscord: API call successful, saving tokens")
             tokenManager.saveTokens(result.accessToken, result.refreshToken)
 
-            Log.d(TAG, "authenticateWithDiscord: debug: result tokens: ${tokenManager.getAccessToken()} and ${tokenManager.getRefreshToken()}")
-            
+            Log.d(
+                TAG,
+                "authenticateWithDiscord: debug: result tokens: ${tokenManager.getAccessToken()} and ${tokenManager.getRefreshToken()}"
+            )
+
             val user = result.user
             if (user == null) {
                 Log.e(TAG, "authenticateWithDiscord: User data is null in the response")
                 emit(Result.failure(Exception("User data is null in the response")))
                 return@flow
             }
-            
+
             // Cache user
+            /*val simplifiedUser = user.toSimplifiedUser()
+            profileCacheRepository.cacheProfile(
+                username = simplifiedUser.username,
+                profile = UserProfileResponse(user = simplifiedUser)
+            )*/
             cacheRepository.setUser(user)
             Log.d(TAG, "authenticateWithDiscord: Authentication completed successfully")
             emit(Result.success(user))
@@ -69,11 +83,11 @@ class AuthRepository @Inject constructor(
     }
 
     fun refreshAccessToken(): Flow<Result<AuthResponse>> = flow {
-            val refreshToken = tokenManager.getRefreshToken()
-            if (refreshToken.isNullOrEmpty()) {
-                emit(Result.failure(Exception("No refresh token available")))
-                return@flow
-            }
+        val refreshToken = tokenManager.getRefreshToken()
+        if (refreshToken.isNullOrEmpty()) {
+            emit(Result.failure(Exception("No refresh token available")))
+            return@flow
+        }
 
         try {
             val request = RefreshTokenRequest(refreshToken)
@@ -90,35 +104,33 @@ class AuthRepository @Inject constructor(
                 t.message?.contains("expired", ignoreCase = true) == true
             ) {
                 tokenManager.clearTokens()
-                cacheRepository.clearUser()
             }
             emit(Result.failure(t))
         }
     }
 
-    fun getCurrentUser(useCache: Boolean = true): Flow<Result<User>> = flow {
-        try {
-            if (useCache) {
-                val cached = cacheRepository.getUser()
-                if (cached != null) {
-                    emit(Result.success(cached))
-                    return@flow
-                }
-            }
-            val user = apiClient.getCurrentUser()
-            cacheRepository.setUser(user)
-            emit(Result.success(user))
+    suspend fun setPendingOAuthState(state: String) {
+        dataStore.edit { it[OAUTH_STATE] = state }
+    }
+
+    suspend fun getPendingOAuthState(): String? {
+        return try {
+            val prefs = dataStore.data.first()
+            prefs[OAUTH_STATE]
         } catch (t: Throwable) {
-            if (t is kotlinx.coroutines.CancellationException) {
-                Log.d(TAG, "getCurrentUser: Flow cancelled")
-                throw t
-            }
-            emit(Result.failure(t))
+            null
         }
+    }
+
+    suspend fun clearPendingOAuthState() {
+        dataStore.edit { it.remove(OAUTH_STATE) }
     }
 
     suspend fun logout() {
         tokenManager.clearTokens()
-        cacheRepository.clearUser()
+    }
+
+    companion object {
+        private val OAUTH_STATE = stringPreferencesKey("oauth_state")
     }
 }

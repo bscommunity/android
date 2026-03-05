@@ -1,38 +1,38 @@
 [versions]
 # Core Android and Kotlin
-agp = "8.13.1"
+agp = "9.0.1"
 biometric = "1.1.0"
-kotlin = "2.2.20"
+kotlin = "2.3.0"
 coreKtx = "1.17.0"
-lifecycleRuntimeKtx = "2.9.4"
-activityCompose = "1.11.0"
-coreSplashscreen = "1.2.0-rc01"
+lifecycleRuntimeKtx = "2.10.0"
+activityCompose = "1.12.2"
+coreSplashscreen = "1.2.0"
 documentFile = "1.1.0"
+serializationJson = "1.10.0"
 
 # Compose UI and Navigation
-composeBom = "2025.10.00"
-composeNavigation = "2.9.5"
+composeBom = "2026.01.00"
+composeNavigation = "2.9.6"
 constraintlayoutCompose = "1.1.1"
 material = "1.13.0"
 material3 = "1.4.0"
 materialIcons = "1.7.8"
-# animationGraphics = "1.9.1"
 
 # Image Loading
-landscapist = "2.6.1"
+landscapist = "2.9.0"
 coilCompose = "3.3.0"
 
 # Dependency Injection
-hilt = "2.57.2"
-ksp = "2.2.20-2.0.4"
+hilt = "2.59"
+ksp = "2.3.5"
 androidxHiltNavigationCompose = "1.3.0"
 
 # Network
-ktor = "3.3.1"
+ktor = "3.4.0"
 
 # Data Persistence
-datastorePreferences = "1.1.7"
-room = "2.8.2"
+datastorePreferences = "1.2.0"
+room = "2.8.4"
 
 # Testing
 junit = "4.13.2"
@@ -40,9 +40,8 @@ junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 
 # Utility
-desugar_jdk_libs = "2.1.5"
-kotlinParcelize = "2.2.20"
-tinkAndroid = "1.18.0"
+kotlinParcelize = "2.3.0"
+tinkAndroid = "1.20.0"
 browser = "1.9.0"
 
 [libraries]
@@ -81,7 +80,7 @@ hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", v
 androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "androidxHiltNavigationCompose" }
 
 # Network and Serialization
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.8.0" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "serializationJson" }
 ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
 ktor-client-json = { module = "io.ktor:ktor-client-json", version.ref = "ktor" }
 ktor-client-serialization = { module = "io.ktor:ktor-client-serialization", version.ref = "ktor" }
@@ -101,19 +100,17 @@ androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "j
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 
 # Utility
-desugar_jdk_libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugar_jdk_libs" }
 tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tinkAndroid" }
 androidxBrowser = { group = "androidx.browser", name = "browser", version.ref = "browser" }
 
 [plugins]
 # Core and Kotlin
 android-application = { id = "com.android.application", version.ref = "agp" }
-jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 
 # Serialization and Compilation
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlinParcelize" }
 
 # Dependency Injection

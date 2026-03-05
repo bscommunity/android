@@ -1,13 +1,12 @@
 package com.meninocoiso.bscm.data.repository
 
-import android.net.Uri
 import android.util.Log
-import androidx.core.net.toUri
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.internal.Cache
@@ -29,10 +28,9 @@ class CacheRepository @Inject constructor(
 ) {
     companion object CacheKeys {
         val SEARCH_HISTORY = stringPreferencesKey("search_history")
-        val FOLDER_URI = stringPreferencesKey("folder_uri")
-        val LATEST_WORKSHOP_SORT = stringPreferencesKey("latest_workshop_sort")
+        val WORKSHOP_SORT = stringPreferencesKey("workshop_sort")
         val USER_JSON = stringPreferencesKey("user_json")
-        val CONTRIBUTORS_JSON = stringPreferencesKey("contributors_json") // Added key
+        val CONTRIBUTORS_JSON = stringPreferencesKey("contributors_json")
     }
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -52,6 +50,8 @@ class CacheRepository @Inject constructor(
             mapCache(preferences)
         }
 
+    // -------------------- Search history -------------------------
+
     suspend fun setSearchHistory(songs: List<String>) {
         val serializedSongs = songs.joinToString("|") // "|" is the delimiter
         dataStore.edit { it[SEARCH_HISTORY] = serializedSongs }
@@ -62,24 +62,14 @@ class CacheRepository @Inject constructor(
         return if (serializedSongs.isNotEmpty()) serializedSongs.split("|") else emptyList()
     }
 
-    suspend fun setFolderUri(uri: String) =
-        dataStore.edit { it[FOLDER_URI] = uri }
-
-    suspend fun getFolderUri(): Uri? {
-        val folderUri = dataStore.data.first()[FOLDER_URI]
-        return if (folderUri != null && folderUri.isNotEmpty()) {
-            folderUri.toUri()
-        } else {
-            null
-        }
-    }
+    //-------------------- Workshop sort option -------------------------
 
     suspend fun getLatestWorkshopSort(): SortOption? {
-        return dataStore.data.first()[LATEST_WORKSHOP_SORT]?.let { SortOption.valueOf(it) }
+        return dataStore.data.first()[WORKSHOP_SORT]?.let { SortOption.valueOf(it) }
     }
 
     suspend fun setLatestWorkshopSort(sort: String) {
-        dataStore.edit { it[LATEST_WORKSHOP_SORT] = sort }
+        dataStore.edit { it[WORKSHOP_SORT] = sort }
     }
 
     // -------------------- User cache -------------------------
@@ -94,7 +84,7 @@ class CacheRepository @Inject constructor(
         return try {
             json.decodeFromString(User.serializer(), encoded)
         } catch (e: SerializationException) {
-            Log.e("CacheRepository", "Falha ao decodificar usuário cacheado", e)
+            Log.e("CacheRepository", "Failed to decode user from cache", e)
             null
         }
     }
@@ -120,15 +110,18 @@ class CacheRepository @Inject constructor(
         } else emptyList()
     }
 
+    /**
+     * Maps the raw [Preferences] to a [Cache] object, handling any necessary
+     * deserialization and default values.
+     * These are the values the UI needs instantly on app launch, in a [Flow] instead of suspend
+     * functions,so we can show the cached data immediately while loading the rest.
+     * */
     private fun mapCache(preferences: Preferences): Cache = Cache(
-        searchHistory = preferences[SEARCH_HISTORY]?.split("|") ?: emptyList(),
-        folderUri = preferences[FOLDER_URI]
-            ?: Cache().folderUri,
-        latestWorkshopSort = preferences[LATEST_WORKSHOP_SORT]?.let { SortOption.valueOf(it) }
+        latestWorkshopSort = preferences[WORKSHOP_SORT]?.let { SortOption.valueOf(it) }
             ?: Cache().latestWorkshopSort,
         user = preferences[USER_JSON]?.let { encoded ->
             try {
-                json.decodeFromString(User.serializer(), encoded)
+                json.decodeFromString(SimplifiedUser.serializer(), encoded)
             } catch (_: Exception) {
                 null
             }

@@ -1,55 +1,59 @@
 package com.meninocoiso.bscm.domain.repository
 
-import kotlinx.coroutines.flow.Flow
+import com.meninocoiso.bscm.domain.enums.CollectionKind
 
 interface InteractionRepository {
     
     /**
      * Queues a like interaction for offline-first processing
      */
-    suspend fun likeContent(contentId: String): Flow<Result<Unit>>
-    
+    suspend fun likeContent(id: String, contentId: String): Result<Unit>
+
     /**
      * Queues an unlike interaction for offline-first processing
      */
-    suspend fun unlikeContent(contentId: String): Flow<Result<Unit>>
-    
+    suspend fun unlikeContent(id: String, contentId: String): Result<Unit>
+
     /**
-     * Checks if content is liked (from local state or server)
+     * Queues a bookmark interaction for offline-first processing
      */
-    suspend fun isContentLiked(contentId: String): Flow<Result<Boolean>>
-    
+    suspend fun bookmarkContent(id: String, contentId: String): Result<Unit>
+
     /**
-     * Queues a favorite interaction for offline-first processing
+     * Queues an unbookmark interaction for offline-first processing
      */
-    suspend fun favoriteContent(contentId: String): Flow<Result<Unit>>
-    
-    /**
-     * Queues an unfavorite interaction for offline-first processing
-     */
-    suspend fun unfavoriteContent(contentId: String): Flow<Result<Unit>>
-    
-    /**
-     * Checks if content is favorited (from local state or server)
-     */
-    suspend fun isContentFavorited(contentId: String): Flow<Result<Boolean>>
-    
+    suspend fun unbookmarkContent(id: String, contentId: String): Result<Unit>
+
     /**
      * Queues adding content to a custom collection
      */
     suspend fun addToCollection(
+        id: String,
         contentId: String,
         collectionId: String
-    ): Flow<Result<Unit>>
-    
+    ): Result<Unit>
+
     /**
-     * Queues removing content from a custom collection
+     * Removes content from a custom collection
      */
     suspend fun removeFromCollection(
+        id: String,
         contentId: String,
         collectionId: String
-    ): Flow<Result<Unit>>
-    
+    ): Result<Unit>
+
+    /**
+     * Changes the collection of content, removing it from the previous collection
+     * (BOOKMARKS) and adding it to the new collection (custom or vice-versa).
+     * This ensures proper queue management by removing the old interaction before
+     * adding the new one.
+     */
+    suspend fun changeContentCollection(
+        contentId: String,
+        targetCollectionId: String,
+        targetCollectionKind: CollectionKind
+    ): Result<Unit>
+
     /**
      * Gets the current interaction queue size
      */

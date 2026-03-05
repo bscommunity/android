@@ -1,19 +1,23 @@
 package com.meninocoiso.bscm.di
 
+import android.content.Context
+import com.meninocoiso.bscm.data.manager.SecureTokenManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.KtorApiClient
-import com.meninocoiso.bscm.domain.repository.ChartRepository
 import com.meninocoiso.bscm.data.repository.ChartRepositoryRemote
-import com.meninocoiso.bscm.domain.repository.UserRepository
-import com.meninocoiso.bscm.data.repository.UserRepositoryRemote
 import com.meninocoiso.bscm.data.security.AuthInterceptor
+import com.meninocoiso.bscm.domain.enums.SortOption
+import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.repository.ChartQuery
+import com.meninocoiso.bscm.domain.repository.ChartRemoteRepository
+import com.meninocoiso.bscm.domain.repository.ContentFeedRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
-import javax.inject.Named
 import javax.inject.Singleton
 
 @InstallIn(SingletonComponent::class)
@@ -22,21 +26,23 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideApiClient(
-        interceptor: AuthInterceptor
-    ): ApiClient = KtorApiClient(interceptor)
+        @ApplicationContext context: Context,
+        interceptor: AuthInterceptor,
+        tokenManager: SecureTokenManager
+    ): ApiClient = KtorApiClient(context, interceptor, tokenManager)
 
+    // Chart remote repository for chart-specific operations
     @Provides
     @Singleton
-    fun provideUserRepository(
-        apiClient: ApiClient
-    ): UserRepository = UserRepositoryRemote(apiClient)
-
-    @Provides
-    @Singleton
-    @Named("Remote")
     fun provideChartRepository(
         apiClient: ApiClient
-    ): ChartRepository = ChartRepositoryRemote(apiClient)
+    ): ChartRemoteRepository = ChartRepositoryRemote(apiClient)
+
+    @Provides
+    @Singleton
+    fun provideChartFeedRepository(
+        repository: ChartRemoteRepository
+    ): ContentFeedRepository<Chart, SortOption, ChartQuery> = repository
 
     @Provides
     @Singleton

@@ -8,8 +8,7 @@ import com.meninocoiso.bscm.BuildConfig
 import com.meninocoiso.bscm.data.repository.AppUpdateRepository
 import com.meninocoiso.bscm.data.repository.CacheRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
-import com.meninocoiso.bscm.domain.model.User
-import com.meninocoiso.bscm.domain.model.internal.Settings
+import com.meninocoiso.bscm.domain.state.MainActivityState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -21,15 +20,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-sealed interface MainActivityUiState {
-	data object Loading : MainActivityUiState
-	data class Success(
-		val settings: Settings,
-		val latestUpdateVersion: String,
-		val cacheUser: User? = null,
-	) : MainActivityUiState
-}
 
 @HiltViewModel
 class MainActivityViewModel @Inject constructor(
@@ -43,19 +33,19 @@ class MainActivityViewModel @Inject constructor(
 	// 1. Settings
 	// 2. Latest fetched update version
 	// 3. Cached user data
-	val uiState: StateFlow<MainActivityUiState> = combine(
+	val uiState: StateFlow<MainActivityState> = combine(
 		settingsRepository.settingsFlow,
 		appUpdateRepository.appUpdateFlow.map { it.latestUpdateVersion },
-		cacheRepository.cacheFlow.map { it.user }
+        cacheRepository.cacheFlow.map { it.user }
 	) { settings, latestUpdateVersion, user ->
-		MainActivityUiState.Success(
+		MainActivityState.Success(
 			settings = settings,
 			latestUpdateVersion = latestUpdateVersion,
-			cacheUser = user
+			user = user
 		)
 	}.stateIn(
 		scope = viewModelScope,
-		initialValue = MainActivityUiState.Loading,
+		initialValue = MainActivityState.Loading,
 		started = SharingStarted.WhileSubscribed(5_000),
 	)
 

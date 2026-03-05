@@ -1,11 +1,11 @@
 package com.meninocoiso.bscm.domain.model
 
-import LocalDateTimeSerializer
 import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.meninocoiso.bscm.domain.enums.Difficulty
+import com.meninocoiso.bscm.domain.serialization.LocalDateTimeSerializer
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
@@ -29,5 +29,5 @@ data class Version(
     @ColumnInfo(name = "downloads_amount") val downloadsAmount: Int = 0,
     @ColumnInfo(name = "known_issues") val knownIssues: List<KnownIssue> = emptyList(),
     @Serializable(with = LocalDateTimeSerializer::class)
-    @ColumnInfo(name = "published_at") val publishedAt: LocalDateTime,
+    @ColumnInfo(name = "created_at") val createdAt: LocalDateTime,
 ) : Parcelable

@@ -1,11 +1,19 @@
 package com.meninocoiso.bscm.data.remote
 
+import android.content.Context
 import android.util.Log
+import com.meninocoiso.bscm.data.manager.SecureTokenManager
+import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
+import com.meninocoiso.bscm.data.remote.dto.collection.BatchCollectionItemRequest
+import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionItemRequest
 import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionRequest
-import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionItemRequest
 import com.meninocoiso.bscm.data.remote.dto.collection.UpdateCollectionRequest
+import com.meninocoiso.bscm.data.remote.dto.user.ItemsPage
+import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.data.security.AuthInterceptor
 import com.meninocoiso.bscm.data.security.AuthPlugin
+import com.meninocoiso.bscm.data.security.TokenRefreshPlugin
+import com.meninocoiso.bscm.domain.enums.ActionType
 import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
@@ -20,9 +28,11 @@ import com.meninocoiso.bscm.domain.model.auth.AuthRequest
 import com.meninocoiso.bscm.domain.model.auth.AuthResponse
 import com.meninocoiso.bscm.domain.model.auth.RefreshTokenRequest
 import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
+import com.meninocoiso.bscm.util.DevelopmentUtils
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
+import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
@@ -31,12 +41,18 @@ import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import jakarta.inject.Inject
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.polymorphic
 import io.ktor.http.ContentType as KtorContentType
 
 private const val TAG = "KtorApiClient"
@@ -44,9 +60,31 @@ private const val TAG = "KtorApiClient"
 @Serializable
 data class ApiError(val error: String)
 
+class ApiException(val status: HttpStatusCode, override val message: String) : Exception(message)
+
 class KtorApiClient @Inject constructor(
-    private val interceptor: AuthInterceptor
+    private val context: Context,
+    private val interceptor: AuthInterceptor,
+    private val tokenManager: SecureTokenManager
 ) : ApiClient {
+
+    private val errorJson = Json {
+        ignoreUnknownKeys = true
+    }
+
+    init {
+        interceptor.setTokenRefreshCallback {
+            refreshTokens()
+        }
+    }
+
+    private val catalogItemModule = SerializersModule {
+        polymorphic(CatalogItem::class) {
+            subclass(Chart::class, Chart.serializer())
+            // subclass(TourPass::class, TourPass.serializer()) // add others later
+        }
+    }
+
     private val client = HttpClient(Android) {
         /*install(Logging) {
             level = LogLevel.ALL
@@ -60,6 +98,8 @@ class KtorApiClient @Inject constructor(
             json(Json {
                 ignoreUnknownKeys = true
                 prettyPrint = true
+                serializersModule = catalogItemModule
+                classDiscriminator = "type"
             })
         }
         install(HttpTimeout) {
@@ -68,94 +108,80 @@ class KtorApiClient @Inject constructor(
             socketTimeoutMillis = 10000
         }
 
-        // Add authorization header if token is available
-        install(AuthPlugin) { 
+        HttpResponseValidator {
+            validateResponse { response ->
+                if (response.status.value >= 400) {
+                    val message = parseErrorMessage(response)
+                    throw ApiException(response.status, message)
+                } else {
+                    // For debugging: log successful responses
+                    Log.d(TAG, "HTTP ${response.status.value} $response")
+                }
+            }
+        }
+
+        // Install token refresh plugin to handle 401 errors
+        install(TokenRefreshPlugin) {
             authInterceptor = interceptor
         }
-        
+
+        // Add authorization header if token is available
+        install(AuthPlugin) {
+            authInterceptor = interceptor
+            context = this@KtorApiClient.context
+        }
+
         defaultRequest {
             url("https://api-cyb1.onrender.com")
             /*url {
                 protocol = URLProtocol.HTTP
-                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.3"
+                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.151.100"
                 port = 8080
             }*/
             contentType(KtorContentType.Application.Json)
         }
     }
 
-    override suspend fun getUsers(): List<User> {
-        return client.get("users").body()
-    }
-
-    override suspend fun getUser(id: String): User {
-        return client.get("users/$id").body()
-    }
-
     override suspend fun getChart(id: String): Chart {
         return client.get("charts/$id").body()
     }
 
-    override suspend fun getFeedCharts(sortBy: SortOption, limit: Int?, offset: Int): List<Chart> {
-        val response = client.get("charts") {
-            url {
-                parameters.append("sortBy", sortBy.toString())
-                limit?.let { parameters.append("limit", it.toString()) }
-                parameters.append("offset", offset.toString())
-            }
-        }
-
-        // Check the response status first
-        when (response.status) {
-            HttpStatusCode.OK -> {
-                val body = response.body<Pair<List<Chart>, Int>>()
-                return body.first
-            }
-            HttpStatusCode.TooManyRequests -> {
-                val errorResponse = response.body<ApiError>()
-                // throw Exception("Rate limited: ${errorResponse.message}")
-                throw Exception(errorResponse.error)
-            }
-            else -> {
-                // Handle other error cases
-                val errorResponse = try {
-                    response.body<ApiError>()
-                } catch (e: Exception) {
-                    ApiError("Unknown error occurred")
-                }
-                throw Exception("API Error (${response.status.value}): ${errorResponse.error}")
-            }
-        }
+    override suspend fun getChartByContentId(contentId: String): Chart {
+        return client.get("charts/content/$contentId").body()
     }
 
     override suspend fun getCharts(
         query: String?,
+        sortBy: SortOption?,
         difficulties: List<Difficulty>?,
         genres: List<Genre>?,
         limit: Int?,
         offset: Int
     ): List<Chart> {
-        return client.get("charts"){
+        val body = client.get("charts") {
             url {
                 query?.let { parameters.append("query", it) }
+                sortBy?.let { parameters.append("sortBy", it.toString()) }
                 difficulties?.let { parameters.append("difficulties", it.joinToString(",")) }
                 genres?.let { parameters.append("genres", it.joinToString(",")) }
                 limit?.let { parameters.append("limit", it.toString()) }
                 parameters.append("offset", offset.toString())
             }
-        }.body()
+        }.body<Pair<List<Chart>, Int?>>()
+
+        return body.first
     }
 
-    override suspend fun getChartsById(ids: List<String>): List<Chart> {
-        return client.get("charts"){
+    override suspend fun getChartsByIds(ids: List<String>): List<Chart> {
+        return client.get("charts") {
             url {
                 parameters.append("ids", ids.joinToString(","))
             }
         }.body()
     }
-    
+
     override suspend fun getSuggestions(query: String, limit: Int?): List<String> {
-        return client.get("charts/suggestions"){
+        return client.get("charts/suggestions") {
             url {
                 parameters.append("query", query)
                 limit?.let { parameters.append("limit", it.toString()) }
@@ -164,7 +190,7 @@ class KtorApiClient @Inject constructor(
     }
 
     override suspend fun getLatestVersionsByChartIds(ids: List<String>): List<Version> {
-        return client.get("charts/latest-versions"){
+        return client.get("charts/latest-versions") {
             url {
                 parameters.append("chartIds", ids.joinToString(","))
             }
@@ -182,70 +208,307 @@ class KtorApiClient @Inject constructor(
 
     // Authentication methods
     override suspend fun authenticateWithDiscord(authRequest: AuthRequest): AuthResponse {
-        Log.d(TAG, "authenticateWithDiscord: Sending request with code=${authRequest.code.take(10)}..., redirectUri=${authRequest.redirectUri}")
-
+        Log.d(
+            TAG,
+            "authenticateWithDiscord: Sending request with code=${authRequest.code.take(10)}..., redirectUri=${authRequest.redirectUri}"
+        )
         val response = client.post("auth/discord") {
             setBody(authRequest)
-        }
+        }.body<AuthResponse>()
 
-        Log.d(TAG, "authenticateWithDiscord: Response status=${response.status}")
-        Log.d(TAG, "authenticateWithDiscord: Response =${response.body<String>()}")
-
-        when (response.status) {
-            HttpStatusCode.OK -> {
-                Log.d(TAG, "authenticateWithDiscord: Success")
-                return response.body<AuthResponse>()
-            }
-            else -> {
-                val errorResponse = try {
-                    val error = response.body<ApiError>()
-                    Log.e(TAG, "authenticateWithDiscord: Server error response: ${error.error}")
-                    error
-                } catch (e: Exception) {
-                    Log.e(TAG, "authenticateWithDiscord: Failed to parse error response", e)
-                    ApiError("Authentication failed - unable to parse server response")
-                }
-                throw Exception("Auth Error (${response.status.value}): ${errorResponse.error}")
-            }
-        }
+        Log.d(TAG, "authenticateWithDiscord: Success")
+        return response
     }
 
     override suspend fun refreshToken(refreshRequest: RefreshTokenRequest): AuthResponse {
-        val response = client.post("auth/refresh") {
+        return client.post("auth/refresh") {
             setBody(refreshRequest)
-        }
-
-        when (response.status) {
-            HttpStatusCode.OK -> {
-                return response.body<AuthResponse>()
-            }
-            else -> {
-                val errorResponse = try {
-                    response.body<ApiError>()
-                } catch (e: Exception) {
-                    ApiError("Token refresh failed")
-                }
-                throw Exception("Refresh Error (${response.status.value}): ${errorResponse.error}")
-            }
-        }
+        }.body()
     }
 
     override suspend fun getCurrentUser(): User {
-        val response = client.get("auth/me")
+        return client.get("auth/me").body()
+    }
 
-        when (response.status) {
-            HttpStatusCode.OK -> {
-                return response.body<User>()
+    /**
+     * Refresh the access token (single-flight handled by AuthInterceptor).
+     * Returns true if refresh was successful, false otherwise.
+     */
+    private suspend fun refreshTokens(): Boolean {
+        return try {
+            Log.d(TAG, "Attempting to refresh token")
+            val refreshToken = tokenManager.getRefreshToken()
+
+            if (refreshToken.isNullOrEmpty()) {
+                Log.e(TAG, "No refresh token available")
+                return false
             }
-            else -> {
-                val errorResponse = try {
-                    response.body<ApiError>()
-                } catch (e: Exception) {
-                    ApiError("Failed to get user info")
-                }
-                throw Exception("User Error (${response.status.value}): ${errorResponse.error}")
+
+            val request = RefreshTokenRequest(refreshToken)
+            val response = refreshToken(request)
+
+            // Save the new tokens
+            tokenManager.saveTokens(response.accessToken, response.refreshToken)
+            Log.d(TAG, "Token refreshed successfully")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Token refresh failed: ${e.message}", e)
+            // If refresh fails, clear tokens to force re-authentication
+            tokenManager.clearTokens()
+            false
+        }
+    }
+
+    private suspend fun parseErrorMessage(response: HttpResponse): String {
+        val bodyText = try {
+            response.bodyAsText()
+        } catch (_: Exception) {
+            null
+        }
+
+        if (bodyText.isNullOrBlank()) {
+            return when (response.status) {
+                HttpStatusCode.RequestTimeout -> "Request timed out. Please try again later."
+                HttpStatusCode.TooManyRequests -> "Rate limit exceeded. Please try again later."
+                HttpStatusCode.Unauthorized -> "Token is not valid or has expired"
+                else -> "HTTP ${response.status.value}"
             }
         }
+
+        return try {
+            errorJson.decodeFromString<ApiError>(bodyText).error
+        } catch (_: Exception) {
+            bodyText
+        }
+    }
+
+    override suspend fun getUsers(search: String?): List<User> {
+        return client.get("users") {
+            url {
+                search?.let { parameters.append("search", it) }
+            }
+        }.body()
+    }
+
+    override suspend fun getUser(id: String): User {
+        return client.get("users/$id").body()
+    }
+
+    override suspend fun getUserProfile(id: String): UserProfileResponse {
+        return client.get("users/$id").body()
+    }
+
+    override suspend fun getUserProfileByUsername(
+        username: String,
+        counts: Set<String>
+    ): UserProfileResponse {
+        return client.get("users/profile/$username") {
+            url {
+                if (counts.isNotEmpty()) {
+                    parameters.append("counts", counts.joinToString(","))
+                }
+            }
+        }.body()
+    }
+
+    override suspend fun getUserActivity(
+        id: String,
+        limit: Int?,
+        offset: Int?
+    ): List<ActivityItemResponse> {
+        return client.get("users/$id/activity") {
+            url {
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
+            }
+        }.body()
+    }
+
+    override suspend fun getUserCharts(id: String, limit: Int?, offset: Int?): ItemsPage<Chart> {
+        return client.get("users/$id/charts") {
+            url {
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
+            }
+        }.body()
+    }
+
+    override suspend fun followUser(id: String): Boolean {
+        val response = client.post("users/$id/follow")
+        return response.status.isSuccess()
+    }
+
+    override suspend fun unfollowUser(id: String): Boolean {
+        val response = client.delete("users/$id/follow")
+        return response.status.isSuccess()
+    }
+
+    override suspend fun getMyProfile(): UserProfileResponse {
+        return client.get("me/profile") {
+            url {
+                parameters.append(
+                    "counts",
+                    "likes,bookmarks,collections,followers,following"
+                )
+            }
+        }.body()
+    }
+
+    override suspend fun getMyCollections(limit: Int?, offset: Int?): ItemsPage<Collection> {
+        return client.get("me/collections") {
+            url {
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
+            }
+        }.body()
+    }
+
+    override suspend fun getMyActivity(limit: Int?, offset: Int?): List<ActivityItemResponse> {
+        return client.get("me/activity") {
+            url {
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
+            }
+        }.body()
+    }
+
+    override suspend fun getMyLikes(limit: Int?, offset: Int?, types: List<ContentType>?): ItemsPage<Chart> {
+        return client.get("me/likes") {
+            url {
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
+                types?.let { parameters.append("types", it.joinToString(",") { t -> t.name }) }
+            }
+        }.body()
+    }
+
+    override suspend fun getMyBookmarks(limit: Int?, offset: Int?, types: List<ContentType>?): ItemsPage<Chart> {
+        return client.get("me/bookmarks") {
+            url {
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
+                types?.let { parameters.append("types", it.joinToString(",") { t -> t.name }) }
+            }
+        }.body()
+    }
+
+    override suspend fun addLike(contentId: String): Boolean {
+        val response = client.post("me/likes/$contentId")
+        return response.status.isSuccess()
+    }
+
+    override suspend fun removeLike(contentId: String): Boolean {
+        val response = client.delete("me/likes/$contentId")
+        return response.status.isSuccess()
+    }
+
+    override suspend fun addBookmark(contentId: String): Boolean {
+        val response = client.post("me/bookmarks/$contentId")
+        return response.status.isSuccess()
+    }
+
+    override suspend fun removeBookmark(contentId: String): Boolean {
+        val response = client.delete("me/bookmarks/$contentId")
+        return response.status.isSuccess()
+    }
+
+    override suspend fun getUserCollections(
+        userId: String,
+        limit: Int?,
+        offset: Int?
+    ): ItemsPage<Collection> {
+        return client.get("users/$userId/collections") {
+            url {
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
+            }
+        }.body()
+    }
+
+    override suspend fun getCollection(collectionId: String): Collection {
+        return client.get("collections/$collectionId").body()
+    }
+
+    override suspend fun getCollectionBySlug(username: String, slug: String): Collection {
+        return client.get("collections/slug/$username/$slug").body()
+    }
+
+    override suspend fun createCollection(name: String, isPublic: Boolean): Collection {
+        return client.post("collections") {
+            setBody(CreateCollectionRequest(name = name, isPublic = isPublic))
+        }.body()
+    }
+
+    override suspend fun updateCollection(
+        collectionId: String,
+        name: String?,
+        isPublic: Boolean?
+    ): String? {
+        val response = client.put("collections/$collectionId") {
+            setBody(UpdateCollectionRequest(name = name, isPublic = isPublic))
+        }
+        return response.body<Map<String, String?>>()["slug"]
+    }
+
+    override suspend fun deleteCollection(collectionId: String): Boolean {
+        val response = client.delete("collections/$collectionId")
+        return response.status.isSuccess()
+    }
+
+    override suspend fun getCollectionItems(
+        collectionId: String,
+        types: List<ContentType>?,
+        limit: Int?,
+        offset: Int?
+    ): ItemsPage<CatalogItem> {
+        return try {
+            val response = client.get("collections/$collectionId/items") {
+                url {
+                    types?.let { parameters.append("types", it.joinToString(",") { t -> t.name }) }
+                    limit?.let { parameters.append("limit", it.toString()) }
+                    offset?.let { parameters.append("offset", it.toString()) }
+                }
+            }
+
+            Log.d(TAG, "status=${response.status}")
+            val bodyText = response.bodyAsText()
+            Log.d(TAG, "raw body=$bodyText")
+
+            // If you still need typed parsing, do it via Json decoder or second request.
+            // bodyAsText() consumes content, so don't call response.body<T>() after this.
+            Json { ignoreUnknownKeys = true }.decodeFromString(bodyText)
+        } catch (e: Exception) {
+            Log.e(TAG, "getCollectionItems failed: ${e.message}", e)
+            throw e
+        }
+    }
+
+    override suspend fun addItemToCollection(collectionId: String, contentId: String): Boolean {
+        val response = client.post("collections/$collectionId/items") {
+            setBody(
+                CreateCollectionItemRequest(
+                    contentId = contentId,
+                    action = ActionType.ADD
+                )
+            )
+        }
+        return response.status.isSuccess()
+    }
+
+    override suspend fun removeItemFromCollection(
+        collectionId: String,
+        contentId: String
+    ): Boolean {
+        val response = client.delete("collections/$collectionId/items/$contentId")
+        return response.status.isSuccess()
+    }
+
+    override suspend fun batchProcessInteractions(interactions: List<BatchCollectionItemRequest>): Boolean {
+        val response = client.post("collections/batch") {
+            setBody(interactions)
+        }
+        println("Batch process response: ${response.status}, body: ${response.bodyAsText()}")
+        return response.status.isSuccess()
     }
 
     /**
@@ -258,95 +521,6 @@ class KtorApiClient @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "Failed to fetch contributors", e)
             emptyList()
-        }
-    }
-
-    // Collections
-    override suspend fun getCollections(limit: Int?, offset: Int?): List<Collection> {
-        val response = client.get("collections") {
-            url {
-                limit?.let { parameters.append("limit", it.toString()) }
-                offset?.let { parameters.append("offset", it.toString()) }
-            }
-        }
-        return response.body()
-    }
-
-    override suspend fun createCollection(request: CreateCollectionRequest): Collection {
-        val response = client.post("collections") {
-            setBody(request)
-        }
-        return response.body()
-    }
-
-    override suspend fun updateCollection(collectionId: String, request: UpdateCollectionRequest): Boolean {
-        val response = client.put("collections/$collectionId") {
-            setBody(request)
-        }
-        return response.status == HttpStatusCode.OK
-    }
-
-    override suspend fun deleteCollection(collectionId: String): Boolean {
-        val response = client.delete("collections/$collectionId")
-        return response.status == HttpStatusCode.OK
-    }
-
-    // Collection Items
-    override suspend fun getCollectionItems(
-        collectionId: String,
-        category: ContentType,
-        limit: Int?,
-        offset: Int?
-    ): List<CatalogItem> {
-        val response = client.get("collections/$collectionId/items") {
-            url {
-                parameters.append("category", category.name)
-                limit?.let { parameters.append("limit", it.toString()) }
-                offset?.let { parameters.append("offset", it.toString()) }
-            }
-        }
-        return response.body()
-    }
-
-    override suspend fun addItemToCollection(collectionId: String, contentId: String): Boolean {
-        val response = client.post("collections/$collectionId/items") {
-            url {
-                parameters.append("contentId", contentId)
-            }
-        }
-        return response.status == HttpStatusCode.OK
-    }
-
-    override suspend fun removeItemFromCollection(collectionId: String, contentId: String): Boolean {
-        val response = client.delete("collections/$collectionId/items") {
-            url {
-                parameters.append("contentId", contentId)
-            }
-        }
-        return response.status == HttpStatusCode.OK
-    }
-
-    // Batch processing
-    override suspend fun batchProcessInteractions(interactions: List<UpdateCollectionItemRequest>): Boolean {
-        Log.d(TAG, "Sending batch of ${interactions.size} interactions")
-        val response = client.post("collections/batch") {
-            setBody(interactions)
-        }
-        
-        when (response.status) {
-            HttpStatusCode.OK -> {
-                Log.d(TAG, "Batch processing successful")
-                return true
-            }
-            else -> {
-                val errorResponse = try {
-                    response.body<ApiError>()
-                } catch (_: Exception) {
-                    ApiError("Batch processing failed")
-                }
-                Log.e(TAG, "Batch processing failed: ${errorResponse.error}")
-                return false
-            }
         }
     }
 }

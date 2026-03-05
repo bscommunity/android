@@ -20,8 +20,8 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.UpdatesSection
 import com.meninocoiso.bscm.presentation.navigation.OnSnackbar
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
-import com.meninocoiso.bscm.presentation.screen.updates.sections.InstallationsSection
-import com.meninocoiso.bscm.presentation.screen.updates.sections.WorkshopSection
+import com.meninocoiso.bscm.presentation.screen.updates.sections.ContentSection
+import com.meninocoiso.bscm.presentation.screen.updates.sections.ModificationsSection
 import com.meninocoiso.bscm.presentation.ui.components.TabItem
 import com.meninocoiso.bscm.presentation.ui.components.TabsUI
 import com.meninocoiso.bscm.presentation.viewmodel.UpdatesViewModel
@@ -59,10 +59,9 @@ fun UpdatesScreen(
 	val horizontalPagerState = rememberPagerState {
 		updatesTabsItems.size
 	}
-
+    
 	// Scroll (horizontally) to the correct section
 	LaunchedEffect(section) {
-		println("UpdatesScreen LaunchedEffect: section = $section")
 		val pageIndex = when (section) {
 			UpdatesSection.Workshop -> 0
 			UpdatesSection.Installations -> 1
@@ -84,14 +83,14 @@ fun UpdatesScreen(
 
 		HorizontalPager(state = horizontalPagerState) { index ->
 			when (index) {
-				0 -> WorkshopSection(
+				0 -> ContentSection(
 					viewModel = viewModel,
 					onNavigateToDetails = onNavigateToDetails,
 					onSnackbar = onSnackbar,
 					onFabStateChange = onFabStateChange,
 					nestedScrollConnection = connection
 				)
-				1 -> InstallationsSection(connection)
+				1 -> ModificationsSection(connection)
 			}
 		}
 	}

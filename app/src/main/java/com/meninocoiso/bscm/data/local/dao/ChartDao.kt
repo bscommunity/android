@@ -8,6 +8,7 @@ import androidx.room.Query
 import androidx.room.Upsert
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Version
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ChartDao {
@@ -17,8 +18,69 @@ interface ChartDao {
     @Query("SELECT * FROM charts WHERE id = :id")
     fun getChart(id: String): Chart?
 
+    @Query("SELECT * FROM charts WHERE content_id = :contentId LIMIT 1")
+    fun getChartByContentId(contentId: String): Chart?
+
+    @Query("SELECT * FROM charts WHERE id IN (:ids)")
+    fun getChartsByIds(ids: List<String>): List<Chart>
+
+    @Query("SELECT * FROM charts WHERE liked_at IS NOT NULL ORDER BY liked_at DESC LIMIT :limit OFFSET :offset")
+    fun getLikedCharts(limit: Int, offset: Int): List<Chart>
+
+    @Query("""
+        SELECT c.* FROM charts c
+        INNER JOIN collection_item_cross_ref ref 
+            ON c.content_id = ref.content_id
+        WHERE ref.collection_id = 'bookmarks'
+        AND ref.content_type = 'CHART'
+        ORDER BY ref.added_at DESC
+        LIMIT :limit OFFSET :offset
+    """)
+    fun getBookmarkedCharts(limit: Int, offset: Int): List<Chart>
+
+    // -----------------------------------------------------------------
+    // Reactive queries — Room emits a new list whenever liked_at /
+    // bookmarked_at changes in *any* row, so the profile screen updates
+    // instantly when the user likes/bookmarks from ChartDetailsScreen.
+    // -----------------------------------------------------------------
+
+    /**
+     * Observes all liked charts ordered by most-recently liked.
+     *
+     * Analogy: imagine a live leaderboard that re-sorts itself the
+     * moment a new score is written — no manual refresh needed.
+     */
+    @Query("SELECT * FROM charts WHERE liked_at IS NOT NULL ORDER BY liked_at DESC")
+    fun observeLikedCharts(): Flow<List<Chart>>
+
+    /**
+     * Observes all bookmarked charts ordered by most-recently bookmarked.
+     */
+    @Query("""
+        SELECT c.* FROM charts c
+        INNER JOIN collection_item_cross_ref ref 
+            ON c.content_id = ref.content_id
+        WHERE ref.collection_id = 'bookmarks'
+        AND ref.content_type = 'CHART'
+        ORDER BY ref.added_at DESC
+    """)
+    fun observeBookmarkedCharts(): Flow<List<Chart>>
+
+    @Query("SELECT id FROM charts WHERE liked_at IS NOT NULL ORDER BY liked_at DESC")
+    fun getLikedChartIds(): List<String>
+
+    @Query("""
+        SELECT c.id FROM charts c
+        INNER JOIN collection_item_cross_ref ref 
+            ON c.content_id = ref.content_id
+        WHERE ref.collection_id = 'bookmarks'
+        AND ref.content_type = 'CHART'
+        ORDER BY ref.added_at DESC
+    """)
+    fun getBookmarkedChartIds(): List<String>
+
     //@Query("SELECT latest_version FROM charts WHERE id IN (:ids)")
-    @Query("SELECT * from versions WHERE chart_id IN (:ids) ORDER BY `published_at` DESC")
+    @Query("SELECT * from versions WHERE chart_id IN (:ids) ORDER BY `created_at` DESC")
     fun getLatestVersionsByChartIds(ids: List<String>): List<Version>
 
     @Query("""
@@ -35,25 +97,25 @@ interface ChartDao {
     LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END
 """)
     fun getSuggestions(query: String, limit: Int?): List<String>
-    /*@Query("SELECT track FROM charts WHERE track LIKE '%' || :query || '%' OR artist LIKE '%' || :query || '%' LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END")
-    fun getSuggestions(query: String, limit: Int?): List<String>*/
 
     @Query("""
-        SELECT c.* FROM charts c
-        ORDER BY c.latest_published_at DESC
+        SELECT * FROM charts 
+        WHERE (:query IS NULL OR track LIKE '%' || :query || '%' OR artist LIKE '%' || :query || '%')
+        ORDER BY updated_at DESC
         LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END
         OFFSET :offset
     """)
-    fun getChartsSortedByLastUpdated(limit: Int?, offset: Int): List<Chart>
+    fun getChartsSortedByLastUpdatedWithQuery(query: String?, limit: Int?, offset: Int): List<Chart>
 
     @Query("""
-        SELECT * FROM charts
+        SELECT * FROM charts 
+        WHERE (:query IS NULL OR track LIKE '%' || :query || '%' OR artist LIKE '%' || :query || '%')
         ORDER BY downloads_sum DESC
         LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END
         OFFSET :offset
     """)
-    fun getChartsSortedByMostDownloaded(limit: Int?, offset: Int): List<Chart>
-    
+    fun getChartsSortedByMostDownloadedWithQuery(query: String?, limit: Int?, offset: Int): List<Chart>
+
     @Query("SELECT * FROM charts WHERE track LIKE :first AND " +
             "artist LIKE :last LIMIT 1")
     fun findByName(first: String, last: String): Chart
@@ -76,6 +138,20 @@ interface ChartDao {
 
     @Query("UPDATE charts SET latest_version = available_version, available_version = NULL WHERE id = :id")
     fun updateVersion(id: String)
+
+    /**
+     * Update the likedAt timestamp for a chart
+     * Pass null to remove the like
+     */
+    @Query("UPDATE charts SET liked_at = :likedAt WHERE id = :chartId")
+    suspend fun updateLikedAt(chartId: String, likedAt: String?)
+
+    /**
+     * Update the bookmarkedAt timestamp for a chart
+     * Pass null to remove the bookmark
+     */
+    @Query("UPDATE charts SET bookmarked_at = :bookmarkedAt WHERE id = :chartId")
+    suspend fun updateBookmarkedAt(chartId: String, bookmarkedAt: String?)
 
     @Delete
     fun delete(chart: Chart)

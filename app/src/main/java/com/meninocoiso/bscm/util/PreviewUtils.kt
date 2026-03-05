@@ -2,7 +2,6 @@ package com.meninocoiso.bscm.util
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
@@ -26,10 +25,9 @@ import com.meninocoiso.bscm.R
 
 object PreviewUtils {
     @Composable
-    fun Modifier.localContainer(isEnabled: Boolean): Modifier {
+    fun Modifier.secondaryContainer(isEnabled: Boolean): Modifier {
         return if (isEnabled) {
             this
-                .padding(start = 16.dp, end = 16.dp, top = 8.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
         } else {

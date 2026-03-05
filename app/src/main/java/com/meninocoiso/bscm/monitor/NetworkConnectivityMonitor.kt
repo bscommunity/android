@@ -37,7 +37,7 @@ class NetworkConnectivityMonitor @Inject constructor(
                 val isValidated = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
                 val isConnected = hasInternet && isValidated
                 
-                Log.d(TAG, "Network capabilities changed - Internet: $hasInternet, Validated: $isValidated")
+                // Log.d(TAG, "Network capabilities changed - Internet: $hasInternet, Validated: $isValidated")
                 trySend(isConnected)
             }
             
