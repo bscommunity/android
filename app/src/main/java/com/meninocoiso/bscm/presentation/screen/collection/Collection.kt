@@ -304,7 +304,10 @@ fun CollectionScreen(
                             )
                             Text(
                                 style = MaterialTheme.typography.bodySmall,
-                                text = stringResource(R.string.collection_by, collection.owner.username),
+                                text = stringResource(
+                                    R.string.collection_by,
+                                    collection.owner.username
+                                ),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f, fill = false)
@@ -319,7 +322,11 @@ fun CollectionScreen(
                         onFilterSelected = {},
                     )
                 }
-                contentList(items = items.items, onNavigateToDetails = onNavigateToDetails)
+                contentList(
+                    items = items.items,
+                    showInteractions = !isOwner,
+                    onNavigateToDetails = onNavigateToDetails
+                )
                 pagination(
                     isLoadingMore = items.isLoadingMore,
                     showMessage = !items.hasMore
@@ -345,7 +352,8 @@ fun CollectionScreen(
                     val result = viewModel.updateCollection(collection.id, name, isPublic)
                     if (result.isSuccess) {
                         val slug = result.getOrNull()
-                        currentCollection = currentCollection.copy(name = name, isPublic = isPublic, slug = slug)
+                        currentCollection =
+                            currentCollection.copy(name = name, isPublic = isPublic, slug = slug)
                     }
                 },
                 isLoading = uiState.isUpdating

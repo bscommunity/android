@@ -208,7 +208,7 @@ fun ProfileCollectionTabContent(
         }
     ) {
         LazyColumn(modifier = modifier, state = listState) {
-            contentList(items, onNavigateToDetails)
+            contentList(items, false, onNavigateToDetails)
             pagination(isLoadingMore = isLoadingMore, showMessage = !hasMore)
         }
     }

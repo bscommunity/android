@@ -67,7 +67,7 @@ fun ProfileLikes(
                     onSelected = {}
                 )
             }
-            contentList(items, onNavigateToDetails)
+            contentList(items, false, onNavigateToDetails)
             pagination(isLoadingMore = isLoadingMore, showMessage = !hasMore)
         }
     }

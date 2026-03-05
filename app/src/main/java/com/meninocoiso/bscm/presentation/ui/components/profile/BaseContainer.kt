@@ -124,6 +124,7 @@ fun LazyGridScope.pagination(
 
 fun LazyListScope.contentList(
     items: List<CatalogItem>,
+    showInteractions: Boolean = false,
     onNavigateToDetails: OnNavigateToDetails,
     context: Context? = null,
     vararg formats: DateFormat = arrayOf(DateFormat.DAY)
@@ -144,6 +145,7 @@ fun LazyListScope.contentList(
                         end = 16.dp,
                         bottom = 12.dp
                     ),
+                    showInteractions = showInteractions,
                     chart = item,
                     isSecondary = true,
                     onPress = { onNavigateToDetails(item) }

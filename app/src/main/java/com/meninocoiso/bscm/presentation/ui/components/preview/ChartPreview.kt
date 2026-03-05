@@ -1,5 +1,6 @@
 package com.meninocoiso.bscm.presentation.ui.components.preview
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,8 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
@@ -32,6 +36,7 @@ import com.meninocoiso.bscm.util.StringUtils
 fun ChartPreview(
     chart: Chart,
     modifier: Modifier = Modifier,
+    showInteractions: Boolean = false,
     isSecondary: Boolean = false,
     isInstalled: Boolean? = null,
     isDisabled: Boolean = false,
@@ -57,7 +62,8 @@ fun ChartPreview(
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             if (chart.coverUrl.isEmpty() && chart.colors?.isNotEmpty() == true) {
                 LinearGradient(
@@ -73,7 +79,10 @@ fun ChartPreview(
                     borderRadius = if (isInstalled == true || isSecondary) 8.dp else 0.dp,
                 )
             }
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Column {
                     if (isInstalled == true) {
                         FlowRow(
@@ -89,7 +98,10 @@ fun ChartPreview(
                             )
                             Text(
                                 style = MaterialTheme.typography.labelLarge,
-                                text = stringResource(R.string.version_format, chart.latestVersion.index)
+                                text = stringResource(
+                                    R.string.version_format,
+                                    chart.latestVersion.index
+                                )
                             )
                         }
                     } else {
@@ -106,7 +118,7 @@ fun ChartPreview(
                                 chart.latestVersion.isDeluxe
                             )
                             // Don't show publish date for external charts (isInstalled == false)
-                            if (isInstalled == null || isInstalled) {
+                            if (!showInteractions && (isInstalled == null || isInstalled)) {
                                 Text(
                                     modifier = Modifier.padding(start = 8.dp),
                                     style = MaterialTheme.typography.labelMedium,
@@ -127,6 +139,26 @@ fun ChartPreview(
                     )
                 }
                 if (isInstalled != null) PreviewInstalledTag(isInstalled)
+            }
+            if (showInteractions && (chart.likedAt != null || chart.bookmarkedAt != null)) {
+                Box(
+                    modifier = Modifier
+                        .background(
+                            MaterialTheme.colorScheme.surfaceTint,
+                            MaterialTheme.shapes.extraLarge
+                        )
+                        .padding(8.dp)
+                ) {
+                    Icon(
+                        modifier = Modifier.size(20.dp),
+                        painter = painterResource(
+                            if (chart.likedAt != null) R.drawable.baseline_favorite_24
+                            else R.drawable.baseline_bookmark_24
+                        ),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primaryContainer
+                    )
+                }
             }
         }
     }

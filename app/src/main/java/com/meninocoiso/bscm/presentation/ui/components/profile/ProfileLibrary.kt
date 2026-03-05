@@ -103,7 +103,11 @@ fun ProfileLibrary(
                         }
                     ) {
                         LazyColumn(modifier = Modifier.fillMaxWidth(), state = listState) {
-                            contentList(items.filterIsInstance<Chart>(), onNavigateToDetails)
+                            contentList(
+                                items.filterIsInstance<Chart>(),
+                                true,
+                                onNavigateToDetails
+                            )
                             pagination(isLoadingMore = isLoadingMore, showMessage = !hasMore)
                         }
                     }
@@ -131,7 +135,11 @@ fun ProfileLibrary(
                         }
                     ) {
                         LazyColumn(modifier = Modifier.fillMaxWidth(), state = listState) {
-                            contentList(items.filterIsInstance<TourPass>(), onNavigateToDetails)
+                            contentList(
+                                items.filterIsInstance<TourPass>(),
+                                true,
+                                onNavigateToDetails
+                            )
                             pagination(isLoadingMore = isLoadingMore, showMessage = !hasMore)
                         }
                     }
@@ -160,7 +168,11 @@ fun ProfileLibrary(
                         }
                     ) {
                         LazyColumn(modifier = Modifier.fillMaxWidth(), state = listState) {
-                            contentList(items.filterIsInstance<Theme>(), onNavigateToDetails)
+                            contentList(
+                                items.filterIsInstance<Theme>(),
+                                true,
+                                onNavigateToDetails
+                            )
                             pagination(isLoadingMore = isLoadingMore, showMessage = !hasMore)
                         }
                     }
@@ -183,7 +195,10 @@ fun ProfileLibrary(
 
                 else -> {
                     if (state == ContentState.Loading) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             CircularProgressIndicator()
                         }
                     } else {
