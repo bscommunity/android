@@ -24,8 +24,8 @@ android {
 		// to use the new Date API, since desugar is not working
 		minSdk = 26
 		targetSdk = 37
-		versionCode = 16
-		versionName = "0.3.0-beta"
+		versionCode = 17
+		versionName = "0.3.1-beta"
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
