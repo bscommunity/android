@@ -39,39 +39,37 @@ fun BaseContainer(
     empty: @Composable () -> Unit,
     content: @Composable () -> Unit
 ) {
-    when {
-        isEmpty -> {
-            when (state) {
-                ContentState.Loading -> {
-                    Box(Modifier.fillMaxSize(), Alignment.Center) {
-                        CircularProgressIndicator(Modifier.size(24.dp))
+    PullToRefreshBox(
+        modifier = modifier,
+        state = pullToRefreshState,
+        isRefreshing = isRefreshing,
+        onRefresh = { onRetry(false) }
+    ) {
+        when {
+            isEmpty -> {
+                when (state) {
+                    ContentState.Loading -> {
+                        Box(Modifier.fillMaxSize(), Alignment.Center) {
+                            CircularProgressIndicator(Modifier.size(24.dp))
+                        }
                     }
+
+                    ContentState.Error -> {
+                        StatusMessageUI(
+                            modifier = Modifier.fillMaxSize(),
+                            size = StatusMessageSize.Medium,
+                            title = stringResource(R.string.something_went_wrong),
+                            message = stringResource(R.string.check_connection),
+                            icon = R.drawable.rounded_emergency_home_24,
+                            onClick = { onRetry(true) }
+                        )
+                    }
+
+                    else -> empty()
                 }
-
-                ContentState.Error -> {
-                    StatusMessageUI(
-                        modifier = Modifier.fillMaxSize(),
-                        size = StatusMessageSize.Medium,
-                        title = stringResource(R.string.something_went_wrong),
-                        message = stringResource(R.string.check_connection),
-                        icon = R.drawable.rounded_emergency_home_24,
-                        onClick = { onRetry(true) }
-                    )
-                }
-
-                else -> empty()
             }
-        }
 
-        else -> {
-            PullToRefreshBox(
-                modifier = modifier,
-                state = pullToRefreshState,
-                isRefreshing = isRefreshing,
-                onRefresh = { onRetry(false) }
-            ) {
-                content()
-            }
+            else -> content()
         }
     }
 }

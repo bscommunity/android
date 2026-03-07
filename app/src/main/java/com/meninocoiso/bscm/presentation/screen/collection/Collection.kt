@@ -265,7 +265,7 @@ fun CollectionScreen(
             empty = {
                 StatusMessageUI(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .fillMaxSize()
                         .padding(top = 48.dp),
                     message = stringResource(R.string.no_content_in_collection),
                     icon = R.drawable.outline_library_music_24,
