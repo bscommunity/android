@@ -7,6 +7,7 @@ import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
 import com.meninocoiso.bscm.data.manager.ChartOperationPolicy
+import com.meninocoiso.bscm.data.manager.ChartStateMerger
 import com.meninocoiso.bscm.data.manager.ContentManager
 import com.meninocoiso.bscm.data.manager.ContentMemoryStore
 import com.meninocoiso.bscm.data.repository.ChartRepositoryLocal
@@ -78,7 +79,8 @@ object DatabaseModule {
         suggestionsRepository: ChartRemoteRepository,
         analyticsRepository: ChartRemoteRepository,
         memoryStore: ContentMemoryStore<Chart>,
-        @ApplicationScope coroutineScope: CoroutineScope
+        @ApplicationScope coroutineScope: CoroutineScope,
+        chartStateMerger: ChartStateMerger,
     ): ContentManager<Chart, SortOption, ChartQuery> = ContentManager(
         remoteRepository = remote,
         localRepository = local,
@@ -88,7 +90,8 @@ object DatabaseModule {
         suggestionsRepository = suggestionsRepository,
         analyticsRepository = analyticsRepository,
         memoryStore = memoryStore,
-        coroutineScope = coroutineScope
+        coroutineScope = coroutineScope,
+        chartStateMerger = chartStateMerger,
     )
 
     @Provides

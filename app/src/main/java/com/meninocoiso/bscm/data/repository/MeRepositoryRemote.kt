@@ -6,6 +6,8 @@ import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.di.ApplicationScope
+import com.meninocoiso.bscm.data.manager.ChartStateMerger
+import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.model.CatalogItem
@@ -29,7 +31,9 @@ class MeRepositoryRemote @Inject constructor(
     private val apiClient: ApiClient,
     private val profileCacheRepository: ProfileCacheRepository,
     private val chartDao: ChartDao,
-    private val collectionDao: CollectionDao
+    private val collectionDao: CollectionDao,
+    private val queueManager: InteractionQueueManager,
+    private val chartStateMerger: ChartStateMerger,
 ) : MeRepository {
     override suspend fun getActivity(
         limit: Int,
@@ -66,18 +70,23 @@ class MeRepositoryRemote @Inject constructor(
                     Log.d(TAG, "Returning likes from Room (${localLikes.size} items)")
                     // Restore cached total count so the UI can show it without a network hit
                     val cachedTotal = profileCacheRepository.getLikesCount()?.toInt()
-                    return@runCatching PagedResult<CatalogItem>(
+                    return@runCatching PagedResult(
                         items = localLikes,
                         total = cachedTotal
                     )
                 }
             }
 
+            if (offset == 0) {
+                queueManager.syncPendingInteractionsBeforeRefresh()
+            }
+
             // First page: fetch all content types to receive ContentCounts
             // Subsequent pages: filter to CHART only (the only type we persist / display here)
             val types = if (offset == 0) null else listOf(ContentType.CHART)
             val page = apiClient.getMyLikes(limit, offset, types)
-            Log.d(TAG, "Fetched ${page.items.size} likes from API (offset=$offset)")
+            val remoteLikes = chartStateMerger.mergeRemoteCharts(page.items)
+            Log.d(TAG, "Fetched ${remoteLikes.size} likes from API (offset=$offset)")
 
             // Persist total count from the first-page response
             if (offset == 0) {
@@ -86,10 +95,10 @@ class MeRepositoryRemote @Inject constructor(
                 }
             }
 
-            coroutineScope.launch { chartDao.insert(page.items) }
+            coroutineScope.launch { chartDao.insert(remoteLikes) }
 
             PagedResult(
-                items = page.items,
+                items = remoteLikes,
                 total = page.counts?.charts,
             )
         }
@@ -116,10 +125,34 @@ class MeRepositoryRemote @Inject constructor(
             }
         }
 
+        if (offset == 0) {
+            queueManager.syncPendingInteractionsBeforeRefresh()
+        }
+
         // First page: fetch all content types to receive ContentCounts
         // Subsequent pages: filter to CHART only
         val types = if (offset == 0) null else listOf(ContentType.CHART)
         val page = apiClient.getMyBookmarks(limit, offset, types)
+        val overlay = if (offset == 0) {
+            queueManager.getCollectionMembershipOverlay(CollectionKind.BOOKMARKS)
+        } else {
+            null
+        }
+        val remoteBookmarks = chartStateMerger.mergeRemoteCharts(page.items)
+        val filteredBookmarks = if (overlay != null) {
+            remoteBookmarks.filterNot { it.contentId in overlay.forceExcludeContentIds }
+        } else {
+            remoteBookmarks
+        }
+        val missingPendingBookmarks = if (overlay != null && offset == 0) {
+            chartStateMerger.getChartsByContentIds(
+                overlay.forceIncludeContentIds - filteredBookmarks.mapNotNull { it.contentId }.toSet()
+            )
+        } else {
+            emptyList()
+        }
+        val effectiveBookmarks = (filteredBookmarks + missingPendingBookmarks)
+            .distinctBy { it.id }
 
         // Persist total count from the first-page response
         if (offset == 0) {
@@ -146,6 +179,14 @@ class MeRepositoryRemote @Inject constructor(
             )
 
             val crossRefs = page.items.mapNotNull { chart ->
+                chart.contentId?.takeUnless { overlay?.forceExcludeContentIds?.contains(it) == true }?.let { contentId ->
+                    CollectionItemCrossRef(
+                        collectionId = "bookmarks",
+                        contentId = contentId,
+                        contentType = ContentType.CHART
+                    )
+                }
+            } + missingPendingBookmarks.mapNotNull { chart ->
                 chart.contentId?.let { contentId ->
                     CollectionItemCrossRef(
                         collectionId = "bookmarks",
@@ -158,7 +199,7 @@ class MeRepositoryRemote @Inject constructor(
 
             if (offset == 0) {
                 if (retainedContentIds.isNotEmpty()) {
-                    collectionDao.deleteStaleBookmarkCrossRefs("bookmarks", retainedContentIds)
+                    collectionDao.deleteStaleCrossRefs("bookmarks", retainedContentIds)
                 } else {
                     collectionDao.deleteAllCrossRefsForCollection("bookmarks")
                 }
@@ -170,10 +211,10 @@ class MeRepositoryRemote @Inject constructor(
         }
 
         // Chart rows are idempotent — safe to persist in background even if caller is cancelled
-        coroutineScope.launch { chartDao.insert(page.items) }
+        coroutineScope.launch { chartDao.insert(effectiveBookmarks) }
 
         PagedResult(
-            items = page.items,
+            items = effectiveBookmarks,
             total = page.counts?.charts,
         )
     }

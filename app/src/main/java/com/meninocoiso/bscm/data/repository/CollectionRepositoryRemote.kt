@@ -2,6 +2,8 @@ package com.meninocoiso.bscm.data.repository
 
 import android.util.Log
 import com.meninocoiso.bscm.data.local.dao.CollectionDao
+import com.meninocoiso.bscm.data.manager.ChartStateMerger
+import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.enums.ContentType
@@ -20,7 +22,9 @@ private const val TAG = "CollectionRepositoryRemote"
 class CollectionRepositoryRemote @Inject constructor(
     private val apiClient: ApiClient,
     private val collectionDao: CollectionDao,
-    private val profileCacheRepository: ProfileCacheRepository
+    private val profileCacheRepository: ProfileCacheRepository,
+    private val queueManager: InteractionQueueManager,
+    private val chartStateMerger: ChartStateMerger,
 ) : CollectionRepository {
     override suspend fun getUserCollections(
         userId: String,
@@ -50,6 +54,10 @@ class CollectionRepositoryRemote @Inject constructor(
                     return@runCatching PagedResult(cachedCollections, cachedIds.total)
                 }
             }
+        }
+
+        if (userId == "user" && offset == 0) {
+            queueManager.syncPendingInteractionsBeforeRefresh()
         }
 
         // Fetch from API
@@ -146,23 +154,52 @@ class CollectionRepositoryRemote @Inject constructor(
             }
         }
 
+        if (offset == 0) {
+            queueManager.syncPendingInteractionsBeforeRefresh()
+        }
+
         // Fetch from API
         val page = apiClient.getCollectionItems(collectionId, limit = limit, offset = offset)
-        val items = page.items
+        val overlay = if (offset == 0) {
+            queueManager.getCollectionMembershipOverlay(
+                collectionKind = if (collectionId == "bookmarks") CollectionKind.BOOKMARKS else CollectionKind.USER,
+                collectionId = collectionId.takeUnless { it == "bookmarks" },
+            )
+        } else {
+            null
+        }
+        val mergedCharts = chartStateMerger.mergeRemoteCharts(page.items.filterIsInstance<Chart>())
+        val filteredCharts = if (overlay != null) {
+            mergedCharts.filterNot { it.contentId in overlay.forceExcludeContentIds }
+        } else {
+            mergedCharts
+        }
+        val missingPendingCharts = if (overlay != null && offset == 0) {
+            chartStateMerger.getChartsByContentIds(
+                overlay.forceIncludeContentIds - filteredCharts.mapNotNull { it.contentId }.toSet()
+            )
+        } else {
+            emptyList()
+        }
+        val items = (filteredCharts + missingPendingCharts)
+            .distinctBy { it.id }
         Log.d(TAG, "Fetched ${items.size} items for collection $collectionId from API")
 
         // Persist charts to Room and update cross-refs (first page only to avoid stale data)
         if (offset == 0 && items.isNotEmpty()) {
-            val charts = items.filterIsInstance<Chart>()
-            if (charts.isNotEmpty()) {
-                collectionDao.upsertCharts(charts)
-            }
+            collectionDao.upsertCharts(items.filterIsInstance<Chart>())
             val crossRefs = items.map { item ->
                 CollectionItemCrossRef(
                     collectionId = collectionId,
                     contentId = item.contentId ?: item.id,
                     contentType = ContentType.CHART,
                 )
+            }
+            val retainedContentIds = crossRefs.map { it.contentId }
+            if (retainedContentIds.isNotEmpty()) {
+                collectionDao.deleteStaleCrossRefs(collectionId, retainedContentIds)
+            } else {
+                collectionDao.deleteAllCrossRefsForCollection(collectionId)
             }
             collectionDao.upsertCrossRefs(crossRefs)
         }

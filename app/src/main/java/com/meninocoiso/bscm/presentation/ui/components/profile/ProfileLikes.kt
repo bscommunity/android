@@ -59,9 +59,9 @@ fun ProfileLikes(
             item {
                 SegmentedButtonUI(
                     options = listOf(
-                        stringResource(R.string.charts) + " (${counts.first})",
-                        stringResource(R.string.tour_passes) + " (${counts.second})",
-                        stringResource(R.string.themes) + " (${counts.third})"
+                        stringResource(R.string.charts),
+                        stringResource(R.string.tour_passes),
+                        stringResource(R.string.themes)
                     ),
                     disabled = true,
                     onSelected = {}

@@ -110,6 +110,7 @@ class KtorApiClient @Inject constructor(
 
         HttpResponseValidator {
             validateResponse { response ->
+                Log.d(TAG, "Received HTTP ${response.status.value}")
                 if (response.status.value >= 400) {
                     val message = parseErrorMessage(response)
                     throw ApiException(response.status, message)

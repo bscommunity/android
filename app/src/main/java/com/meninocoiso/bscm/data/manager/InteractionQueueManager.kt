@@ -13,12 +13,18 @@ import com.meninocoiso.bscm.monitor.NetworkConnectivityMonitor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "InteractionQueueManager"
-private const val BATCH_DELAY_MS = 3000L
+
+data class CollectionMembershipOverlay(
+    val forceIncludeContentIds: Set<String> = emptySet(),
+    val forceExcludeContentIds: Set<String> = emptySet(),
+)
 
 @Singleton
 class InteractionQueueManager @Inject constructor(
@@ -27,6 +33,8 @@ class InteractionQueueManager @Inject constructor(
     private val networkMonitor: NetworkConnectivityMonitor,
     @param:ApplicationScope private val applicationScope: CoroutineScope   // ← add this
 ) {
+    private val processingMutex = Mutex()
+
     /**
      * Queues a like/unlike interaction and attempts an immediate sync if connected.
      * The queue is the safety net — if the app dies before sync completes, the
@@ -105,31 +113,85 @@ class InteractionQueueManager @Inject constructor(
             return@withContext
         }
 
-        if (queueDao.getQueueSize() > 1) { // > 1 because we just inserted
-            // Launch batch processing on applicationScope so it survives navigation
-            applicationScope.launch(Dispatchers.IO) {
-                processQueuedInteractions()
+        applicationScope.launch(Dispatchers.IO) {
+            syncPendingInteractionsBeforeRefresh()
+        }
+    }
+
+    suspend fun syncPendingInteractionsBeforeRefresh() {
+        if (!networkMonitor.isCurrentlyConnected()) {
+            awaitIdle()
+            return
+        }
+
+        if (queueDao.getQueueSize() == 0) {
+            awaitIdle()
+            return
+        }
+
+        processQueuedInteractions()
+    }
+
+    suspend fun awaitIdle() {
+        processingMutex.withLock {
+            // Waiting for the lock is enough. No-op body by design.
+        }
+    }
+
+    suspend fun getPendingInteractionsSnapshot(): List<QueuedInteractionEntity> = withContext(Dispatchers.IO) {
+        deduplicateLatest(queueDao.getAllQueued())
+    }
+
+    suspend fun getCollectionMembershipOverlay(
+        collectionKind: CollectionKind,
+        collectionId: String? = null,
+    ): CollectionMembershipOverlay = withContext(Dispatchers.IO) {
+        val pending = deduplicateLatest(queueDao.getAllQueued())
+
+        when (collectionKind) {
+            CollectionKind.BOOKMARKS -> {
+                val pendingBookmarkAdds = pending
+                    .filter { it.collectionKind == CollectionKind.BOOKMARKS && it.action == ActionType.ADD }
+                    .map { it.contentId }
+                    .toSet()
+                val pendingBookmarkRemovals = pending
+                    .filter { it.collectionKind == CollectionKind.BOOKMARKS && it.action == ActionType.REMOVE }
+                    .map { it.contentId }
+                    .toSet()
+                val pendingMovesToUserCollections = pending
+                    .filter { it.collectionKind == CollectionKind.USER && it.action == ActionType.ADD }
+                    .map { it.contentId }
+                    .toSet()
+
+                CollectionMembershipOverlay(
+                    forceIncludeContentIds = pendingBookmarkAdds,
+                    forceExcludeContentIds = pendingBookmarkRemovals + pendingMovesToUserCollections,
+                )
             }
-        } else {
-            // Fast path — just sync this one item
-            // Launch single sync on applicationScope for the same reason
-            applicationScope.launch(Dispatchers.IO) {
-                try {
-                    val success = apiCall()
-                    if (success) {
-                        removeQueuedInteraction(contentId, collectionKind, collectionId)
-                    } else {
-                        Log.w(TAG, "Immediate sync returned false, will retry: contentId=$contentId")
-                    }
-                } catch (e: Exception) {
-                    if (e is ApiException && e.status.value in 400..499) {
-                        removeQueuedInteraction(contentId, collectionKind, collectionId)
-                        Log.w(TAG, "Terminal ${e.status.value}, removed from queue: contentId=$contentId")
-                    } else {
-                        Log.w(TAG, "Transient error, will retry: contentId=$contentId", e)
-                    }
-                }
+
+            CollectionKind.USER -> {
+                val effectiveCollectionId = collectionId ?: return@withContext CollectionMembershipOverlay()
+                CollectionMembershipOverlay(
+                    forceIncludeContentIds = pending
+                        .filter {
+                            it.collectionKind == CollectionKind.USER &&
+                                it.collectionId == effectiveCollectionId &&
+                                it.action == ActionType.ADD
+                        }
+                        .map { it.contentId }
+                        .toSet(),
+                    forceExcludeContentIds = pending
+                        .filter {
+                            it.collectionKind == CollectionKind.USER &&
+                                it.collectionId == effectiveCollectionId &&
+                                it.action == ActionType.REMOVE
+                        }
+                        .map { it.contentId }
+                        .toSet(),
+                )
             }
+
+            CollectionKind.LIKES -> CollectionMembershipOverlay()
         }
     }
 
@@ -166,58 +228,46 @@ class InteractionQueueManager @Inject constructor(
      * Called by [com.meninocoiso.bscm.service.InteractionSyncService] on connectivity restore or app resume.
      */
     suspend fun processQueuedInteractions() = withContext(Dispatchers.IO) {
-        try {
-            val allInteractions = queueDao.getAllQueued()
-
-            if (allInteractions.isEmpty()) {
-                Log.d(TAG, "No interactions to process")
-                return@withContext
-            }
-
-            // Capture PKs before the network call — anything queued after this
-            // point gets a new ID and won't be touched by our delete below
-            val processedIds = allInteractions.map { it.id }
-
-            Log.d(TAG, "Processing ${allInteractions.size} queued interactions")
-
-            // Deduplicate: for each contentId + collectionId, keep only the latest interaction.
-            // This handles rapid like/unlike toggling — only the final state is sent.
-            val latestInteractionsMap = mutableMapOf<String, QueuedInteractionEntity>()
-            for (interaction in allInteractions) {
-                val key = "${interaction.contentId}:${interaction.collectionId}"
-                val existing = latestInteractionsMap[key]
-                if (existing == null || interaction.timestamp > existing.timestamp) {
-                    latestInteractionsMap[key] = interaction
-                }
-            }
-
-            val batchRequest = latestInteractionsMap.values.map { entity ->
-                BatchCollectionItemRequest(
-                    contentId = entity.contentId,
-                    collectionId = entity.collectionId,
-                    collectionKind = entity.collectionKind,
-                    action = entity.action
-                )
-            }
-
-            Log.d("BookmarkDebug", "processBatch: ${batchRequest.map { "${it.contentId}:${it.collectionKind}:${it.action}" }}")
-            Log.d(TAG, "Sending batch of ${batchRequest.size} interactions to server")
-
+        processingMutex.withLock {
             try {
-                val success = apiClient.batchProcessInteractions(batchRequest)
-                if (success) {
-                    // Only delete the interactions we fetched — not any that arrived
-                    // concurrently since we read allInteractions above
-                    queueDao.deleteByIds(processedIds)
-                    Log.d(TAG, "Batch succeeded, removed ${allInteractions.size} interactions")
-                } else {
-                    Log.w(TAG, "Batch returned false, keeping items for next attempt")
+                val allInteractions = queueDao.getAllQueued()
+
+                if (allInteractions.isEmpty()) {
+                    Log.d(TAG, "No interactions to process")
+                    return@withLock
+                }
+
+                val processedIds = allInteractions.map { it.id }
+                val deduplicatedInteractions = deduplicateLatest(allInteractions)
+
+                Log.d(TAG, "Processing ${allInteractions.size} queued interactions")
+
+                val batchRequest = deduplicatedInteractions.map { entity ->
+                    BatchCollectionItemRequest(
+                        contentId = entity.contentId,
+                        collectionId = entity.collectionId,
+                        collectionKind = entity.collectionKind,
+                        action = entity.action
+                    )
+                }
+
+                Log.d("BookmarkDebug", "processBatch: ${batchRequest.map { "${it.contentId}:${it.collectionKind}:${it.action}" }}")
+                Log.d(TAG, "Sending batch of ${batchRequest.size} interactions to server")
+
+                try {
+                    val success = apiClient.batchProcessInteractions(batchRequest)
+                    if (success) {
+                        queueDao.deleteByIds(processedIds)
+                        Log.d(TAG, "Batch succeeded, removed ${allInteractions.size} interactions")
+                    } else {
+                        Log.w(TAG, "Batch returned false, keeping items for next attempt")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Batch request failed, keeping items for next attempt", e)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Batch request failed, keeping items for next attempt", e)
+                Log.e(TAG, "Error in processQueuedInteractions", e)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error in processQueuedInteractions", e)
         }
     }
 
@@ -247,4 +297,20 @@ class InteractionQueueManager @Inject constructor(
             Log.d(TAG, "Removed from queue: contentId=$contentId, kind=$collectionKind, collection=$collectionId")
         }
     }
+
+    private fun deduplicateLatest(interactions: List<QueuedInteractionEntity>): List<QueuedInteractionEntity> {
+        val latestInteractionsMap = mutableMapOf<String, QueuedInteractionEntity>()
+        for (interaction in interactions) {
+            val key = buildInteractionKey(interaction)
+            val existing = latestInteractionsMap[key]
+            if (existing == null || interaction.timestamp > existing.timestamp) {
+                latestInteractionsMap[key] = interaction
+            }
+        }
+
+        return latestInteractionsMap.values.toList()
+    }
+
+    private fun buildInteractionKey(interaction: QueuedInteractionEntity): String =
+        "${interaction.contentId}:${interaction.collectionKind}:${interaction.collectionId.orEmpty()}"
 }

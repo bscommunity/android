@@ -43,11 +43,16 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
     private val analyticsRepository: ContentAnalyticsRepository,
     private val memoryStore: ContentMemoryStore<T>,
     private val coroutineScope: CoroutineScope,
+    private val chartStateMerger: ChartStateMerger,
 ) {
 
     @Suppress("UNCHECKED_CAST")
-    private fun mergeRemoteWithLocalDeviceState(items: List<T>): List<T> {
+    private suspend fun mergeRemoteWithLocalDeviceState(items: List<T>): List<T> {
         if (items.isEmpty()) return items
+
+        if (items.all { it is Chart }) {
+            return chartStateMerger.mergeRemoteCharts(items.filterIsInstance<Chart>()) as List<T>
+        }
 
         return items.map { incoming ->
             val existing = memoryStore.contentById.value[incoming.id]

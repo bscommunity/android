@@ -67,7 +67,7 @@ interface CollectionDao {
      * Bookmarks into a custom collection that the server no longer returns in the bookmarks list).
      */
     @Query("DELETE FROM collection_item_cross_ref WHERE collection_id = :collectionId AND content_id NOT IN (:retainedContentIds)")
-    suspend fun deleteStaleBookmarkCrossRefs(collectionId: String, retainedContentIds: List<String>)
+    suspend fun deleteStaleCrossRefs(collectionId: String, retainedContentIds: List<String>)
 
     /**
      * Removes ALL cross-refs for [collectionId]. Used when the server returns an empty list

@@ -208,6 +208,7 @@ class ProfileCacheRepository @Inject constructor(
     suspend fun getLikesCount(): Long? {
         return try {
             val preferences = dataStore.data.first()
+            Log.d(TAG, "Read likes count from cache: ${preferences[likesCountKey]}")
             preferences[likesCountKey]
         } catch (e: Exception) {
             Log.e(TAG, "Error reading likes count from cache", e)
