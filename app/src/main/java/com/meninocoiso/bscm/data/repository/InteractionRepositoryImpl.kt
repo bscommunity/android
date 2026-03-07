@@ -1,6 +1,7 @@
 package com.meninocoiso.bscm.data.repository
 
 import android.util.Log
+import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.manager.InteractionQueueManager
@@ -23,14 +24,20 @@ private const val TAG = "InteractionRepositoryImpl"
 class InteractionRepositoryImpl @Inject constructor(
     private val queueManager: InteractionQueueManager,
     private val chartManager: ChartManager,
+    private val chartDao: ChartDao,
     private val collectionDao: CollectionDao,
+    private val profileCacheRepository: ProfileCacheRepository,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : InteractionRepository {
 
     override suspend fun likeContent(id: String, contentId: String): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
+                val shouldIncrement = chartDao.getChart(id)?.likedAt == null
                 updateLocalState(id = id, operation = OperationOption.LIKE)
+                if (shouldIncrement) {
+                    profileCacheRepository.adjustLikesCount(delta = 1)
+                }
                 queueManager.queueAndSyncLike(contentId, isLike = true)
             }.onFailure { e ->
                 Log.e(TAG, "Unexpected error in likeContent for contentId: $contentId", e)
@@ -40,7 +47,11 @@ class InteractionRepositoryImpl @Inject constructor(
     override suspend fun unlikeContent(id: String, contentId: String): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
+                val shouldDecrement = chartDao.getChart(id)?.likedAt != null
                 updateLocalState(id = id, operation = OperationOption.UNLIKE)
+                if (shouldDecrement) {
+                    profileCacheRepository.adjustLikesCount(delta = -1)
+                }
                 queueManager.queueAndSyncLike(contentId, isLike = false)
             }.onFailure { e ->
                 Log.e(TAG, "Unexpected error in unlikeContent for contentId: $contentId", e)
@@ -50,6 +61,7 @@ class InteractionRepositoryImpl @Inject constructor(
     override suspend fun bookmarkContent(id: String, contentId: String): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
+                val shouldIncrement = chartDao.getChart(id)?.bookmarkedAt == null
                 // Insert cross-ref for BOOKMARKS collection
                 collectionDao.upsertCrossRef(
                     CollectionItemCrossRef(
@@ -60,6 +72,9 @@ class InteractionRepositoryImpl @Inject constructor(
                 )
                 // Update local chart state so UI reflects bookmark immediately
                 updateLocalState(id = id, operation = OperationOption.BOOKMARK)
+                if (shouldIncrement) {
+                    profileCacheRepository.adjustBookmarksCount(delta = 1)
+                }
                 queueManager.queueAndSyncBookmark(contentId, isBookmarked = true)
             }.onFailure { e ->
                 Log.e(TAG, "Unexpected error in bookmarkContent for contentId: $contentId", e)
@@ -69,10 +84,14 @@ class InteractionRepositoryImpl @Inject constructor(
     override suspend fun unbookmarkContent(id: String, contentId: String): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
+                val shouldDecrement = chartDao.getChart(id)?.bookmarkedAt != null
                 // Remove cross-ref from BOOKMARKS collection
                 collectionDao.deleteCrossRef("bookmarks", contentId)
                 // Update local chart state so UI reflects unbookmark immediately
                 updateLocalState(id = id, operation = OperationOption.UNBOOKMARK)
+                if (shouldDecrement) {
+                    profileCacheRepository.adjustBookmarksCount(delta = -1)
+                }
                 queueManager.queueAndSyncBookmark(contentId, isBookmarked = false)
             }.onFailure { e ->
                 Log.e(TAG, "Unexpected error in unbookmarkContent for contentId: $contentId", e)
@@ -155,6 +174,7 @@ class InteractionRepositoryImpl @Inject constructor(
                             targetCollectionId,
                             LocalDateTime.now()
                         )
+                        profileCacheRepository.adjustBookmarksCount(delta = -1)
                     }
 
                     else -> {

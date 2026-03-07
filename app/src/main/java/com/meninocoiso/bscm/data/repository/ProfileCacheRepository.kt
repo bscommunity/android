@@ -232,6 +232,14 @@ class ProfileCacheRepository @Inject constructor(
         }
     }
 
+    suspend fun adjustLikesCount(delta: Int): Long {
+        return adjustCount(likesCountKey, delta)
+    }
+
+    suspend fun adjustBookmarksCount(delta: Int): Long {
+        return adjustCount(bookmarksCountKey, delta)
+    }
+
     // -------------------- Cache Management --------------------
     suspend fun invalidateActivity(userId: String) {
         dataStore.edit { preferences ->
@@ -252,5 +260,15 @@ class ProfileCacheRepository @Inject constructor(
 
     private fun isQuickCacheValid(timestamp: Long): Boolean {
         return System.currentTimeMillis() - timestamp < QUICK_CACHE_EXPIRATION_MILLIS
+    }
+
+    private suspend fun adjustCount(key: Preferences.Key<Long>, delta: Int): Long {
+        var updatedValue = 0L
+        dataStore.edit { preferences ->
+            val current = preferences[key] ?: 0L
+            updatedValue = (current + delta).coerceAtLeast(0L)
+            preferences[key] = updatedValue
+        }
+        return updatedValue
     }
 }

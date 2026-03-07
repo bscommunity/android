@@ -196,8 +196,19 @@ class UserProfileViewModel @Inject constructor(
                     val current = _uiState.value.likes
                     if (current.state !is ContentState.Loading || current.items.isNotEmpty()) {
                         Log.d(TAG, "Likes observer fired: ${freshLikes.size} items")
+                        val updatedTotal = reconcileObservedTotal(
+                            previousItems = current.items,
+                            freshItems = freshLikes,
+                            previousTotal = current.total,
+                            idSelector = { it.id },
+                        )
                         _uiState.update { state ->
-                            state.copy(likes = state.likes.copy(items = freshLikes))
+                            state.copy(
+                                likes = state.likes.copy(
+                                    items = freshLikes,
+                                    total = updatedTotal,
+                                )
+                            )
                         }
                     }
                 }
@@ -214,9 +225,18 @@ class UserProfileViewModel @Inject constructor(
                     val current = _uiState.value.collections.bookmarks
                     if (current.state !is ContentState.Loading || current.items.isNotEmpty()) {
                         Log.d(TAG, "Bookmarks observer fired: ${freshBookmarks.size} items")
+                        val updatedTotal = reconcileObservedTotal(
+                            previousItems = current.items,
+                            freshItems = freshBookmarks,
+                            previousTotal = current.total,
+                            idSelector = { it.id },
+                        )
                         _uiState.update { state ->
                             val updatedBookmarks = state.collections.bookmarks
-                                .copy(items = freshBookmarks)
+                                .copy(
+                                    items = freshBookmarks,
+                                    total = updatedTotal,
+                                )
                             state.copy(
                                 collections = state.collections.copy(
                                     bookmarks = updatedBookmarks,
@@ -359,6 +379,19 @@ class UserProfileViewModel @Inject constructor(
             bookmarks?.let { add(it) }
             addAll(custom)
         }
+    }
+
+    private fun <T> reconcileObservedTotal(
+        previousItems: List<T>,
+        freshItems: List<T>,
+        previousTotal: Int?,
+        idSelector: (T) -> String,
+    ): Int {
+        val previousIds = previousItems.map(idSelector).toSet()
+        val freshIds = freshItems.map(idSelector).toSet()
+        val delta = freshIds.count { it !in previousIds } - previousIds.count { it !in freshIds }
+        val baseline = previousTotal ?: previousItems.size
+        return maxOf(baseline + delta, freshItems.size)
     }
 
     // -------------------------------------------------------------------------
