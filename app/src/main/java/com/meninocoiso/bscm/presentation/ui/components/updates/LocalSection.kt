@@ -73,7 +73,6 @@ fun LazyListScope.localContentSection(
                 chart = chart,
                 isSecondary = true,
                 onPress = { if (chart.contentId != null) onNavigateToDetails(chart) else onShowLocalItemDialog() },
-                isInstalled = chart.contentId != null
             )
         }
 

@@ -61,6 +61,13 @@ class ChartRepositoryRemote @Inject constructor(
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)
+
+    override suspend fun getItemsByContentIds(contentIds: List<String>): Flow<Result<List<Chart>>> = flow {
+        val charts = apiClient.getChartsByContentIds(contentIds)
+        emit(Result.success(charts))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }.flowOn(dispatcher)
     
     override suspend fun getLatestVersionsByChartIds(ids: List<String>): Flow<Result<List<Version>>> =
         flow {

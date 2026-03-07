@@ -17,50 +17,51 @@ import kotlinx.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val TAG = "DownloadRepository"
-
 @Singleton
 class DownloadRepository @Inject constructor(
     private val downloadManager: DownloadManager,
     private val chartManager: ChartManager,
-    private val downloadServiceMonitor: DownloadServiceMonitor,
+    downloadServiceMonitor: DownloadServiceMonitor,
     @param:ApplicationContext private val context: Context,
 ) {
     val downloadEvents: SharedFlow<DownloadEvent> = downloadServiceMonitor.observeDownload()
-    
+
     /**
      * Downloads and extracts a chart to the beatstar folder
      * @param url URL of the chart zip file
-     * @param contentId ID of the chart
+     * @param internalChartId Internal chart ID used as local primary key
+     * @param contentId Canonical content ID used as the preferred /songs folder name
      * @param operation Operation type (INSTALL or UPDATE)
      * @param onDownloadProgress Callback for download progress
      * @param onExtractProgress Callback for extraction progress
      */
     suspend fun downloadChart(
         url: String,
-        contentId: String,
+        internalChartId: String,
+        contentId: String? = null,
         operation: OperationOption,
         onDownloadProgress: (Float) -> Unit = {},
         onExtractProgress: (Float) -> Unit = {}
     ) {
         val folderUri = StorageUtils.getFolderUri(context, BEATSTAR_URI)
             ?: throw IllegalStateException("Could not access or create beatstar folder")
-        
+
         // Download the zip file to cache
         val downloadedFile = downloadManager.downloadFileToCache(
             url,
-            contentId,
+            contentId ?: internalChartId,
             "zip",
             onDownloadProgress
         )
-        
+
         // Notify server about the download (this should not block)
-        chartManager.postAnalytics(contentId, operation)
-        
-        // Extract the zip file to the beatstar folder
+        chartManager.postAnalytics(internalChartId, operation)
+
+        // Extract the zip file to the folder
         try {
             downloadManager.extractZipToFolder(
                 downloadedFile,
+                internalChartId,
                 contentId,
                 folderUri,
                 listOf("songs"),
@@ -75,7 +76,7 @@ class DownloadRepository @Inject constructor(
         }
 
         // Update the chart list
-        val updateResult = chartManager.updateContentByContentId(contentId, operation)
+        val updateResult = chartManager.updateContentById(internalChartId, operation)
         if (updateResult is ContentResult.Error) {
             val msg = when (val m = updateResult.message) {
                 is UiText.Plain -> m.value
@@ -85,22 +86,23 @@ class DownloadRepository @Inject constructor(
         }
     }
 
-    suspend fun deleteChart(contentId: String) {
+    suspend fun deleteChart(internalChartId: String, contentId: String? = null) {
         val destinationFolderUri = StorageUtils.getFolderUri(context, BEATSTAR_URI)
             ?: throw IllegalStateException("Could not access or create beatstar folder")
 
         try {
             downloadManager.deleteFolderFromUri(
-                StorageUtils.getChartFolderName(contentId),
+                internalChartId,
+                contentId,
                 destinationFolderUri,
                 listOf("songs"),
             )
-        } catch (e: NotFoundException) {
+        } catch (_: NotFoundException) {
             // Folder does not exist, nothing to delete
         }
 
         // Update the chart list
-        val updateResult = chartManager.updateContentByContentId(contentId, OperationOption.DELETE)
+        val updateResult = chartManager.updateContentById(internalChartId, OperationOption.DELETE)
         if (updateResult is ContentResult.Error) {
             val msg = when (val m = updateResult.message) {
                 is UiText.Plain -> m.value

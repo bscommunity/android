@@ -194,6 +194,8 @@ fun ChartDetailsScreen(
         contentViewModel.checkStatus(chart)
 
         contentViewModel.events.collect { event ->
+            if (event.id != chart.id) return@collect
+
             when (event) {
                 is DownloadEvent.Complete ->
                     snackbarHostState.showSnackbar(downloadCompleteMsg)

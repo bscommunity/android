@@ -10,7 +10,6 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.repository.DownloadRepository
 import com.meninocoiso.bscm.domain.enums.ErrorType
 import com.meninocoiso.bscm.domain.enums.OperationOption
@@ -37,9 +36,6 @@ private const val TAG = "DownloadService"
 class DownloadService : Service() {
 
     @Inject
-    lateinit var chartManager: ChartManager
-
-    @Inject
     lateinit var downloadRepository: DownloadRepository
 
     @Inject
@@ -60,6 +56,7 @@ class DownloadService : Service() {
 
     companion object {
         const val EXTRA_ID = "extra_id"
+        const val EXTRA_CONTENT_ID = "extra_content_id"
         const val EXTRA_NAME = "extra_name"
         const val EXTRA_BUNDLE_URL = "extra_bundle_url"
         const val EXTRA_IS_UPDATE = "extra_is_update"
@@ -80,25 +77,24 @@ class DownloadService : Service() {
             return START_NOT_STICKY
         }
 
-        val (contentId, bundleUrl, name, operation) = downloadParams
+        val (internalChartId, contentId, bundleUrl, name, operation) = downloadParams
 
         // Check for duplicate downloads
         serviceScope.launch {
             activeDownloadsLock.withLock {
-                if (activeDownloads.contains(contentId)) {
-                    Log.w(TAG, "Download already in progress for: $contentId")
+                if (activeDownloads.contains(internalChartId)) {
+                    Log.w(TAG, "Download already in progress for: $internalChartId")
                     stopSelf()
                     return@launch
                 }
-                activeDownloads.add(contentId)
+                activeDownloads.add(internalChartId)
             }
 
             try {
-                performDownload(contentId, bundleUrl, name, operation)
+                performDownload(internalChartId, contentId, bundleUrl, name, operation)
             } finally {
-                // Always remove from active downloads
                 activeDownloadsLock.withLock {
-                    activeDownloads.remove(contentId)
+                    activeDownloads.remove(internalChartId)
                 }
 
                 // Stop service if no more active downloads
@@ -119,22 +115,24 @@ class DownloadService : Service() {
             return null
         }
 
-        val contentId = intent.getStringExtra(EXTRA_ID)
+        val internalChartId = intent.getStringExtra(EXTRA_ID)
+        val contentId = intent.getStringExtra(EXTRA_CONTENT_ID)
         val bundleUrl = intent.getStringExtra(EXTRA_BUNDLE_URL)
         val name = intent.getStringExtra(EXTRA_NAME)
         val isUpdate = intent.getBooleanExtra(EXTRA_IS_UPDATE, false)
 
-        if (contentId.isNullOrBlank() || bundleUrl.isNullOrBlank() || name.isNullOrBlank()) {
-            Log.e(TAG, "Missing required parameters - contentId: $contentId, bundleUrl: $bundleUrl, name: $name")
+        if (internalChartId.isNullOrBlank() || bundleUrl.isNullOrBlank() || name.isNullOrBlank()) {
+            Log.e(TAG, "Missing required parameters - internalChartId: $internalChartId, bundleUrl: $bundleUrl, name: $name")
             return null
         }
 
         val operation = if (isUpdate) OperationOption.UPDATE else OperationOption.INSTALL
-        return DownloadParams(contentId, bundleUrl, name, operation)
+        return DownloadParams(internalChartId, contentId, bundleUrl, name, operation)
     }
 
     private suspend fun performDownload(
-        contentId: String,
+        internalChartId: String,
+        contentId: String?,
         bundleUrl: String,
         name: String,
         operation: OperationOption
@@ -143,10 +141,10 @@ class DownloadService : Service() {
         val finalMessage = getFinalMessage(name, operation)
 
         try {
-            Log.d(TAG, "Starting download for: $contentId, operation: $operation")
+            Log.d(TAG, "Starting download for: $internalChartId, operation: $operation")
 
             // Get notification ID for this download
-            val notificationId = getNotificationId(contentId)
+            val notificationId = getNotificationId(internalChartId)
 
             // Start as foreground service with initial notification
             val initialNotification = createNotification(
@@ -158,44 +156,45 @@ class DownloadService : Service() {
             startForeground(notificationId, initialNotification)
 
             // Send initial event
-            downloadServiceMonitor.sendEvent(DownloadEvent.Started(contentId))
+            downloadServiceMonitor.sendEvent(DownloadEvent.Started(internalChartId))
 
             // Perform the download
             downloadRepository.downloadChart(
                 bundleUrl,
+                internalChartId,
                 contentId,
                 operation,
                 onDownloadProgress = { progress ->
-                    handleDownloadProgress(contentId, name, progress, operation)
+                    handleDownloadProgress(internalChartId, name, progress, operation)
                 },
                 onExtractProgress = { progress ->
-                    handleExtractionProgress(contentId, name, progress)
+                    handleExtractionProgress(internalChartId, name, progress)
                 }
             )
 
             // Success - send complete event and update notification
-            downloadServiceMonitor.sendEvent(DownloadEvent.Complete(contentId))
+            downloadServiceMonitor.sendEvent(DownloadEvent.Complete(internalChartId))
 
             updateNotification(
-                contentId = contentId,
+                chartId = internalChartId,
                 title = finalMessage.title,
                 message = finalMessage.message,
                 progress = 100,
                 isOngoing = false
             )
 
-            Log.d(TAG, "Download completed successfully for: $contentId")
+            Log.d(TAG, "Download completed successfully for: $internalChartId")
 
         } catch (e: Exception) {
-            handleDownloadError(contentId, name, e)
+            handleDownloadError(internalChartId, name, e)
         } finally {
             // Clean up notification ID when download finishes (success or failure)
-            cleanupNotificationId(contentId)
+            cleanupNotificationId(internalChartId)
         }
     }
 
     private fun handleDownloadProgress(
-        contentId: String,
+        chartId: String,
         name: String,
         progress: Float,
         operation: OperationOption
@@ -203,13 +202,13 @@ class DownloadService : Service() {
         serviceScope.launch {
             try {
                 // Send progress event
-                downloadServiceMonitor.sendEvent(DownloadEvent.Progress(contentId, progress))
+                downloadServiceMonitor.sendEvent(DownloadEvent.Progress(chartId, progress))
 
                 val progressInt = (progress * 100).coerceIn(0f, 100f).toInt()
                 val progressMessage = getProgressMessage(name, progressInt, operation)
 
                 updateNotification(
-                    contentId = contentId,
+                    chartId = chartId,
                     title = progressMessage.title,
                     message = progressMessage.message,
                     progress = progressInt
@@ -220,17 +219,18 @@ class DownloadService : Service() {
         }
     }
 
-    private fun handleExtractionProgress(contentId: String, name: String, progress: Float) {
+    private fun handleExtractionProgress(chartId: String, name: String, progress: Float) {
         serviceScope.launch {
             try {
                 // Send extracting event
-                downloadServiceMonitor.sendEvent(DownloadEvent.Extracting(contentId, progress))
+                downloadServiceMonitor.sendEvent(DownloadEvent.Extracting(chartId, progress))
 
                 val progressInt = (progress * 100).coerceIn(0f, 100f).toInt()
                 updateNotification(
-                    contentId = contentId,
+                    chartId = chartId,
                     title = getString(R.string.extracting_progress_title, name),
-                    message = getString(R.string.extracting_progress_description, progressInt),
+                    // Some locales define this resource without format placeholders.
+                    message = "${getString(R.string.extracting_progress_description)} ($progressInt%)",
                     progress = progressInt
                 )
             } catch (e: Exception) {
@@ -239,8 +239,8 @@ class DownloadService : Service() {
         }
     }
 
-    private fun handleDownloadError(contentId: String, name: String, error: Exception) {
-        Log.e(TAG, "Download failed for: $contentId", error)
+    private fun handleDownloadError(chartId: String, name: String, error: Exception) {
+        Log.e(TAG, "Download failed for: $chartId", error)
 
         // Categorize error types for better user feedback
         val errorType = categorizeError(error)
@@ -249,12 +249,12 @@ class DownloadService : Service() {
         // Send error event
         serviceScope.launch {
             downloadServiceMonitor.sendEvent(
-                DownloadEvent.Error(contentId, userFriendlyMessage, errorType)
+                DownloadEvent.Error(chartId, userFriendlyMessage, errorType)
             )
 
             // Update notification with error
             updateNotification(
-                contentId = contentId,
+                chartId = chartId,
                 title = getString(R.string.download_failed),
                 message = getString(R.string.download_failed_for_chart, name),
                 progress = 0,
@@ -351,7 +351,7 @@ class DownloadService : Service() {
     }
 
     private suspend fun updateNotification(
-        contentId: String,
+        chartId: String,
         title: String,
         message: String,
         progress: Int,
@@ -360,7 +360,7 @@ class DownloadService : Service() {
     ) {
         try {
             val notification = createNotification(title, message, progress, isOngoing, isError)
-            notificationManager.notify(getNotificationId(contentId), notification)
+            notificationManager.notify(getNotificationId(chartId), notification)
         } catch (e: Exception) {
             Log.w(TAG, "Failed to update notification", e)
         }
@@ -369,9 +369,9 @@ class DownloadService : Service() {
     /**
      * Generate a unique notification ID for a given chart ID
      */
-    private suspend fun getNotificationId(contentId: String): Int {
+    private suspend fun getNotificationId(chartId: String): Int {
         return notificationIdsLock.withLock {
-            notificationIds.getOrPut(contentId) {
+            notificationIds.getOrPut(chartId) {
                 // Assign a new ID and increment for next use
                 nextNotificationId++
             }
@@ -381,9 +381,9 @@ class DownloadService : Service() {
     /**
      * Clean up the notification ID for a completed or failed download
      */
-    private suspend fun cleanupNotificationId(contentId: String) {
+    private suspend fun cleanupNotificationId(chartId: String) {
         notificationIdsLock.withLock {
-            notificationIds.remove(contentId)
+            notificationIds.remove(chartId)
         }
     }
 
@@ -391,7 +391,8 @@ class DownloadService : Service() {
      * Data class to hold download parameters
      */
     private data class DownloadParams(
-        val contentId: String,
+        val internalChartId: String,
+        val contentId: String?,
         val bundleUrl: String,
         val name: String,
         val operation: OperationOption

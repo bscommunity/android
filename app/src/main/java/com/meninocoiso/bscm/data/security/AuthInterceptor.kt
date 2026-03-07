@@ -71,7 +71,7 @@ class AuthInterceptor @Inject constructor(
                     Log.e(TAG, "Token refresh failed")
                     return@withLock false
                 }
-                Log.d(TAG, "Token refreshed successfully")
+                // Log.d(TAG, "Token refreshed successfully")
                 true
             } finally {
                 isCurrentlyRefreshing = false

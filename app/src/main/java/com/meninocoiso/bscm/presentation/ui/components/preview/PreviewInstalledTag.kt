@@ -20,11 +20,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun PreviewInstalledTag(isInstalled: Boolean) {
-    val label = if (isInstalled) {
-        "Installed"
-    } else {
+fun PreviewInstalledTag(isExternal: Boolean) {
+    val label = if (isExternal) {
         "External"
+    } else {
+        "Installed"
     }
 
     Box(
@@ -34,11 +34,11 @@ fun PreviewInstalledTag(isInstalled: Boolean) {
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 12.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(start = 8.dp, top = 4.dp, end = 12.dp, bottom = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (isInstalled) {
+            if (!isExternal) {
                 Icon(
                     modifier = Modifier.size(16.dp),
                     imageVector = Icons.Default.Check,

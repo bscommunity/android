@@ -4,6 +4,7 @@ import android.util.Log
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.model.CatalogItem
+import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.repository.ContentAnalyticsRepository
 import com.meninocoiso.bscm.domain.repository.ContentFeedRepository
 import com.meninocoiso.bscm.domain.repository.ContentItemRepository
@@ -43,6 +44,22 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
     private val memoryStore: ContentMemoryStore<T>,
     private val coroutineScope: CoroutineScope,
 ) {
+
+    @Suppress("UNCHECKED_CAST")
+    private fun mergeRemoteWithLocalDeviceState(items: List<T>): List<T> {
+        if (items.isEmpty()) return items
+
+        return items.map { incoming ->
+            val existing = memoryStore.contentById.value[incoming.id]
+            if (incoming is Chart && existing is Chart) {
+                // Device install status is local-only state and must survive remote refreshes.
+                val mergedInstalled = if (existing.isInstalled == true) true else incoming.isInstalled
+                incoming.copy(isInstalled = mergedInstalled) as T
+            } else {
+                incoming
+            }
+        }
+    }
 
     private val _cacheState = MutableStateFlow<ContentState>(ContentState.Loading)
     val cacheState: StateFlow<ContentState> = _cacheState.asStateFlow()
@@ -117,7 +134,7 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
                             ContentResult.Error(
                                 err.message?.let { UiText.Plain(it) }
                                     ?: UiText.Res(R.string.content_not_found),
-                                err
+                            err
                             )
                         )
                     }
@@ -267,7 +284,8 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
             filters = filters
         ).first()
         remoteResult.fold(
-            onSuccess = { items ->
+            onSuccess = { remoteItems ->
+                val items = mergeRemoteWithLocalDeviceState(remoteItems)
                 Log.d("ContentManager", "Fetched ${items.size} items from remote")
                 if (offset == 0) {
                     memoryStore.replaceFeed(
@@ -324,7 +342,8 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
             filters = filters
         ).first()
         remoteResult.fold(
-            onSuccess = { items ->
+            onSuccess = { remoteItems ->
+                val items = mergeRemoteWithLocalDeviceState(remoteItems)
                 memoryStore.addWithoutAffectingFeed(items, getId = { it.id })
                 val newIds =
                     if (offset == 0) items.map { it.id } else memoryStore.searchResultIds.value?.plus(

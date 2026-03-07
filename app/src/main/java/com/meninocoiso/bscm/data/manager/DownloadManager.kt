@@ -199,7 +199,8 @@ class DownloadManager @Inject constructor(
 
     suspend fun extractZipToFolder(
         zipFile: File,
-        folderName: String,
+        chartId: String,
+        contentId: String? = null,
         rootUri: Uri,
         subFolders: List<String> = listOf("songs"),
         onProgress: (Float) -> Unit = {}
@@ -210,12 +211,11 @@ class DownloadManager @Inject constructor(
                 throw ExtractionException("ZIP file does not exist or is not readable: ${zipFile.path}")
             }
 
-            val sanitizedFolderName = sanitizeFileName(folderName)
+            val sanitizedFolderName = sanitizeFileName(StorageUtils.getChartFolderName(chartId, contentId))
             val destination = StorageUtils.getFolder(rootUri, subFolders, context)
 
-            // Create (or recreate) the chart folder with better error handling
-            val existingFolder = destination.findFile(sanitizedFolderName)
-            existingFolder?.let { folder ->
+            // Create (or recreate) the chart folder
+            destination.findFile(sanitizedFolderName)?.let { folder ->
                 if (!folder.delete()) {
                     throw ExtractionException("Failed to delete existing folder: $sanitizedFolderName")
                 }
@@ -248,12 +248,13 @@ class DownloadManager @Inject constructor(
     }
 
     suspend fun deleteFolderFromUri(
-        folderName: String,
+        chartId: String,
+        contentId: String? = null,
         destinationFolderUri: Uri,
         subFolders: List<String>
     ) = withContext(Dispatchers.IO) {
         try {
-            val sanitizedFolderName = sanitizeFileName(folderName)
+            val sanitizedFolderName = sanitizeFileName(StorageUtils.getChartFolderName(chartId, contentId))
             val rootFolder = DocumentFile.fromTreeUri(context, destinationFolderUri)
                 ?: throw DeletionException("Could not access root folder")
 
@@ -294,7 +295,7 @@ class DownloadManager @Inject constructor(
         return try {
             val parsed = java.net.URL(url)
             parsed.protocol in listOf("http", "https")
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }

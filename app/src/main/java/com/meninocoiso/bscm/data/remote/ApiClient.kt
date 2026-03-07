@@ -30,6 +30,7 @@ interface ApiClient {
         limit: Int? = 10,
         offset: Int = 0
     ): List<Chart>
+    suspend fun getChartsByContentIds(contentIds: List<String>): List<Chart>
 
     suspend fun getChartsByIds(ids: List<String>): List<Chart>
     suspend fun getSuggestions(query: String, limit: Int? = null): List<String>

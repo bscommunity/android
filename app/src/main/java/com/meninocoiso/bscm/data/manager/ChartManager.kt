@@ -49,9 +49,7 @@ class ChartManager @Inject constructor(
     val feedState: StateFlow<ContentState> = contentManager.feedState
 
     // Expose ContentManager flows
-    val feedCharts: Flow<List<Chart>> = contentManager.feedContent.map { charts ->
-        charts.filterNot { chart -> chart.isInstalled == true }
-    }
+    val feedCharts: Flow<List<Chart>> = contentManager.feedContent
     val installedCharts: Flow<List<Chart>> = contentManager.installedContent
     val pendingUpdateCharts: Flow<List<Chart>> = installedCharts.map { chartList ->
         chartList.filter { it.availableVersion != null }
@@ -95,23 +93,13 @@ class ChartManager @Inject constructor(
         }
     }
 
-    suspend fun updateContentById(internalId: String, operation: OperationOption): ContentResult<Chart> =
-        contentManager.updateContent(internalId, operation)
+    suspend fun updateContentById(
+        internalId: String,
+        operation: OperationOption
+    ): ContentResult<Chart> = contentManager.updateContent(internalId, operation)
 
-    suspend fun updateContentByContentId(contentId: String, operation: OperationOption): ContentResult<Chart> {
-        val internalId = resolveInternalIdByContentId(contentId).getOrElse { err ->
-            return ContentResult.Error(
-                err.message?.let {UiText.Plain(it) }
-                    ?: UiText.Res(R.string.content_not_found),
-                err
-            )
-        }
-        return contentManager.updateContent(internalId, operation)
-    }
-
-    fun getChart(chartId: String): Flow<ContentResult<Chart>> = contentManager.getItem(chartId)
-
-    fun getChartByContentId(contentId: String): Flow<ContentResult<Chart>> = contentManager.getItemByContentId(contentId)
+    fun getChartByContentId(contentId: String): Flow<ContentResult<Chart>> =
+        contentManager.getItemByContentId(contentId)
 
     fun getSuggestions(query: String): Flow<List<String>> = contentManager.getSuggestions(query)
 
@@ -122,7 +110,7 @@ class ChartManager @Inject constructor(
     // Chart-specific operations that require ChartRepository methods
     fun checkForUpdates(): Flow<ContentResult<List<Chart>>> = flow {
         emit(ContentResult.Loading)
-        val installed = memoryStore.contentById.value.values.filter { it.isInstalled == true && !isLocalOnlyChart(it) }
+        val installed = memoryStore.contentById.value.values.filter { it.isInstalled && !isLocalOnlyChart(it) }
         if (installed.isEmpty()) {
             emit(ContentResult.Success(emptyList()))
             return@flow
@@ -130,6 +118,7 @@ class ChartManager @Inject constructor(
         val latestVersionsResult = remoteChartRepository.getLatestVersionsByChartIds(installed.map { it.id }).first()
         latestVersionsResult.fold(
             onSuccess = { versions ->
+                Log.d(TAG, "Fetched latest versions for ${versions.size} charts from remote")
                 val versionMap = versions.associateBy { it.chartId }
                 val updated = installed.mapNotNull { chart ->
                     val remoteVersion = versionMap[chart.id]
@@ -143,15 +132,15 @@ class ChartManager @Inject constructor(
                 }
                 emit(ContentResult.Success(updated))
             },
-                onFailure = { err ->
-                    emit(
-                        ContentResult.Error(
-                            err.message?.let { UiText.Plain(it) }
-                                ?: UiText.Res(R.string.failed_to_check_for_updates),
-                            err
-                        )
+            onFailure = { err ->
+                emit(
+                    ContentResult.Error(
+                        err.message?.let { UiText.Plain(it) }
+                            ?: UiText.Res(R.string.failed_to_check_for_updates),
+                        err
                     )
-                }
+                )
+            }
         )
     }
 
@@ -159,29 +148,58 @@ class ChartManager @Inject constructor(
         try {
             // Scan local storage for installed charts
             val installedEntries = chartStorageScanner.scanInstalledContent(rootUri)
-            if (installedEntries.isEmpty()) return
+            Log.d(TAG, "Scanned local storage: found ${installedEntries.size} folders in songs")
 
             // Update existing charts with installed status, and persist any changes to the local repository
+            val installedContentIds = installedEntries.values.mapNotNull { it.contentId }.toSet()
             val current = memoryStore.contentById.value.values.toList()
+
             val updatedCharts = current.map { chart ->
-                val isInstalled = chart.id in installedEntries.keys
-                Log.d(TAG, "Chart ${chart.id} installed status: ${chart.isInstalled} -> $isInstalled")
+                val isInstalled = shouldMarkInstalled(chart, installedContentIds)
+                Log.d(
+                    TAG,
+                    "Chart ${chart.id} (contentId=${chart.contentId ?: "none"}) installed status: ${chart.isInstalled} -> $isInstalled"
+                )
                 if (chart.isInstalled == isInstalled) chart else chart.copy(isInstalled = isInstalled)
             }
             persistInstalledChanges(current, updatedCharts)
             memoryStore.upsertContent(updatedCharts) { it.id }
 
             // Identify any installed charts that are missing from memory and attempt to hydrate them from storage metadata
-            val existingIds = current.map { it.id }.toSet()
-            Log.d(TAG, "Sync installed charts: found ${installedEntries.size} installed, ${existingIds.size} existing in memory")
-            val missingEntries = installedEntries.filterKeys { it !in existingIds }
-            Log.d(TAG, "Found ${missingEntries.size} missing installed charts to hydrate")
-            if (missingEntries.isNotEmpty()) {
-                val orphan = hydrateMissingInstalledCharts(missingEntries)
-                if (orphan.isNotEmpty()) memoryStore.addWithoutAffectingFeed(orphan, getId = { it.id })
+            val contentIdsToHydrate = findMissingContentIdsToHydrate(installedContentIds, current)
+            val placeholders = createLocalPlaceholders(installedEntries, current)
+            Log.d(
+                TAG,
+                "Sync installed charts: ${installedContentIds.size} contentIds to match, ${contentIdsToHydrate.size} canonical charts to hydrate, ${placeholders.size} local placeholders to show"
+            )
+
+            // Hydrate any missing canonical charts
+            if (contentIdsToHydrate.isNotEmpty()) {
+                val hydratedCharts = hydrateMissingInstalledCharts(contentIdsToHydrate)
+                if (hydratedCharts.isNotEmpty()) {
+                    memoryStore.addWithoutAffectingFeed(hydratedCharts, getId = { it.id })
+
+                    val persistResult = localChartRepository.insert(hydratedCharts).first()
+                    if (persistResult.isFailure) {
+                        Log.e(TAG, "Failed to persist hydrated charts", persistResult.exceptionOrNull())
+                    } else {
+                        Log.d(TAG, "Successfully persisted ${hydratedCharts.size} hydrated charts")
+                    }
+                }
             }
+
+            // Add local placeholders for any installed entries that couldn't be matched to existing charts
+            if (placeholders.isNotEmpty()) {
+                memoryStore.addWithoutAffectingFeed(placeholders, getId = { it.id })
+                Log.d(TAG, "Added ${placeholders.size} local placeholders to memory")
+            }
+
+            val totalInstalled = memoryStore.contentById.value.values.count { it.isInstalled == true }
+            Log.d(TAG, "Scan completed! Total installed charts in memory: $totalInstalled")
+            updateCacheState(ContentState.Success)
         } catch (e: Exception) {
             Log.e(TAG, "Error syncing installed charts", e)
+            updateCacheState(ContentState.Error)
         }
     }
 
@@ -190,45 +208,79 @@ class ChartManager @Inject constructor(
         updateFeedState(ContentState.Loading)
     }
 
-    private fun hydrateMissingInstalledCharts(
-        entries: Map<String, InstalledContentEntry<ExternalContentMetadata>>
-    ): List<Chart> {
-        if (entries.isEmpty()) return emptyList()
+    private suspend fun hydrateMissingInstalledCharts(contentIds: Collection<String>): List<Chart> {
+        if (contentIds.isEmpty()) return emptyList()
+
         val hydrated = mutableListOf<Chart>()
-        for ((chartId, entry) in entries) {
-            try {
-                val metadata = entry.metadata
-                val config = entry.config
-                if (metadata != null && config is ExternalContentConfig) {
-                    hydrated.add(chartPlaceholderFactory.createPlaceholderChart(metadata, config))
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to hydrate chart $chartId", e)
+        val remoteResult = remoteChartRepository.getItemsByContentIds(contentIds.toList()).first()
+        remoteResult.fold(
+            onSuccess = { charts ->
+                hydrated.addAll(charts)
+                Log.d(TAG, "Hydrated ${charts.size} charts from remote for missing contentIds")
+            },
+            onFailure = { err ->
+                Log.e(TAG, "Failed to hydrate missing installed charts", err)
             }
-        }
+        )
+
         return hydrated
     }
 
-    private suspend fun persistInstalledChanges(original: List<Chart>, updated: List<Chart>) {
+    private fun createLocalPlaceholders(
+        entries: Map<String, InstalledContentEntry<ExternalContentMetadata>>,
+        currentCharts: List<Chart>
+    ): List<Chart> {
+        if (entries.isEmpty()) return emptyList()
+
+        val existingById = currentCharts.associateBy { it.id }
+        return entries.values.mapNotNull { entry ->
+            val metadata = entry.metadata ?: return@mapNotNull null
+            val localId = metadata.id.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            if (!entry.contentId.isNullOrBlank()) return@mapNotNull null
+
+            val existing = existingById[localId]
+            if (existing != null && existing.contentId != null) return@mapNotNull null
+
+            try {
+                val config = entry.config as? ExternalContentConfig
+                chartPlaceholderFactory.createPlaceholderChart(metadata, config)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to create local placeholder for ${entry.folder.name}", e)
+                null
+            }
+        }
+    }
+
+    private fun persistInstalledChanges(original: List<Chart>, updated: List<Chart>) {
         if (original.size != updated.size) return
         val changed = updated.mapIndexedNotNull { index, newChart ->
             val oldChart = original[index]
             if (oldChart.isInstalled != newChart.isInstalled && !isLocalOnlyChart(newChart)) newChart else null
         }
         if (changed.isNotEmpty()) {
-            val result = localChartRepository.update(changed).first()
-            if (result.isFailure) {
-                Log.e(TAG, "Failed to persist installed changes", result.exceptionOrNull())
+            coroutineScope.launch {
+                val result = localChartRepository.update(changed).first()
+                if (result.isFailure) {
+                    Log.e(TAG, "Failed to persist installed changes", result.exceptionOrNull())
+                }
             }
         }
     }
 
-    private suspend fun resolveInternalIdByContentId(contentId: String): Result<String> {
-        val fromMemory = memoryStore.contentById.value.values.firstOrNull { it.contentId == contentId }
-        if (fromMemory != null) return Result.success(fromMemory.id)
-
-        return localChartRepository.getItemByContentId(contentId).first().map { it.id }
-    }
-
     private fun isLocalOnlyChart(chart: Chart): Boolean = chart.contentId == null
+
+    companion object {
+        internal fun shouldMarkInstalled(
+            chart: Chart,
+            installedContentIds: Set<String>
+        ): Boolean = !chart.contentId.isNullOrBlank() && chart.contentId in installedContentIds
+
+        internal fun findMissingContentIdsToHydrate(
+            installedContentIds: Set<String>,
+            currentCharts: List<Chart>
+        ): Set<String> {
+            val existingContentIds = currentCharts.mapNotNull { it.contentId }.toSet()
+            return installedContentIds.filterNot { it in existingContentIds }.toSet()
+        }
+    }
 }

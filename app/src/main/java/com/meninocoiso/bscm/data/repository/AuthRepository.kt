@@ -128,6 +128,7 @@ class AuthRepository @Inject constructor(
 
     suspend fun logout() {
         tokenManager.clearTokens()
+        cacheRepository.clearUser()
     }
 
     companion object {

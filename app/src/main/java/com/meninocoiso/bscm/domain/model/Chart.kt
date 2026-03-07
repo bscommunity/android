@@ -43,7 +43,7 @@ data class Chart(
     override val contributors: List<Contributor>,
 
     // Device-specific fields
-    @ColumnInfo(name = "is_installed") override val isInstalled: Boolean? = false,
+    @ColumnInfo(name = "is_installed") override val isInstalled: Boolean = false,
     @ColumnInfo(name = "latest_version") val latestVersion: Version,
     @ColumnInfo(name = "available_version") var availableVersion: Version? = null,
 ) : Parcelable, CatalogItem

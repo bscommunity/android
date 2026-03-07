@@ -14,14 +14,18 @@ import androidx.documentfile.provider.DocumentFile
 import kotlinx.io.IOException
 
 private const val TAG = "StorageUtils"
+private const val BEATSTAR_URI_STRING = "content://com.android.externalstorage.documents/tree/primary%3Abeatstar"
+private const val INITIAL_URL_STRING = "content://com.android.externalstorage.documents/document/primary:"
 
 object StorageUtils {
-    val BEATSTAR_URI =
-        "content://com.android.externalstorage.documents/tree/primary%3Abeatstar".toUri()
+    const val CHART_FOLDER_PREFIX = "bscm_"
+
+    val BEATSTAR_URI: Uri
+        get() = BEATSTAR_URI_STRING.toUri()
 
     // Try to find external storage - typically /storage/emulated/0
-    val INITIAL_URL =
-        "content://com.android.externalstorage.documents/document/primary:".toUri()
+    val INITIAL_URL: Uri
+        get() = INITIAL_URL_STRING.toUri()
 
     /**
      * Enhanced DocumentFile extension with better error handling
@@ -31,9 +35,9 @@ object StorageUtils {
         ?: throw IOException("Failed to create/access subfolder: $name")
     }
 
-    fun getChartFolderName(contentId: String): String {
-        // Last 4 numbers from the chart ID
-        return "bscm_$contentId"
+    fun getChartFolderName(chartId: String, contentId: String? = null): String {
+        val preferredId = contentId?.takeIf { it.isNotBlank() } ?: chartId
+        return "$CHART_FOLDER_PREFIX$preferredId"
     }
 
     fun checkIfExists(uri: Uri, context: Context): Boolean {

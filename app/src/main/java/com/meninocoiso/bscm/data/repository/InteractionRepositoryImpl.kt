@@ -1,7 +1,6 @@
 package com.meninocoiso.bscm.data.repository
 
 import android.util.Log
-import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.manager.InteractionQueueManager
@@ -24,7 +23,6 @@ private const val TAG = "InteractionRepositoryImpl"
 class InteractionRepositoryImpl @Inject constructor(
     private val queueManager: InteractionQueueManager,
     private val chartManager: ChartManager,
-    private val chartDao: ChartDao,
     private val collectionDao: CollectionDao,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : InteractionRepository {
@@ -96,7 +94,7 @@ class InteractionRepositoryImpl @Inject constructor(
                     )
                 )
                 collectionDao.incrementCollectionChartCount(collectionId, LocalDateTime.now())
-                updateLocalState(contentId, OperationOption.BOOKMARK)
+                updateLocalState(id, OperationOption.BOOKMARK)
                 queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = true)
             }.onFailure { e ->
                 Log.e(TAG, "Failed to add to collection for contentId: $contentId, collectionId: $collectionId", e)
@@ -190,27 +188,6 @@ class InteractionRepositoryImpl @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Exception updating local chart for id=$id, operation=$operation", e)
-        }
-    }
-
-    /**
-     * Updates local chart state by `contentId` (the remote content identifier).
-     * Used by [changeContentCollection] where we only have the contentId, not the
-     * chart's local primary key.
-     *
-     * We look up the chart's local `id` via [CollectionDao] / [ChartDao] first,
-     * then delegate to the existing [updateLocalState] — no new ChartManager method needed.
-     */
-    private suspend fun updateLocalStateByContentId(contentId: String, operation: OperationOption) {
-        try {
-            val chart = chartDao.getChartByContentId(contentId)
-            if (chart == null) {
-                Log.w(TAG, "No local chart found for contentId=$contentId, skipping local state update")
-                return
-            }
-            updateLocalState(id = chart.id, operation = operation)
-        } catch (e: Exception) {
-            Log.e(TAG, "Exception updating local chart for contentId=$contentId, operation=$operation", e)
         }
     }
 }

@@ -22,27 +22,28 @@ class ChartPlaceholderFactory @Inject constructor(
 
     fun createPlaceholderChart(
         metadata: ExternalContentMetadata,
-        config: ExternalContentConfig
+        config: ExternalContentConfig?
     ): Chart {
+        val localId = metadata.id.trim()
         val now = LocalDateTime.now()
         return Chart(
             artist = metadata.artist,
             track = metadata.title,
             album = null,
             genre = null,
-            colors = config.songTemplate.colorGradient.map { it.color },
+            colors = config?.songTemplate?.colorGradient?.map { it.color }.orEmpty(),
             trackUrls = streamingLinkParser.parseLinks(metadata.streaming),
-            id = metadata.id,
-            contentId = metadata.contentId,
+            id = localId,
+            contentId = null,
             coverUrl = metadata.cover ?: "",
             downloadsSum = 0,
             updatedAt = metadata.publishedAt?.let {
                 LocalDateTime.ofEpochSecond(it, 0, java.time.ZoneOffset.UTC)
             } ?: now,
             isInstalled = true,
-            latestVersion = createPlaceholderVersion(metadata.id, metadata),
+            latestVersion = createPlaceholderVersion(localId, metadata),
             availableVersion = null,
-            contributors = contributorParser.parseContributors(metadata.contributors, metadata.id),
+            contributors = contributorParser.parseContributors(metadata.contributors, localId),
             createdAt = now
         )
     }
@@ -73,4 +74,3 @@ class ChartPlaceholderFactory @Inject constructor(
         )
     }
 }
-

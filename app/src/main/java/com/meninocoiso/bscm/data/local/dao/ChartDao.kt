@@ -24,6 +24,9 @@ interface ChartDao {
     @Query("SELECT * FROM charts WHERE id IN (:ids)")
     fun getChartsByIds(ids: List<String>): List<Chart>
 
+    @Query("SELECT * FROM charts WHERE content_id IN (:contentIds)")
+    fun getChartsByContentIds(contentIds: List<String>): List<Chart>
+
     @Query("SELECT * FROM charts WHERE liked_at IS NOT NULL ORDER BY liked_at DESC LIMIT :limit OFFSET :offset")
     fun getLikedCharts(limit: Int, offset: Int): List<Chart>
 

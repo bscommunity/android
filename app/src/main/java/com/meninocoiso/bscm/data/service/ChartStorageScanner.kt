@@ -33,25 +33,36 @@ class ChartStorageScanner @Inject constructor(
             val entries = mutableMapOf<String, InstalledContentEntry<ExternalContentMetadata>>()
             try {
                 val destination = StorageUtils.getFolder(rootUri, listOf("songs"), context)
+                Log.d(TAG, "Scanning for installed charts in ${destination.uri}")
                 destination.listFiles().forEach { folder ->
+                    Log.d(TAG, "Checking folder: ${folder.name} (${folder.uri})")
                     if (!folder.isDirectory) return@forEach
-                    val infoFile = folder.findFile("info.json") ?: return@forEach
-                    val configFile = folder.findFile("config.json") ?: return@forEach
 
-                    val metadata = metadataParser.parseMetadata(infoFile)
-                    val config = readExternalChartConfig(configFile)
-                    val chartId = metadata?.id
+                    val infoFile = folder.findFile("info.json")
+                    val configFile = folder.findFile("config.json")
+                    val metadata = infoFile?.let { metadataParser.parseMetadata(it) }
+                    val config = configFile?.let { readExternalChartConfig(it) }
+                    val contentId = normalizeIdentifier(metadata?.contentId)
+                    val localId = normalizeIdentifier(metadata?.id)
 
-                    Log.d(TAG, "Found chart folder: ${folder.name} - id: $chartId")
-
-                    if (!chartId.isNullOrBlank()) {
-                        entries[chartId] = InstalledContentEntry(
-                            contentId = chartId,
-                            metadata = metadata,
-                            config = config,
-                            folder = folder
-                        )
+                    if (infoFile == null) {
+                        Log.d(TAG, "Folder ${folder.name} has no info.json")
                     }
+                    if (configFile == null) {
+                        Log.d(TAG, "Folder ${folder.name} has no config.json")
+                    }
+
+                    Log.d(
+                        TAG,
+                        "Scanned folder ${folder.name}: contentId=${contentId ?: "none"}, metadataId=${localId ?: "none"}, config=${config != null}"
+                    )
+
+                    entries[folder.uri.toString()] = InstalledContentEntry(
+                        contentId = contentId,
+                        metadata = metadata,
+                        config = config,
+                        folder = folder
+                    )
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Unable to scan installed charts", e)
@@ -72,5 +83,8 @@ class ChartStorageScanner @Inject constructor(
             null
         }
     }
-}
 
+    companion object {
+        internal fun normalizeIdentifier(value: String?): String? = value?.takeIf { it.isNotBlank() }
+    }
+}

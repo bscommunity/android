@@ -38,7 +38,6 @@ fun ChartPreview(
     modifier: Modifier = Modifier,
     showInteractions: Boolean = false,
     isSecondary: Boolean = false,
-    isInstalled: Boolean? = null,
     isDisabled: Boolean = false,
     onDisabled: () -> Unit = {},
     onPress: () -> Unit
@@ -48,7 +47,7 @@ fun ChartPreview(
             .secondaryContainer(isSecondary)
             .graphicsLayer {
                 alpha =
-                    if (isInstalled == true || isDisabled) 0.5f else 1f
+                    if (chart.isInstalled || isDisabled) 0.5f else 1f
             }
             .debouncedClickable(onClick = {
                 if (isDisabled) {
@@ -63,20 +62,20 @@ fun ChartPreview(
                 .padding(16.dp)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = if (showInteractions) Alignment.CenterVertically else Alignment.Top
         ) {
             if (chart.coverUrl.isEmpty() && chart.colors?.isNotEmpty() == true) {
                 LinearGradient(
                     colors = chart.colors.map {
                         Color("#$it".toColorInt())
                     },
-                    borderRadius = if (isInstalled == true || isSecondary) 8.dp else 0.dp,
+                    borderRadius = if (isSecondary) 8.dp else 0.dp,
                 )
             } else {
                 CoverArt(
                     difficulty = chart.latestVersion.difficulty,
                     url = chart.coverUrl,
-                    borderRadius = if (isInstalled == true || isSecondary) 8.dp else 0.dp,
+                    borderRadius = if (isSecondary) 8.dp else 0.dp,
                 )
             }
             Column(
@@ -84,7 +83,7 @@ fun ChartPreview(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Column {
-                    if (isInstalled == true) {
+                    if (chart.isInstalled) {
                         FlowRow(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -117,8 +116,7 @@ fun ChartPreview(
                                 chart.latestVersion.isExplicit,
                                 chart.latestVersion.isDeluxe
                             )
-                            // Don't show publish date for external charts (isInstalled == false)
-                            if (!showInteractions && (isInstalled == null || isInstalled)) {
+                            if (!showInteractions) {
                                 Text(
                                     modifier = Modifier.padding(start = 8.dp),
                                     style = MaterialTheme.typography.labelMedium,
@@ -127,7 +125,10 @@ fun ChartPreview(
                             }
                         }
                     }
-                    Text(style = MaterialTheme.typography.labelMedium, text = chart.artist)
+                    Text(
+                        style = MaterialTheme.typography.labelMedium,
+                        text = chart.artist
+                    )
                 }
                 if (chart.contributors.isNotEmpty()) {
                     PreviewAuthors(
@@ -138,7 +139,7 @@ fun ChartPreview(
                         authors = chart.contributors
                     )
                 }
-                if (isInstalled != null) PreviewInstalledTag(isInstalled)
+                if (chart.contentId == null || chart.isInstalled) PreviewInstalledTag(chart.contentId == null)
             }
             if (showInteractions && (chart.likedAt != null || chart.bookmarkedAt != null)) {
                 Box(

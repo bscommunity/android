@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.domain.result.UiText
 import com.meninocoiso.bscm.presentation.navigation.OnSnackbar
 import com.meninocoiso.bscm.presentation.navigation.show
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
@@ -29,6 +30,7 @@ import com.meninocoiso.bscm.presentation.ui.components.dialog.ConfirmationDialog
 import com.meninocoiso.bscm.presentation.ui.components.updates.localContentSection
 import com.meninocoiso.bscm.presentation.ui.components.updates.remoteSection
 import com.meninocoiso.bscm.presentation.ui.modifiers.fabScrollObserver
+import com.meninocoiso.bscm.presentation.ui.utils.resolve
 import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.UpdatesViewModel
 import com.meninocoiso.bscm.util.StorageUtils
@@ -60,13 +62,19 @@ internal fun ContentSection(
             Log.d("WorkshopSection", "Storage permission granted for Beatstar folder")
             hasStoragePermission = true
             // Rescan local charts after permission is granted
-            viewModel.scanLocalCharts()
+            // viewModel.scanLocalCharts()
         },
-        onInvalidSelection = { onSnackbar.show(context.getString(R.string.incorrect_storage_permission)) }
+        onInvalidSelection = {
+            onSnackbar.show(
+                UiText.Res(R.string.incorrect_storage_permission).resolve(context)
+            )
+        }
     )
 
     // Collect the direct flows as states
-    val pendingUpdateCharts by viewModel.pendingUpdateCharts.collectAsStateWithLifecycle(initialValue = emptyList())
+    val pendingUpdateCharts by viewModel.pendingUpdateCharts.collectAsStateWithLifecycle(
+        initialValue = emptyList()
+    )
     val installedCharts by viewModel.installedCharts.collectAsStateWithLifecycle(initialValue = emptyList())
 
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
@@ -80,11 +88,11 @@ internal fun ContentSection(
             when (event) {
                 is DownloadEvent.Complete -> {
                     itemsUpdating.remove(event.id)
-                    onSnackbar.show(context.getString(R.string.update_complete))
+                    onSnackbar.show(UiText.Res(R.string.download_complete).resolve(context))
                 }
 
                 is DownloadEvent.Error -> onSnackbar.show(
-                    context.getString(R.string.error, event.message)
+                    UiText.Res(R.string.download_failed, event.message).resolve(context)
                 )
 
                 else -> {}
