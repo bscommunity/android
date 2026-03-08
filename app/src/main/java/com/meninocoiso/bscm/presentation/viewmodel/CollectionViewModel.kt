@@ -70,6 +70,7 @@ class CollectionViewModel @Inject constructor(
     private val collectionsPagination = PaginationState(pageSize = 20)
     private var currentCollectionId: String? = null
     private var collectionMembershipObserverJob: Job? = null
+    private var itemsFetchJob: Job? = null
 
     // -------------------------------------------------------------------------
     // Public API — user's own collections list (for CollectionBottomSheet)
@@ -97,6 +98,10 @@ class CollectionViewModel @Inject constructor(
      * resets the cursor so stale data is never shown.
      */
     fun loadItems(collectionId: String, reset: Boolean = false) {
+        if (itemsFetchJob?.isActive == true && collectionId == currentCollectionId) {
+            return
+        }
+
         val idChanged = collectionId != currentCollectionId
         if (idChanged || reset) {
             currentCollectionId = collectionId
@@ -108,7 +113,7 @@ class CollectionViewModel @Inject constructor(
 
         Log.d(TAG, "Loading items for collection $collectionId (reset=$reset, idChanged=$idChanged)")
 
-        fetchPaged(
+        itemsFetchJob = fetchPaged(
             pagination = itemsPagination,
             reset = reset || idChanged,
             fetch = { limit, offset, cache ->
@@ -153,7 +158,7 @@ class CollectionViewModel @Inject constructor(
             hydrateCollectionItemCounts(collectionId)
         },
         onFailureWithData = { emitSnackbar(UiText.Res(R.string.failed_to_update_collection_items)) },
-    )
+    ).also { itemsFetchJob = it }
 
     // -------------------------------------------------------------------------
     // Public API

@@ -121,7 +121,6 @@ class CollectionRepositoryRemote @Inject constructor(
     ): Result<String?> =
         runCatching {
             val slug = apiClient.updateCollection(collectionId, name, isPublic)
-            println("Updated collection $collectionId with name=$name, isPublic=$isPublic, new slug=$slug")
 
             collectionDao.updateCollectionMetadata(
                 collectionId = collectionId,

@@ -281,7 +281,10 @@ fun CollectionsListSection(
                         modifier = Modifier.size(28.dp)
                     )
                 }
-                Text(stringResource(R.string.create_new_collection), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.create_new_collection),
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
         }
         if (errorMessage != null) {
@@ -350,7 +353,7 @@ fun CollectionFormSection(
         horizontalAlignment = Alignment.Start,
         modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
     ) {
-                OutlinedTextField(
+        OutlinedTextField(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
@@ -377,7 +380,8 @@ fun CollectionFormSection(
             },
         )
         Button(
-            enabled = !isLoading && name.isNotBlank(),
+            enabled = !isLoading && name.isNotBlank() &&
+                    (name != initialName || isPublic != initialIsPublic),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),

@@ -130,8 +130,6 @@ class InteractionQueueManager @Inject constructor(
         collectionKind: CollectionKind,
         action: ActionType,
     ) = withContext(Dispatchers.IO) {
-        Log.d("BookmarkDebug", "queueAndSync: contentId=$contentId, kind=$collectionKind, action=$action, queueSize=${queueDao.getQueueSize()}")
-        // 1. Persist to queue first — this is our safety net
         val interaction = QueuedInteractionEntity(
             contentId = contentId,
             collectionId = collectionId,
@@ -142,7 +140,6 @@ class InteractionQueueManager @Inject constructor(
         queueDao.insert(interaction)
         Log.d(TAG, "Queued interaction: contentId=$contentId, collection=$collectionId, kind=$collectionKind, action=$action")
 
-        // InteractionSyncService handles retry on reconnect — nothing else to do
         if (!networkMonitor.isCurrentlyConnected()) {
             Log.d(TAG, "Offline, interaction queued for later sync: contentId=$contentId")
             return@withContext
@@ -159,8 +156,13 @@ class InteractionQueueManager @Inject constructor(
             return
         }
 
-        if (queueDao.getQueueSize() == 0) {
+        // Another caller is already syncing; just wait for completion.
+        if (processingMutex.isLocked) {
             awaitIdle()
+            return
+        }
+
+        if (queueDao.getQueueSize() == 0) {
             return
         }
 
@@ -224,7 +226,6 @@ class InteractionQueueManager @Inject constructor(
                 val allInteractions = queueDao.getAllQueued()
 
                 if (allInteractions.isEmpty()) {
-                    Log.d(TAG, "No interactions to process")
                     return@withLock
                 }
 
@@ -242,7 +243,6 @@ class InteractionQueueManager @Inject constructor(
                     )
                 }
 
-                Log.d("BookmarkDebug", "processBatch: ${batchRequest.map { "${it.contentId}:${it.collectionKind}:${it.action}" }}")
                 Log.d(TAG, "Sending batch of ${batchRequest.size} interactions to server")
 
                 try {
@@ -270,25 +270,6 @@ class InteractionQueueManager @Inject constructor(
         queueDao.getQueueSize()
     }
 
-    /**
-     * Helper method to remove a specific queued interaction based on contentId and collection.
-     */
-    private suspend fun removeQueuedInteraction(
-        contentId: String,
-        collectionKind: CollectionKind,
-        collectionId: String? = null
-    ) = withContext(Dispatchers.IO) {
-        val interaction = if (collectionId != null) {
-            queueDao.getLatestForContent(contentId, collectionId)
-        } else {
-            queueDao.getLatestForContentByKind(contentId, collectionKind.name)
-        }
-
-        if (interaction != null) {
-            queueDao.delete(interaction)
-            Log.d(TAG, "Removed from queue: contentId=$contentId, kind=$collectionKind, collection=$collectionId")
-        }
-    }
 
     private fun deduplicateLatest(interactions: List<QueuedInteractionEntity>): List<QueuedInteractionEntity> {
         val latestInteractionsMap = mutableMapOf<String, QueuedInteractionEntity>()
