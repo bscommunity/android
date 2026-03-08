@@ -142,12 +142,12 @@ fun WorkshopSearchBar(
                     }
                 },
                 trailingIcon = {
-                    IconButton(onClick = { showFilterSheet = true }) {
+                    /*IconButton(onClick = { showFilterSheet = true }) {
                         Icon(
                             painter = painterResource(R.drawable.outline_filter_alt_24),
                             contentDescription = null
                         )
-                    }
+                    }*/
                 },
             )
         }
