@@ -4,7 +4,6 @@ import android.util.Log
 import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
 import com.meninocoiso.bscm.data.local.entity.QueuedInteractionEntity
 import com.meninocoiso.bscm.data.remote.ApiClient
-import com.meninocoiso.bscm.data.remote.ApiException
 import com.meninocoiso.bscm.data.remote.dto.collection.BatchCollectionItemRequest
 import com.meninocoiso.bscm.di.ApplicationScope
 import com.meninocoiso.bscm.domain.enums.ActionType
@@ -20,10 +19,60 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "InteractionQueueManager"
+private const val RECENT_SYNCED_ACTION_TTL_MILLIS = 30_000L
 
 data class CollectionMembershipOverlay(
     val forceIncludeContentIds: Set<String> = emptySet(),
     val forceExcludeContentIds: Set<String> = emptySet(),
+)
+
+internal fun buildCollectionMembershipOverlay(
+    pending: List<QueuedInteractionEntity>,
+    collectionKind: CollectionKind,
+    collectionId: String? = null,
+): CollectionMembershipOverlay = when (collectionKind) {
+    CollectionKind.BOOKMARKS -> CollectionMembershipOverlay(
+        forceIncludeContentIds = pending
+            .filter { it.collectionKind == CollectionKind.BOOKMARKS && it.action == ActionType.ADD }
+            .map { it.contentId }
+            .toSet(),
+        forceExcludeContentIds = pending
+            .filter { it.collectionKind == CollectionKind.BOOKMARKS && it.action == ActionType.REMOVE }
+            .map { it.contentId }
+            .toSet(),
+    )
+
+    CollectionKind.USER -> {
+        val effectiveCollectionId = collectionId ?: return CollectionMembershipOverlay()
+        CollectionMembershipOverlay(
+            forceIncludeContentIds = pending
+                .filter {
+                    it.collectionKind == CollectionKind.USER &&
+                        it.collectionId == effectiveCollectionId &&
+                        it.action == ActionType.ADD
+                }
+                .map { it.contentId }
+                .toSet(),
+            forceExcludeContentIds = pending
+                .filter {
+                    it.collectionKind == CollectionKind.USER &&
+                        it.collectionId == effectiveCollectionId &&
+                        it.action == ActionType.REMOVE
+                }
+                .map { it.contentId }
+                .toSet(),
+        )
+    }
+
+    CollectionKind.LIKES -> CollectionMembershipOverlay()
+}
+
+private data class RecentSyncedAction(
+    val contentId: String,
+    val collectionId: String?,
+    val collectionKind: CollectionKind,
+    val action: ActionType,
+    val timestamp: Long,
 )
 
 @Singleton
@@ -31,9 +80,11 @@ class InteractionQueueManager @Inject constructor(
     private val queueDao: InteractionQueueDao,
     private val apiClient: ApiClient,
     private val networkMonitor: NetworkConnectivityMonitor,
-    @param:ApplicationScope private val applicationScope: CoroutineScope   // ← add this
+    @param:ApplicationScope private val applicationScope: CoroutineScope
 ) {
     private val processingMutex = Mutex()
+    private val recentSyncedActionsMutex = Mutex()
+    private val recentSyncedActions = mutableMapOf<String, RecentSyncedAction>()
 
     /**
      * Queues a like/unlike interaction and attempts an immediate sync if connected.
@@ -42,12 +93,7 @@ class InteractionQueueManager @Inject constructor(
      */
     suspend fun queueAndSyncLike(contentId: String, isLike: Boolean) {
         val action = if (isLike) ActionType.ADD else ActionType.REMOVE
-        val apiCall: suspend () -> Boolean = if (isLike) {
-            { apiClient.addLike(contentId) }
-        } else {
-            { apiClient.removeLike(contentId) }
-        }
-        queueAndSync(contentId, null, CollectionKind.LIKES, action, apiCall)
+        queueAndSync(contentId, null, CollectionKind.LIKES, action)
     }
 
     /**
@@ -55,12 +101,7 @@ class InteractionQueueManager @Inject constructor(
      */
     suspend fun queueAndSyncBookmark(contentId: String, isBookmarked: Boolean) {
         val action = if (isBookmarked) ActionType.ADD else ActionType.REMOVE
-        val apiCall: suspend () -> Boolean = if (isBookmarked) {
-            { apiClient.addBookmark(contentId) }
-        } else {
-            { apiClient.removeBookmark(contentId) }
-        }
-        queueAndSync(contentId, null, CollectionKind.BOOKMARKS, action, apiCall)
+        queueAndSync(contentId, null, CollectionKind.BOOKMARKS, action)
     }
 
     /**
@@ -72,12 +113,7 @@ class InteractionQueueManager @Inject constructor(
         isAdd: Boolean
     ) {
         val action = if (isAdd) ActionType.ADD else ActionType.REMOVE
-        val apiCall: suspend () -> Boolean = if (isAdd) {
-            { apiClient.addItemToCollection(collectionId, contentId) }
-        } else {
-            { apiClient.removeItemFromCollection(collectionId, contentId) }
-        }
-        queueAndSync(contentId, collectionId, CollectionKind.USER, action, apiCall)
+        queueAndSync(contentId, collectionId, CollectionKind.USER, action)
     }
 
     /**
@@ -93,7 +129,6 @@ class InteractionQueueManager @Inject constructor(
         collectionId: String?,
         collectionKind: CollectionKind,
         action: ActionType,
-        apiCall: suspend () -> Boolean
     ) = withContext(Dispatchers.IO) {
         Log.d("BookmarkDebug", "queueAndSync: contentId=$contentId, kind=$collectionKind, action=$action, queueSize=${queueDao.getQueueSize()}")
         // 1. Persist to queue first — this is our safety net
@@ -139,89 +174,45 @@ class InteractionQueueManager @Inject constructor(
     }
 
     suspend fun getPendingInteractionsSnapshot(): List<QueuedInteractionEntity> = withContext(Dispatchers.IO) {
-        deduplicateLatest(queueDao.getAllQueued())
+        val pending = deduplicateLatest(queueDao.getAllQueued())
+        val recent = getRecentSyncedActionsSnapshot()
+
+        if (recent.isEmpty()) return@withContext pending
+
+        // Recent synced actions are merged as an overlay in case the backend is eventually consistent.
+        val mergedByKey = linkedMapOf<String, QueuedInteractionEntity>()
+        pending.forEach { mergedByKey[buildInteractionKey(it)] = it }
+
+        recent.forEach { action ->
+            val key = buildInteractionKey(action.contentId, action.collectionKind, action.collectionId)
+            val existing = mergedByKey[key]
+            if (existing == null || action.timestamp > existing.timestamp) {
+                mergedByKey[key] = QueuedInteractionEntity(
+                    id = existing?.id ?: 0L,
+                    contentId = action.contentId,
+                    collectionId = action.collectionId,
+                    collectionKind = action.collectionKind,
+                    action = action.action,
+                    timestamp = action.timestamp,
+                    retryCount = 0,
+                )
+            }
+        }
+
+        mergedByKey.values.toList()
     }
 
     suspend fun getCollectionMembershipOverlay(
         collectionKind: CollectionKind,
         collectionId: String? = null,
     ): CollectionMembershipOverlay = withContext(Dispatchers.IO) {
-        val pending = deduplicateLatest(queueDao.getAllQueued())
-
-        when (collectionKind) {
-            CollectionKind.BOOKMARKS -> {
-                val pendingBookmarkAdds = pending
-                    .filter { it.collectionKind == CollectionKind.BOOKMARKS && it.action == ActionType.ADD }
-                    .map { it.contentId }
-                    .toSet()
-                val pendingBookmarkRemovals = pending
-                    .filter { it.collectionKind == CollectionKind.BOOKMARKS && it.action == ActionType.REMOVE }
-                    .map { it.contentId }
-                    .toSet()
-                val pendingMovesToUserCollections = pending
-                    .filter { it.collectionKind == CollectionKind.USER && it.action == ActionType.ADD }
-                    .map { it.contentId }
-                    .toSet()
-
-                CollectionMembershipOverlay(
-                    forceIncludeContentIds = pendingBookmarkAdds,
-                    forceExcludeContentIds = pendingBookmarkRemovals + pendingMovesToUserCollections,
-                )
-            }
-
-            CollectionKind.USER -> {
-                val effectiveCollectionId = collectionId ?: return@withContext CollectionMembershipOverlay()
-                CollectionMembershipOverlay(
-                    forceIncludeContentIds = pending
-                        .filter {
-                            it.collectionKind == CollectionKind.USER &&
-                                it.collectionId == effectiveCollectionId &&
-                                it.action == ActionType.ADD
-                        }
-                        .map { it.contentId }
-                        .toSet(),
-                    forceExcludeContentIds = pending
-                        .filter {
-                            it.collectionKind == CollectionKind.USER &&
-                                it.collectionId == effectiveCollectionId &&
-                                it.action == ActionType.REMOVE
-                        }
-                        .map { it.contentId }
-                        .toSet(),
-                )
-            }
-
-            CollectionKind.LIKES -> CollectionMembershipOverlay()
-        }
+        buildCollectionMembershipOverlay(
+            pending = getPendingInteractionsSnapshot(),
+            collectionKind = collectionKind,
+            collectionId = collectionId,
+        )
     }
 
-    /**
-     * Removes mutually exclusive collection interactions from the queue before
-     * queuing a new one. BOOKMARKS and USER collections cannot coexist.
-     *
-     * Call this before [queueAndSyncCollection] or [queueAndSyncBookmark] when
-     * moving content between collection types.
-     */
-    suspend fun clearConflictingInteractions(
-        contentId: String,
-        targetCollectionKind: CollectionKind
-    ) = withContext(Dispatchers.IO) {
-        when (targetCollectionKind) {
-            CollectionKind.BOOKMARKS -> {
-                // Moving to BOOKMARKS: clear any USER collection interaction
-                removeQueuedInteraction(contentId, CollectionKind.USER)
-                Log.d(TAG, "Cleared USER interaction for contentId=$contentId before queuing BOOKMARKS")
-            }
-            CollectionKind.USER -> {
-                // Moving to USER: clear any BOOKMARKS interaction
-                removeQueuedInteraction(contentId, CollectionKind.BOOKMARKS)
-                Log.d(TAG, "Cleared BOOKMARKS interaction for contentId=$contentId before queuing USER")
-            }
-            CollectionKind.LIKES -> {
-                // LIKES coexists with both — nothing to clear
-            }
-        }
-    }
 
     /**
      * Processes all queued interactions by deduplicating and sending a batch request.
@@ -258,6 +249,7 @@ class InteractionQueueManager @Inject constructor(
                     val success = apiClient.batchProcessInteractions(batchRequest)
                     if (success) {
                         queueDao.deleteByIds(processedIds)
+                        rememberRecentlySyncedActions(deduplicatedInteractions)
                         Log.d(TAG, "Batch succeeded, removed ${allInteractions.size} interactions")
                     } else {
                         Log.w(TAG, "Batch returned false, keeping items for next attempt")
@@ -311,6 +303,47 @@ class InteractionQueueManager @Inject constructor(
         return latestInteractionsMap.values.toList()
     }
 
+    private suspend fun rememberRecentlySyncedActions(interactions: List<QueuedInteractionEntity>) {
+        val now = System.currentTimeMillis()
+        recentSyncedActionsMutex.withLock {
+            pruneExpiredRecentActionsLocked(now)
+            interactions.forEach { interaction ->
+                recentSyncedActions[buildInteractionKey(interaction)] = RecentSyncedAction(
+                    contentId = interaction.contentId,
+                    collectionId = interaction.collectionId,
+                    collectionKind = interaction.collectionKind,
+                    action = interaction.action,
+                    timestamp = now,
+                )
+            }
+        }
+    }
+
+    private suspend fun getRecentSyncedActionsSnapshot(): List<RecentSyncedAction> {
+        val now = System.currentTimeMillis()
+        return recentSyncedActionsMutex.withLock {
+            pruneExpiredRecentActionsLocked(now)
+            recentSyncedActions.values.toList()
+        }
+    }
+
+    private fun pruneExpiredRecentActionsLocked(now: Long) {
+        val iterator = recentSyncedActions.entries.iterator()
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            if (now - entry.value.timestamp > RECENT_SYNCED_ACTION_TTL_MILLIS) {
+                iterator.remove()
+            }
+        }
+    }
+
     private fun buildInteractionKey(interaction: QueuedInteractionEntity): String =
-        "${interaction.contentId}:${interaction.collectionKind}:${interaction.collectionId.orEmpty()}"
+        buildInteractionKey(interaction.contentId, interaction.collectionKind, interaction.collectionId)
+
+    private fun buildInteractionKey(
+        contentId: String,
+        collectionKind: CollectionKind,
+        collectionId: String?,
+    ): String =
+        "$contentId:$collectionKind:${collectionId.orEmpty()}"
 }

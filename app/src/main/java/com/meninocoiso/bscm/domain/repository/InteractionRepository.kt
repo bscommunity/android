@@ -1,7 +1,5 @@
 package com.meninocoiso.bscm.domain.repository
 
-import com.meninocoiso.bscm.domain.enums.CollectionKind
-
 interface InteractionRepository {
     
     /**
@@ -25,7 +23,8 @@ interface InteractionRepository {
     suspend fun unbookmarkContent(id: String, contentId: String): Result<Unit>
 
     /**
-     * Queues adding content to a custom collection
+     * Adds content to a custom collection while preserving bookmark state.
+     * Collections are additive labels layered on top of a bookmark.
      */
     suspend fun addToCollection(
         id: String,
@@ -34,24 +33,12 @@ interface InteractionRepository {
     ): Result<Unit>
 
     /**
-     * Removes content from a custom collection
+     * Removes content from a custom collection without touching bookmark state.
      */
     suspend fun removeFromCollection(
         id: String,
         contentId: String,
         collectionId: String
-    ): Result<Unit>
-
-    /**
-     * Changes the collection of content, removing it from the previous collection
-     * (BOOKMARKS) and adding it to the new collection (custom or vice-versa).
-     * This ensures proper queue management by removing the old interaction before
-     * adding the new one.
-     */
-    suspend fun changeContentCollection(
-        contentId: String,
-        targetCollectionId: String,
-        targetCollectionKind: CollectionKind
     ): Result<Unit>
 
     /**

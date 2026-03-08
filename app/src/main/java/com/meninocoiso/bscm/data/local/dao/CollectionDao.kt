@@ -43,11 +43,6 @@ interface CollectionDao {
         updatedAt: LocalDateTime
     )
 
-    @Query("UPDATE collections SET chart_count = chart_count + 1, updated_at = :updatedAt WHERE id = :collectionId")
-    suspend fun incrementCollectionChartCount(collectionId: String, updatedAt: LocalDateTime)
-
-    @Query("UPDATE collections SET chart_count = MAX(chart_count - 1, 0), updated_at = :updatedAt WHERE id = :collectionId")
-    suspend fun decrementCollectionChartCount(collectionId: String, updatedAt: LocalDateTime)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertCrossRef(crossRef: CollectionItemCrossRef)
@@ -60,6 +55,12 @@ interface CollectionDao {
 
     @Query("DELETE FROM collection_item_cross_ref WHERE collection_id = :collectionId AND content_id = :contentId")
     suspend fun deleteCrossRef(collectionId: String, contentId: String)
+
+    @Query("DELETE FROM collection_item_cross_ref WHERE content_id = :contentId AND collection_id IN (SELECT id FROM collections WHERE kind = 'USER')")
+    suspend fun deleteUserCrossRefsForContent(contentId: String)
+
+    @Query("SELECT collection_id FROM collection_item_cross_ref WHERE content_id = :contentId AND collection_id IN (SELECT id FROM collections WHERE kind = 'USER')")
+    suspend fun getUserCollectionIdsForContent(contentId: String): List<String>
 
     /**
      * Removes all cross-refs for [collectionId] whose content_id is NOT in [retainedContentIds].
@@ -75,17 +76,6 @@ interface CollectionDao {
      */
     @Query("DELETE FROM collection_item_cross_ref WHERE collection_id = :collectionId")
     suspend fun deleteAllCrossRefsForCollection(collectionId: String)
-
-    @Query(
-        """
-        SELECT id, kind FROM collections c
-        INNER JOIN collection_item_cross_ref ref 
-            ON c.id = ref.collection_id
-        WHERE ref.content_id = :contentId
-        LIMIT 1
-    """
-    )
-    fun getCollectionForContent(contentId: String): Flow<SimplifiedCollection?>
 
     @Query("SELECT * FROM collections WHERE kind = 'USER' ORDER BY updated_at DESC")
     fun observeUserCollections(): Flow<List<Collection>>
@@ -107,6 +97,30 @@ interface CollectionDao {
         limit: Int,
         offset: Int
     ): List<Chart>
+
+    @Query(
+        """
+        SELECT content_id FROM collection_item_cross_ref
+        WHERE collection_id = :collectionId
+        AND content_type = 'CHART'
+        ORDER BY added_at DESC
+    """
+    )
+    fun observeChartContentIdsForCollection(collectionId: String): Flow<List<String>>
+
+    @Query(
+        """
+        SELECT c.id, c.kind FROM collections c
+        INNER JOIN collection_item_cross_ref ref 
+            ON c.id = ref.collection_id
+        WHERE ref.content_id = :contentId
+        ORDER BY CASE WHEN c.kind = 'BOOKMARKS' THEN 0 ELSE 1 END, ref.added_at DESC
+    """
+    )
+    fun getCollectionsForContent(contentId: String): Flow<List<SimplifiedCollection>>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM collection_item_cross_ref WHERE collection_id = :collectionId AND content_id = :contentId)")
+    suspend fun hasCrossRef(collectionId: String, contentId: String): Boolean
 
     // Same pattern for TourPass, Theme when those tables exist
 }

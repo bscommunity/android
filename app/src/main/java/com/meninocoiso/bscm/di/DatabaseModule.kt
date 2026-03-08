@@ -114,7 +114,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "local_database"
         )
-            .fallbackToDestructiveMigration(false)
+            .fallbackToDestructiveMigration()
             .build()
     }
 }

@@ -75,7 +75,7 @@ abstract class BaseProfileViewModel : ViewModel() {
      * Analogy: think of this as a universal "load more" button handler. You hand it:
      *  - the [pagination] bookmark so it knows where to start
      *  - a [fetch] lambda that calls the actual repository, returning a [PagedResult]
-     *  - [getItems] / [setSection] so it can read & write into your specific UI state
+     *  - [getSection] / [setSection] so it can read & write into your specific UI state
      *  - behaviour flags: [reset] (refresh) and [useCache]
      *
      * It handles guard clauses, loading flags, page advancement, total count
@@ -117,7 +117,6 @@ abstract class BaseProfileViewModel : ViewModel() {
         setSection(
             getSection().copy(
                 state = if (showSkeleton) ContentState.Loading else ContentState.Success,
-                isRefreshing = reset,
                 isLoadingMore = isLoadingMore,
             )
         )
@@ -183,8 +182,8 @@ abstract class BaseProfileViewModel : ViewModel() {
     /**
      * Convenience overload for pull-to-refresh.
      *
-     * Sets [isRefreshing] immediately so the UI shows a spinner, then delegates
-     * to [fetchPaged] with [reset] = true. The refreshing flag is cleared in
+     * Sets the refreshing flag immediately so the UI shows a spinner, then delegates
+     * to [fetchPaged] with `reset = true`. The refreshing flag is cleared in
      * [fetchPaged] itself on both success and failure paths, so there's no
      * second `finally` layer that could race with the inner job.
      */
@@ -202,6 +201,7 @@ abstract class BaseProfileViewModel : ViewModel() {
             pagination = pagination,
             reset = true,
             useCache = useCache,
+            showSkeletonWhen = { getSection().items.isEmpty() },
             fetch = fetch,
             getSection = getSection,
             setSection = setSection,

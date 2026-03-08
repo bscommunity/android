@@ -20,7 +20,6 @@ data class SimplifiedCollection(
     val coverUrl: String? = null,
     val isPublic: Boolean,
     val owner: SimplifiedUser,
-    val itemCount: Triple<Int, Int, Int> = Triple(0, 0, 0), // chartCount, tourPassCount, themeCount
 ) : Parcelable
 
 /**
@@ -48,6 +47,4 @@ fun Collection.toSimplifiedCollection(user: SimplifiedUser) = SimplifiedCollecti
     isPublic = isPublic,
     coverUrl = coverUrl,
     owner = user,
-    itemCount = Triple(chartCount, tourPassCount, themeCount)
 )
-

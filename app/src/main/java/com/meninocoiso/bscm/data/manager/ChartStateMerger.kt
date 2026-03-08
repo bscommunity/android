@@ -1,6 +1,7 @@
 package com.meninocoiso.bscm.data.manager
 
 import com.meninocoiso.bscm.data.local.dao.ChartDao
+import com.meninocoiso.bscm.data.local.entity.QueuedInteractionEntity
 import com.meninocoiso.bscm.domain.enums.ActionType
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.model.Chart
@@ -9,6 +10,9 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
+
+internal fun bookmarkActionForState(interaction: QueuedInteractionEntity): ActionType? =
+    if (interaction.collectionKind == CollectionKind.BOOKMARKS) interaction.action else null
 
 @Singleton
 class ChartStateMerger @Inject constructor(
@@ -24,8 +28,10 @@ class ChartStateMerger @Inject constructor(
             .filter { it.collectionKind == CollectionKind.LIKES }
             .associate { it.contentId to it.action }
         val latestBookmarkActions = pending
-            .filter { it.collectionKind == CollectionKind.BOOKMARKS || it.collectionKind == CollectionKind.USER }
-            .associate { it.contentId to it.actionForBookmarkState() }
+            .mapNotNull { interaction ->
+                bookmarkActionForState(interaction)?.let { interaction.contentId to it }
+            }
+            .toMap()
 
         incoming.map { remote ->
             val local = localById[remote.id]
@@ -66,11 +72,4 @@ class ChartStateMerger @Inject constructor(
         if (contentIds.isEmpty()) return@withContext emptyList()
         chartDao.getChartsByContentIds(contentIds.toList())
     }
-
-    private fun com.meninocoiso.bscm.data.local.entity.QueuedInteractionEntity.actionForBookmarkState(): ActionType? =
-        when (collectionKind) {
-            CollectionKind.BOOKMARKS -> action
-            CollectionKind.USER -> if (action == ActionType.ADD) ActionType.REMOVE else null
-            CollectionKind.LIKES -> null
-        }
 }

@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.ApiException
+import com.meninocoiso.bscm.data.repository.ProfileCacheRepository
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.SimplifiedCollection
@@ -15,9 +16,11 @@ import com.meninocoiso.bscm.presentation.viewmodel.profile.BaseProfileViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedSection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -27,6 +30,7 @@ private const val TAG = "CollectionViewModel"
 @HiltViewModel
 class CollectionViewModel @Inject constructor(
     private val collectionRepository: CollectionRepository,
+    private val profileCacheRepository: ProfileCacheRepository,
 ) : BaseProfileViewModel() {
 
     // -------------------------------------------------------------------------
@@ -36,6 +40,8 @@ class CollectionViewModel @Inject constructor(
     data class CollectionUiState(
         /** Items inside a specific open collection. */
         val items: PagedSection<CatalogItem> = PagedSection(),
+        /** Cached per-type counters for CatalogFilters (charts, tourPasses, themes). */
+        val itemCounts: Triple<Int, Int, Int> = Triple(0, 0, 0),
         /** The current user's own collections list (used by CollectionBottomSheet). */
         val userCollections: PagedSection<Collection> = PagedSection(),
         val isCreating: Boolean = false,
@@ -63,6 +69,7 @@ class CollectionViewModel @Inject constructor(
     private val itemsPagination = PaginationState(pageSize = 20)
     private val collectionsPagination = PaginationState(pageSize = 20)
     private var currentCollectionId: String? = null
+    private var collectionMembershipObserverJob: Job? = null
 
     // -------------------------------------------------------------------------
     // Public API — user's own collections list (for CollectionBottomSheet)
@@ -91,10 +98,12 @@ class CollectionViewModel @Inject constructor(
      */
     fun loadItems(collectionId: String, reset: Boolean = false) {
         val idChanged = collectionId != currentCollectionId
-        if (idChanged) {
+        if (idChanged || reset) {
             currentCollectionId = collectionId
             itemsPagination.reset()
-            _uiState.update { it.copy(items = PagedSection()) }
+            _uiState.update { it.copy(items = PagedSection(), itemCounts = Triple(0, 0, 0)) }
+            hydrateCollectionItemCounts(collectionId)
+            startCollectionMembershipObserver(collectionId)
         }
 
         Log.d(TAG, "Loading items for collection $collectionId (reset=$reset, idChanged=$idChanged)")
@@ -111,7 +120,11 @@ class CollectionViewModel @Inject constructor(
                 )
             },
             getSection = { _uiState.value.items },
-            setSection = { section -> _uiState.update { it.copy(items = section) } },
+            setSection = { section ->
+                _uiState.update {
+                    it.copy(items = section)
+                }
+            },
             onFailureWithData = { emitSnackbar(UiText.Res(R.string.failed_to_load_items)) },
         )
     }
@@ -133,7 +146,12 @@ class CollectionViewModel @Inject constructor(
             )
         },
         getSection = { _uiState.value.items },
-        setSection = { section -> _uiState.update { it.copy(items = section) } },
+        setSection = { section ->
+            _uiState.update {
+                it.copy(items = section)
+            }
+            hydrateCollectionItemCounts(collectionId)
+        },
         onFailureWithData = { emitSnackbar(UiText.Res(R.string.failed_to_update_collection_items)) },
     )
 
@@ -250,6 +268,54 @@ class CollectionViewModel @Inject constructor(
             Log.e(TAG, "Error deleting collection", e)
             emitSnackbar(UiText.Res(R.string.failed_to_delete_collection))
             return Result.failure(e)
+        }
+    }
+
+    private fun startCollectionMembershipObserver(collectionId: String) {
+        collectionMembershipObserverJob?.cancel()
+        collectionMembershipObserverJob = viewModelScope.launch {
+            collectionRepository.observeCollectionChartContentIds(collectionId)
+                .catch { e -> Log.e(TAG, "Collection membership observer error", e) }
+                .collect { contentIds ->
+                    val ids = contentIds.toHashSet()
+                    val current = _uiState.value.items
+
+                    // Keep currently loaded items in sync with local membership mutations
+                    // (e.g. remove-from-collection in details) without issuing a full refresh.
+                    val filtered = current.items.filter { item ->
+                        val key = item.contentId ?: item.id
+                        key in ids
+                    }
+                    val nextTotal = contentIds.size
+
+                    if (filtered != current.items || current.total != nextTotal) {
+                        _uiState.update { state ->
+                            state.copy(
+                                items = state.items.copy(
+                                    items = filtered,
+                                    total = nextTotal,
+                                ),
+                                itemCounts = state.itemCounts.copy(first = nextTotal)
+                            )
+                        }
+                    }
+                }
+        }
+    }
+
+    private fun hydrateCollectionItemCounts(collectionId: String) {
+        viewModelScope.launch {
+            val cached = profileCacheRepository.getCollectionItemCounts(collectionId)?.toTriple()
+                ?: Triple(0, 0, 0)
+            _uiState.update { state ->
+                state.copy(
+                    itemCounts = state.itemCounts.copy(
+                        second = cached.second,
+                        third = cached.third,
+                        first = if (state.itemCounts.first == 0) cached.first else state.itemCounts.first,
+                    )
+                )
+            }
         }
     }
 }

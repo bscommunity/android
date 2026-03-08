@@ -6,7 +6,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -17,9 +16,6 @@ import com.meninocoiso.bscm.presentation.ui.components.RingConfig
 import com.meninocoiso.bscm.presentation.ui.components.rememberBurstDotsModule
 import com.meninocoiso.bscm.presentation.ui.components.rememberIconScaleModule
 import com.meninocoiso.bscm.presentation.ui.components.rememberRingModule
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun InteractionButton(
@@ -28,9 +24,6 @@ fun InteractionButton(
     isActive: Boolean = false,
     isDisabled: Boolean = false,
     onDisabled: () -> Unit = {},
-    debounceMillis: Long = 600L,
-    onHold: (() -> Unit)? = null,
-    onHoldLabel: String? = null,
     onToggle: (isActive: Boolean) -> Unit
 ) {
     var localIsActive by remember { mutableStateOf(isActive) }
@@ -38,9 +31,6 @@ fun InteractionButton(
     LaunchedEffect(isActive) {
         localIsActive = isActive
     }
-
-    val scope = rememberCoroutineScope()
-    var debounceJob by remember { mutableStateOf<Job?>(null) }
 
     val (burstAnimation, burstVisual) = rememberBurstDotsModule(
         config = BurstDotsConfig(color = MaterialTheme.colorScheme.primary)
@@ -62,16 +52,10 @@ fun InteractionButton(
                 return@BurstIconButton
             }
 
-            localIsActive = !localIsActive
-            debounceJob?.cancel()
-            debounceJob = scope.launch {
-                delay(debounceMillis)
-                println("InteractionButton: Debounce period ended, invoking onToggle with isActive=$localIsActive")
-                onToggle(localIsActive)
-            }
+            val nextState = !localIsActive
+            localIsActive = nextState
+            onToggle(nextState)
         },
-        onLongClick = onHold,
-        onLongClickLabel = onHoldLabel,
         animations = listOfNotNull(
             burstAnimation,
             ringAnimation,

@@ -8,6 +8,7 @@ import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.enums.OperationOption
+import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.CollectionItemCrossRef
 import com.meninocoiso.bscm.domain.repository.InteractionRepository
 import com.meninocoiso.bscm.domain.result.ContentResult
@@ -19,6 +20,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "InteractionRepositoryImpl"
+private const val BOOKMARKS_COLLECTION_ID = "bookmarks"
+private const val LOCAL_USER_ID = "user"
 
 @Singleton
 class InteractionRepositoryImpl @Inject constructor(
@@ -61,18 +64,23 @@ class InteractionRepositoryImpl @Inject constructor(
     override suspend fun bookmarkContent(id: String, contentId: String): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
-                val shouldIncrement = chartDao.getChart(id)?.bookmarkedAt == null
-                // Insert cross-ref for BOOKMARKS collection
-                collectionDao.upsertCrossRef(
-                    CollectionItemCrossRef(
-                        collectionId = "bookmarks",
-                        contentId = contentId,
-                        contentType = ContentType.CHART
+                val chart = chartDao.getChart(id)
+                val hasBookmarkMembership = collectionDao.hasCrossRef(BOOKMARKS_COLLECTION_ID, contentId)
+                val userCollectionIds = collectionDao.getUserCollectionIdsForContent(contentId)
+                val wasSavedLocally = chart?.bookmarkedAt != null || hasBookmarkMembership || userCollectionIds.isNotEmpty()
+
+                ensureBookmarksCollectionExists()
+                if (!hasBookmarkMembership) {
+                    collectionDao.upsertCrossRef(
+                        CollectionItemCrossRef(
+                            collectionId = BOOKMARKS_COLLECTION_ID,
+                            contentId = contentId,
+                            contentType = ContentType.CHART
+                        )
                     )
-                )
-                // Update local chart state so UI reflects bookmark immediately
-                updateLocalState(id = id, operation = OperationOption.BOOKMARK)
-                if (shouldIncrement) {
+                }
+                if (!wasSavedLocally) {
+                    updateLocalState(id = id, operation = OperationOption.BOOKMARK)
                     profileCacheRepository.adjustBookmarksCount(delta = 1)
                 }
                 queueManager.queueAndSyncBookmark(contentId, isBookmarked = true)
@@ -84,15 +92,23 @@ class InteractionRepositoryImpl @Inject constructor(
     override suspend fun unbookmarkContent(id: String, contentId: String): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
-                val shouldDecrement = chartDao.getChart(id)?.bookmarkedAt != null
-                // Remove cross-ref from BOOKMARKS collection
-                collectionDao.deleteCrossRef("bookmarks", contentId)
-                // Update local chart state so UI reflects unbookmark immediately
-                updateLocalState(id = id, operation = OperationOption.UNBOOKMARK)
-                if (shouldDecrement) {
+                val chart = chartDao.getChart(id)
+                val hasBookmarkMembership = collectionDao.hasCrossRef(BOOKMARKS_COLLECTION_ID, contentId)
+                val userCollectionIds = collectionDao.getUserCollectionIdsForContent(contentId)
+                val wasSavedLocally = chart?.bookmarkedAt != null || hasBookmarkMembership || userCollectionIds.isNotEmpty()
+
+                collectionDao.deleteCrossRef(BOOKMARKS_COLLECTION_ID, contentId)
+                if (userCollectionIds.isNotEmpty()) {
+                    collectionDao.deleteUserCrossRefsForContent(contentId)
+                 }
+                if (wasSavedLocally) {
+                    updateLocalState(id = id, operation = OperationOption.UNBOOKMARK)
                     profileCacheRepository.adjustBookmarksCount(delta = -1)
                 }
                 queueManager.queueAndSyncBookmark(contentId, isBookmarked = false)
+                userCollectionIds.forEach { collectionId ->
+                    queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = false)
+                }
             }.onFailure { e ->
                 Log.e(TAG, "Unexpected error in unbookmarkContent for contentId: $contentId", e)
             }
@@ -105,15 +121,41 @@ class InteractionRepositoryImpl @Inject constructor(
     ): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
-                collectionDao.upsertCrossRef(
-                    CollectionItemCrossRef(
-                        collectionId = collectionId,
-                        contentId = contentId,
-                        contentType = ContentType.CHART
+                val chart = chartDao.getChart(id)
+                val hasBookmarkMembership = collectionDao.hasCrossRef(BOOKMARKS_COLLECTION_ID, contentId)
+                val hasCollectionMembership = collectionDao.hasCrossRef(collectionId, contentId)
+                val userCollectionIds = collectionDao.getUserCollectionIdsForContent(contentId)
+                val wasSavedLocally = chart?.bookmarkedAt != null || hasBookmarkMembership || userCollectionIds.isNotEmpty()
+                val now = LocalDateTime.now()
+
+                ensureBookmarksCollectionExists(now)
+                if (!hasBookmarkMembership) {
+                    collectionDao.upsertCrossRef(
+                        CollectionItemCrossRef(
+                            collectionId = BOOKMARKS_COLLECTION_ID,
+                            contentId = contentId,
+                            contentType = ContentType.CHART,
+                            addedAt = now,
+                        )
                     )
-                )
-                collectionDao.incrementCollectionChartCount(collectionId, LocalDateTime.now())
-                updateLocalState(id, OperationOption.BOOKMARK)
+                }
+                if (!hasCollectionMembership) {
+                    collectionDao.upsertCrossRef(
+                        CollectionItemCrossRef(
+                            collectionId = collectionId,
+                            contentId = contentId,
+                            contentType = ContentType.CHART,
+                            addedAt = now,
+                        )
+                    )
+                }
+                if (!wasSavedLocally) {
+                    updateLocalState(id, OperationOption.BOOKMARK)
+                    profileCacheRepository.adjustBookmarksCount(delta = 1)
+                }
+                if (!hasBookmarkMembership) {
+                    queueManager.queueAndSyncBookmark(contentId, isBookmarked = true)
+                }
                 queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = true)
             }.onFailure { e ->
                 Log.e(TAG, "Failed to add to collection for contentId: $contentId, collectionId: $collectionId", e)
@@ -127,74 +169,34 @@ class InteractionRepositoryImpl @Inject constructor(
     ): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
-                collectionDao.deleteCrossRef(collectionId, contentId)
-                collectionDao.decrementCollectionChartCount(collectionId, LocalDateTime.now())
-                updateLocalState(id, OperationOption.UNBOOKMARK)
+                val hadCollectionMembership = collectionDao.hasCrossRef(collectionId, contentId)
+                if (hadCollectionMembership) {
+                    collectionDao.deleteCrossRef(collectionId, contentId)
+                }
                 queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = false)
             }.onFailure { e ->
                 Log.e(TAG, "Failed to remove from collection for contentId: $contentId, collectionId: $collectionId", e)
             }
         }
 
-    /**
-     * Moves content from BOOKMARKS into a custom USER collection (or vice-versa).
-     *
-     * BOOKMARKS → USER collection:
-     *   1. Remove cross-ref from BOOKMARKS
-     *   2. Write cross-ref into collection_item_cross_ref (adds to collection)
-     *   3. Increment collection chart count
-     *
-     * USER collection → BOOKMARKS:
-     *   1. Remove cross-ref from the source USER collection
-     *   2. Decrement source collection chart count
-     *   3. Write cross-ref into BOOKMARKS
-     */
-    override suspend fun changeContentCollection(
-        contentId: String,
-        targetCollectionId: String,
-        targetCollectionKind: CollectionKind
-    ): Result<Unit> =
-        withContext(dispatcher) {
-            runCatching {
-                when (targetCollectionKind) {
-                    CollectionKind.USER -> {
-                        // Moving OUT of bookmarks INTO a custom collection.
-                        // Remove cross-ref from BOOKMARKS
-                        collectionDao.deleteCrossRef("bookmarks", contentId)
-
-                        // Write the cross-ref so the item appears in the collection immediately
-                        collectionDao.upsertCrossRef(
-                            CollectionItemCrossRef(
-                                collectionId = targetCollectionId,
-                                contentId = contentId,
-                                contentType = ContentType.CHART
-                            )
-                        )
-                        collectionDao.incrementCollectionChartCount(
-                            targetCollectionId,
-                            LocalDateTime.now()
-                        )
-                        profileCacheRepository.adjustBookmarksCount(delta = -1)
-                    }
-
-                    else -> {
-                        // BOOKMARKS reverse-move not yet implemented — throw so it's not silently swallowed
-                        error("changeContentCollection: unsupported targetCollectionKind=$targetCollectionKind")
-                    }
-                }
-
-                // Always defer remote sync to the queue manager — handles conflict resolution
-                // and ensures offline-first behaviour is preserved.
-                queueManager.clearConflictingInteractions(contentId, targetCollectionKind)
-                queueManager.queueAndSyncCollection(contentId, targetCollectionId, isAdd = true)
-            }.onFailure { e ->
-                Log.e(TAG, "Failed to change content collection for contentId: $contentId", e)
-            }
-        }
 
     override suspend fun getQueueSize(): Int = queueManager.getQueueSize()
 
     override suspend fun processQueue() = queueManager.processQueuedInteractions()
+
+    private suspend fun ensureBookmarksCollectionExists(updatedAt: LocalDateTime = LocalDateTime.now()) {
+        collectionDao.upsertCollection(
+            Collection(
+                id = BOOKMARKS_COLLECTION_ID,
+                userId = LOCAL_USER_ID,
+                kind = CollectionKind.BOOKMARKS,
+                name = "Bookmarks",
+                isPublic = false,
+                createdAt = updatedAt,
+                updatedAt = updatedAt,
+            )
+        )
+    }
 
     /**
      * Updates local chart state by chart `id` (the primary key).

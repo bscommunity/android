@@ -25,5 +25,6 @@ interface CollectionRepository {
     suspend fun addItemToCollection(collectionId: String, contentId: String): Result<Unit>
     suspend fun removeItemFromCollection(collectionId: String, contentId: String): Result<Unit>
 
+    fun observeCollectionChartContentIds(collectionId: String): Flow<List<String>>
     fun observeUserCollections(): Flow<List<Collection>>
 }

@@ -3,11 +3,11 @@ package com.meninocoiso.bscm.data.repository
 import android.util.Log
 import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.data.local.dao.CollectionDao
+import com.meninocoiso.bscm.data.manager.ChartStateMerger
+import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.di.ApplicationScope
-import com.meninocoiso.bscm.data.manager.ChartStateMerger
-import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.model.CatalogItem
@@ -95,7 +95,8 @@ class MeRepositoryRemote @Inject constructor(
                 }
             }
 
-            coroutineScope.launch { chartDao.insert(remoteLikes) }
+            // Persist before returning so observeLikedCharts cannot race with stale rows.
+            withContext(Dispatchers.IO) { chartDao.insert(remoteLikes) }
 
             PagedResult(
                 items = remoteLikes,

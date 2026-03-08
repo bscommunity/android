@@ -133,12 +133,12 @@ class KtorApiClient @Inject constructor(
         }
 
         defaultRequest {
-            url("https://api-cyb1.onrender.com")
-            /*url {
+            // url("https://api-cyb1.onrender.com")
+            url {
                 protocol = URLProtocol.HTTP
-                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.1.106"
+                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.8"
                 port = 8080
-            }*/
+            }
             contentType(KtorContentType.Application.Json)
         }
     }
@@ -470,26 +470,13 @@ class KtorApiClient @Inject constructor(
         limit: Int?,
         offset: Int?
     ): ItemsPage<CatalogItem> {
-        return try {
-            val response = client.get("collections/$collectionId/items") {
-                url {
-                    types?.let { parameters.append("types", it.joinToString(",") { t -> t.name }) }
-                    limit?.let { parameters.append("limit", it.toString()) }
-                    offset?.let { parameters.append("offset", it.toString()) }
-                }
+        return client.get("collections/$collectionId/items") {
+            url {
+                types?.let { parameters.append("types", it.joinToString(",") { t -> t.name }) }
+                limit?.let { parameters.append("limit", it.toString()) }
+                offset?.let { parameters.append("offset", it.toString()) }
             }
-
-            Log.d(TAG, "status=${response.status}")
-            val bodyText = response.bodyAsText()
-            Log.d(TAG, "raw body=$bodyText")
-
-            // If you still need typed parsing, do it via Json decoder or second request.
-            // bodyAsText() consumes content, so don't call response.body<T>() after this.
-            Json { ignoreUnknownKeys = true }.decodeFromString(bodyText)
-        } catch (e: Exception) {
-            Log.e(TAG, "getCollectionItems failed: ${e.message}", e)
-            throw e
-        }
+        }.body()
     }
 
     override suspend fun addItemToCollection(collectionId: String, contentId: String): Boolean {

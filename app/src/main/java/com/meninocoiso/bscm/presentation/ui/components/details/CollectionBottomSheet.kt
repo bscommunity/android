@@ -320,11 +320,12 @@ fun CollectionsListSection(
         } else {
             items(collections.size) { index ->
                 val collection = collections[index]
+
                 CollectionItem(
                     name = collection.name,
                     coverUrl = collection.coverUrl ?: "",
                     isPublic = collection.isPublic,
-                    contentCounts = Triple(collection.chartCount, 0, 0),
+                    contentCounts = Triple(0, 0, 0),
                     onClick = { onCollectionClick(collection.id, collection.name) }
                 )
             }

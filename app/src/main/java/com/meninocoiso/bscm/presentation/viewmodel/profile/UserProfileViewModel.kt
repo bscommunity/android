@@ -113,8 +113,10 @@ class UserProfileViewModel @Inject constructor(
     fun onTabSelected(index: Int) {
         when (index) {
             0 -> if (_uiState.value.likes.isEmpty) {
-                fetchUserLikes()
-                startLikesObserver()
+                viewModelScope.launch {
+                    fetchUserLikes().join()
+                    startLikesObserver()
+                }
             }
             1 -> if (_uiState.value.collections.bookmarks.items.isEmpty()) {
                 fetchUserCollections()

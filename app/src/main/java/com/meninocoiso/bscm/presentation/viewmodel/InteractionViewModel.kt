@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.remote.dto.collection.SimplifiedCollection
-import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.repository.InteractionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -123,38 +122,22 @@ class InteractionViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Changes the collection of content, removing it from the previous collection
-     * (BOOKMARKS) and adding it to the new collection (custom or vice-versa).
-     * This ensures proper queue management and prevents sync conflicts.
-     */
-    fun changeContentCollection(contentId: String, targetCollectionId: String, targetCollectionKind: CollectionKind) {
-        viewModelScope.launch {
-            interactionRepository.changeContentCollection(contentId, targetCollectionId, targetCollectionKind)
-                .onSuccess {
-                    updateQueueSize()
-                }.onFailure {
-                    // Handle error if needed
-                }
-        }
-    }
-
     // Keeps at most 10 entries; evicts least-recently-used when full
-    private val contentCollectionCache = object : LinkedHashMap<String, StateFlow<SimplifiedCollection?>>(
-        16,       // initial capacity
-        0.75f,    // load factor
-        true      // accessOrder = true → makes it LRU
+    private val contentCollectionsCache = object : LinkedHashMap<String, StateFlow<List<SimplifiedCollection>>>(
+        16,
+        0.75f,
+        true
     ) {
         override fun removeEldestEntry(
-            eldest: MutableMap.MutableEntry<String, StateFlow<SimplifiedCollection?>>
+            eldest: MutableMap.MutableEntry<String, StateFlow<List<SimplifiedCollection>>>
         ) = size > 10
     }
 
-    fun getContentCollection(contentId: String): StateFlow<SimplifiedCollection?> =
-        contentCollectionCache.getOrPut(contentId) {
-            collectionDao.getCollectionForContent(contentId)
+    fun getContentCollections(contentId: String): StateFlow<List<SimplifiedCollection>> =
+        contentCollectionsCache.getOrPut(contentId) {
+            collectionDao.getCollectionsForContent(contentId)
                 .distinctUntilChanged()
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
         }
 
     /**

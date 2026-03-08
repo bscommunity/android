@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
+import com.meninocoiso.bscm.data.remote.dto.user.SectionCounts
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedResult
 import kotlinx.coroutines.flow.first
@@ -32,6 +33,7 @@ class ProfileCacheRepository @Inject constructor(
         fun activityKey(userId: String) = stringPreferencesKey("activity_$userId")
         fun libraryIdsKey(userId: String) = stringPreferencesKey("library_ids_$userId")
         fun collectionsIdsKey(userId: String) = stringPreferencesKey("collections_ids_$userId")
+        fun collectionItemCountsKey(collectionId: String) = stringPreferencesKey("collection_item_counts_$collectionId")
 
         // Counts
         fun libraryCountKey(userId: String) = longPreferencesKey("library_count_$userId")
@@ -270,5 +272,23 @@ class ProfileCacheRepository @Inject constructor(
             preferences[key] = updatedValue
         }
         return updatedValue
+    }
+
+    suspend fun cacheCollectionItemCounts(collectionId: String, counts: SectionCounts) {
+        val encoded = json.encodeToString(SectionCounts.serializer(), counts)
+        dataStore.edit { preferences ->
+            preferences[collectionItemCountsKey(collectionId)] = encoded
+        }
+    }
+
+    suspend fun getCollectionItemCounts(collectionId: String): SectionCounts? {
+        return try {
+            val preferences = dataStore.data.first()
+            val encoded = preferences[collectionItemCountsKey(collectionId)] ?: return null
+            json.decodeFromString(SectionCounts.serializer(), encoded)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading collection item counts cache for collection: $collectionId", e)
+            null
+        }
     }
 }

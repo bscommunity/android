@@ -42,7 +42,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -97,7 +96,7 @@ fun CollectionScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val items = uiState.items
-    val itemCount = collection.itemCount.toList().sum()
+    val filterCounts = remember(uiState.itemCounts) { uiState.itemCounts }
 
     val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -111,7 +110,8 @@ fun CollectionScreen(
         viewModel.snackbarEvents.collect { snackbarHostState.showSnackbar(it.resolve(context)) }
     }
 
-    // Initial load — resets automatically when collection.id changes
+    // Initial load — resets automatically when collection.id changes.
+    // Local membership observer in CollectionViewModel keeps removals synced without full refresh.
     LaunchedEffect(collection.id) {
         viewModel.loadItems(collection.id, reset = true)
     }
@@ -235,16 +235,6 @@ fun CollectionScreen(
                         // Name is available immediately from the route parameter —
                         // no loading state needed for the header.
                         Text(currentCollection.name, style = MaterialTheme.typography.headlineSmall)
-
-
-                        if (itemCount > 0) {
-                            Text(
-                                // Use plurals resource for proper localization
-                                pluralStringResource(R.plurals.items_count, itemCount, itemCount),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
                     }
                 },
                 scrollBehavior = scrollBehavior,
@@ -318,7 +308,7 @@ fun CollectionScreen(
 
                 item {
                     CatalogFilters(
-                        collection.itemCount,
+                        itemsAmount = filterCounts,
                         onFilterSelected = {},
                     )
                 }

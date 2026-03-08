@@ -74,6 +74,8 @@ import com.meninocoiso.bscm.presentation.viewmodel.InteractionViewModel
 import com.meninocoiso.bscm.util.LinkingUtils
 import com.meninocoiso.bscm.util.StringUtils
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -89,6 +91,8 @@ val DropdownItemPadding = PaddingValues(
     top = 8.dp,
     bottom = 8.dp
 )
+
+private const val INTERACTION_PROCESSING_DEBOUNCE_MILLIS = 600L
 
 private enum class ChartDialog { None, Report, DeleteConfirmation, ListenTrack }
 
@@ -110,17 +114,20 @@ fun ChartDetailsScreen(
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    var bookmarkMutationJob by remember { mutableStateOf<Job?>(null) }
+    var pendingBookmarkMutation by remember { mutableStateOf<Boolean?>(null) }
+    var likeMutationJob by remember { mutableStateOf<Job?>(null) }
+    var pendingLikeMutation by remember { mutableStateOf<Boolean?>(null) }
+
     val chartState by contentViewModel.getDownloadState(chart.id)
         .collectAsStateWithLifecycle()
 
     val isLoggedIn by authViewModel.isLoggedInFlow.collectAsStateWithLifecycle(false)
 
-    // contentCollection is the live Room source of truth for whether this chart
-    // belongs to any collection (BOOKMARKS or USER). It's a Flow backed by
-    // CollectionDao so it updates the instant any write happens, including from
-    // InteractionViewModel on another screen.
-    val contentCollection by interactionViewModel
-        .getContentCollection(chart.contentId ?: "")
+    // Live Room source for the persisted collection currently holding this chart.
+    // It may be the built-in BOOKMARKS collection or a custom USER collection.
+    val savedCollections by interactionViewModel
+        .getContentCollections(chart.contentId ?: "")
         .collectAsStateWithLifecycle()
 
     val isGameplayVideoPreviewEnabled = contentViewModel.isGameplayVideoPreviewEnabled
@@ -135,13 +142,75 @@ fun ChartDetailsScreen(
         }
     }
 
-
+    // UI contract:
+    // - optimisticBookmarked drives instant feedback after a tap
+    // - savedCollection confirms live local persistence
+    // - chart.bookmarkedAt is the current detail snapshot, which can lag behind Room
+    // We clear optimistic add as soon as persistence confirms it, but only clear
+    // optimistic remove after both persisted sources agree the bookmark is gone.
     var optimisticBookmarked by rememberSaveable { mutableStateOf<Boolean?>(null) }
-    val isBookmarked = optimisticBookmarked ?: (chart.bookmarkedAt != null)
+    val hasLiveBookmarkMembership = savedCollections.any { it.kind == CollectionKind.BOOKMARKS }
+    val hasLiveUserCollectionMembership = savedCollections.any { it.kind == CollectionKind.USER }
+    val hasBookmarkSnapshot = chart.bookmarkedAt != null
+    val hasPersistedBookmark = hasLiveBookmarkMembership || hasLiveUserCollectionMembership || hasBookmarkSnapshot
+    val isBookmarked = optimisticBookmarked ?: hasPersistedBookmark
 
-    LaunchedEffect(contentCollection) {
-        if (optimisticBookmarked != null && chart.bookmarkedAt != null) {
-            optimisticBookmarked = null
+    LaunchedEffect(savedCollections, chart.bookmarkedAt) {
+        optimisticBookmarked?.let { optimisticIsBookmarked ->
+            val shouldClearOptimistic = if (optimisticIsBookmarked) {
+                hasPersistedBookmark
+            } else {
+                !hasPersistedBookmark
+            }
+            if (shouldClearOptimistic) {
+                optimisticBookmarked = null
+            }
+        }
+    }
+
+    fun commitBookmarkMutation(isBookmarked: Boolean) {
+        val contentId = chart.contentId ?: return
+
+        if (isBookmarked) {
+            interactionViewModel.bookmarkContent(chart.id, contentId)
+        } else {
+            interactionViewModel.unbookmarkContent(chart.id, contentId)
+        }
+    }
+
+    fun enqueueBookmarkMutation(isBookmarked: Boolean) {
+        pendingBookmarkMutation = isBookmarked
+        bookmarkMutationJob?.cancel()
+        bookmarkMutationJob = scope.launch {
+            delay(INTERACTION_PROCESSING_DEBOUNCE_MILLIS)
+            pendingBookmarkMutation?.let(::commitBookmarkMutation)
+            pendingBookmarkMutation = null
+            bookmarkMutationJob = null
+        }
+    }
+
+    fun flushPendingBookmarkMutation() {
+        bookmarkMutationJob?.cancel()
+        val pendingMutation = pendingBookmarkMutation ?: return
+        pendingBookmarkMutation = null
+        bookmarkMutationJob = null
+        commitBookmarkMutation(pendingMutation)
+    }
+
+    fun enqueueLikeMutation(isLiked: Boolean) {
+        val contentId = chart.contentId ?: return
+
+        pendingLikeMutation = isLiked
+        likeMutationJob?.cancel()
+        likeMutationJob = scope.launch {
+            delay(INTERACTION_PROCESSING_DEBOUNCE_MILLIS)
+            when (pendingLikeMutation) {
+                true -> interactionViewModel.likeContent(chart.id, contentId)
+                false -> interactionViewModel.unlikeContent(chart.id, contentId)
+                null -> Unit
+            }
+            pendingLikeMutation = null
+            likeMutationJob = null
         }
     }
 
@@ -150,7 +219,17 @@ fun ChartDetailsScreen(
     // -------------------------------------------------------------------------
     val collectionSheetState = rememberModalBottomSheetState()
     var showCollectionSheet by rememberSaveable { mutableStateOf(false) }
-    var wasBookmarkedWhenSheetOpened by rememberSaveable { mutableStateOf(false) }
+
+    fun openCollectionSheet() {
+        if (pendingBookmarkMutation == true) {
+            flushPendingBookmarkMutation()
+        }
+        showCollectionSheet = true
+    }
+
+    fun saveToCollection(contentId: String, targetCollectionId: String) {
+        interactionViewModel.addToCollection(chart.id, contentId, targetCollectionId)
+    }
 
     val collectionUiState by collectionViewModel.uiState.collectAsStateWithLifecycle()
     val userCollections = collectionUiState.userCollections.items
@@ -170,7 +249,6 @@ fun ChartDetailsScreen(
     val failedToDeleteMsg = stringResource(R.string.failed_to_delete_chart)
 
     val connectToManageFavoritesMsg = stringResource(R.string.connect_to_manage_favorites)
-    val switchCollectionMsg = stringResource(R.string.switch_collection)
     val addedToFavoritesMsg = stringResource(R.string.added_to_favorites)
     val manageMsg = stringResource(R.string.manage)
     val connectToManageLikesMsg = stringResource(R.string.connect_to_manage_likes)
@@ -356,22 +434,13 @@ fun ChartDetailsScreen(
                             isBookmarked,
                             !isLoggedIn,
                             onDisabled = { onUnauthenticated(connectToManageFavoritesMsg) },
-                            onHold = {
-                                wasBookmarkedWhenSheetOpened = isBookmarked
-                                showCollectionSheet = true
-                            },
-                            onHoldLabel = switchCollectionMsg
                         ) { newValue ->
-                            // Set optimistic state immediately for instant feedback.
-                            // This overrides contentCollection until Room confirms.
                             optimisticBookmarked = newValue
+                            enqueueBookmarkMutation(newValue)
 
                             if (newValue) {
-                                interactionViewModel.bookmarkContent(
-                                    chart.id,
-                                    chart.contentId
-                                )
                                 scope.launch {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
                                     val result = snackbarHostState.showSnackbar(
                                         addedToFavoritesMsg,
                                         manageMsg,
@@ -379,26 +448,10 @@ fun ChartDetailsScreen(
                                     )
 
                                     if (result == SnackbarResult.ActionPerformed) {
-                                        wasBookmarkedWhenSheetOpened = true
-                                        showCollectionSheet = true
+                                        openCollectionSheet()
                                     }
                                 }
                             } else {
-                                // optimisticBookmarked=false will hide the button immediately.
-                                // The LaunchedEffect above will clear it once Room emits null
-                                // for contentCollection, completing the circle.
-                                when (contentCollection?.kind) {
-                                    CollectionKind.USER -> interactionViewModel.removeFromCollection(
-                                        id = chart.id,
-                                        contentId = chart.contentId,
-                                        collectionId = contentCollection!!.id
-                                    )
-
-                                    else -> interactionViewModel.unbookmarkContent(
-                                        chart.id,
-                                        chart.contentId
-                                    )
-                                }
                                 snackbarHostState.currentSnackbarData?.dismiss()
                             }
                         }
@@ -411,17 +464,7 @@ fun ChartDetailsScreen(
                             onDisabled = { onUnauthenticated(connectToManageLikesMsg) }
                         ) { newValue ->
                             optimisticLiked = newValue
-                            if (newValue) {
-                                interactionViewModel.likeContent(
-                                    chart.id,
-                                    chart.contentId
-                                )
-                            } else {
-                                interactionViewModel.unlikeContent(
-                                    chart.id,
-                                    chart.contentId
-                                )
-                            }
+                            enqueueLikeMutation(newValue)
                         }
                     }
                 },
@@ -554,44 +597,27 @@ fun ChartDetailsScreen(
                     }
                 }
             },
-            collections = userCollections.filter { it.id != contentCollection?.id },
+            collections = userCollections,
             isLoading = isCollectionsLoading,
             isMutating = collectionUiState.isCreating,
             errorMessage = errorMessage,
             onCollectionSelected = { collectionId, collectionName ->
-                    scope.launch {
-                        snackbarHostState.showSnackbar(
-                            savedToCollectionMsg(collectionName),
-                            duration = SnackbarDuration.Short
-                        )
-                    }
-                chart.contentId?.let { contentId ->
-                    if (wasBookmarkedWhenSheetOpened) {
-                        interactionViewModel.changeContentCollection(
-                            contentId = contentId,
-                            targetCollectionId = collectionId,
-                            targetCollectionKind = CollectionKind.USER
-                        )
-                    } else {
-                        interactionViewModel.addToCollection(chart.id, contentId, collectionId)
-                    }
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        savedToCollectionMsg(collectionName),
+                        duration = SnackbarDuration.Short
+                    )
                 }
-                wasBookmarkedWhenSheetOpened = false
+                chart.contentId?.let { contentId ->
+                    saveToCollection(contentId, collectionId)
+                }
                 showCollectionSheet = false
             },
             onCreateCollection = { name, isPublic ->
                 try {
                     val newCollectionId = collectionViewModel.createCollection(name, isPublic)
                     chart.contentId?.let { contentId ->
-                        if (wasBookmarkedWhenSheetOpened) {
-                            interactionViewModel.changeContentCollection(
-                                contentId = contentId,
-                                targetCollectionId = newCollectionId,
-                                targetCollectionKind = CollectionKind.USER
-                            )
-                        } else {
-                            interactionViewModel.addToCollection(chart.id, contentId, newCollectionId)
-                        }
+                        saveToCollection(contentId, newCollectionId)
                     }
                     scope.launch {
                         snackbarHostState.showSnackbar(

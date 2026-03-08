@@ -1,5 +1,6 @@
 package com.meninocoiso.bscm.data.repository
 
+import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.enums.SortOption
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.flowOn
 
 class ChartRepositoryRemote @Inject constructor(
     private val apiClient: ApiClient,
+    private val queueManager: InteractionQueueManager,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ChartRemoteRepository {
     override suspend fun getContent(
@@ -26,6 +28,10 @@ class ChartRepositoryRemote @Inject constructor(
         offset: Int,
         filters: ChartQuery?
     ): Flow<Result<List<Chart>>> = flow {
+        if (offset == 0) {
+            queueManager.syncPendingInteractionsBeforeRefresh()
+        }
+
         val charts = apiClient.getCharts(
             query = query,
             sortBy = sortBy,

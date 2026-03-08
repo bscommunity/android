@@ -1,10 +1,13 @@
 package com.meninocoiso.bscm.data.repository
 
 import android.util.Log
+import androidx.room.withTransaction
+import com.meninocoiso.bscm.data.local.AppDatabase
 import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.manager.ChartStateMerger
 import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.data.remote.ApiClient
+import com.meninocoiso.bscm.data.remote.dto.user.SectionCounts
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.model.CatalogItem
@@ -21,6 +24,7 @@ private const val TAG = "CollectionRepositoryRemote"
 
 class CollectionRepositoryRemote @Inject constructor(
     private val apiClient: ApiClient,
+    private val appDatabase: AppDatabase,
     private val collectionDao: CollectionDao,
     private val profileCacheRepository: ProfileCacheRepository,
     private val queueManager: InteractionQueueManager,
@@ -160,6 +164,18 @@ class CollectionRepositoryRemote @Inject constructor(
 
         // Fetch from API
         val page = apiClient.getCollectionItems(collectionId, limit = limit, offset = offset)
+
+        if (offset == 0 && page.counts != null) {
+            profileCacheRepository.cacheCollectionItemCounts(
+                collectionId = collectionId,
+                counts = SectionCounts(
+                    charts = page.counts.charts,
+                    tourPasses = page.counts.tourPasses,
+                    themes = page.counts.themes,
+                )
+            )
+        }
+
         val overlay = if (offset == 0) {
             queueManager.getCollectionMembershipOverlay(
                 collectionKind = if (collectionId == "bookmarks") CollectionKind.BOOKMARKS else CollectionKind.USER,
@@ -174,7 +190,7 @@ class CollectionRepositoryRemote @Inject constructor(
         } else {
             mergedCharts
         }
-        val missingPendingCharts = if (overlay != null && offset == 0) {
+        val missingPendingCharts = if (overlay != null) {
             chartStateMerger.getChartsByContentIds(
                 overlay.forceIncludeContentIds - filteredCharts.mapNotNull { it.contentId }.toSet()
             )
@@ -185,23 +201,30 @@ class CollectionRepositoryRemote @Inject constructor(
             .distinctBy { it.id }
         Log.d(TAG, "Fetched ${items.size} items for collection $collectionId from API")
 
-        // Persist charts to Room and update cross-refs (first page only to avoid stale data)
-        if (offset == 0 && items.isNotEmpty()) {
-            collectionDao.upsertCharts(items.filterIsInstance<Chart>())
-            val crossRefs = items.map { item ->
-                CollectionItemCrossRef(
-                    collectionId = collectionId,
-                    contentId = item.contentId ?: item.id,
-                    contentType = ContentType.CHART,
-                )
+        // Persist charts to Room and update cross-refs after the fresh response arrives,
+        // so observers never see a transient empty collection during pull-to-refresh.
+        if (offset == 0) {
+            appDatabase.withTransaction {
+                if (items.isNotEmpty()) {
+                    collectionDao.upsertCharts(items)
+                }
+
+                val crossRefs = items.map { item ->
+                    CollectionItemCrossRef(
+                        collectionId = collectionId,
+                        contentId = item.contentId ?: item.id,
+                        contentType = ContentType.CHART,
+                    )
+                }
+                val retainedContentIds = crossRefs.map { it.contentId }
+
+                if (retainedContentIds.isNotEmpty()) {
+                    collectionDao.deleteStaleCrossRefs(collectionId, retainedContentIds)
+                    collectionDao.upsertCrossRefs(crossRefs)
+                } else {
+                    collectionDao.deleteAllCrossRefsForCollection(collectionId)
+                }
             }
-            val retainedContentIds = crossRefs.map { it.contentId }
-            if (retainedContentIds.isNotEmpty()) {
-                collectionDao.deleteStaleCrossRefs(collectionId, retainedContentIds)
-            } else {
-                collectionDao.deleteAllCrossRefsForCollection(collectionId)
-            }
-            collectionDao.upsertCrossRefs(crossRefs)
         }
 
         PagedResult(items, page.counts?.collections)
@@ -220,6 +243,9 @@ class CollectionRepositoryRemote @Inject constructor(
     ): Result<Unit> = runCatching {
         apiClient.removeItemFromCollection(collectionId, contentId)
     }
+
+    override fun observeCollectionChartContentIds(collectionId: String): Flow<List<String>> =
+        collectionDao.observeChartContentIdsForCollection(collectionId)
 
     override fun observeUserCollections(): Flow<List<Collection>> =
         collectionDao.observeUserCollections()
