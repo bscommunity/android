@@ -114,7 +114,7 @@ fun CollectionCreateBottomSheet(
                     enabled = !isMutating,
                     onClick = {
                         coroutineScope.launch {
-                            horizontalPagerState.scrollToPage(
+                            horizontalPagerState.animateScrollToPage(
                                 horizontalPagerState.currentPage - 1
                             )
                         }
@@ -152,7 +152,6 @@ fun CollectionCreateBottomSheet(
                 state = horizontalPagerState,
                 // Keep each page keyed by index so state resets correctly when switching pages.
                 key = { it },
-                beyondViewportPageCount = 0,
                 userScrollEnabled = false,
                 modifier = Modifier
                     .wrapContentHeight(),
@@ -170,7 +169,7 @@ fun CollectionCreateBottomSheet(
                         onCollectionToggle = onCollectionToggled,
                         onCreateNewCollectionClick = {
                             coroutineScope.launch {
-                                horizontalPagerState.scrollToPage(
+                                horizontalPagerState.animateScrollToPage(
                                     1
                                 )
                             }
@@ -275,39 +274,7 @@ fun CollectionsListSection(
 ) {
     LazyColumn(modifier = modifier) {
         item {
-            val interactionSource = remember { MutableInteractionSource() }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(
-                        onClick = onCreateNewCollectionClick,
-                        interactionSource = interactionSource,
-                        indication = ripple()
-                    )
-                    .padding(vertical = 12.dp, horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.rounded_add_2_24),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-                Text(
-                    stringResource(R.string.create_new_collection),
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
+            CreateCustomCollectionItem(onClick = onCreateNewCollectionClick)
         }
         item {
             AutoBookmarksCollectionItem(
@@ -366,6 +333,43 @@ fun CollectionsListSection(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun CreateCustomCollectionItem(onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                onClick = onClick,
+                interactionSource = interactionSource,
+                indication = ripple()
+            )
+            .padding(vertical = 12.dp, horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(24.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .size(56.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.rounded_add_2_24),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+        Text(
+            stringResource(R.string.create_new_collection),
+            style = MaterialTheme.typography.titleMedium
+        )
     }
 }
 
