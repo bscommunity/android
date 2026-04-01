@@ -7,8 +7,6 @@ import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.remote.dto.collection.SimplifiedCollection
 import com.meninocoiso.bscm.domain.repository.InteractionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,120 +16,117 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-private const val INTERACTION_DEBOUNCE_MILLIS = 600L
-
 @HiltViewModel
 class InteractionViewModel @Inject constructor(
     private val interactionRepository: InteractionRepository,
     private val collectionDao: CollectionDao
 ) : ViewModel() {
-
+    
     private val _queueSize = MutableStateFlow(0)
     val queueSize: StateFlow<Int> = _queueSize.asStateFlow()
 
     private val _isProcessing = MutableStateFlow(false)
     val isProcessing: StateFlow<Boolean> = _isProcessing.asStateFlow()
 
-    // -------------------------------------------------------------------------
-    // Bookmark debounce state
-    // -------------------------------------------------------------------------
-    private var bookmarkMutationJob: Job? = null
-    private var pendingBookmarkMutation: Boolean? = null
-
-    fun enqueueBookmarkMutation(id: String, contentId: String, isBookmarked: Boolean) {
-        pendingBookmarkMutation = isBookmarked
-        bookmarkMutationJob?.cancel()
-        bookmarkMutationJob = viewModelScope.launch {
-            delay(INTERACTION_DEBOUNCE_MILLIS)
-            commitBookmarkMutation(id, contentId, isBookmarked)
-            pendingBookmarkMutation = null
-            bookmarkMutationJob = null
-        }
+    init {
+        updateQueueSize()
     }
 
-    fun flushPendingBookmarkMutation(id: String, contentId: String) {
-        bookmarkMutationJob?.cancel()
-        val pending = pendingBookmarkMutation ?: return
-        pendingBookmarkMutation = null
-        bookmarkMutationJob = null
-        viewModelScope.launch { commitBookmarkMutation(id, contentId, pending) }
-    }
-
-    private suspend fun commitBookmarkMutation(id: String, contentId: String, isBookmarked: Boolean) {
-        if (isBookmarked) bookmarkContent(id, contentId)
-        else unbookmarkContent(id, contentId)
-    }
-
-    // -------------------------------------------------------------------------
-    // Like debounce state
-    // -------------------------------------------------------------------------
-    private var likeMutationJob: Job? = null
-    private var pendingLikeMutation: Boolean? = null
-
-    fun enqueueLikeMutation(id: String, contentId: String, isLiked: Boolean) {
-        pendingLikeMutation = isLiked
-        likeMutationJob?.cancel()
-        likeMutationJob = viewModelScope.launch {
-            delay(INTERACTION_DEBOUNCE_MILLIS)
-            if (isLiked) likeContent(id, contentId)
-            else unlikeContent(id, contentId)
-            pendingLikeMutation = null
-            likeMutationJob = null
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // Core interaction operations
-    // -------------------------------------------------------------------------
+    /**
+     * Likes content using the offline-first system.
+     * Updates local database immediately, queues for remote sync.
+     */
     fun likeContent(id: String, contentId: String) {
         viewModelScope.launch {
             interactionRepository.likeContent(id, contentId)
-                .onSuccess { updateQueueSize() }
+                .onSuccess {
+                    updateQueueSize()
+                }.onFailure { error ->
+                    // Handle error if needed
+                }
         }
     }
 
+    /**
+     * Unlikes content using the offline-first system.
+     * Updates local database immediately, queues for remote sync.
+     */
     fun unlikeContent(id: String, contentId: String) {
         viewModelScope.launch {
             interactionRepository.unlikeContent(id, contentId)
-                .onSuccess { updateQueueSize() }
+                .onSuccess {
+                    updateQueueSize()
+                }.onFailure { error ->
+                    // Handle error if needed
+                }
         }
     }
 
+    /**
+     * Bookmarks content using the offline-first system.
+     * Updates local database immediately, queues for remote sync.
+     */
     fun bookmarkContent(id: String, contentId: String) {
         viewModelScope.launch {
             interactionRepository.bookmarkContent(id, contentId)
-                .onSuccess { updateQueueSize() }
+                .onSuccess {
+                    updateQueueSize()
+                }.onFailure {
+                    // Handle error if needed
+                }
         }
     }
 
+    /**
+     * Unbookmarks content using the offline-first system.
+     * Updates local database immediately, queues for remote sync.
+     */
     fun unbookmarkContent(id: String, contentId: String) {
         viewModelScope.launch {
-            Log.d("InteractionViewModel", "Unbookmarking contentId=$contentId for id=$id")
+            Log.d("InteractionViewModel", "Attempting to unbookmark contentId=$contentId for id=$id")
             interactionRepository.unbookmarkContent(id, contentId)
-                .onSuccess { updateQueueSize() }
+                .onSuccess {
+                    updateQueueSize()
+                }.onFailure {
+                    // Handle error if needed
+                }
         }
     }
 
+    /**
+     * Adds content to a custom collection using the offline-first queue system
+     */
     fun addToCollection(id: String, contentId: String, collectionId: String) {
         viewModelScope.launch {
             interactionRepository.addToCollection(id, contentId, collectionId)
-                .onSuccess { updateQueueSize() }
+                .onSuccess {
+                    updateQueueSize()
+                }.onFailure {
+                    // Handle error if needed
+                }
         }
     }
 
+    /**
+     * Removes content from a custom collection using the offline-first queue system
+     */
     fun removeFromCollection(id: String, contentId: String, collectionId: String) {
         viewModelScope.launch {
-            Log.d("InteractionViewModel", "Removing contentId=$contentId from collectionId=$collectionId")
+            Log.d("InteractionViewModel", "Attempting to remove contentId=$contentId from collectionId=$collectionId")
             interactionRepository.removeFromCollection(id, contentId, collectionId)
-                .onSuccess { updateQueueSize() }
+                .onSuccess {
+                    updateQueueSize()
+                }.onFailure {
+                    // Handle error if needed
+                }
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Collections cache
-    // -------------------------------------------------------------------------
+    // Keeps at most 10 entries; evicts least-recently-used when full
     private val contentCollectionsCache = object : LinkedHashMap<String, StateFlow<List<SimplifiedCollection>>>(
-        16, 0.75f, true
+        16,
+        0.75f,
+        true
     ) {
         override fun removeEldestEntry(
             eldest: MutableMap.MutableEntry<String, StateFlow<List<SimplifiedCollection>>>
@@ -145,11 +140,24 @@ class InteractionViewModel @Inject constructor(
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
         }
 
-    // -------------------------------------------------------------------------
-    // Queue
-    // -------------------------------------------------------------------------
-    init { updateQueueSize() }
+    /**
+     * Manually processes the interaction queue
+     */
+    /*fun processQueue() {
+        applicationScope.launch {
+            _isProcessing.value = true
+            try {
+                interactionRepository.processQueue()
+                updateQueueSize()
+            } finally {
+                _isProcessing.value = false
+            }
+        }
+    }*/
 
+    /**
+     * Updates the current queue size
+     */
     private fun updateQueueSize() {
         viewModelScope.launch {
             _queueSize.value = interactionRepository.getQueueSize()
