@@ -74,8 +74,6 @@ import com.meninocoiso.bscm.presentation.viewmodel.InteractionViewModel
 import com.meninocoiso.bscm.util.LinkingUtils
 import com.meninocoiso.bscm.util.StringUtils
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -91,8 +89,6 @@ val DropdownItemPadding = PaddingValues(
     top = 8.dp,
     bottom = 8.dp
 )
-
-private const val INTERACTION_PROCESSING_DEBOUNCE_MILLIS = 600L
 
 private enum class ChartDialog { None, Report, DeleteConfirmation, ListenTrack }
 
@@ -114,103 +110,40 @@ fun ChartDetailsScreen(
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    var bookmarkMutationJob by remember { mutableStateOf<Job?>(null) }
-    var pendingBookmarkMutation by remember { mutableStateOf<Boolean?>(null) }
-    var likeMutationJob by remember { mutableStateOf<Job?>(null) }
-    var pendingLikeMutation by remember { mutableStateOf<Boolean?>(null) }
-
+    // -------------------------------------------------------------------------
+    // State collection
+    // -------------------------------------------------------------------------
     val chartState by contentViewModel.getDownloadState(chart.id)
         .collectAsStateWithLifecycle()
-
-    val isLoggedIn by authViewModel.isLoggedInFlow.collectAsStateWithLifecycle(false)
-
-    // Live Room source for the persisted collection currently holding this chart.
-    // It may be the built-in BOOKMARKS collection or a custom USER collection.
+    val isLoggedIn by authViewModel.isLoggedInFlow
+        .collectAsStateWithLifecycle(false)
     val savedCollections by interactionViewModel
         .getContentCollections(chart.contentId ?: "")
         .collectAsStateWithLifecycle()
-
-    val isGameplayVideoPreviewEnabled = contentViewModel.isGameplayVideoPreviewEnabled
+    val isGameplayVideoPreviewEnabled by contentViewModel.isGameplayVideoPreviewEnabled
         .collectAsStateWithLifecycle()
 
+    // -------------------------------------------------------------------------
+    // Optimistic UI state (lives in screen: it's purely visual feedback)
+    // -------------------------------------------------------------------------
     var optimisticLiked by rememberSaveable { mutableStateOf<Boolean?>(null) }
-    val isLiked = optimisticLiked ?: (chart.likedAt != null)
-
-    LaunchedEffect(chart.likedAt) {
-        if (optimisticLiked != null && chart.likedAt != null) {
-            optimisticLiked = null
-        }
-    }
-
-    // UI contract:
-    // - optimisticBookmarked drives instant feedback after a tap
-    // - savedCollection confirms live local persistence
-    // - chart.bookmarkedAt is the current detail snapshot, which can lag behind Room
-    // We clear optimistic add as soon as persistence confirms it, but only clear
-    // optimistic remove after both persisted sources agree the bookmark is gone.
     var optimisticBookmarked by rememberSaveable { mutableStateOf<Boolean?>(null) }
+
     val hasLiveBookmarkMembership = savedCollections.any { it.kind == CollectionKind.BOOKMARKS }
     val hasLiveUserCollectionMembership = savedCollections.any { it.kind == CollectionKind.USER }
-    val hasBookmarkSnapshot = chart.bookmarkedAt != null
-    val hasPersistedBookmark = hasLiveBookmarkMembership || hasLiveUserCollectionMembership || hasBookmarkSnapshot
+    val hasPersistedBookmark = hasLiveBookmarkMembership || hasLiveUserCollectionMembership || chart.bookmarkedAt != null
+
+    val isLiked = optimisticLiked ?: (chart.likedAt != null)
     val isBookmarked = optimisticBookmarked ?: hasPersistedBookmark
 
+    // Clear optimistic state once persistence catches up
+    LaunchedEffect(chart.likedAt) {
+        if (optimisticLiked != null && chart.likedAt != null) optimisticLiked = null
+    }
     LaunchedEffect(savedCollections, chart.bookmarkedAt) {
-        optimisticBookmarked?.let { optimisticIsBookmarked ->
-            val shouldClearOptimistic = if (optimisticIsBookmarked) {
-                hasPersistedBookmark
-            } else {
-                !hasPersistedBookmark
-            }
-            if (shouldClearOptimistic) {
-                optimisticBookmarked = null
-            }
-        }
-    }
-
-    fun commitBookmarkMutation(isBookmarked: Boolean) {
-        val contentId = chart.contentId ?: return
-
-        if (isBookmarked) {
-            interactionViewModel.bookmarkContent(chart.id, contentId)
-        } else {
-            interactionViewModel.unbookmarkContent(chart.id, contentId)
-        }
-    }
-
-    fun enqueueBookmarkMutation(isBookmarked: Boolean) {
-        pendingBookmarkMutation = isBookmarked
-        bookmarkMutationJob?.cancel()
-        bookmarkMutationJob = scope.launch {
-            delay(INTERACTION_PROCESSING_DEBOUNCE_MILLIS)
-            pendingBookmarkMutation?.let(::commitBookmarkMutation)
-            pendingBookmarkMutation = null
-            bookmarkMutationJob = null
-        }
-    }
-
-    fun flushPendingBookmarkMutation() {
-        bookmarkMutationJob?.cancel()
-        val pendingMutation = pendingBookmarkMutation ?: return
-        pendingBookmarkMutation = null
-        bookmarkMutationJob = null
-        commitBookmarkMutation(pendingMutation)
-    }
-
-    fun enqueueLikeMutation(isLiked: Boolean) {
-        val contentId = chart.contentId ?: return
-
-        pendingLikeMutation = isLiked
-        likeMutationJob?.cancel()
-        likeMutationJob = scope.launch {
-            delay(INTERACTION_PROCESSING_DEBOUNCE_MILLIS)
-            when (pendingLikeMutation) {
-                true -> interactionViewModel.likeContent(chart.id, contentId)
-                false -> interactionViewModel.unlikeContent(chart.id, contentId)
-                null -> Unit
-            }
-            pendingLikeMutation = null
-            likeMutationJob = null
+        optimisticBookmarked?.let { optimistic ->
+            val confirmed = if (optimistic) hasPersistedBookmark else !hasPersistedBookmark
+            if (confirmed) optimisticBookmarked = null
         }
     }
 
@@ -219,18 +152,6 @@ fun ChartDetailsScreen(
     // -------------------------------------------------------------------------
     val collectionSheetState = rememberModalBottomSheetState()
     var showCollectionSheet by rememberSaveable { mutableStateOf(false) }
-
-    fun openCollectionSheet() {
-        if (pendingBookmarkMutation == true) {
-            flushPendingBookmarkMutation()
-        }
-        showCollectionSheet = true
-    }
-
-    fun saveToCollection(contentId: String, targetCollectionId: String) {
-        interactionViewModel.addToCollection(chart.id, contentId, targetCollectionId)
-    }
-
     val collectionUiState by collectionViewModel.uiState.collectAsStateWithLifecycle()
     val userCollections = collectionUiState.userCollections.items
     val isCollectionsLoading = collectionUiState.userCollections.state is ContentState.Loading
@@ -238,16 +159,16 @@ fun ChartDetailsScreen(
     val errorMessage = if (hasError) stringResource(R.string.failed_to_load_collections) else null
 
     LaunchedEffect(showCollectionSheet) {
-        if (showCollectionSheet) {
-            collectionViewModel.fetchUserCollections(reset = true)
-        }
+        if (showCollectionSheet) collectionViewModel.fetchUserCollections(reset = true)
     }
 
+    // -------------------------------------------------------------------------
+    // Strings (must be read in composition)
+    // -------------------------------------------------------------------------
     val downloadCompleteMsg = stringResource(R.string.download_complete)
     val errorTitleMsg = stringResource(R.string.error)
     val chartDeletedMsg = stringResource(R.string.chart_deleted)
     val failedToDeleteMsg = stringResource(R.string.failed_to_delete_chart)
-
     val connectToManageFavoritesMsg = stringResource(R.string.connect_to_manage_favorites)
     val addedToFavoritesMsg = stringResource(R.string.added_to_favorites)
     val manageMsg = stringResource(R.string.manage)
@@ -256,94 +177,54 @@ fun ChartDetailsScreen(
     val notesAmountText = pluralStringResource(R.plurals.notes_amount, chart.latestVersion.notesAmount, chart.latestVersion.notesAmount)
     val effectsAmountText = pluralStringResource(R.plurals.effects_amount, chart.latestVersion.effectsAmount, chart.latestVersion.effectsAmount)
     val downloadsAmountText = pluralStringResource(R.plurals.downloads_amount, chart.downloadsSum, chart.downloadsSum)
-
-    val savedToCollectionMsg = { name: String ->
-        resources.getString(R.string.saved_to_collection, name)
-    }
-    val errorCreatingCollectionMsg = { msg: String ->
-        resources.getString(R.string.error_creating_collection, msg)
-    }
+    val savedToCollectionMsg = { name: String -> resources.getString(R.string.saved_to_collection, name) }
+    val errorCreatingCollectionMsg = { msg: String -> resources.getString(R.string.error_creating_collection, msg) }
     val collectionNameExistsMsg = stringResource(R.string.collection_name_exists)
+    val connectLabel = stringResource(R.string.connect)
+    val lastUpdated = StringUtils.toRelativeString(chart.latestVersion.createdAt)
 
     // -------------------------------------------------------------------------
     // Download events
     // -------------------------------------------------------------------------
     LaunchedEffect(Unit) {
         contentViewModel.checkStatus(chart)
-
         contentViewModel.events.collect { event ->
             if (event.id != chart.id) return@collect
-
             when (event) {
-                is DownloadEvent.Complete ->
-                    snackbarHostState.showSnackbar(downloadCompleteMsg)
-
-                is DownloadEvent.Error ->
-                    snackbarHostState.showSnackbar("$errorTitleMsg: ${event.message}")
-
+                is DownloadEvent.Complete -> snackbarHostState.showSnackbar(downloadCompleteMsg)
+                is DownloadEvent.Error -> snackbarHostState.showSnackbar("$errorTitleMsg: ${event.message}")
                 else -> {}
             }
         }
     }
 
     // -------------------------------------------------------------------------
-    // Dialog management
+    // Dialog state
     // -------------------------------------------------------------------------
     var currentDialog by rememberSaveable { mutableStateOf(ChartDialog.None) }
 
     when (currentDialog) {
-        ChartDialog.DeleteConfirmation -> {
-            ConfirmationDialog(
-                title = stringResource(R.string.delete_chart),
-                message = stringResource(R.string.delete_chart_description),
-                onDismiss = { currentDialog = ChartDialog.None },
-                onConfirm = {
-                    contentViewModel.deleteChart(
-                        chart,
-                        onSuccess = {
-                            scope.launch { snackbarHostState.showSnackbar(chartDeletedMsg) }
-                        },
-                        onError = {
-                            scope.launch { snackbarHostState.showSnackbar(failedToDeleteMsg) }
-                        }
-                    )
-                }
-            )
-        }
-
-        ChartDialog.Report -> {
-            ReportDialog(
-                onSubmit = {},
-                onDismiss = { currentDialog = ChartDialog.None },
-            )
-        }
-
-        ChartDialog.ListenTrack -> {
-            ListenTrackDialog(
-                streamingLinks = chart.trackUrls,
-                onDismiss = { currentDialog = ChartDialog.None }
-            )
-        }
-
-        ChartDialog.None -> {}
-    }
-
-    val lastUpdated = StringUtils.toRelativeString(chart.latestVersion.createdAt)
-
-    val connectLabel = stringResource(R.string.connect)
-
-    val onUnauthenticated = { message: String ->
-        scope.launch {
-            snackbarHostState.currentSnackbarData?.dismiss()
-            val result = snackbarHostState.showSnackbar(
-                message,
-                duration = SnackbarDuration.Short,
-                actionLabel = connectLabel
-            )
-            if (result == SnackbarResult.ActionPerformed) {
-                onNavigateToSettings()
+        ChartDialog.DeleteConfirmation -> ConfirmationDialog(
+            title = stringResource(R.string.delete_chart),
+            message = stringResource(R.string.delete_chart_description),
+            onDismiss = { currentDialog = ChartDialog.None },
+            onConfirm = {
+                contentViewModel.deleteChart(
+                    chart,
+                    onSuccess = { scope.launch { snackbarHostState.showSnackbar(chartDeletedMsg) } },
+                    onError = { scope.launch { snackbarHostState.showSnackbar(failedToDeleteMsg) } }
+                )
             }
-        }
+        )
+        ChartDialog.Report -> ReportDialog(
+            onSubmit = {},
+            onDismiss = { currentDialog = ChartDialog.None }
+        )
+        ChartDialog.ListenTrack -> ListenTrackDialog(
+            streamingLinks = chart.trackUrls,
+            onDismiss = { currentDialog = ChartDialog.None }
+        )
+        ChartDialog.None -> {}
     }
 
     Scaffold(
@@ -354,7 +235,7 @@ fun ChartDetailsScreen(
                 navigationIcon = {
                     IconButton(
                         modifier = Modifier.padding(end = 12.dp),
-                        onClick = { onReturn() }
+                        onClick = onReturn
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -369,9 +250,7 @@ fun ChartDetailsScreen(
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,
                                 text = { Text(stringResource(R.string.share)) },
-                                leadingIcon = {
-                                    Icon(Icons.Outlined.Share, contentDescription = null)
-                                },
+                                leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
                                 onClick = {
                                     dismiss()
                                     LinkingUtils.shareChart(context, chart.contentId)
@@ -381,10 +260,7 @@ fun ChartDetailsScreen(
                                 contentPadding = DropdownItemPadding,
                                 text = { Text(stringResource(R.string.report)) },
                                 leadingIcon = {
-                                    Icon(
-                                        painter = painterResource(R.drawable.rounded_flag_24),
-                                        contentDescription = null
-                                    )
+                                    Icon(painterResource(R.drawable.rounded_flag_24), contentDescription = null)
                                 },
                                 onClick = {
                                     dismiss()
@@ -396,9 +272,7 @@ fun ChartDetailsScreen(
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,
                                 text = { Text(stringResource(R.string.delete_chart)) },
-                                leadingIcon = {
-                                    Icon(Icons.Outlined.Delete, contentDescription = null)
-                                },
+                                leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
                                 onClick = {
                                     dismiss()
                                     currentDialog = ChartDialog.DeleteConfirmation
@@ -433,10 +307,20 @@ fun ChartDetailsScreen(
                             R.drawable.rounded_bookmark_24,
                             isBookmarked,
                             !isLoggedIn,
-                            onDisabled = { onUnauthenticated(connectToManageFavoritesMsg) },
+                            onDisabled = {
+                                scope.launch {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
+                                    val result = snackbarHostState.showSnackbar(
+                                        connectToManageFavoritesMsg,
+                                        duration = SnackbarDuration.Short,
+                                        actionLabel = connectLabel
+                                    )
+                                    if (result == SnackbarResult.ActionPerformed) onNavigateToSettings()
+                                }
+                            },
                         ) { newValue ->
                             optimisticBookmarked = newValue
-                            enqueueBookmarkMutation(newValue)
+                            interactionViewModel.enqueueBookmarkMutation(chart.id, chart.contentId, newValue)
 
                             if (newValue) {
                                 scope.launch {
@@ -446,9 +330,9 @@ fun ChartDetailsScreen(
                                         manageMsg,
                                         duration = SnackbarDuration.Short
                                     )
-
                                     if (result == SnackbarResult.ActionPerformed) {
-                                        openCollectionSheet()
+                                        interactionViewModel.flushPendingBookmarkMutation(chart.id, chart.contentId)
+                                        showCollectionSheet = true
                                     }
                                 }
                             } else {
@@ -461,10 +345,20 @@ fun ChartDetailsScreen(
                             R.drawable.rounded_favorite_24,
                             isLiked,
                             !isLoggedIn,
-                            onDisabled = { onUnauthenticated(connectToManageLikesMsg) }
+                            onDisabled = {
+                                scope.launch {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
+                                    val result = snackbarHostState.showSnackbar(
+                                        connectToManageLikesMsg,
+                                        duration = SnackbarDuration.Short,
+                                        actionLabel = connectLabel
+                                    )
+                                    if (result == SnackbarResult.ActionPerformed) onNavigateToSettings()
+                                }
+                            }
                         ) { newValue ->
                             optimisticLiked = newValue
-                            enqueueLikeMutation(newValue)
+                            interactionViewModel.enqueueLikeMutation(chart.id, chart.contentId ?: return@InteractionButton, newValue)
                         }
                     }
                 },
@@ -491,8 +385,10 @@ fun ChartDetailsScreen(
                     CarouselItem.ImageItem(imageUrl = chart.coverUrl),
                     CarouselItem.VideoItem(videoId = chart.latestVersion.previewUrl)
                 ),
-                isVideoEnabled = isGameplayVideoPreviewEnabled.value
+                isVideoEnabled = isGameplayVideoPreviewEnabled
             )
+
+            Text(text = "Testnado 22")
 
             if (chart.contributors.isNotEmpty()) {
                 PreviewContributors(chart.contributors)
@@ -507,22 +403,13 @@ fun ChartDetailsScreen(
                         )
                     }
                     if (chart.latestVersion.notesAmount > 0) {
-                        StatListItem(
-                            title = notesAmountText,
-                            icon = R.drawable.rounded_music_note_24
-                        )
+                        StatListItem(title = notesAmountText, icon = R.drawable.rounded_music_note_24)
                     }
                     if (chart.latestVersion.effectsAmount > 0) {
-                        StatListItem(
-                            title = effectsAmountText,
-                            icon = R.drawable.rounded_blur_medium_24
-                        )
+                        StatListItem(title = effectsAmountText, icon = R.drawable.rounded_blur_medium_24)
                     }
                     if (chart.downloadsSum > 0) {
-                        StatListItem(
-                            title = downloadsAmountText,
-                            icon = R.drawable.rounded_download_24
-                        )
+                        StatListItem(title = downloadsAmountText, icon = R.drawable.rounded_download_24)
                     }
                     if (chart.contentId != null) {
                         StatListItem(
@@ -545,9 +432,7 @@ fun ChartDetailsScreen(
                         ) {
                             if (chart.latestVersion.knownIssues.isEmpty()) {
                                 Text(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .align(Alignment.CenterHorizontally),
+                                    modifier = Modifier.fillMaxWidth(),
                                     text = noKnownIssuesMsg,
                                     style = MaterialTheme.typography.bodyLarge
                                 )
@@ -592,9 +477,7 @@ fun ChartDetailsScreen(
             onDismissRequest = { showCollectionSheet = false },
             onClose = {
                 scope.launch { collectionSheetState.hide() }.invokeOnCompletion {
-                    if (!collectionSheetState.isVisible) {
-                        showCollectionSheet = false
-                    }
+                    if (!collectionSheetState.isVisible) showCollectionSheet = false
                 }
             },
             collections = userCollections,
@@ -603,31 +486,19 @@ fun ChartDetailsScreen(
             errorMessage = errorMessage,
             onCollectionSelected = { collectionId, collectionName ->
                 scope.launch {
-                    snackbarHostState.showSnackbar(
-                        savedToCollectionMsg(collectionName),
-                        duration = SnackbarDuration.Short
-                    )
+                    snackbarHostState.showSnackbar(savedToCollectionMsg(collectionName), duration = SnackbarDuration.Short)
                 }
-                chart.contentId?.let { contentId ->
-                    saveToCollection(contentId, collectionId)
-                }
+                chart.contentId?.let { interactionViewModel.addToCollection(chart.id, it, collectionId) }
                 showCollectionSheet = false
             },
             onCreateCollection = { name, isPublic ->
-                try {
-                    val newCollectionId = collectionViewModel.createCollection(name, isPublic)
-                    chart.contentId?.let { contentId ->
-                        saveToCollection(contentId, newCollectionId)
-                    }
-                    scope.launch {
-                        snackbarHostState.showSnackbar(
-                            savedToCollectionMsg(name),
-                            duration = SnackbarDuration.Short
-                        )
-                    }
-                } catch (e: ApiException) {
-                    Log.e("ChartDetailsScreen", "Error creating collection", e)
-                    scope.launch {
+                scope.launch {
+                    try {
+                        val newCollectionId = collectionViewModel.createCollection(name, isPublic)
+                        chart.contentId?.let { interactionViewModel.addToCollection(chart.id, it, newCollectionId) }
+                        snackbarHostState.showSnackbar(savedToCollectionMsg(name), duration = SnackbarDuration.Short)
+                    } catch (e: ApiException) {
+                        Log.e("ChartDetailsScreen", "Error creating collection", e)
                         if (e.status == HttpStatusCode.BadRequest) {
                             snackbarHostState.showSnackbar(collectionNameExistsMsg)
                         } else {

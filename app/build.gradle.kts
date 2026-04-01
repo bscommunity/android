@@ -80,11 +80,12 @@ android {
 		}
 	}
 }
-composeCompiler {
-    reportsDestination = layout.buildDirectory.dir("compose_compiler")
-    metricsDestination = layout.buildDirectory.dir("compose_compiler")
-}
 
+kotlin {
+	compilerOptions {
+		freeCompilerArgs.add("-Xlambdas=class")
+	}
+}
 
 dependencies {
 	// Core Android and Kotlin
@@ -93,18 +94,17 @@ dependencies {
 	implementation(libs.androidx.activity.compose)
 	implementation(libs.androidx.core.splashscreen)
 	implementation(libs.androidx.documentfile)
+	implementation(libs.androidx.appcompat)
 
 	// Compose UI
 	implementation(platform(libs.androidx.compose.bom))
 	implementation(libs.androidx.ui)
 	implementation(libs.androidx.ui.graphics)
 	implementation(libs.androidx.ui.tooling.preview)
+	implementation(libs.androidx.graphics.shapes)
 	implementation(libs.androidx.material3)
 	implementation(libs.material.icons)
-	implementation(libs.material)
-	implementation(libs.androidx.constraintlayout.compose)
 	implementation(libs.navigation.compose)
-    // implementation(libs.androidx.compose.animation.graphics)
 
 	// Image Loading
 	implementation(libs.coil.compose)
@@ -149,9 +149,4 @@ dependencies {
 	debugImplementation(libs.androidx.ui.test.manifest)
 
 	implementation(libs.androidxBrowser)
-}
-
-// Exclude unnecessary annotations
-configurations.implementation {
-	exclude(group = "com.intellij", module = "annotations")
 }
