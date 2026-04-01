@@ -1,6 +1,7 @@
 package com.meninocoiso.bscm.presentation.screen.settings.sections
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -8,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.BuildConfig
@@ -62,10 +63,12 @@ fun UpdateSection(
             ),
             headlineContent = {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(imageVector = Icons.Outlined.Build, contentDescription = null)
+                    Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                        Icon(painter = painterResource(R.drawable.rounded_build_24), contentDescription = null)
+                    }
                     HeadlineText(
                         when (updateState) {
                             is AppUpdateState.UpdateAvailable -> "$shrunkVersionName → $shrunkLatestVersion"
@@ -74,8 +77,9 @@ fun UpdateSection(
                     )
                 }
             },
-            trailingContent = {
+            supportingContent = {
                 Button(
+                    modifier = Modifier.fillMaxWidth(),
                     onClick = {
                         when (updateState) {
                             is AppUpdateState.UpdateAvailable -> {

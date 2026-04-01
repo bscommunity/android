@@ -96,11 +96,6 @@ fun SettingsScreen(
             )
         }
 
-        Text(
-            text = "Textoooo",
-            style = MaterialTheme.typography.displaySmall
-        )
-
         AccountSection(
             user = user,
             isLoading = isLoading,

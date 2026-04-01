@@ -52,13 +52,10 @@ class MainActivityViewModel @Inject constructor(
 	init {
 		viewModelScope.launch {
 			appUpdateRepository.fetchLatestVersion()
-				.catch { 
-					// Log.d("MainActivityViewModel", "Error fetching version: $it")
-					appUpdateRepository.setLatestVersion("")
+				.catch {
+					// Keep last known cached version on transient failures.
 				}
 				.collect { fetchedVersion ->
-					// Log.d("MainActivityViewModel", "Fetched version: $fetchedVersion")
-					
 					// Store the version in DataStore
 					appUpdateRepository.setLatestVersion(fetchedVersion)
 				}

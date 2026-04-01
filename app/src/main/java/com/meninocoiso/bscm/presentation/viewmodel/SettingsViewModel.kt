@@ -14,6 +14,8 @@ import com.meninocoiso.bscm.domain.model.internal.Settings
 import com.meninocoiso.bscm.domain.result.UiText
 import com.meninocoiso.bscm.domain.state.AppUpdateState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -58,6 +60,11 @@ class SettingsViewModel @Inject constructor(
     private val _updateEvents = MutableSharedFlow<UiText>()
     val updateEvents: SharedFlow<UiText> = _updateEvents
 
+    private var lastUpdateEvent: UiText? = null
+    private var lastUpdateEventAt = 0L
+    private val updateEventDedupWindowMs = 1_500L
+    private val minCheckingVisibleMs = 350L
+
     // Contributors state (not persisted)
     data class ContributorsState(
         val isLoading: Boolean = false,
@@ -81,7 +88,7 @@ class SettingsViewModel @Inject constructor(
                 }
                 // Emit event if update is available
                 if (newState is AppUpdateState.UpdateAvailable) {
-                    _updateEvents.emit(UiText.Res(R.string.update_available, newState.version))
+                    emitUpdateEvent(UiText.Res(R.string.update_available, newState.version))
                 }
             }
         }
@@ -160,50 +167,90 @@ class SettingsViewModel @Inject constructor(
 
     var lastCacheTime: Long? = null
     val cacheWindowMs = 5_000L
+    private var checkUpdatesJob: Job? = null
+    private var lastUpdateRequestAt = 0L
+    private val updateRequestGateMs = 15_000L
 
     /**
      * Check for app updates
      */
     fun checkAppUpdates() {
-        _updateState.value = AppUpdateState.Checking
+        if (checkUpdatesJob?.isActive == true) {
+            return
+        }
 
-        val currentTime = System.currentTimeMillis()
-        
-        viewModelScope.launch {
-            // First try to get cached version
+        checkUpdatesJob = viewModelScope.launch {
+            _updateState.value = AppUpdateState.Checking
+
+            val now = System.currentTimeMillis()
             val cachedVersion = appUpdateRepository.getLatestVersion()
-            
-            Log.d(TAG, "Cached version: $cachedVersion")
-            Log.d(TAG, "Current time: $currentTime")
-            Log.d(TAG, "Last cache time: ${lastCacheTime ?: 0}")
-            Log.d(TAG, "Time since last cache: ${currentTime - (lastCacheTime ?: 0)}")
-            
-            // If cached version is available and within the cache window, use it
-            if (cachedVersion != "" && currentTime - (lastCacheTime ?: 0) < cacheWindowMs) {
-                Log.d(TAG, "Using cached version: $cachedVersion")
-                
-                _updateState.value = appUpdateRepository.getUpdateState(cachedVersion)
+            val hasCachedVersion = cachedVersion.isNotBlank()
+            val hasFreshCache = hasCachedVersion && now - (lastCacheTime ?: 0) < cacheWindowMs
+            val isRequestGateClosed = now - lastUpdateRequestAt < updateRequestGateMs
 
+            // Single request-gate policy: use cache while the gate is closed.
+            if (hasFreshCache || isRequestGateClosed) {
+                if (hasCachedVersion) {
+                    val resolvedState = appUpdateRepository.getUpdateState(cachedVersion)
+                    showCheckResultWithDelay(resolvedState)
+                } else {
+                    delay(minCheckingVisibleMs)
+                    _updateState.value = AppUpdateState.Idle
+                }
                 return@launch
             }
 
-            lastCacheTime = currentTime
+            lastUpdateRequestAt = now
 
-            // If no cached version, fetch from remote
             appUpdateRepository.fetchLatestVersion()
                 .catch { exception ->
-                    _updateState.value =
-                        AppUpdateState.Error(UiText.Res(R.string.failed_to_check_for_updates, exception.localizedMessage ?: ""))
+                    // Reopen the gate on failure so user can retry immediately.
+                    lastUpdateRequestAt = 0L
+
+                    val errorState = AppUpdateState.Error(
+                        UiText.Res(
+                            R.string.failed_to_check_for_updates,
+                            exception.localizedMessage ?: ""
+                        )
+                    )
+                    _updateState.value = errorState
+                    emitCheckUpdateResultEvent(errorState)
                 }
                 .collect { fetchedVersion ->
-                    Log.d(TAG, "Fetched version: $fetchedVersion")
-                    
-                    // Store the version in DataStore
                     appUpdateRepository.setLatestVersion(fetchedVersion)
+                    lastCacheTime = System.currentTimeMillis()
 
-                    _updateState.value = appUpdateRepository.getUpdateState(fetchedVersion)
+                    val state = appUpdateRepository.getUpdateState(fetchedVersion)
+                    _updateState.value = state
+                    emitCheckUpdateResultEvent(state)
                 }
         }
+    }
+
+    private suspend fun showCheckResultWithDelay(state: AppUpdateState) {
+        delay(minCheckingVisibleMs)
+        _updateState.value = state
+        emitCheckUpdateResultEvent(state)
+    }
+
+    private suspend fun emitCheckUpdateResultEvent(state: AppUpdateState) {
+        when (state) {
+            is AppUpdateState.UpToDate -> emitUpdateEvent(UiText.Res(R.string.up_to_date))
+            is AppUpdateState.UpdateAvailable -> emitUpdateEvent(UiText.Res(R.string.update_available, state.version))
+            is AppUpdateState.ReadyToInstall -> emitUpdateEvent(UiText.Res(R.string.update_ready))
+            is AppUpdateState.Error -> emitUpdateEvent(state.message)
+            else -> Unit
+        }
+    }
+
+    private suspend fun emitUpdateEvent(message: UiText) {
+        val now = System.currentTimeMillis()
+        val isDuplicateRecent = lastUpdateEvent == message && (now - lastUpdateEventAt) < updateEventDedupWindowMs
+        if (isDuplicateRecent) return
+
+        lastUpdateEvent = message
+        lastUpdateEventAt = now
+        _updateEvents.emit(message)
     }
 
     fun downloadUpdate(version: String) {

@@ -48,7 +48,10 @@ fun LanguageDialog() {
         SupportedLanguage("de-DE", "Deutsch"),
         SupportedLanguage("ro-RO", "Română" ),
         SupportedLanguage("id-ID", "Bahasa Indonesia"),
-        SupportedLanguage("hu-HU", "Magyar")
+        SupportedLanguage("hu-HU", "Magyar"),
+        SupportedLanguage("zh-CN", "中文 (中国)"),
+        SupportedLanguage("el-GR", "Ελληνικά"),
+        SupportedLanguage("vi-VN", "Tiếng Việt")
     )
 
     val currentLocaleTag = AppCompatDelegate.getApplicationLocales()[0]?.toLanguageTag()
