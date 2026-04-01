@@ -45,6 +45,7 @@ import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileLibrary
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileSectionsLayout
 import com.meninocoiso.bscm.presentation.ui.components.profile.ProfileTabItem
 import com.meninocoiso.bscm.presentation.ui.utils.resolve
+import com.meninocoiso.bscm.presentation.ui.utils.showReplacingSnackbar
 import com.meninocoiso.bscm.presentation.viewmodel.PublicProfileViewModel
 import com.meninocoiso.bscm.util.LinkingUtils
 import kotlinx.serialization.Serializable
@@ -115,7 +116,7 @@ fun PublicProfileScreen(
 
     LaunchedEffect(profileViewModel) {
         profileViewModel.snackbarEvents.collect { message ->
-            snackbarHostState.showSnackbar(message.resolve(context))
+            snackbarHostState.showReplacingSnackbar(message.resolve(context))
         }
     }
 

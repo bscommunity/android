@@ -67,6 +67,7 @@ import com.meninocoiso.bscm.presentation.ui.components.dialog.ReportDialog
 import com.meninocoiso.bscm.presentation.ui.components.layout.Section
 import com.meninocoiso.bscm.presentation.ui.components.layout.SwipeableSnackbarHost
 import com.meninocoiso.bscm.presentation.ui.components.preview.PreviewContributors
+import com.meninocoiso.bscm.presentation.ui.utils.showReplacingSnackbar
 import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.CollectionViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
@@ -209,8 +210,8 @@ fun ChartDetailsScreen(
         contentViewModel.events.collect { event ->
             if (event.id != chart.id) return@collect
             when (event) {
-                is DownloadEvent.Complete -> snackbarHostState.showSnackbar(downloadCompleteMsg)
-                is DownloadEvent.Error -> snackbarHostState.showSnackbar("$errorTitleMsg: ${event.message}")
+                is DownloadEvent.Complete -> snackbarHostState.showReplacingSnackbar(downloadCompleteMsg)
+                is DownloadEvent.Error -> snackbarHostState.showReplacingSnackbar("$errorTitleMsg: ${event.message}")
                 else -> {}
             }
         }
@@ -229,8 +230,8 @@ fun ChartDetailsScreen(
             onConfirm = {
                 contentViewModel.deleteChart(
                     chart,
-                    onSuccess = { scope.launch { snackbarHostState.showSnackbar(chartDeletedMsg) } },
-                    onError = { scope.launch { snackbarHostState.showSnackbar(failedToDeleteMsg) } }
+                    onSuccess = { scope.launch { snackbarHostState.showReplacingSnackbar(chartDeletedMsg) } },
+                    onError = { scope.launch { snackbarHostState.showReplacingSnackbar(failedToDeleteMsg) } }
                 )
             }
         )
@@ -327,11 +328,10 @@ fun ChartDetailsScreen(
                             !isLoggedIn,
                             onDisabled = {
                                 scope.launch {
-                                    snackbarHostState.currentSnackbarData?.dismiss()
-                                    val result = snackbarHostState.showSnackbar(
-                                        connectToManageFavoritesMsg,
-                                        duration = SnackbarDuration.Short,
-                                        actionLabel = connectLabel
+                                    val result = snackbarHostState.showReplacingSnackbar(
+                                        message = connectToManageFavoritesMsg,
+                                        actionLabel = connectLabel,
+                                        duration = SnackbarDuration.Short
                                     )
                                     if (result == SnackbarResult.ActionPerformed) onNavigateToSettings()
                                 }
@@ -352,10 +352,9 @@ fun ChartDetailsScreen(
 
                             if (newValue) {
                                 scope.launch {
-                                    snackbarHostState.currentSnackbarData?.dismiss()
-                                    val result = snackbarHostState.showSnackbar(
-                                        addedToFavoritesMsg,
-                                        manageMsg,
+                                    val result = snackbarHostState.showReplacingSnackbar(
+                                        message = addedToFavoritesMsg,
+                                        actionLabel = manageMsg,
                                         duration = SnackbarDuration.Short
                                     )
                                     if (result == SnackbarResult.ActionPerformed) {
@@ -375,11 +374,10 @@ fun ChartDetailsScreen(
                             !isLoggedIn,
                             onDisabled = {
                                 scope.launch {
-                                    snackbarHostState.currentSnackbarData?.dismiss()
-                                    val result = snackbarHostState.showSnackbar(
-                                        connectToManageLikesMsg,
-                                        duration = SnackbarDuration.Short,
-                                        actionLabel = connectLabel
+                                    val result = snackbarHostState.showReplacingSnackbar(
+                                        message = connectToManageLikesMsg,
+                                        actionLabel = connectLabel,
+                                        duration = SnackbarDuration.Short
                                     )
                                     if (result == SnackbarResult.ActionPerformed) onNavigateToSettings()
                                 }
@@ -520,7 +518,7 @@ fun ChartDetailsScreen(
                     if (shouldBeSelected) {
                         interactionViewModel.addToCollection(chart.id, contentId, collectionId)
                         scope.launch {
-                            snackbarHostState.showSnackbar(
+                            snackbarHostState.showReplacingSnackbar(
                                 savedToCollectionMsg(collectionName),
                                 duration = SnackbarDuration.Short
                             )
@@ -535,13 +533,13 @@ fun ChartDetailsScreen(
                     try {
                         val newCollectionId = collectionViewModel.createCollection(name, isPublic)
                         chart.contentId?.let { interactionViewModel.addToCollection(chart.id, it, newCollectionId) }
-                        snackbarHostState.showSnackbar(savedToCollectionMsg(name), duration = SnackbarDuration.Short)
+                        snackbarHostState.showReplacingSnackbar(savedToCollectionMsg(name), duration = SnackbarDuration.Short)
                     } catch (e: ApiException) {
                         Log.e("ChartDetailsScreen", "Error creating collection", e)
                         if (e.status == HttpStatusCode.BadRequest) {
-                            snackbarHostState.showSnackbar(collectionNameExistsMsg)
+                            snackbarHostState.showReplacingSnackbar(collectionNameExistsMsg)
                         } else {
-                            snackbarHostState.showSnackbar(errorCreatingCollectionMsg(e.message))
+                            snackbarHostState.showReplacingSnackbar(errorCreatingCollectionMsg(e.message))
                         }
                     }
                 }

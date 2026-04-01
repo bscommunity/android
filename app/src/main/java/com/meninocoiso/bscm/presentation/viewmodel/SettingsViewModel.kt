@@ -60,11 +60,6 @@ class SettingsViewModel @Inject constructor(
     private val _updateEvents = MutableSharedFlow<UiText>()
     val updateEvents: SharedFlow<UiText> = _updateEvents
 
-    private var lastUpdateEvent: UiText? = null
-    private var lastUpdateEventAt = 0L
-    private val updateEventDedupWindowMs = 1_500L
-    private val minCheckingVisibleMs = 350L
-
     // Contributors state (not persisted)
     data class ContributorsState(
         val isLoading: Boolean = false,
@@ -166,10 +161,14 @@ class SettingsViewModel @Inject constructor(
     }
 
     var lastCacheTime: Long? = null
-    val cacheWindowMs = 5_000L
     private var checkUpdatesJob: Job? = null
     private var lastUpdateRequestAt = 0L
+
+    // Time gate to prevent spamming update requests: if the user checks for updates again within this window, we will serve from cache without making a new network request.
     private val updateRequestGateMs = 15_000L
+
+    // Minimum time to show the "Checking for updates..." state to avoid flickering when the check is very fast (e.g. cache hit)
+    private val minCheckingVisibleMs = 350L
 
     /**
      * Check for app updates
@@ -185,7 +184,7 @@ class SettingsViewModel @Inject constructor(
             val now = System.currentTimeMillis()
             val cachedVersion = appUpdateRepository.getLatestVersion()
             val hasCachedVersion = cachedVersion.isNotBlank()
-            val hasFreshCache = hasCachedVersion && now - (lastCacheTime ?: 0) < cacheWindowMs
+            val hasFreshCache = hasCachedVersion && now - (lastCacheTime ?: 0) < updateRequestGateMs
             val isRequestGateClosed = now - lastUpdateRequestAt < updateRequestGateMs
 
             // Single request-gate policy: use cache while the gate is closed.
@@ -244,12 +243,6 @@ class SettingsViewModel @Inject constructor(
     }
 
     private suspend fun emitUpdateEvent(message: UiText) {
-        val now = System.currentTimeMillis()
-        val isDuplicateRecent = lastUpdateEvent == message && (now - lastUpdateEventAt) < updateEventDedupWindowMs
-        if (isDuplicateRecent) return
-
-        lastUpdateEvent = message
-        lastUpdateEventAt = now
         _updateEvents.emit(message)
     }
 

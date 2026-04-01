@@ -25,7 +25,6 @@ import androidx.navigation.toRoute
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.enums.UpdatesSection
-import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.screen.profile.Profile
 import com.meninocoiso.bscm.presentation.screen.settings.SettingsScreen
@@ -33,6 +32,7 @@ import com.meninocoiso.bscm.presentation.screen.updates.UpdatesScreen
 import com.meninocoiso.bscm.presentation.screen.workshop.WorkshopScreen
 import com.meninocoiso.bscm.presentation.ui.components.layout.LaunchAppButton
 import com.meninocoiso.bscm.presentation.ui.components.layout.SwipeableSnackbarHost
+import com.meninocoiso.bscm.presentation.ui.utils.showReplacingSnackbar
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -134,13 +134,13 @@ fun BottomNav(
 
     val onSnackbar: OnSnackbar = { message, actionLabel, withDismissAction, duration, onAction, onDismiss ->
         coroutineScope.launch {
-            val result = snackbarHostState.showSnackbar(
+            val result = snackbarHostState.showReplacingSnackbar(
                 message = message,
                 actionLabel = actionLabel,
                 withDismissAction = withDismissAction,
                 duration = duration
             )
-            
+
             when (result) {
                 SnackbarResult.Dismissed -> {
                     onDismiss?.invoke()
