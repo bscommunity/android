@@ -1,8 +1,6 @@
 package com.meninocoiso.bscm.presentation.screen.settings
 
 import android.net.Uri
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
@@ -54,13 +52,11 @@ fun SettingsScreen(
     onSnackbar: OnSnackbar,
     onNavigateToProfile: OnNavigateToProfile,
     viewModel: SettingsViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
     val contributorsState by viewModel.contributorsState.collectAsStateWithLifecycle()
-
-    val activity = LocalActivity.current as ComponentActivity
-    val authViewModel: AuthViewModel = hiltViewModel(activity)
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -100,6 +96,11 @@ fun SettingsScreen(
             )
         }
 
+        Text(
+            text = "Textoooo",
+            style = MaterialTheme.typography.displaySmall
+        )
+
         AccountSection(
             user = user,
             isLoading = isLoading,
@@ -112,26 +113,26 @@ fun SettingsScreen(
 
         PreferencesSection(
             uiState = uiState,
-            allowExplicitContent = { viewModel.allowExplicitContent(it) },
-            enableGameplayPreviewVideo = { viewModel.enableGameplayPreviewVideo(it) }
+            allowExplicitContent = viewModel::allowExplicitContent,
+            enableGameplayPreviewVideo = viewModel::enableGameplayPreviewVideo
         )
 
         CustomizationSection(
             uiState = uiState,
-            useDynamicColors = { viewModel.useDynamicColors(it) },
-            updateAppTheme = { viewModel.updateAppTheme(it) }
+            useDynamicColors = viewModel::useDynamicColors,
+            updateAppTheme = viewModel::updateAppTheme
         )
 
         UpdateSection(
             updateState = updateState,
-            checkAppUpdates = { viewModel.checkAppUpdates() },
-            downloadUpdate = { viewModel.downloadUpdate(it) },
-            installApk = { viewModel.installApk(it) }
+            checkAppUpdates = viewModel::checkAppUpdates,
+            downloadUpdate = viewModel::downloadUpdate,
+            installApk = viewModel::installApk
         )
 
         AboutSection(
             contributorsState = contributorsState,
-            loadContributorsIfNeeded = { viewModel.loadContributorsIfNeeded() }
+            loadContributorsIfNeeded = viewModel::loadContributorsIfNeeded
         )
     }
 }
