@@ -225,10 +225,9 @@ fun AnimatedIcon(
  */
 @Composable
 fun BurstIconButton(
-    isActive: Boolean,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    onClick: () -> Unit,
+    onClick: () -> Boolean,
     onLongClickLabel: String? = null,
     onLongClick: (() -> Unit)? = null,
     animations: List<IconButtonAnimation> = listOf(),
@@ -262,10 +261,10 @@ fun BurstIconButton(
                 .clip(IconButtonDefaults.standardShape)
                 .combinedClickable(
                     onClick = {
-                        if (enabled) {
+                        val shouldAnimate = onClick()
+                        if (enabled && shouldAnimate) {
                             triggerAnimations()
                         }
-                        onClick()
                     },
                     onLongClick = onLongClick?.let { longClick ->
                         {

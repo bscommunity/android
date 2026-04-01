@@ -92,6 +92,9 @@ val DropdownItemPadding = PaddingValues(
 
 private enum class ChartDialog { None, Report, DeleteConfirmation, ListenTrack }
 
+/**
+ * Details screen for one chart with download controls, reactions, and collection management.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChartDetailsScreen(
@@ -130,17 +133,32 @@ fun ChartDetailsScreen(
     var optimisticBookmarked by rememberSaveable { mutableStateOf<Boolean?>(null) }
 
     val hasLiveBookmarkMembership = savedCollections.any { it.kind == CollectionKind.BOOKMARKS }
-    val hasLiveUserCollectionMembership = savedCollections.any { it.kind == CollectionKind.USER }
-    val hasPersistedBookmark = hasLiveBookmarkMembership || hasLiveUserCollectionMembership || chart.bookmarkedAt != null
+    val selectedUserCollectionIds = savedCollections
+        .filter { it.kind == CollectionKind.USER }
+        .map { it.id }
+        .toSet()
+    val hasPersistedBookmark = hasLiveBookmarkMembership || chart.bookmarkedAt != null
 
     val isLiked = optimisticLiked ?: (chart.likedAt != null)
     val isBookmarked = optimisticBookmarked ?: hasPersistedBookmark
+
+    // Shared toggle handler used by toolbar action and bottom-sheet auto-bookmark item.
+    val toggleBookmarkSelection: (Boolean) -> Unit = { shouldBeBookmarked ->
+        chart.contentId?.let { contentId ->
+            optimisticBookmarked = shouldBeBookmarked
+            interactionViewModel.enqueueBookmarkMutation(chart.id, contentId, shouldBeBookmarked)
+            if (!shouldBeBookmarked) {
+                snackbarHostState.currentSnackbarData?.dismiss()
+            }
+        }
+    }
 
     // Clear optimistic state once persistence catches up
     LaunchedEffect(chart.likedAt) {
         if (optimisticLiked != null && chart.likedAt != null) optimisticLiked = null
     }
     LaunchedEffect(savedCollections, chart.bookmarkedAt) {
+        // Reset optimistic bookmark when local/remote persistence reflects final intent.
         optimisticBookmarked?.let { optimistic ->
             val confirmed = if (optimistic) hasPersistedBookmark else !hasPersistedBookmark
             if (confirmed) optimisticBookmarked = null
@@ -318,9 +336,19 @@ fun ChartDetailsScreen(
                                     if (result == SnackbarResult.ActionPerformed) onNavigateToSettings()
                                 }
                             },
+                            beforeToggle = { current, next ->
+                                // Unbookmark action is managed through the sheet to allow collection edits.
+                                if (current && !next) {
+                                    showCollectionSheet = true
+                                    false
+                                } else {
+                                    true
+                                }
+                            },
                         ) { newValue ->
-                            optimisticBookmarked = newValue
-                            interactionViewModel.enqueueBookmarkMutation(chart.id, chart.contentId, newValue)
+                            val contentId = chart.contentId
+
+                            toggleBookmarkSelection(newValue)
 
                             if (newValue) {
                                 scope.launch {
@@ -331,7 +359,7 @@ fun ChartDetailsScreen(
                                         duration = SnackbarDuration.Short
                                     )
                                     if (result == SnackbarResult.ActionPerformed) {
-                                        interactionViewModel.flushPendingBookmarkMutation(chart.id, chart.contentId)
+                                        interactionViewModel.flushPendingBookmarkMutation(chart.id, contentId)
                                         showCollectionSheet = true
                                     }
                                 }
@@ -358,7 +386,7 @@ fun ChartDetailsScreen(
                             }
                         ) { newValue ->
                             optimisticLiked = newValue
-                            interactionViewModel.enqueueLikeMutation(chart.id, chart.contentId ?: return@InteractionButton, newValue)
+                            interactionViewModel.enqueueLikeMutation(chart.id, chart.contentId, newValue)
                         }
                     }
                 },
@@ -387,8 +415,6 @@ fun ChartDetailsScreen(
                 ),
                 isVideoEnabled = isGameplayVideoPreviewEnabled
             )
-
-            Text(text = "Testnado 22")
 
             if (chart.contributors.isNotEmpty()) {
                 PreviewContributors(chart.contributors)
@@ -481,15 +507,28 @@ fun ChartDetailsScreen(
                 }
             },
             collections = userCollections,
+            checkedCollectionIds = selectedUserCollectionIds,
+            isBookmarked = isBookmarked,
             isLoading = isCollectionsLoading,
             isMutating = collectionUiState.isCreating,
             errorMessage = errorMessage,
-            onCollectionSelected = { collectionId, collectionName ->
-                scope.launch {
-                    snackbarHostState.showSnackbar(savedToCollectionMsg(collectionName), duration = SnackbarDuration.Short)
+            onAutoBookmarksToggle = { shouldBeBookmarked ->
+                toggleBookmarkSelection(shouldBeBookmarked)
+            },
+            onCollectionToggled = { collectionId, collectionName, shouldBeSelected ->
+                chart.contentId?.let { contentId ->
+                    if (shouldBeSelected) {
+                        interactionViewModel.addToCollection(chart.id, contentId, collectionId)
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                savedToCollectionMsg(collectionName),
+                                duration = SnackbarDuration.Short
+                            )
+                        }
+                    } else {
+                        interactionViewModel.removeFromCollection(chart.id, contentId, collectionId)
+                    }
                 }
-                chart.contentId?.let { interactionViewModel.addToCollection(chart.id, it, collectionId) }
-                showCollectionSheet = false
             },
             onCreateCollection = { name, isPublic ->
                 scope.launch {

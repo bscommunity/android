@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -60,6 +61,10 @@ import kotlinx.coroutines.launch
 
 private const val MAX_NAME_LENGTH = 30
 
+/**
+ * Bottom sheet used from details screens to manage bookmark and custom collection membership,
+ * and to create a new collection inline.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CollectionCreateBottomSheet(
@@ -67,10 +72,13 @@ fun CollectionCreateBottomSheet(
     onDismissRequest: () -> Unit,
     onClose: () -> Unit,
     collections: List<Collection>,
+    checkedCollectionIds: Set<String> = emptySet(),
+    isBookmarked: Boolean = false,
     isLoading: Boolean = false,
     isMutating: Boolean = false,
     errorMessage: String? = null,
-    onCollectionSelected: (collectionId: String, collectionName: String) -> Unit,
+    onAutoBookmarksToggle: (shouldBeBookmarked: Boolean) -> Unit,
+    onCollectionToggled: (collectionId: String, collectionName: String, shouldBeSelected: Boolean) -> Unit,
     onCreateCollection: suspend (name: String, isPublic: Boolean) -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -81,8 +89,6 @@ fun CollectionCreateBottomSheet(
         1 -> stringResource(R.string.collection_create)
         else -> ""
     }
-
-    println("Is Mutating: $isMutating, Is Loading: $isLoading")
 
     ModalBottomSheet(
         sheetState = sheetState,
@@ -144,7 +150,8 @@ fun CollectionCreateBottomSheet(
         ) {
             HorizontalPager(
                 state = horizontalPagerState,
-                key = { it }, // Recompose the pager when the page changes
+                // Keep each page keyed by index so state resets correctly when switching pages.
+                key = { it },
                 beyondViewportPageCount = 0,
                 userScrollEnabled = false,
                 modifier = Modifier
@@ -154,9 +161,13 @@ fun CollectionCreateBottomSheet(
                 when (index) {
                     0 -> CollectionsListSection(
                         collections = collections,
+                        checkedCollectionIds = checkedCollectionIds,
+                        isBookmarked = isBookmarked,
                         isLoading = isLoading,
+                        isMutating = isMutating,
                         errorMessage = errorMessage,
-                        onCollectionClick = onCollectionSelected,
+                        onAutoBookmarksToggle = onAutoBookmarksToggle,
+                        onCollectionToggle = onCollectionToggled,
                         onCreateNewCollectionClick = {
                             coroutineScope.launch {
                                 horizontalPagerState.scrollToPage(
@@ -169,6 +180,7 @@ fun CollectionCreateBottomSheet(
                     1 -> CollectionFormSection(
                         isLoading = isMutating,
                         onSave = { name, isPublic ->
+                            // Wait for creation to complete before closing so state remains coherent.
                             onCreateCollection(name, isPublic)
                             coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
                                 if (!sheetState.isVisible) {
@@ -185,6 +197,9 @@ fun CollectionCreateBottomSheet(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+/**
+ * Bottom sheet used to edit one existing collection.
+ */
 fun CollectionEditBottomSheet(
     sheetState: SheetState,
     onDismissRequest: () -> Unit,
@@ -243,12 +258,19 @@ fun CollectionEditBottomSheet(
 }
 
 @Composable
+/**
+ * Membership list section with auto-bookmarks, user collections, and loading/error states.
+ */
 fun CollectionsListSection(
     modifier: Modifier = Modifier,
     collections: List<Collection>,
+    checkedCollectionIds: Set<String>,
+    isBookmarked: Boolean,
     isLoading: Boolean,
+    isMutating: Boolean,
     errorMessage: String? = null,
-    onCollectionClick: (String, String) -> Unit,
+    onAutoBookmarksToggle: (shouldBeBookmarked: Boolean) -> Unit,
+    onCollectionToggle: (collectionId: String, collectionName: String, shouldBeSelected: Boolean) -> Unit,
     onCreateNewCollectionClick: () -> Unit
 ) {
     LazyColumn(modifier = modifier) {
@@ -286,6 +308,13 @@ fun CollectionsListSection(
                     style = MaterialTheme.typography.titleMedium
                 )
             }
+        }
+        item {
+            AutoBookmarksCollectionItem(
+                isChecked = isBookmarked,
+                enabled = !isMutating,
+                onCheckedChange = onAutoBookmarksToggle,
+            )
         }
         if (errorMessage != null) {
             item {
@@ -329,14 +358,111 @@ fun CollectionsListSection(
                     coverUrl = collection.coverUrl ?: "",
                     isPublic = collection.isPublic,
                     contentCounts = Triple(0, 0, 0),
-                    onClick = { onCollectionClick(collection.id, collection.name) }
+                    checked = checkedCollectionIds.contains(collection.id),
+                    enabled = !isMutating,
+                    onCheckedChange = { checked ->
+                        onCollectionToggle(collection.id, collection.name, checked)
+                    }
                 )
             }
         }
     }
 }
 
+/**
+ * Auto-bookmarks virtual item shown at the top of the collection membership list.
+ */
 @Composable
+private fun AutoBookmarksCollectionItem(
+    isChecked: Boolean,
+    enabled: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    SelectionRow(
+        checked = isChecked,
+        enabled = enabled,
+        onCheckedChange = onCheckedChange,
+        leading = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.rounded_bookmark_24),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+    ) {
+        Text("Your Bookmarks", style = MaterialTheme.typography.titleMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                painter = painterResource(R.drawable.baseline_push_pin_24),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp)
+            )
+            Text(
+                text = "Auto Collection",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+/**
+ * Shared row layout for selectable list entries with a trailing checkbox.
+ */
+private fun SelectionRow(
+    checked: Boolean,
+    enabled: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    leading: @Composable () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                enabled = enabled,
+                onClick = { onCheckedChange(!checked) },
+                interactionSource = interactionSource,
+                indication = ripple()
+            )
+            .padding(vertical = 12.dp, horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(24.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        leading()
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.Start
+        ) {
+            content()
+        }
+
+        Checkbox(
+            checked = checked,
+            enabled = enabled,
+            onCheckedChange = onCheckedChange
+        )
+    }
+}
+
+@Composable
+/**
+ * Form used by both create and edit collection flows.
+ */
 fun CollectionFormSection(
     isLoading: Boolean,
     initialName: String = "",
@@ -407,28 +533,24 @@ fun CollectionFormSection(
 }
 
 @Composable
+/**
+ * User collection list item with cover, metadata, and membership checkbox.
+ */
 fun CollectionItem(
     name: String,
     coverUrl: String,
     isPublic: Boolean = false,
     contentCounts: Triple<Int, Int, Int>,
-    onClick: () -> Unit = { }
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(
-                onClick = onClick,
-                interactionSource = interactionSource,
-                indication = ripple()
-            )
-            .padding(vertical = 12.dp, horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(24.dp),
-        verticalAlignment = Alignment.CenterVertically
+    checked: Boolean,
+    enabled: Boolean = true,
+    onCheckedChange: (Boolean) -> Unit,
+ ) {
+    SelectionRow(
+        checked = checked,
+        enabled = enabled,
+        onCheckedChange = onCheckedChange,
+        leading = { CoverArt(url = coverUrl, size = 56.dp, borderRadius = 8.dp) }
     ) {
-        CoverArt(url = coverUrl, size = 56.dp, borderRadius = 8.dp)
         Column(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.Start
@@ -451,16 +573,8 @@ fun CollectionItem(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = stringResource(R.string.charts_count, contentCounts.first),
-                    style = MaterialTheme.typography.labelLarge
-                )
-                Text(
-                    text = stringResource(R.string.tourpasses_count, contentCounts.second),
-                    style = MaterialTheme.typography.labelLarge
-                )
-                Text(
-                    text = stringResource(R.string.themes_count, contentCounts.third),
-                    style = MaterialTheme.typography.labelLarge
+                    text = "${contentCounts.first + contentCounts.second + contentCounts.third} items",
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
         }

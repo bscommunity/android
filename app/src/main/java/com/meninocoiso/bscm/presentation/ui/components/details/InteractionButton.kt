@@ -17,6 +17,11 @@ import com.meninocoiso.bscm.presentation.ui.components.rememberBurstDotsModule
 import com.meninocoiso.bscm.presentation.ui.components.rememberIconScaleModule
 import com.meninocoiso.bscm.presentation.ui.components.rememberRingModule
 
+/**
+ * Animated toggle button used for like/bookmark actions.
+ *
+ * It keeps a local visual state for immediate feedback while still syncing with external state.
+ */
 @Composable
 fun InteractionButton(
     activeIconResId: Int,
@@ -24,6 +29,7 @@ fun InteractionButton(
     isActive: Boolean = false,
     isDisabled: Boolean = false,
     onDisabled: () -> Unit = {},
+    beforeToggle: (current: Boolean, next: Boolean) -> Boolean = { _, _ -> true },
     onToggle: (isActive: Boolean) -> Unit
 ) {
     var localIsActive by remember { mutableStateOf(isActive) }
@@ -44,17 +50,21 @@ fun InteractionButton(
         modifier = Modifier.graphicsLayer {
             alpha = if (isDisabled) 0.6f else 1f
         },
-        isActive = localIsActive,
         enabled = !isDisabled,
         onClick = {
             if (isDisabled) {
                 onDisabled()
-                return@BurstIconButton
+                return@BurstIconButton false
             }
 
+            // Let callers intercept transitions (e.g. open manage sheet before unbookmark).
             val nextState = !localIsActive
+            if (!beforeToggle(localIsActive, nextState)) {
+                return@BurstIconButton false
+            }
             localIsActive = nextState
             onToggle(nextState)
+            true
         },
         animations = listOfNotNull(
             burstAnimation,

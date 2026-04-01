@@ -9,10 +9,8 @@ import com.meninocoiso.bscm.domain.repository.InteractionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -20,17 +18,14 @@ import javax.inject.Inject
 
 private const val INTERACTION_DEBOUNCE_MILLIS = 600L
 
+/**
+ * ViewModel that debounces user interactions and forwards them to the offline-first repository.
+ */
 @HiltViewModel
 class InteractionViewModel @Inject constructor(
     private val interactionRepository: InteractionRepository,
     private val collectionDao: CollectionDao
 ) : ViewModel() {
-
-    private val _queueSize = MutableStateFlow(0)
-    val queueSize: StateFlow<Int> = _queueSize.asStateFlow()
-
-    private val _isProcessing = MutableStateFlow(false)
-    val isProcessing: StateFlow<Boolean> = _isProcessing.asStateFlow()
 
     // -------------------------------------------------------------------------
     // Bookmark debounce state
@@ -38,10 +33,14 @@ class InteractionViewModel @Inject constructor(
     private var bookmarkMutationJob: Job? = null
     private var pendingBookmarkMutation: Boolean? = null
 
+    /**
+     * Debounces bookmark toggles so fast taps collapse into a single final mutation.
+     */
     fun enqueueBookmarkMutation(id: String, contentId: String, isBookmarked: Boolean) {
         pendingBookmarkMutation = isBookmarked
         bookmarkMutationJob?.cancel()
         bookmarkMutationJob = viewModelScope.launch {
+            // Delay before commit to absorb rapid toggle bursts.
             delay(INTERACTION_DEBOUNCE_MILLIS)
             commitBookmarkMutation(id, contentId, isBookmarked)
             pendingBookmarkMutation = null
@@ -49,6 +48,9 @@ class InteractionViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Immediately executes the last pending bookmark mutation (used before opening manage UI).
+     */
     fun flushPendingBookmarkMutation(id: String, contentId: String) {
         bookmarkMutationJob?.cancel()
         val pending = pendingBookmarkMutation ?: return
@@ -57,7 +59,8 @@ class InteractionViewModel @Inject constructor(
         viewModelScope.launch { commitBookmarkMutation(id, contentId, pending) }
     }
 
-    private suspend fun commitBookmarkMutation(id: String, contentId: String, isBookmarked: Boolean) {
+    /** Commits the final bookmark state after debounce. */
+    private fun commitBookmarkMutation(id: String, contentId: String, isBookmarked: Boolean) {
         if (isBookmarked) bookmarkContent(id, contentId)
         else unbookmarkContent(id, contentId)
     }
@@ -68,6 +71,7 @@ class InteractionViewModel @Inject constructor(
     private var likeMutationJob: Job? = null
     private var pendingLikeMutation: Boolean? = null
 
+    /** Debounces like toggles to avoid unnecessary queue churn from rapid taps. */
     fun enqueueLikeMutation(id: String, contentId: String, isLiked: Boolean) {
         pendingLikeMutation = isLiked
         likeMutationJob?.cancel()
@@ -83,47 +87,53 @@ class InteractionViewModel @Inject constructor(
     // -------------------------------------------------------------------------
     // Core interaction operations
     // -------------------------------------------------------------------------
+    /** Queues a like mutation via repository and refreshes queue size metrics. */
     fun likeContent(id: String, contentId: String) {
         viewModelScope.launch {
             interactionRepository.likeContent(id, contentId)
-                .onSuccess { updateQueueSize() }
+                .onSuccess { }
         }
     }
 
+    /** Queues an unlike mutation via repository and refreshes queue size metrics. */
     fun unlikeContent(id: String, contentId: String) {
         viewModelScope.launch {
             interactionRepository.unlikeContent(id, contentId)
-                .onSuccess { updateQueueSize() }
+                .onSuccess { }
         }
     }
 
+    /** Queues a bookmark mutation via repository and refreshes queue size metrics. */
     fun bookmarkContent(id: String, contentId: String) {
         viewModelScope.launch {
             interactionRepository.bookmarkContent(id, contentId)
-                .onSuccess { updateQueueSize() }
+                .onSuccess { }
         }
     }
 
+    /** Queues an unbookmark mutation via repository and refreshes queue size metrics. */
     fun unbookmarkContent(id: String, contentId: String) {
         viewModelScope.launch {
             Log.d("InteractionViewModel", "Unbookmarking contentId=$contentId for id=$id")
             interactionRepository.unbookmarkContent(id, contentId)
-                .onSuccess { updateQueueSize() }
+                .onSuccess { }
         }
     }
 
+    /** Queues add-to-collection mutation via repository. */
     fun addToCollection(id: String, contentId: String, collectionId: String) {
         viewModelScope.launch {
             interactionRepository.addToCollection(id, contentId, collectionId)
-                .onSuccess { updateQueueSize() }
+                .onSuccess { }
         }
     }
 
+    /** Queues remove-from-collection mutation via repository. */
     fun removeFromCollection(id: String, contentId: String, collectionId: String) {
         viewModelScope.launch {
             Log.d("InteractionViewModel", "Removing contentId=$contentId from collectionId=$collectionId")
             interactionRepository.removeFromCollection(id, contentId, collectionId)
-                .onSuccess { updateQueueSize() }
+                .onSuccess { }
         }
     }
 
@@ -138,6 +148,11 @@ class InteractionViewModel @Inject constructor(
         ) = size > 10
     }
 
+    /**
+     * Returns cached flow of collection memberships for one content id.
+     *
+     * A small LRU map avoids recreating identical Room subscriptions repeatedly.
+     */
     fun getContentCollections(contentId: String): StateFlow<List<SimplifiedCollection>> =
         contentCollectionsCache.getOrPut(contentId) {
             collectionDao.getCollectionsForContent(contentId)
@@ -145,14 +160,4 @@ class InteractionViewModel @Inject constructor(
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
         }
 
-    // -------------------------------------------------------------------------
-    // Queue
-    // -------------------------------------------------------------------------
-    init { updateQueueSize() }
-
-    private fun updateQueueSize() {
-        viewModelScope.launch {
-            _queueSize.value = interactionRepository.getQueueSize()
-        }
-    }
 }
