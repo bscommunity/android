@@ -10,18 +10,18 @@ import com.meninocoiso.bscm.data.local.entity.QueuedInteractionEntity
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.CollectionItemCrossRef
-import com.meninocoiso.bscm.domain.model.StreamingLink
+import com.meninocoiso.bscm.domain.model.StreamingRef
 import com.meninocoiso.bscm.domain.model.Theme
 import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.domain.serialization.RoomSerializers
 
 @Database(
-    version = 33,
+    version = 36,
     entities = [
         Chart::class,
         Version::class,
-        StreamingLink::class,
+        StreamingRef::class,
         TourPass::class,
         Theme::class,
         Collection::class,

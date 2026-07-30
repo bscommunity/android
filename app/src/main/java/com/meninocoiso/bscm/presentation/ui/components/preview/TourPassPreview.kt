@@ -56,7 +56,7 @@ fun TourPassPreview(
         ) {
             CoverArt(
                 modifier = Modifier.fillMaxWidth(),
-                url = tourPass.coverUrl,
+                url = tourPass.coverUrl ?: "",
                 borderRadius = if (isLocal) 8.dp else 0.dp,
                 width = 400.dp,
                 height = 100.dp
@@ -73,7 +73,7 @@ fun TourPassPreview(
                             titleContent(tourPass.name, false, false)
                             Text(
                                 style = MaterialTheme.typography.labelLarge,
-                                text = StringUtils.toRelativeString(tourPass.updatedAt)
+                                text = tourPass.updatedAt?.let { StringUtils.toRelativeString(it) } ?: ""
                             )
                         }
                     } else {

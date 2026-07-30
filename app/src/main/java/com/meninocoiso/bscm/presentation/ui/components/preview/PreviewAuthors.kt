@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
+import com.meninocoiso.bscm.domain.enums.Role
 import com.meninocoiso.bscm.domain.model.Contributor
 import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 import java.time.LocalDateTime
@@ -80,8 +81,8 @@ fun ChartAuthorsPreview() {
                     username = "user1",
                     avatarUrl = "https://example.com/image1.jpg",
                 ),
-                chartId = "1",
-                roles = emptyList(),
+                catalogItemId = "1",
+                role = Role.AUTHOR,
                 joinedAt = LocalDateTime.now()
             ),
         )

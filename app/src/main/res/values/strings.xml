@@ -160,6 +160,8 @@
     <string name="effects_role">Effects</string>
     <string name="sync_role">Sync</string>
     <string name="gameplay_role">Gameplay</string>
+    <string name="art_role">Art</string>
+    <string name="textures_role">Textures</string>
     <string name="version_format">v%1$d</string>
 
     <!-- 🔍 Search & Filtering -->

@@ -228,12 +228,13 @@ private fun ExpandedContributors(
         Column(
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
-            for (author in authors) {
-                val roles= author.roles
-                    .map { role ->
-                        rolesList.find { it.id == role }?.name
-                    }
-                
+            val grouped = authors.groupBy { it.user.id }
+            for ((_, userContributors) in grouped) {
+                val first = userContributors.first()
+                val roleNames = userContributors.mapNotNull { contributor ->
+                    rolesList.find { it.id == contributor.role }?.name
+                }
+
                 Row(
                     Modifier.padding(
                         vertical = 8.dp
@@ -241,26 +242,24 @@ private fun ExpandedContributors(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // println("id from expanded: ${author.user.username} ${author.user.id}")
                     with(sharedTransitionScope) {
                         Avatar(
-                            url = author.user.avatarUrl,
-                            alt = author.user.username.first().toString(),
-                            // key = "avatar-${author.user.username}",
+                            url = first.user.avatarUrl,
+                            alt = first.user.username.first().toString(),
                             size = 32.dp,
                             modifier = Modifier.sharedElement(
-                                rememberSharedContentState(key = author.user.id),
+                                rememberSharedContentState(key = first.user.id),
                                 animatedVisibilityScope = animatedVisibilityScope
                             )
                         )
                     }
                     Column {
                         Text(
-                            text = "@${author.user.username}",
+                            text = "@${first.user.username}",
                             style = MaterialTheme.typography.labelLarge
                         )
                         Text(
-                            text = roles.joinToString(", "),
+                            text = roleNames.joinToString(", "),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }

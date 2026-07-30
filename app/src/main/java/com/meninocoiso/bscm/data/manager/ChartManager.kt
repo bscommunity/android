@@ -110,7 +110,7 @@ class ChartManager @Inject constructor(
     // Chart-specific operations that require ChartRepository methods
     fun checkForUpdates(): Flow<ContentResult<List<Chart>>> = flow {
         emit(ContentResult.Loading)
-        val installed = memoryStore.contentById.value.values.filter { it.isInstalled && !isLocalOnlyChart(it) }
+        val installed = memoryStore.contentById.value.values.filter { it.isInstalled == true && !isLocalOnlyChart(it) }
         if (installed.isEmpty()) {
             emit(ContentResult.Success(emptyList()))
             return@flow
@@ -119,10 +119,10 @@ class ChartManager @Inject constructor(
         latestVersionsResult.fold(
             onSuccess = { versions ->
                 Log.d(TAG, "Fetched latest versions for ${versions.size} charts from remote")
-                val versionMap = versions.associateBy { it.chartId }
+                val versionMap = versions.associateBy { it.catalogItemId }
                 val updated = installed.mapNotNull { chart ->
                     val remoteVersion = versionMap[chart.id]
-                    if (remoteVersion != null && remoteVersion.createdAt > chart.latestVersion.createdAt) {
+                    if (remoteVersion != null && chart.latestVersion?.let { remoteVersion.createdAt > it.createdAt } == true) {
                         chart.copy(availableVersion = remoteVersion)
                     } else null
                 }
@@ -158,7 +158,7 @@ class ChartManager @Inject constructor(
                 val isInstalled = shouldMarkInstalled(chart, installedContentIds)
                 Log.d(
                     TAG,
-                    "Chart ${chart.id} (contentId=${chart.contentId ?: "none"}) installed status: ${chart.isInstalled} -> $isInstalled"
+                    "Chart ${chart.id} installed status: ${chart.isInstalled} -> $isInstalled"
                 )
                 if (chart.isInstalled == isInstalled) chart else chart.copy(isInstalled = isInstalled)
             }
@@ -239,7 +239,7 @@ class ChartManager @Inject constructor(
             if (!entry.contentId.isNullOrBlank()) return@mapNotNull null
 
             val existing = existingById[localId]
-            if (existing != null && existing.contentId != null) return@mapNotNull null
+            if (existing != null) return@mapNotNull null
 
             try {
                 val config = entry.config as? ExternalContentConfig
@@ -267,19 +267,19 @@ class ChartManager @Inject constructor(
         }
     }
 
-    private fun isLocalOnlyChart(chart: Chart): Boolean = chart.contentId == null
+    private fun isLocalOnlyChart(chart: Chart): Boolean = false
 
     companion object {
         internal fun shouldMarkInstalled(
             chart: Chart,
             installedContentIds: Set<String>
-        ): Boolean = !chart.contentId.isNullOrBlank() && chart.contentId in installedContentIds
+        ): Boolean = chart.id in installedContentIds
 
         internal fun findMissingContentIdsToHydrate(
             installedContentIds: Set<String>,
             currentCharts: List<Chart>
         ): Set<String> {
-            val existingContentIds = currentCharts.mapNotNull { it.contentId }.toSet()
+            val existingContentIds = currentCharts.map { it.id }.toSet()
             return installedContentIds.filterNot { it in existingContentIds }.toSet()
         }
     }

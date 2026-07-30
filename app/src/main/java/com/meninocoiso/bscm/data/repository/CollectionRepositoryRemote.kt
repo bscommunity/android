@@ -9,7 +9,7 @@ import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.dto.user.SectionCounts
 import com.meninocoiso.bscm.domain.enums.CollectionKind
-import com.meninocoiso.bscm.domain.enums.ContentType
+import com.meninocoiso.bscm.domain.enums.CatalogItemType
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
@@ -143,7 +143,7 @@ class CollectionRepositoryRemote @Inject constructor(
         collectionId: String,
         limit: Int,
         offset: Int,
-        types: List<ContentType>?,
+        types: List<CatalogItemType>?,
         useCache: Boolean
     ): Result<PagedResult<CatalogItem>> = runCatching {
         Log.d(TAG, "Getting items for collection $collectionId (limit=$limit, offset=$offset, useCache=$useCache)")
@@ -185,13 +185,13 @@ class CollectionRepositoryRemote @Inject constructor(
         }
         val mergedCharts = chartStateMerger.mergeRemoteCharts(page.items.filterIsInstance<Chart>())
         val filteredCharts = if (overlay != null) {
-            mergedCharts.filterNot { it.contentId in overlay.forceExcludeContentIds }
+            mergedCharts.filterNot { it.id in overlay.forceExcludeContentIds }
         } else {
             mergedCharts
         }
         val missingPendingCharts = if (overlay != null) {
-            chartStateMerger.getChartsByContentIds(
-                overlay.forceIncludeContentIds - filteredCharts.mapNotNull { it.contentId }.toSet()
+            chartStateMerger.getChartsByIds(
+                overlay.forceIncludeContentIds - filteredCharts.map { it.id }.toSet()
             )
         } else {
             emptyList()
@@ -211,8 +211,8 @@ class CollectionRepositoryRemote @Inject constructor(
                 val crossRefs = items.map { item ->
                     CollectionItemCrossRef(
                         collectionId = collectionId,
-                        contentId = item.contentId ?: item.id,
-                        contentType = ContentType.CHART,
+                        contentId = item.id,
+                        contentType = CatalogItemType.CHART,
                     )
                 }
                 val retainedContentIds = crossRefs.map { it.contentId }

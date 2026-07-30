@@ -288,7 +288,7 @@ class CollectionViewModel @Inject constructor(
                     // Keep currently loaded items in sync with local membership mutations
                     // (e.g. remove-from-collection in details) without issuing a full refresh.
                     val filtered = current.items.filter { item ->
-                        val key = item.contentId ?: item.id
+                        val key = item.id
                         key in ids
                     }
                     val nextTotal = contentIds.size

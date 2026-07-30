@@ -1,10 +1,11 @@
 package com.meninocoiso.bscm.data.remote
 
+import com.meninocoiso.bscm.data.remote.dto.BundleDownloadResponse
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.collection.BatchCollectionItemRequest
 import com.meninocoiso.bscm.data.remote.dto.user.ItemsPage
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
-import com.meninocoiso.bscm.domain.enums.ContentType
+import com.meninocoiso.bscm.domain.enums.CatalogItemType
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.OperationOption
@@ -62,8 +63,8 @@ interface ApiClient {
     suspend fun getMyProfile(): UserProfileResponse
     suspend fun getMyActivity(limit: Int? = null, offset: Int? = null): List<ActivityItemResponse>
     suspend fun getMyCollections(limit: Int? = null, offset: Int? = null): ItemsPage<Collection>
-    suspend fun getMyLikes(limit: Int? = null, offset: Int? = null, types: List<ContentType>? = null): ItemsPage<Chart>
-    suspend fun getMyBookmarks(limit: Int? = null, offset: Int? = null, types: List<ContentType>? = null): ItemsPage<Chart>
+    suspend fun getMyLikes(limit: Int? = null, offset: Int? = null, types: List<CatalogItemType>? = null): ItemsPage<Chart>
+    suspend fun getMyBookmarks(limit: Int? = null, offset: Int? = null, types: List<CatalogItemType>? = null): ItemsPage<Chart>
     suspend fun addLike(contentId: String): Boolean
     suspend fun removeLike(contentId: String): Boolean
     suspend fun addBookmark(contentId: String): Boolean
@@ -77,7 +78,7 @@ interface ApiClient {
     suspend fun deleteCollection(collectionId: String): Boolean
     suspend fun getCollectionItems(
         collectionId: String,
-        types: List<ContentType>? = null,
+        types: List<CatalogItemType>? = null,
         limit: Int? = null,
         offset: Int? = null
     ): ItemsPage<CatalogItem>
@@ -86,6 +87,10 @@ interface ApiClient {
 
     // Batch interactions
     suspend fun batchProcessInteractions(interactions: List<BatchCollectionItemRequest>): Boolean
+
+    // Bundle download URLs
+    suspend fun getChartBundleUrl(id: String): BundleDownloadResponse
+    suspend fun getThemeBundleUrl(id: String): BundleDownloadResponse
 
     // Utils methods
     suspend fun getContributors(): List<ContributionCategory>

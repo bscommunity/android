@@ -3,6 +3,7 @@ package com.meninocoiso.bscm.data.remote
 import android.content.Context
 import android.util.Log
 import com.meninocoiso.bscm.data.manager.SecureTokenManager
+import com.meninocoiso.bscm.data.remote.dto.BundleDownloadResponse
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.collection.BatchCollectionItemRequest
 import com.meninocoiso.bscm.data.remote.dto.collection.CreateCollectionItemRequest
@@ -14,7 +15,7 @@ import com.meninocoiso.bscm.data.security.AuthInterceptor
 import com.meninocoiso.bscm.data.security.AuthPlugin
 import com.meninocoiso.bscm.data.security.TokenRefreshPlugin
 import com.meninocoiso.bscm.domain.enums.ActionType
-import com.meninocoiso.bscm.domain.enums.ContentType
+import com.meninocoiso.bscm.domain.enums.CatalogItemType
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.enums.Genre
 import com.meninocoiso.bscm.domain.enums.OperationOption
@@ -22,12 +23,15 @@ import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
+import com.meninocoiso.bscm.domain.model.Theme
+import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.domain.model.auth.AuthRequest
 import com.meninocoiso.bscm.domain.model.auth.AuthResponse
 import com.meninocoiso.bscm.domain.model.auth.RefreshTokenRequest
 import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
+import com.meninocoiso.bscm.util.DevelopmentUtils
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
@@ -43,6 +47,7 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
@@ -79,7 +84,8 @@ class KtorApiClient @Inject constructor(
     private val catalogItemModule = SerializersModule {
         polymorphic(CatalogItem::class) {
             subclass(Chart::class, Chart.serializer())
-            // subclass(TourPass::class, TourPass.serializer()) // add others later
+            subclass(TourPass::class, TourPass.serializer())
+            subclass(Theme::class, Theme.serializer())
         }
     }
 
@@ -97,7 +103,7 @@ class KtorApiClient @Inject constructor(
                 ignoreUnknownKeys = true
                 prettyPrint = true
                 serializersModule = catalogItemModule
-                classDiscriminator = "type"
+                classDiscriminator = "itemKind"
             })
         }
         install(HttpTimeout) {
@@ -131,12 +137,12 @@ class KtorApiClient @Inject constructor(
         }
 
         defaultRequest {
-            url("https://api-cyb1.onrender.com")
-            /*url {
+            // url("https://api-cyb1.onrender.com")
+            url {
                 protocol = URLProtocol.HTTP
-                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.8"
+                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.6"
                 port = 8080
-            }*/
+            }
             contentType(KtorContentType.Application.Json)
         }
     }
@@ -146,7 +152,7 @@ class KtorApiClient @Inject constructor(
     }
 
     override suspend fun getChartByContentId(contentId: String): Chart {
-        return client.get("charts/content/$contentId").body()
+        return client.get("charts/$contentId").body()
     }
 
     override suspend fun getCharts(
@@ -180,7 +186,7 @@ class KtorApiClient @Inject constructor(
     }
 
     override suspend fun getChartsByContentIds(contentIds: List<String>): List<Chart> {
-        return client.get("charts/content") {
+        return client.get("charts") {
             url {
                 parameters.append("ids", contentIds.joinToString(","))
             }
@@ -379,7 +385,7 @@ class KtorApiClient @Inject constructor(
         }.body()
     }
 
-    override suspend fun getMyLikes(limit: Int?, offset: Int?, types: List<ContentType>?): ItemsPage<Chart> {
+    override suspend fun getMyLikes(limit: Int?, offset: Int?, types: List<CatalogItemType>?): ItemsPage<Chart> {
         return client.get("me/likes") {
             url {
                 limit?.let { parameters.append("limit", it.toString()) }
@@ -389,7 +395,7 @@ class KtorApiClient @Inject constructor(
         }.body()
     }
 
-    override suspend fun getMyBookmarks(limit: Int?, offset: Int?, types: List<ContentType>?): ItemsPage<Chart> {
+    override suspend fun getMyBookmarks(limit: Int?, offset: Int?, types: List<CatalogItemType>?): ItemsPage<Chart> {
         return client.get("me/bookmarks") {
             url {
                 limit?.let { parameters.append("limit", it.toString()) }
@@ -464,7 +470,7 @@ class KtorApiClient @Inject constructor(
 
     override suspend fun getCollectionItems(
         collectionId: String,
-        types: List<ContentType>?,
+        types: List<CatalogItemType>?,
         limit: Int?,
         offset: Int?
     ): ItemsPage<CatalogItem> {
@@ -481,7 +487,7 @@ class KtorApiClient @Inject constructor(
         val response = client.post("collections/$collectionId/items") {
             setBody(
                 CreateCollectionItemRequest(
-                    contentId = contentId,
+                    catalogId = contentId,
                     action = ActionType.ADD
                 )
             )
@@ -509,6 +515,14 @@ class KtorApiClient @Inject constructor(
      * Fetches the list of contributors from the remote server.
      * @return A list of ContributionCategory objects.
      */
+    override suspend fun getChartBundleUrl(id: String): BundleDownloadResponse {
+        return client.get("charts/$id/bundle").body()
+    }
+
+    override suspend fun getThemeBundleUrl(id: String): BundleDownloadResponse {
+        return client.get("themes/$id/bundle").body()
+    }
+
     override suspend fun getContributors(): List<ContributionCategory> {
         return try {
             client.get("https://bscm.netlify.app/contributors.json").body()

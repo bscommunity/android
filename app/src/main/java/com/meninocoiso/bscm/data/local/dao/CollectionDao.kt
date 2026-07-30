@@ -85,7 +85,7 @@ interface CollectionDao {
         """
         SELECT c.* FROM charts c
         INNER JOIN collection_item_cross_ref ref 
-            ON c.content_id = ref.content_id
+            ON c.id = ref.content_id
         WHERE ref.collection_id = :collectionId
         AND ref.content_type = 'CHART'
         ORDER BY ref.added_at DESC

@@ -6,7 +6,7 @@ import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.domain.enums.CollectionKind
-import com.meninocoiso.bscm.domain.enums.ContentType
+import com.meninocoiso.bscm.domain.enums.CatalogItemType
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.CollectionItemCrossRef
@@ -92,7 +92,7 @@ class InteractionRepositoryImpl @Inject constructor(
                         CollectionItemCrossRef(
                             collectionId = BOOKMARKS_COLLECTION_ID,
                             contentId = contentId,
-                            contentType = ContentType.CHART
+                            contentType = CatalogItemType.CHART
                         )
                     )
                 }
@@ -146,7 +146,7 @@ class InteractionRepositoryImpl @Inject constructor(
                         CollectionItemCrossRef(
                             collectionId = BOOKMARKS_COLLECTION_ID,
                             contentId = contentId,
-                            contentType = ContentType.CHART,
+                            contentType = CatalogItemType.CHART,
                             addedAt = now,
                         )
                     )
@@ -156,7 +156,7 @@ class InteractionRepositoryImpl @Inject constructor(
                         CollectionItemCrossRef(
                             collectionId = collectionId,
                             contentId = contentId,
-                            contentType = ContentType.CHART,
+                            contentType = CatalogItemType.CHART,
                             addedAt = now,
                         )
                     )

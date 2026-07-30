@@ -1,7 +1,7 @@
 [versions]
 
 # Core Android and Kotlin
-agp = "9.1.0"
+agp = "9.1.1"
 biometric = "1.1.0"
 kotlin = "2.3.20"
 coreKtx = "1.18.0"

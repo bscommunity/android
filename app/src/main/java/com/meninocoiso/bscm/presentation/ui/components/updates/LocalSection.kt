@@ -72,7 +72,7 @@ fun LazyListScope.localContentSection(
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
                 chart = chart,
                 isSecondary = true,
-                onPress = { if (chart.contentId != null) onNavigateToDetails(chart) else onShowLocalItemDialog() },
+                onPress = { onNavigateToDetails(chart) },
             )
         }
 

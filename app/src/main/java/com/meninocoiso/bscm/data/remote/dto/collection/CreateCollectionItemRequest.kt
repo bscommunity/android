@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CreateCollectionItemRequest(
-    val contentId: String,
+    val catalogId: String,
     val action: ActionType
 )
 

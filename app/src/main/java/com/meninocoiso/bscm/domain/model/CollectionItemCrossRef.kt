@@ -4,7 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
-import com.meninocoiso.bscm.domain.enums.ContentType
+import com.meninocoiso.bscm.domain.enums.CatalogItemType
 import java.time.LocalDateTime
 
 @Entity(
@@ -23,6 +23,6 @@ import java.time.LocalDateTime
 data class CollectionItemCrossRef(
     @ColumnInfo(name = "collection_id") val collectionId: String,
     @ColumnInfo(name = "content_id") val contentId: String,
-    @ColumnInfo(name = "content_type") val contentType: ContentType,
+    @ColumnInfo(name = "content_type") val contentType: CatalogItemType,
     @ColumnInfo(name = "added_at") val addedAt: LocalDateTime = LocalDateTime.now()
 )

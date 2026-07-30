@@ -236,7 +236,7 @@ class InteractionQueueManager @Inject constructor(
 
                 val batchRequest = deduplicatedInteractions.map { entity ->
                     BatchCollectionItemRequest(
-                        contentId = entity.contentId,
+                        catalogId = entity.contentId,
                         collectionId = entity.collectionId,
                         collectionKind = entity.collectionKind,
                         action = entity.action

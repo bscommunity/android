@@ -12,20 +12,21 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ChartDao {
-    @Query("SELECT * FROM charts WHERE (:query IS NULL OR track LIKE '%' || :query || '%' OR artist LIKE '%' || :query || '%') ORDER BY track ASC LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END OFFSET :offset")
+    @Query("""
+        SELECT * FROM charts 
+        WHERE (:query IS NULL OR 
+               json_extract(track, '$.title') LIKE '%' || :query || '%' OR 
+               json_extract(track, '$.artist') LIKE '%' || :query || '%') 
+        ORDER BY json_extract(track, '$.title') ASC 
+        LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END OFFSET :offset
+    """)
     fun getAll(query: String? = null, limit: Int? = null, offset: Int = 0): List<Chart>
 
     @Query("SELECT * FROM charts WHERE id = :id")
     fun getChart(id: String): Chart?
 
-    @Query("SELECT * FROM charts WHERE content_id = :contentId LIMIT 1")
-    fun getChartByContentId(contentId: String): Chart?
-
     @Query("SELECT * FROM charts WHERE id IN (:ids)")
     fun getChartsByIds(ids: List<String>): List<Chart>
-
-    @Query("SELECT * FROM charts WHERE content_id IN (:contentIds)")
-    fun getChartsByContentIds(contentIds: List<String>): List<Chart>
 
     @Query("SELECT * FROM charts WHERE liked_at IS NOT NULL ORDER BY liked_at DESC LIMIT :limit OFFSET :offset")
     fun getLikedCharts(limit: Int, offset: Int): List<Chart>
@@ -33,7 +34,7 @@ interface ChartDao {
     @Query("""
         SELECT c.* FROM charts c
         INNER JOIN collection_item_cross_ref ref 
-            ON c.content_id = ref.content_id
+            ON c.id = ref.content_id
         WHERE ref.collection_id = 'bookmarks'
         AND ref.content_type = 'CHART'
         ORDER BY ref.added_at DESC
@@ -41,28 +42,13 @@ interface ChartDao {
     """)
     fun getBookmarkedCharts(limit: Int, offset: Int): List<Chart>
 
-    // -----------------------------------------------------------------
-    // Reactive queries — Room emits a new list whenever liked_at /
-    // bookmarked_at changes in *any* row, so the profile screen updates
-    // instantly when the user likes/bookmarks from ChartDetailsScreen.
-    // -----------------------------------------------------------------
-
-    /**
-     * Observes all liked charts ordered by most-recently liked.
-     *
-     * Analogy: imagine a live leaderboard that re-sorts itself the
-     * moment a new score is written — no manual refresh needed.
-     */
     @Query("SELECT * FROM charts WHERE liked_at IS NOT NULL ORDER BY liked_at DESC")
     fun observeLikedCharts(): Flow<List<Chart>>
 
-    /**
-     * Observes all bookmarked charts ordered by most-recently bookmarked.
-     */
     @Query("""
         SELECT c.* FROM charts c
         INNER JOIN collection_item_cross_ref ref 
-            ON c.content_id = ref.content_id
+            ON c.id = ref.content_id
         WHERE ref.collection_id = 'bookmarks'
         AND ref.content_type = 'CHART'
         ORDER BY ref.added_at DESC
@@ -75,35 +61,36 @@ interface ChartDao {
     @Query("""
         SELECT c.id FROM charts c
         INNER JOIN collection_item_cross_ref ref 
-            ON c.content_id = ref.content_id
+            ON c.id = ref.content_id
         WHERE ref.collection_id = 'bookmarks'
         AND ref.content_type = 'CHART'
         ORDER BY ref.added_at DESC
     """)
     fun getBookmarkedChartIds(): List<String>
 
-    //@Query("SELECT latest_version FROM charts WHERE id IN (:ids)")
-    @Query("SELECT * from versions WHERE chart_id IN (:ids) ORDER BY `created_at` DESC")
+    @Query("SELECT * from versions WHERE catalog_item_id IN (:ids) ORDER BY version_code DESC")
     fun getLatestVersionsByChartIds(ids: List<String>): List<Version>
 
     @Query("""
-    SELECT 
-        CASE 
-            WHEN track LIKE '%' || :query || '%' THEN track 
-            WHEN artist LIKE '%' || :query || '%' THEN artist 
-            ELSE album 
-        END 
-    FROM charts 
-    WHERE track LIKE '%' || :query || '%' 
-       OR artist LIKE '%' || :query || '%' 
-       OR album LIKE '%' || :query || '%' 
-    LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END
-""")
+        SELECT DISTINCT 
+            CASE 
+                WHEN json_extract(track, '$.title') LIKE '%' || :query || '%' THEN json_extract(track, '$.title') 
+                WHEN json_extract(track, '$.artist') LIKE '%' || :query || '%' THEN json_extract(track, '$.artist') 
+                ELSE json_extract(track, '$.album') 
+            END 
+        FROM charts 
+        WHERE json_extract(track, '$.title') LIKE '%' || :query || '%' 
+           OR json_extract(track, '$.artist') LIKE '%' || :query || '%' 
+           OR json_extract(track, '$.album') LIKE '%' || :query || '%' 
+        LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END
+    """)
     fun getSuggestions(query: String, limit: Int?): List<String>
 
     @Query("""
         SELECT * FROM charts 
-        WHERE (:query IS NULL OR track LIKE '%' || :query || '%' OR artist LIKE '%' || :query || '%')
+        WHERE (:query IS NULL OR 
+               json_extract(track, '$.title') LIKE '%' || :query || '%' OR 
+               json_extract(track, '$.artist') LIKE '%' || :query || '%')
         ORDER BY updated_at DESC
         LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END
         OFFSET :offset
@@ -112,15 +99,17 @@ interface ChartDao {
 
     @Query("""
         SELECT * FROM charts 
-        WHERE (:query IS NULL OR track LIKE '%' || :query || '%' OR artist LIKE '%' || :query || '%')
+        WHERE (:query IS NULL OR 
+               json_extract(track, '$.title') LIKE '%' || :query || '%' OR 
+               json_extract(track, '$.artist') LIKE '%' || :query || '%')
         ORDER BY downloads_sum DESC
         LIMIT CASE WHEN :limit IS NULL THEN -1 ELSE :limit END
         OFFSET :offset
     """)
     fun getChartsSortedByMostDownloadedWithQuery(query: String?, limit: Int?, offset: Int): List<Chart>
 
-    @Query("SELECT * FROM charts WHERE track LIKE :first AND " +
-            "artist LIKE :last LIMIT 1")
+    @Query("SELECT * FROM charts WHERE json_extract(track, '$.title') LIKE :first AND " +
+            "json_extract(track, '$.artist') LIKE :last LIMIT 1")
     fun findByName(first: String, last: String): Chart
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -132,27 +121,15 @@ interface ChartDao {
     @Upsert
     fun update(chart: List<Chart>)
 
-    /**
-     * Updating only is_installed field
-     * By chart id
-     */
     @Query("UPDATE charts SET is_installed = :isInstalled WHERE id = :id")
     fun update(id: String, isInstalled: Boolean?)
 
     @Query("UPDATE charts SET latest_version = available_version, available_version = NULL WHERE id = :id")
     fun updateVersion(id: String)
 
-    /**
-     * Update the likedAt timestamp for a chart
-     * Pass null to remove the like
-     */
     @Query("UPDATE charts SET liked_at = :likedAt WHERE id = :chartId")
     suspend fun updateLikedAt(chartId: String, likedAt: String?)
 
-    /**
-     * Update the bookmarkedAt timestamp for a chart
-     * Pass null to remove the bookmark
-     */
     @Query("UPDATE charts SET bookmarked_at = :bookmarkedAt WHERE id = :chartId")
     suspend fun updateBookmarkedAt(chartId: String, bookmarkedAt: String?)
 

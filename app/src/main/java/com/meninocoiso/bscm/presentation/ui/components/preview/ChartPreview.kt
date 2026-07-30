@@ -16,16 +16,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.toColorInt
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
-import com.meninocoiso.bscm.presentation.ui.components.layout.LinearGradient
 import com.meninocoiso.bscm.presentation.ui.modifiers.debouncedClickable
 import com.meninocoiso.bscm.util.PreviewUtils.secondaryContainer
 import com.meninocoiso.bscm.util.PreviewUtils.titleContent
@@ -42,12 +39,13 @@ fun ChartPreview(
     onDisabled: () -> Unit = {},
     onPress: () -> Unit
 ) {
+    println("ChartPreview: ${chart.track.title}, isInstalled: ${chart.isInstalled}, isDisabled: $isDisabled, coverUrl: ${chart.track.coverUrl}")
     Box(
         modifier = modifier
             .secondaryContainer(isSecondary)
             .graphicsLayer {
                 alpha =
-                    if (chart.isInstalled || isDisabled) 0.5f else 1f
+                    if (chart.isInstalled == true || isDisabled) 0.5f else 1f
             }
             .debouncedClickable(onClick = {
                 if (isDisabled) {
@@ -64,26 +62,17 @@ fun ChartPreview(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = if (showInteractions) Alignment.CenterVertically else Alignment.Top
         ) {
-            if (chart.coverUrl.isEmpty() && chart.colors?.isNotEmpty() == true) {
-                LinearGradient(
-                    colors = chart.colors.map {
-                        Color("#$it".toColorInt())
-                    },
-                    borderRadius = if (isSecondary) 8.dp else 0.dp,
-                )
-            } else {
-                CoverArt(
-                    difficulty = chart.latestVersion.difficulty,
-                    url = chart.coverUrl,
-                    borderRadius = if (isSecondary) 8.dp else 0.dp,
-                )
-            }
+            CoverArt(
+                difficulty = chart.difficulty,
+                url = chart.track.coverUrl ?: "",
+                borderRadius = if (isSecondary) 8.dp else 0.dp,
+            )
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Column {
-                    if (chart.isInstalled) {
+                    if (chart.isInstalled == true) {
                         FlowRow(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -91,15 +80,15 @@ fun ChartPreview(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             titleContent(
-                                chart.track,
-                                chart.latestVersion.isExplicit,
-                                chart.latestVersion.isDeluxe
+                                chart.track.title,
+                                chart.isExplicit,
+                                chart.isDeluxe
                             )
                             Text(
                                 style = MaterialTheme.typography.labelLarge,
                                 text = stringResource(
                                     R.string.version_format,
-                                    chart.latestVersion.index
+                                    chart.latestVersion?.versionCode ?: 0
                                 )
                             )
                         }
@@ -112,22 +101,22 @@ fun ChartPreview(
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             titleContent(
-                                chart.track,
-                                chart.latestVersion.isExplicit,
-                                chart.latestVersion.isDeluxe
+                                chart.track.title,
+                                chart.isExplicit,
+                                chart.isDeluxe
                             )
                             if (!showInteractions) {
                                 Text(
                                     modifier = Modifier.padding(start = 8.dp),
                                     style = MaterialTheme.typography.labelMedium,
-                                    text = StringUtils.toRelativeString(chart.latestVersion.createdAt)
+                                    text = chart.latestVersion?.createdAt?.let { StringUtils.toRelativeString(it) } ?: ""
                                 )
                             }
                         }
                     }
                     Text(
                         style = MaterialTheme.typography.labelMedium,
-                        text = chart.artist
+                        text = chart.track.artist
                     )
                 }
                 if (chart.contributors.isNotEmpty()) {
@@ -139,7 +128,7 @@ fun ChartPreview(
                         authors = chart.contributors
                     )
                 }
-                if (chart.contentId == null || chart.isInstalled) PreviewInstalledTag(chart.contentId == null)
+                if (chart.isInstalled == true) PreviewInstalledTag(false)
             }
             if (showInteractions && (chart.likedAt != null || chart.bookmarkedAt != null)) {
                 Box(

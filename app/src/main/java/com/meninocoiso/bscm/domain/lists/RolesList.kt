@@ -20,5 +20,7 @@ fun getRolesList(): List<RoleList> {
 		RoleList(Role.EFFECTS, stringResource(R.string.effects_role)),
 		RoleList(Role.SYNC, stringResource(R.string.sync_role)),
 		RoleList(Role.GAMEPLAY, stringResource(R.string.gameplay_role)),
+		RoleList(Role.ART, stringResource(R.string.art_role)),
+		RoleList(Role.TEXTURES, stringResource(R.string.textures_role)),
 	)
 }

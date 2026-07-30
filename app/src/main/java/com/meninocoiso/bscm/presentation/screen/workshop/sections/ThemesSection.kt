@@ -32,15 +32,14 @@ internal fun ThemesSection(
             id = "1",
             name = "Bassline Yatteru (aka. Can I Friend You On Bassbook ? Lol)",
             replaces = "Rock - Chrome Skull",
-            contentId = "1234567890",
             coverUrl = "https://i.imgur.com/g23iXuT.png",
             previewUrl = "https://i.imgur.com/lTPUHIN.png",
             updatedAt = LocalDateTime.now(),
             contributors = listOf(
                 Contributor(
                     user = SimplifiedUser(id = "1", username = "meninocoiso", avatarUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
-                    chartId = "asdads",
-                    roles = listOf(Role.GAMEPLAY),
+                    catalogItemId = "asdads",
+                    role = Role.GAMEPLAY,
                     joinedAt = LocalDateTime.now()
                 )
             ),
@@ -50,7 +49,6 @@ internal fun ThemesSection(
             id = "1",
             name = "Daft Punk",
             replaces = "Dance - Fastlane",
-            contentId = "1234567890",
             coverUrl = "https://i.imgur.com/yGZjCNv.png",
             previewUrl = "https://i.imgur.com/ux3WDfi.png",
             isFeatured = false,
@@ -58,8 +56,8 @@ internal fun ThemesSection(
             contributors = listOf(
                 Contributor(
                     user = SimplifiedUser(id = "1", username = "meninocoiso", avatarUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
-                    chartId = "asdads",
-                    roles = listOf(Role.GAMEPLAY),
+                    catalogItemId = "asdads",
+                    role = Role.GAMEPLAY,
                     joinedAt = LocalDateTime.now()
                 )
             ),
@@ -69,7 +67,6 @@ internal fun ThemesSection(
             id = "1",
             name = "The Cyber Grind",
             replaces = "Rock - Chrome Skull",
-            contentId = "1234567890",
             coverUrl = "https://i.imgur.com/7XsJ6GC.png",
             previewUrl = "https://i.imgur.com/KaiDZBH.png",
             isFeatured = false,
@@ -77,8 +74,8 @@ internal fun ThemesSection(
             contributors = listOf(
                 Contributor(
                     user = SimplifiedUser(id = "1", username = "meninocoiso", avatarUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
-                    chartId = "asdads",
-                    roles = listOf(Role.GAMEPLAY),
+                    catalogItemId = "asdads",
+                    role = Role.GAMEPLAY,
                     joinedAt = LocalDateTime.now()
                 )
             ),
@@ -88,7 +85,6 @@ internal fun ThemesSection(
             id = "1",
             name = "Green V1",
             replaces = "Rock - Chrome Skull",
-            contentId = "1234567890",
             coverUrl = "https://i.imgur.com/QYpcMfh.png",
             previewUrl = "https://i.imgur.com/7fs2XWg.png",
             isFeatured = false,
@@ -96,8 +92,8 @@ internal fun ThemesSection(
             contributors = listOf(
                 Contributor(
                     user = SimplifiedUser(id = "1", username = "meninocoiso", avatarUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
-                    chartId = "asdads",
-                    roles = listOf(Role.GAMEPLAY),
+                    catalogItemId = "asdads",
+                    role = Role.GAMEPLAY,
                     joinedAt = LocalDateTime.now()
                 )
             ),

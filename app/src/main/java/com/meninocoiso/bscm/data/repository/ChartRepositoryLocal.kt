@@ -45,7 +45,7 @@ class ChartRepositoryLocal(
     }.flowOn(dispatcher)
 
     override suspend fun getItemByContentId(contentId: String): Flow<Result<Chart>> = flow {
-        val chart = chartDao.getChartByContentId(contentId)
+        val chart = chartDao.getChart(contentId)
         if (chart != null) {
             emit(Result.success(chart))
         } else {
@@ -63,7 +63,7 @@ class ChartRepositoryLocal(
     }.flowOn(dispatcher)
 
     override suspend fun getItemsByContentIds(contentIds: List<String>): Flow<Result<List<Chart>>> = flow {
-        val charts = chartDao.getChartsByContentIds(contentIds)
+        val charts = chartDao.getChartsByIds(contentIds)
         emit(Result.success(charts))
     }.catch { e ->
         emit(Result.failure(e))

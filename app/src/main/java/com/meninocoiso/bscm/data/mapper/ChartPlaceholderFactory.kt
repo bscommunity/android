@@ -5,6 +5,7 @@ import com.meninocoiso.bscm.data.parser.ExternalContentConfig
 import com.meninocoiso.bscm.data.parser.ExternalContentMetadata
 import com.meninocoiso.bscm.data.service.StreamingLinkParser
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.Track
 import com.meninocoiso.bscm.domain.model.Version
 import java.time.LocalDateTime
 import javax.inject.Inject
@@ -27,19 +28,22 @@ class ChartPlaceholderFactory @Inject constructor(
         val localId = metadata.id.trim()
         val now = LocalDateTime.now()
         return Chart(
-            artist = metadata.artist,
-            track = metadata.title,
-            album = null,
-            genre = null,
-            colors = config?.songTemplate?.colorGradient?.map { it.color }.orEmpty(),
-            trackUrls = streamingLinkParser.parseLinks(metadata.streaming),
+            track = Track(
+                id = localId,
+                title = metadata.title,
+                artist = metadata.artist,
+                streamingRefs = streamingLinkParser.parseLinks(metadata.streaming),
+                duration = 0f,
+                coverUrl = metadata.cover,
+            ),
+            difficulty = difficultyMapper.map(metadata.difficulty),
+            notesAmount = metadata.notes ?: 0,
+            effectsAmount = metadata.effects ?: 0,
             id = localId,
-            contentId = null,
-            coverUrl = metadata.cover ?: "",
             downloadsSum = 0,
             updatedAt = metadata.publishedAt?.let {
                 LocalDateTime.ofEpochSecond(it, 0, java.time.ZoneOffset.UTC)
-            } ?: now,
+            },
             isInstalled = true,
             latestVersion = createPlaceholderVersion(localId, metadata),
             availableVersion = null,
@@ -54,23 +58,17 @@ class ChartPlaceholderFactory @Inject constructor(
     ): Version {
         val now = LocalDateTime.now()
         return Version(
-            id = -chartId.hashCode().toLong(),
-            chartId = chartId,
-            index = 1,
-            duration = metadata.duration ?: 0f,
-            notesAmount = metadata.notes ?: 0,
-            effectsAmount = metadata.effects ?: 0,
-            bpm = metadata.bpm?.toInt() ?: 0,
-            difficulty = difficultyMapper.map(metadata.difficulty),
-            isDeluxe = metadata.type.equals("Promode", ignoreCase = true),
-            isExplicit = false,
-            bundleUrl = "",
-            previewUrl = metadata.gameplay,
+            id = chartId,
+            catalogItemId = chartId,
+            versionCode = 1,
             downloadsAmount = 0,
-            knownIssues = emptyList(),
+            fileSizeBytes = 0L,
+            changelog = null,
+            discordAttachmentId = null,
             createdAt = metadata.publishedAt?.let {
                 LocalDateTime.ofEpochSecond(it, 0, java.time.ZoneOffset.UTC)
-            } ?: now
+            } ?: now,
+            bundleHash = null
         )
     }
 }

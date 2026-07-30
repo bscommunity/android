@@ -37,7 +37,7 @@ class ChartStateMerger @Inject constructor(
             val local = localById[remote.id]
             var merged = if (local != null) {
                 remote.copy(
-                    isInstalled = local.isInstalled || remote.isInstalled,
+                    isInstalled = (local.isInstalled == true) || (remote.isInstalled == true),
                     likedAt = local.likedAt ?: remote.likedAt,
                     bookmarkedAt = local.bookmarkedAt ?: remote.bookmarkedAt,
                     availableVersion = remote.availableVersion ?: local.availableVersion,
@@ -46,7 +46,7 @@ class ChartStateMerger @Inject constructor(
                 remote
             }
 
-            val contentId = merged.contentId ?: return@map merged
+            val contentId = merged.id
 
             when (latestLikeActions[contentId]) {
                 ActionType.ADD -> if (merged.likedAt == null) {
@@ -68,8 +68,8 @@ class ChartStateMerger @Inject constructor(
         }
     }
 
-    suspend fun getChartsByContentIds(contentIds: Collection<String>): List<Chart> = withContext(Dispatchers.IO) {
-        if (contentIds.isEmpty()) return@withContext emptyList()
-        chartDao.getChartsByContentIds(contentIds.toList())
+    suspend fun getChartsByIds(ids: Collection<String>): List<Chart> = withContext(Dispatchers.IO) {
+        if (ids.isEmpty()) return@withContext emptyList()
+        chartDao.getChartsByIds(ids.toList())
     }
 }

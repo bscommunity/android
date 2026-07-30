@@ -32,7 +32,6 @@ internal fun TourPassesSection(
             id = "1",
             name = "The World's a Little Blurry",
             artist = "Billie Eilish",
-            contentId = "1234567890",
             coverUrl = "https://i.imgur.com/WsewcFR.jpeg",
             isFeatured = false,
             updatedAt = LocalDateTime.now(),
@@ -40,8 +39,8 @@ internal fun TourPassesSection(
             contributors = listOf(
                 Contributor(
                     user = SimplifiedUser(id = "1", username = "meninocoiso", avatarUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
-                    chartId = "asdads",
-                    roles = listOf(Role.GAMEPLAY),
+                    catalogItemId = "asdads",
+                    role = Role.GAMEPLAY,
                     joinedAt = LocalDateTime.now()
                 )
             ),
@@ -51,7 +50,6 @@ internal fun TourPassesSection(
             id = "2",
             name = "This is what _______ feels like",
             artist = "JVKE",
-            contentId = "123456734890",
             coverUrl = "https://i.imgur.com/jeGiroM.png",
             isFeatured = false,
             updatedAt = LocalDateTime.now(),
@@ -59,8 +57,8 @@ internal fun TourPassesSection(
             contributors = listOf(
                 Contributor(
                     user = SimplifiedUser(id = "1", username = "meninocoiso", avatarUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
-                    chartId = "asdads",
-                    roles = listOf(Role.GAMEPLAY),
+                    catalogItemId = "asdads",
+                    role = Role.GAMEPLAY,
                     joinedAt = LocalDateTime.now()
                 )
             ),
@@ -70,7 +68,6 @@ internal fun TourPassesSection(
             id = "3",
             name = "The Clancy Experience",
             artist = "Twenty One Pilots",
-            contentId = "123877434890",
             coverUrl = "https://i.imgur.com/HcmI0fW.jpeg",
             isFeatured = false,
             updatedAt = LocalDateTime.now(),
@@ -78,8 +75,8 @@ internal fun TourPassesSection(
             contributors = listOf(
                 Contributor(
                     user = SimplifiedUser(id = "1", username = "meninocoiso", avatarUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
-                    chartId = "asdads",
-                    roles = listOf(Role.GAMEPLAY),
+                    catalogItemId = "asdads",
+                    role = Role.GAMEPLAY,
                     joinedAt = LocalDateTime.now()
                 )
             ),

@@ -3,7 +3,7 @@ package com.meninocoiso.bscm.data.manager
 import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Contributor
-import com.meninocoiso.bscm.domain.model.StreamingLink
+import com.meninocoiso.bscm.domain.model.StreamingRef
 import com.meninocoiso.bscm.domain.model.Version
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -72,7 +72,7 @@ class ChartManagerTest {
             album = null,
             genre = null,
             colors = emptyList(),
-            trackUrls = emptyList<StreamingLink>(),
+            trackUrls = emptyList<StreamingRef>(),
             id = id,
             contentId = contentId,
             coverUrl = "",

@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.repository.DownloadRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.ErrorType
@@ -37,6 +38,7 @@ private const val TAG = "ContentViewModel"
 @HiltViewModel
 class ContentViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
+    private val apiClient: ApiClient,
     private val downloadServiceMonitor: DownloadServiceMonitor,
     private val downloadRepository: DownloadRepository,
     settingsRepository: SettingsRepository,
@@ -203,17 +205,20 @@ class ContentViewModel @Inject constructor(
                 updateState(chartId, DownloadState.Downloading(chartId, 0f))
 
                 // Validate chart data
-                val version = chart.availableVersion ?: chart.latestVersion
-                if (version.bundleUrl.isBlank()) {
-                    throw IllegalArgumentException("Bundle URL is empty")
+                if (chart.bundleHash == null) {
+                    throw IllegalArgumentException("Bundle hash is empty")
                 }
+
+                // Fetch the actual bundle download URL from the API
+                val bundleResponse = apiClient.getChartBundleUrl(chart.id)
+                val bundleUrl = bundleResponse.url
 
                 // Start the download
                 downloadServiceMonitor.startDownload(
                     id = chartId,
-                    contentId = chart.contentId,
-                    name = "${chart.track} - ${chart.artist}",
-                    bundleUrl = version.bundleUrl,
+                    contentId = chart.id,
+                    name = "${chart.track.title} - ${chart.track.artist}",
+                    bundleUrl = bundleUrl,
                     isUpdate = chart.availableVersion != null
                 )
 
@@ -265,7 +270,7 @@ class ContentViewModel @Inject constructor(
                 }
 
                 // Remove files and persist deletion state from a single repository path.
-                downloadRepository.deleteChart(chartId, chart.contentId)
+                downloadRepository.deleteChart(chartId, chart.id)
 
                 // Reset the state and clear operation
                 updateState(chartId, DownloadState.Idle)

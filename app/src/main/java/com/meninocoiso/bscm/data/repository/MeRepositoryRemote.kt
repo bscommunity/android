@@ -9,7 +9,7 @@ import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.di.ApplicationScope
 import com.meninocoiso.bscm.domain.enums.CollectionKind
-import com.meninocoiso.bscm.domain.enums.ContentType
+import com.meninocoiso.bscm.domain.enums.CatalogItemType
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
@@ -83,7 +83,7 @@ class MeRepositoryRemote @Inject constructor(
 
             // First page: fetch all content types to receive ContentCounts
             // Subsequent pages: filter to CHART only (the only type we persist / display here)
-            val types = if (offset == 0) null else listOf(ContentType.CHART)
+            val types = if (offset == 0) null else listOf(CatalogItemType.CHART)
             val page = apiClient.getMyLikes(limit, offset, types)
             val remoteLikes = chartStateMerger.mergeRemoteCharts(page.items)
             Log.d(TAG, "Fetched ${remoteLikes.size} likes from API (offset=$offset)")
@@ -132,7 +132,7 @@ class MeRepositoryRemote @Inject constructor(
 
         // First page: fetch all content types to receive ContentCounts
         // Subsequent pages: filter to CHART only
-        val types = if (offset == 0) null else listOf(ContentType.CHART)
+        val types = if (offset == 0) null else listOf(CatalogItemType.CHART)
         val page = apiClient.getMyBookmarks(limit, offset, types)
         val overlay = if (offset == 0) {
             queueManager.getCollectionMembershipOverlay(CollectionKind.BOOKMARKS)
@@ -141,13 +141,13 @@ class MeRepositoryRemote @Inject constructor(
         }
         val remoteBookmarks = chartStateMerger.mergeRemoteCharts(page.items)
         val filteredBookmarks = if (overlay != null) {
-            remoteBookmarks.filterNot { it.contentId in overlay.forceExcludeContentIds }
+            remoteBookmarks.filterNot { it.id in overlay.forceExcludeContentIds }
         } else {
             remoteBookmarks
         }
         val missingPendingBookmarks = if (overlay != null && offset == 0) {
-            chartStateMerger.getChartsByContentIds(
-                overlay.forceIncludeContentIds - filteredBookmarks.mapNotNull { it.contentId }.toSet()
+            chartStateMerger.getChartsByIds(
+                overlay.forceIncludeContentIds - filteredBookmarks.map { it.id }.toSet()
             )
         } else {
             emptyList()
@@ -180,19 +180,19 @@ class MeRepositoryRemote @Inject constructor(
             )
 
             val crossRefs = page.items.mapNotNull { chart ->
-                chart.contentId?.takeUnless { overlay?.forceExcludeContentIds?.contains(it) == true }?.let { contentId ->
+                chart.id.takeUnless { overlay?.forceExcludeContentIds?.contains(it) == true }?.let { contentId ->
                     CollectionItemCrossRef(
                         collectionId = "bookmarks",
                         contentId = contentId,
-                        contentType = ContentType.CHART
+                        contentType = CatalogItemType.CHART
                     )
                 }
             } + missingPendingBookmarks.mapNotNull { chart ->
-                chart.contentId?.let { contentId ->
+                chart.id.let { contentId ->
                     CollectionItemCrossRef(
                         collectionId = "bookmarks",
                         contentId = contentId,
-                        contentType = ContentType.CHART
+                        contentType = CatalogItemType.CHART
                     )
                 }
             }
