@@ -400,6 +400,7 @@ fun ChartDetailsScreen(
             MediaCarousel(
                 listOf(
                     CarouselItem.ImageItem(imageUrl = chart.track.coverUrl ?: ""),
+                    CarouselItem.VideoItem(videoId = chart.previewVideoId)
                 ),
                 isVideoEnabled = isGameplayVideoPreviewEnabled
             )

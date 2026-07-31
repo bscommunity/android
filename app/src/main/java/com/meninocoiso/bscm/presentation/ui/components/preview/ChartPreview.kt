@@ -39,7 +39,6 @@ fun ChartPreview(
     onDisabled: () -> Unit = {},
     onPress: () -> Unit
 ) {
-    println("ChartPreview: ${chart.track.title}, isInstalled: ${chart.isInstalled}, isDisabled: $isDisabled, coverUrl: ${chart.track.coverUrl}")
     Box(
         modifier = modifier
             .secondaryContainer(isSecondary)
