@@ -92,7 +92,10 @@ fun TourPassPreview(
                             )
                         }
                     }
-                    Text(style = MaterialTheme.typography.labelMedium, text = tourPass.artist ?: stringResource(R.string.multiple_artists))
+                    tourPass.artist?.let {
+                        Text(style = MaterialTheme.typography.labelMedium, text = tourPass.artist)
+
+                    }
                 }
                 val contributors = tourPass.contributors
                 if (contributors.isNotEmpty()) {

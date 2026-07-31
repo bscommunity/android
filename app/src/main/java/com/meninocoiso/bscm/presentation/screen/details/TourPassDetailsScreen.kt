@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.TourPass
@@ -77,6 +78,8 @@ fun TourPassDetailsScreen(
         StringUtils.toRelativeString(tourPass.updatedAt ?: tourPass.createdAt)
     )
 
+    println("contributors: ${tourPass}")
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -112,10 +115,11 @@ fun TourPassDetailsScreen(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)) {
+            Box(modifier = Modifier.padding(top = 16.dp, bottom = 8.dp, start = 16.dp, end = 16.dp)) {
                 CoverArt(
                     url = tourPass.coverUrl ?: "",
-                    size = 300.dp,
+                    width = Dp.Unspecified,
+                    height = 96.dp,
                     borderRadius = 16.dp
                 )
             }
@@ -128,9 +132,7 @@ fun TourPassDetailsScreen(
                 Column(modifier = Modifier.padding(bottom = 8.dp)) {
                     StatListItem(title = totalMinutesText, icon = R.drawable.rounded_hourglass_24)
                     StatListItem(title = songsText, icon = R.drawable.rounded_music_note_24)
-                    if (tourPass.downloadsSum > 0) {
-                        StatListItem(title = downloadsText, icon = R.drawable.rounded_download_24)
-                    }
+                    StatListItem(title = downloadsText, icon = R.drawable.rounded_download_24)
                     StatListItem(title = uploadedText, icon = R.drawable.rounded_calendar_today_24)
                 }
             }
