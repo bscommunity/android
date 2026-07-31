@@ -78,11 +78,7 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
 
             else -> {
                 // For unsupported types, open the web page as a fallback
-                val url = when (item) {
-                    is Theme -> "https://bscm.dev/theme/${item.id}"
-                    else -> null
-                }
-                url?.let { startOAuth(it.toUri()) }
+                startOAuth("https://bscm.netlify.app/link/theme/${item.id}".toUri())
             }
         }
     }

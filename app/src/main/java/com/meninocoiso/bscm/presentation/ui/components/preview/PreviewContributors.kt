@@ -40,7 +40,11 @@ import com.meninocoiso.bscm.presentation.ui.components.layout.Avatar
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun PreviewContributors(authors: List<Contributor>) {
+fun PreviewContributors(
+    authors: List<Contributor>,
+    description: String = stringResource(R.string.contributors_list_title),
+    customSubtitles: Map<String, String> = emptyMap()
+) {
     var isExpanded by remember {
         mutableStateOf(false)
     }
@@ -74,7 +78,9 @@ fun PreviewContributors(authors: List<Contributor>) {
                     },
                     iconRotationDeg = iconRotationDeg,
                     animatedVisibilityScope = this@AnimatedContent,
-                    sharedTransitionScope = this@SharedTransitionLayout
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    description = description,
+                    customSubtitles = customSubtitles
                 )
             }
         }
@@ -196,7 +202,9 @@ private fun ExpandedContributors(
     onCollapse: () -> Unit,
     iconRotationDeg: Float,
     sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    description: String,
+    customSubtitles: Map<String, String>
 ) {
     val rolesList = getRolesList()
     
@@ -219,7 +227,7 @@ private fun ExpandedContributors(
                             rememberSharedContentState(key = "credits-description"),
                             animatedVisibilityScope = animatedVisibilityScope
                         ),
-                        text = stringResource(R.string.contributors_list_title),
+                        text = description,
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
@@ -259,7 +267,7 @@ private fun ExpandedContributors(
                             style = MaterialTheme.typography.labelLarge
                         )
                         Text(
-                            text = roleNames.joinToString(", "),
+                            text = customSubtitles[first.user.id] ?: roleNames.joinToString(", "),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }

@@ -95,6 +95,8 @@
     <!-- 📊 Chart Information & Statistics -->
     <string name="chart_by">Chart by %1$s</string>
     <string name="contributors_list_title">The following users contributed to this chart:</string>
+    <string name="tour_pass_contributors_list_title">The following users contributed to the charts
+        in this tour pass:</string>
     <string name="credits">Credits</string>
     <string name="stats">Stats</string>
     <string name="updated_at">Updated %1$s</string>

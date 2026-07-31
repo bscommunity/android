@@ -95,6 +95,7 @@
     <!-- 📊 Chart Information & Statistics -->
     <string name="chart_by">由 %1$s 制作的谱面</string>
     <string name="contributors_list_title">以下用户对本谱面做出了贡献：</string>
+    <string name="tour_pass_contributors_list_title">以下用户为本巡回通行证中的谱面做出了贡献：</string>
     <string name="credits">制作人员列表</string>
     <string name="stats">统计信息</string>
     <string name="updated_at">更新于 %1$s</string>

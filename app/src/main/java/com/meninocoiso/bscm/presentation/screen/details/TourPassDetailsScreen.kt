@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.Contributor
 import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.presentation.ui.components.details.StatListItem
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
@@ -80,6 +81,10 @@ fun TourPassDetailsScreen(
         StringUtils.toRelativeString(tourPass.updatedAt ?: tourPass.createdAt)
     )
 
+    val (tourPassAuthors, customSubtitles) = remember(tourPass) {
+        buildTourPassContributorList(tourPass)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -124,8 +129,12 @@ fun TourPassDetailsScreen(
                 )
             }
 
-            if (tourPass.contributors.isNotEmpty()) {
-                PreviewContributors(tourPass.contributors)
+            if (tourPassAuthors.isNotEmpty()) {
+                PreviewContributors(
+                    authors = tourPassAuthors,
+                    description = stringResource(R.string.tour_pass_contributors_list_title),
+                    customSubtitles = customSubtitles
+                )
             }
 
             Section(title = stringResource(R.string.stats)) {
@@ -169,4 +178,36 @@ fun TourPassDetailsScreen(
             }
         }
     }
+}
+
+/**
+ * Builds the credits list of a tour pass: tour pass contributors first (they
+ * keep their roles), followed by chart-only contributors. Returns the list of
+ * [Contributor]s for [PreviewContributors] plus a map from user id to the
+ * chart titles that user participated in, used as the subtitle for users that
+ * have no role in the tour pass itself.
+ */
+private fun buildTourPassContributorList(
+    tourPass: TourPass
+): Pair<List<Contributor>, Map<String, String>> {
+    val tourPassContributorIds = tourPass.contributors.map { it.user.id }.toSet()
+
+    val chartOnlyContributions = tourPass.charts
+        .flatMap { chart ->
+            chart.contributors.map { contributor ->
+                contributor to chart.track.title
+            }
+        }
+        .filter { (contributor, _) -> contributor.user.id !in tourPassContributorIds }
+        .groupBy { it.first.user.id }
+
+    val customSubtitles = chartOnlyContributions.mapValues { (_, contributions) ->
+        contributions.map { it.second }.distinct().joinToString(", ")
+    }
+
+    val chartOnlyContributors = chartOnlyContributions.map { (_, contributions) ->
+        contributions.first().first
+    }
+
+    return (tourPass.contributors + chartOnlyContributors) to customSubtitles
 }
