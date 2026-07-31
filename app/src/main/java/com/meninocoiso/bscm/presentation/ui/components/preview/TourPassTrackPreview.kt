@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Track
@@ -44,20 +45,20 @@ fun TourPassTrackPreview(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .background(Color.Red)
         ) {
             CoverArt(
                 url = track.coverUrl ?: "",
                 modifier = Modifier.fillMaxSize(),
                 borderRadius = 0.dp,
-                size = 117.dp,
+                width = Dp.Unspecified,
+                height = Dp.Unspecified,
             )
             if (hasPreview) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(10.dp)
-                        .size(40.dp)
+                        .padding(8.dp)
+                        .size(36.dp)
                         .clip(CircleShape)
                         .background(Color.Black.copy(alpha = 0.5f))
                         .border(1.5.dp, Color.White, CircleShape)
@@ -73,7 +74,7 @@ fun TourPassTrackPreview(
                             if (isPlaying) R.string.stop_preview else R.string.play_preview
                         ),
                         tint = Color.White,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }

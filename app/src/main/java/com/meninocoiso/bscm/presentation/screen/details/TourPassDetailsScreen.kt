@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -155,6 +156,11 @@ fun TourPassDetailsScreen(
                                         }
                                     )
                                 }
+                            }
+                            // Keep every row at 3 columns so a partial last row
+                            // leaves a blank cell instead of stretching its items.
+                            repeat(3 - rowCharts.size) {
+                                Spacer(modifier = Modifier.weight(1f))
                             }
                         }
                     }
