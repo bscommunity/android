@@ -26,6 +26,14 @@
     <plurals name="items_count">
         <item quantity="other">%1$d items</item>
     </plurals>
+    <plurals name="songs_count">
+        <item quantity="one">%1$d 首歌曲</item>
+        <item quantity="other">%1$d 首歌曲</item>
+    </plurals>
+    <plurals name="tour_pass_minutes_total">
+        <item quantity="one">约 %1$d 分钟总时长</item>
+        <item quantity="other">约 %1$d 分钟总时长</item>
+    </plurals>
     <!-- ⏰ Time Expressions -->
     <string name="today">今天</string>
     <string name="yesterday">昨天</string>
@@ -90,6 +98,8 @@
     <string name="credits">制作人员列表</string>
     <string name="stats">统计信息</string>
     <string name="updated_at">更新于 %1$s</string>
+    <string name="uploaded_at">上传于 %1$s</string>
+    <string name="tracklist">曲目列表</string>
     <string name="known_issues">已知问题</string>
     <string name="no_known_issues">没有已知问题</string>
     <string name="explicit">露骨内容</string>
@@ -111,6 +121,8 @@
         favorite streaming service and support the artist work</string>
     <string name="empty_streaming_links">没有流媒体链接</string>
     <string name="minutes_seconds">%1$d 分 %2$d 秒</string>
+    <string name="play_preview">播放预览</string>
+    <string name="stop_preview">停止预览</string>
     <!-- 🎨 Music Genres -->
     <string name="genre">曲风</string>
     <string name="hip_hop">嘻哈</string>
@@ -217,6 +229,9 @@
     <string name="something_went_wrong">看起来出现了什么问题…</string>
     <string name="check_connection">请检查您的网络连接并重试</string>
     <string name="failed_to_load_chart_details">谱面信息加载失败</string>
+    <string name="failed_to_load_tour_pass_details">巡回通行证详情加载失败</string>
+    <string name="failed_to_load_tour_pass_details_description">加载巡回通行证详情时出错</string>
+    <string name="invalid_tour_pass_id">巡回通行证 ID 无效</string>
     <string name="failed_to_load_chart_details_description">An error occurred while loading the
         chart details</string>
     <string name="failed_to_load_collection">Failed to load collection</string>

@@ -26,6 +26,14 @@
     <plurals name="items_count">
         <item quantity="other">%1$d items</item>
     </plurals>
+    <plurals name="songs_count">
+        <item quantity="one">%1$d bài hát</item>
+        <item quantity="other">%1$d bài hát</item>
+    </plurals>
+    <plurals name="tour_pass_minutes_total">
+        <item quantity="one">~%1$d phút tổng cộng</item>
+        <item quantity="other">~%1$d phút tổng cộng</item>
+    </plurals>
     <!-- ⏰ Time Expressions -->
     <string name="today">today</string>
     <string name="yesterday">yesterday</string>
@@ -90,6 +98,8 @@
     <string name="credits">Credits</string>
     <string name="stats">Stats</string>
     <string name="updated_at">Updated %1$s</string>
+    <string name="uploaded_at">Uploaded %1$s</string>
+    <string name="tracklist">Tracklist</string>
     <string name="known_issues">Known Issues</string>
     <string name="no_known_issues">No known issues</string>
     <string name="explicit">Explicit</string>
@@ -111,6 +121,8 @@
         favorite streaming service and support the artist work</string>
     <string name="empty_streaming_links">No streaming links available</string>
     <string name="minutes_seconds">%1$dm%2$ds</string>
+    <string name="play_preview">Play preview</string>
+    <string name="stop_preview">Stop preview</string>
     <!-- 🎨 Music Genres -->
     <string name="genre">Genre</string>
     <string name="hip_hop">Hip-hop</string>
@@ -217,6 +229,10 @@
     <string name="something_went_wrong">Looks like something went wrong…</string>
     <string name="check_connection">Please check your connection and try again</string>
     <string name="failed_to_load_chart_details">Failed to load chart details</string>
+    <string name="failed_to_load_tour_pass_details">Failed to load tour pass details</string>
+    <string name="failed_to_load_tour_pass_details_description">An error occurred while loading the
+        tour pass details</string>
+    <string name="invalid_tour_pass_id">Invalid tour pass ID</string>
     <string name="failed_to_load_chart_details_description">An error occurred while loading the
         chart details</string>
     <string name="failed_to_load_collection">Failed to load collection</string>

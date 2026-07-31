@@ -33,6 +33,14 @@
         <item quantity="one">%1$d item</item>
         <item quantity="other">%1$d items</item>
     </plurals>
+    <plurals name="songs_count">
+        <item quantity="one">%1$d song</item>
+        <item quantity="other">%1$d songs</item>
+    </plurals>
+    <plurals name="tour_pass_minutes_total">
+        <item quantity="one">~%1$d minute total</item>
+        <item quantity="other">~%1$d minutes total</item>
+    </plurals>
 
     <!-- ⏰ Time Expressions -->
     <string name="today">today</string>
@@ -107,6 +115,8 @@
     <string name="credits">Credits</string>
     <string name="stats">Stats</string>
     <string name="updated_at">Updated %1$s</string>
+    <string name="uploaded_at">Uploaded %1$s</string>
+    <string name="tracklist">Tracklist</string>
     <string name="known_issues">Known Issues</string>
     <string name="no_known_issues">No known issues</string>
     <string name="explicit">Explicit</string>
@@ -251,6 +261,12 @@
     <string name="failed_to_load_chart_details">Failed to load chart details</string>
     <string name="failed_to_load_chart_details_description">An error occurred while loading the
         chart details</string>
+    <string name="failed_to_load_tour_pass_details">Failed to load tour pass details</string>
+    <string name="failed_to_load_tour_pass_details_description">An error occurred while loading the
+        tour pass details</string>
+    <string name="invalid_tour_pass_id">Invalid tour pass ID</string>
+    <string name="play_preview">Play preview</string>
+    <string name="stop_preview">Stop preview</string>
     <string name="failed_to_load_collection">Failed to load collection</string>
     <string name="failed_to_load_collection_description">An error occurred while loading the
         collection</string>

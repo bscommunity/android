@@ -29,6 +29,7 @@ import com.meninocoiso.bscm.domain.model.toSimplifiedUser
 import com.meninocoiso.bscm.domain.serialization.ChartParameterType
 import com.meninocoiso.bscm.domain.serialization.SimplifiedCollectionParameterType
 import com.meninocoiso.bscm.domain.serialization.SimplifiedUserParameterType
+import com.meninocoiso.bscm.domain.serialization.TourPassParameterType
 import com.meninocoiso.bscm.presentation.screen.collection.Collection
 import com.meninocoiso.bscm.presentation.screen.collection.CollectionRoute
 import com.meninocoiso.bscm.presentation.screen.collection.CollectionScreen
@@ -37,6 +38,10 @@ import com.meninocoiso.bscm.presentation.screen.details.ChartDetails
 import com.meninocoiso.bscm.presentation.screen.details.ChartDetailsRoute
 import com.meninocoiso.bscm.presentation.screen.details.ChartDetailsScreen
 import com.meninocoiso.bscm.presentation.screen.details.DeepLinkChartDetails
+import com.meninocoiso.bscm.presentation.screen.details.DeepLinkTourPassDetails
+import com.meninocoiso.bscm.presentation.screen.details.TourPassDetails
+import com.meninocoiso.bscm.presentation.screen.details.TourPassDetailsRoute
+import com.meninocoiso.bscm.presentation.screen.details.TourPassDetailsScreen
 import com.meninocoiso.bscm.presentation.screen.profile.DeepLinkProfile
 import com.meninocoiso.bscm.presentation.screen.profile.Profile
 import com.meninocoiso.bscm.presentation.screen.profile.ProfileRoute
@@ -64,13 +69,20 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
                 }
             }
 
+            is TourPass -> {
+                // Navigate to tour pass details
+                navController.navigate(route = TourPassDetails(tourPass = item)) {
+                    launchSingleTop = true
+                }
+            }
+
             else -> {
                 // For unsupported types, open the web page as a fallback
                 val url = when (item) {
-                    is TourPass -> "https://bscm.dev/tourpass/${item.id}"
                     is Theme -> "https://bscm.dev/theme/${item.id}"
+                    else -> null
                 }
-                startOAuth(url.toUri())
+                url?.let { startOAuth(it.toUri()) }
             }
         }
     }
@@ -118,6 +130,13 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
                 val username = pathSegments.getOrNull(0) ?: return
                 val slug = pathSegments.getOrNull(1) ?: return
                 navController.navigate(DeepLinkCollection(username = username, slug = slug)) {
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+            "tourpass" -> {
+                val contentId = pathSegments.getOrNull(0) ?: return
+                navController.navigate(DeepLinkTourPassDetails(contentId = contentId)) {
                     launchSingleTop = true
                     restoreState = true
                 }
@@ -221,6 +240,21 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
                     )
                 }
 
+                // Deep link to tour pass details
+                composableWithTransitions<DeepLinkTourPassDetails>(
+                    deepLinks = listOf(
+                        navDeepLink { uriPattern = "bscm://tourpass/{contentId}" }
+                    )
+                ) { backStackEntry ->
+                    val tourPassDetails: DeepLinkTourPassDetails = backStackEntry.toRoute()
+                    TourPassDetailsRoute(
+                        contentId = tourPassDetails.contentId,
+                        onReturn = {
+                            navController.navigateUp()
+                        }
+                    )
+                }
+
                 // Chart details
                 composableWithTransitions<ChartDetails>(
                     typeMap = mapOf(
@@ -236,6 +270,21 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
                         onNavigateToSettings = {
                             navController.popBackStack<MainRoute>(inclusive = false)
                             onNavigateToSettings()
+                        }
+                    )
+                }
+
+                // Tour pass details
+                composableWithTransitions<TourPassDetails>(
+                    typeMap = mapOf(
+                        typeOf<TourPass>() to TourPassParameterType
+                    )
+                ) { backStackEntry ->
+                    val tourPassDetails: TourPassDetails = backStackEntry.toRoute()
+                    TourPassDetailsScreen(
+                        tourPass = tourPassDetails.tourPass,
+                        onReturn = {
+                            navController.navigateUp()
                         }
                     )
                 }
