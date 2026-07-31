@@ -94,12 +94,15 @@ fun TourPassPreview(
                     }
                     Text(style = MaterialTheme.typography.labelMedium, text = tourPass.artist ?: stringResource(R.string.multiple_artists))
                 }
-                PreviewAuthors(
-                    contentString = stringResource(
-                        R.string.chart_by,
-                        tourPass.contributors[0].user.username
-                    ),
-                    authors = tourPass.contributors)
+                val contributors = tourPass.contributors
+                if (contributors.isNotEmpty()) {
+                    PreviewAuthors(
+                        contentString = stringResource(
+                            R.string.chart_by,
+                            contributors[0].user.username
+                        ),
+                        authors = contributors)
+                }
                 if (!isLocal && tourPass.isInstalled == true) PreviewInstalledTag(false)
             }
         }

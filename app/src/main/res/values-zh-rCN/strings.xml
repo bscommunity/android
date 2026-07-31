@@ -188,6 +188,12 @@
     <string name="no_charts_found">未找到谱面</string>
     <string name="no_charts_found_description">尝试搜索一些别的东西</string>
     <string name="workshop_feed_end">已到达列表底部</string>
+    <string name="no_tour_passes_found">未找到巡回通行证</string>
+    <string name="no_tour_passes_found_description">尝试搜索一些别的东西</string>
+    <string name="tour_passes_feed_end">已到达巡回通行证列表底部</string>
+    <string name="no_themes_found">未找到主题</string>
+    <string name="no_themes_found_description">尝试搜索一些别的东西</string>
+    <string name="themes_feed_end">已到达主题列表底部</string>
     <string name="no_liked_content">No liked content</string>
     <string name="no_bookmarked_content">No bookmarked content</string>
     <string name="no_custom_collections">No custom collections created</string>

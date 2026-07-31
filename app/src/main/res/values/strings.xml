@@ -218,6 +218,12 @@
     <string name="no_charts_found">No charts found</string>
     <string name="no_charts_found_description">Try searching for something else</string>
     <string name="workshop_feed_end">End of charts</string>
+    <string name="no_tour_passes_found">No tour passes found</string>
+    <string name="no_tour_passes_found_description">Try searching for something else</string>
+    <string name="tour_passes_feed_end">End of tour passes</string>
+    <string name="no_themes_found">No themes found</string>
+    <string name="no_themes_found_description">Try searching for something else</string>
+    <string name="themes_feed_end">End of themes</string>
     <string name="no_liked_content">No liked content</string>
     <string name="no_bookmarked_content">No bookmarked content</string>
     <string name="no_custom_collections">No custom collections created</string>

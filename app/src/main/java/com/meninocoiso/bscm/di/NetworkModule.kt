@@ -6,12 +6,16 @@ import com.meninocoiso.bscm.data.manager.SecureTokenManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.KtorApiClient
 import com.meninocoiso.bscm.data.repository.ChartRepositoryRemote
+import com.meninocoiso.bscm.data.repository.ThemeRepositoryRemote
+import com.meninocoiso.bscm.data.repository.TourPassRepositoryRemote
 import com.meninocoiso.bscm.data.security.AuthInterceptor
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.repository.ChartQuery
 import com.meninocoiso.bscm.domain.repository.ChartRemoteRepository
 import com.meninocoiso.bscm.domain.repository.ContentFeedRepository
+import com.meninocoiso.bscm.domain.repository.ThemeRemoteRepository
+import com.meninocoiso.bscm.domain.repository.TourPassRemoteRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -45,6 +49,18 @@ object NetworkModule {
     fun provideChartFeedRepository(
         repository: ChartRemoteRepository
     ): ContentFeedRepository<Chart, SortOption, ChartQuery> = repository
+
+    @Provides
+    @Singleton
+    fun provideTourPassRepository(
+        apiClient: ApiClient
+    ): TourPassRemoteRepository = TourPassRepositoryRemote(apiClient)
+
+    @Provides
+    @Singleton
+    fun provideThemeRepository(
+        apiClient: ApiClient
+    ): ThemeRemoteRepository = ThemeRepositoryRemote(apiClient)
 
     @Provides
     @Singleton

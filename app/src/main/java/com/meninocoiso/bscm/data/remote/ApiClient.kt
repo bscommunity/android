@@ -13,6 +13,8 @@ import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
+import com.meninocoiso.bscm.domain.model.Theme
+import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.model.User
 import com.meninocoiso.bscm.domain.model.Version
 import com.meninocoiso.bscm.domain.model.auth.AuthRequest
@@ -40,6 +42,22 @@ interface ApiClient {
         id: String,
         operationOption: OperationOption
     ): Boolean
+
+    // TourPass methods
+    suspend fun getTourPasses(
+        query: String? = null,
+        limit: Int? = 10,
+        offset: Int = 0
+    ): List<TourPass>
+    suspend fun getTourPass(id: String): TourPass
+
+    // Theme methods
+    suspend fun getThemes(
+        query: String? = null,
+        limit: Int? = 10,
+        offset: Int = 0
+    ): List<Theme>
+    suspend fun getTheme(id: String): Theme
 
     // Authentication methods
     suspend fun authenticateWithDiscord(authRequest: AuthRequest): AuthResponse

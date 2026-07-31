@@ -219,6 +219,38 @@ class KtorApiClient @Inject constructor(
         }.body<Boolean>()
     }
 
+    override suspend fun getTourPasses(query: String?, limit: Int?, offset: Int): List<TourPass> {
+        val body = client.get("tourpasses") {
+            url {
+                query?.let { parameters.append("query", it) }
+                limit?.let { parameters.append("limit", it.toString()) }
+                parameters.append("offset", offset.toString())
+            }
+        }.body<Pair<List<TourPass>, Int?>>()
+
+        return body.first
+    }
+
+    override suspend fun getTourPass(id: String): TourPass {
+        return client.get("tourpasses/$id").body()
+    }
+
+    override suspend fun getThemes(query: String?, limit: Int?, offset: Int): List<Theme> {
+        val body = client.get("themes") {
+            url {
+                query?.let { parameters.append("query", it) }
+                limit?.let { parameters.append("limit", it.toString()) }
+                parameters.append("offset", offset.toString())
+            }
+        }.body<Pair<List<Theme>, Int?>>()
+
+        return body.first
+    }
+
+    override suspend fun getTheme(id: String): Theme {
+        return client.get("themes/$id").body()
+    }
+
     // Authentication methods
     override suspend fun authenticateWithDiscord(authRequest: AuthRequest): AuthResponse {
         Log.d(

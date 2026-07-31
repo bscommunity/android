@@ -21,11 +21,15 @@ import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.Theme
+import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageSize
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
+import com.meninocoiso.bscm.presentation.ui.components.preview.ThemePreview
+import com.meninocoiso.bscm.presentation.ui.components.preview.TourPassPreview
 import com.meninocoiso.bscm.util.DateUtils.DateFormat
 
 @Composable
@@ -150,7 +154,30 @@ fun LazyListScope.contentList(
                 )
             }
 
-            else -> { /* Handle other content types if necessary */
+            is TourPass -> {
+                TourPassPreview(
+                    modifier = Modifier.padding(
+                        start = 16.dp,
+                        end = 16.dp,
+                        bottom = 12.dp
+                    ),
+                    tourPass = item,
+                    isSecondary = true,
+                    onPress = { onNavigateToDetails(item) }
+                )
+            }
+
+            is Theme -> {
+                ThemePreview(
+                    modifier = Modifier.padding(
+                        start = 16.dp,
+                        end = 16.dp,
+                        bottom = 12.dp
+                    ),
+                    theme = item,
+                    isSecondary = true,
+                    onPress = { onNavigateToDetails(item) }
+                )
             }
         }
     }

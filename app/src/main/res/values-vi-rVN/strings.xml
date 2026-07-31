@@ -185,9 +185,15 @@
     <!-- 📭 Empty States -->
     <string name="empty_downloads">No downloads yet</string>
     <string name="empty_downloads_description">Download some charts to get started</string>
-    <string name="no_charts_found">No charts found</string>
-    <string name="no_charts_found_description">Try searching for something else</string>
-    <string name="workshop_feed_end">End of charts</string>
+    <string name="no_charts_found">Không tìm thấy bản nhạc</string>
+    <string name="no_charts_found_description">Hãy thử tìm kiếm thứ khác</string>
+    <string name="workshop_feed_end">Đã hết danh sách</string>
+    <string name="no_tour_passes_found">Không tìm thấy tour pass</string>
+    <string name="no_tour_passes_found_description">Hãy thử tìm kiếm thứ khác</string>
+    <string name="tour_passes_feed_end">Đã hết danh sách tour pass</string>
+    <string name="no_themes_found">Không tìm thấy chủ đề</string>
+    <string name="no_themes_found_description">Hãy thử tìm kiếm thứ khác</string>
+    <string name="themes_feed_end">Đã hết danh sách chủ đề</string>
     <string name="no_liked_content">No liked content</string>
     <string name="no_bookmarked_content">No bookmarked content</string>
     <string name="no_custom_collections">No custom collections created</string>
