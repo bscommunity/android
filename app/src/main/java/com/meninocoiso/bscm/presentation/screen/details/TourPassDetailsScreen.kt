@@ -140,12 +140,10 @@ fun TourPassDetailsScreen(
             Section(title = stringResource(R.string.tracklist)) {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                        .fillMaxWidth(),
                 ) {
                     tourPass.charts.chunked(3).forEach { rowCharts ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Row {
                             rowCharts.forEach { chart ->
                                 Column(Modifier.weight(1f)) {
                                     TourPassTrackPreview(

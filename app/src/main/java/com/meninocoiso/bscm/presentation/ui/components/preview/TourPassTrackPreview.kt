@@ -50,6 +50,7 @@ fun TourPassTrackPreview(
     ) {
         Box(
             modifier = Modifier
+                .padding(16.dp)
                 .fillMaxWidth()
                 .aspectRatio(1f),
             contentAlignment = Alignment.BottomStart
