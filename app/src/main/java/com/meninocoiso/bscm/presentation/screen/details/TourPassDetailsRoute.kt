@@ -7,6 +7,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.presentation.ui.components.Loading
@@ -19,6 +20,7 @@ import com.meninocoiso.bscm.presentation.viewmodel.TourPassDetailsViewModel
 fun TourPassDetailsRoute(
     contentId: String?,
     onReturn: () -> Unit,
+    onNavigateToDetails: (CatalogItem) -> Unit,
     viewModel: TourPassDetailsViewModel = hiltViewModel()
 ) {
     val state by viewModel.tourPass.collectAsStateWithLifecycle()
@@ -36,6 +38,9 @@ fun TourPassDetailsRoute(
                 TourPassDetailsScreen(
                     tourPass = (state as ContentResult.Success<TourPass>).data,
                     onReturn = onReturn,
+                    onNavigateToChart = { chart ->
+                        onNavigateToDetails(chart)
+                    },
                 )
             }
 

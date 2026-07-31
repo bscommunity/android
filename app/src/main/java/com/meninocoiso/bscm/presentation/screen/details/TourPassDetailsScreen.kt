@@ -32,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.presentation.ui.components.details.StatListItem
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
@@ -49,7 +50,8 @@ import com.meninocoiso.bscm.util.StringUtils
 @Composable
 fun TourPassDetailsScreen(
     tourPass: TourPass,
-    onReturn: () -> Unit
+    onReturn: () -> Unit,
+    onNavigateToChart: (Chart) -> Unit
 ) {
     var playingUrl by remember { mutableStateOf<String?>(null) }
     val audioPreviewPlayer = remember { AudioPreviewPlayer { playingUrl = it } }
@@ -77,8 +79,6 @@ fun TourPassDetailsScreen(
         R.string.uploaded_at,
         StringUtils.toRelativeString(tourPass.updatedAt ?: tourPass.createdAt)
     )
-
-    println("contributors: ${tourPass}")
 
     Scaffold(
         topBar = {
@@ -149,13 +149,14 @@ fun TourPassDetailsScreen(
                             rowCharts.forEach { chart ->
                                 Column(Modifier.weight(1f)) {
                                     TourPassTrackPreview(
-                                        track = chart.track,
+                                        chart = chart,
                                         isPlaying = playingUrl != null && playingUrl == chart.track.previewUrl,
                                         onTogglePlay = {
                                             chart.track.previewUrl?.let { url ->
                                                 audioPreviewPlayer.toggle(url)
                                             }
-                                        }
+                                        },
+                                        onClick = { onNavigateToChart(chart) }
                                     )
                                 }
                             }

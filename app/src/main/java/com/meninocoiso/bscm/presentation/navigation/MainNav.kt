@@ -251,6 +251,9 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
                         contentId = tourPassDetails.contentId,
                         onReturn = {
                             navController.navigateUp()
+                        },
+                        onNavigateToDetails = { item ->
+                            onNavigateToDetails(item)
                         }
                     )
                 }
@@ -285,6 +288,9 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
                         tourPass = tourPassDetails.tourPass,
                         onReturn = {
                             navController.navigateUp()
+                        },
+                        onNavigateToChart = { chart ->
+                            onNavigateToDetails(chart)
                         }
                     )
                 }

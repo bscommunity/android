@@ -26,7 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.domain.model.Track
+import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 
 /**
@@ -35,13 +35,19 @@ import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
  */
 @Composable
 fun TourPassTrackPreview(
-    track: Track,
+    chart: Chart,
     isPlaying: Boolean,
-    onTogglePlay: () -> Unit
+    onTogglePlay: () -> Unit,
+    onClick: () -> Unit
 ) {
+    val track = chart.track
     val hasPreview = track.previewUrl != null
 
-    Column {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
