@@ -130,23 +130,37 @@ class ContentViewModel @Inject constructor(
      * embedded in tour passes come from the tour pass payload and carry no
      * interaction state, so without this merge the details screen would show
      * charts as never liked/bookmarked/downloaded even when they are.
+     *
+     * The flow is cached per chart id: recreating it on every recomposition
+     * would re-emit the un-merged payload chart first (making the like button
+     * flicker) and re-trigger the Room read repeatedly.
      */
-    fun observeChartState(chart: Chart): StateFlow<Chart> = flow {
-        val stored = chartLocalRepository.getItem(chart.id).first().getOrNull()
-        emit(
-            stored?.let { local ->
-                chart.copy(
-                    likedAt = local.likedAt ?: chart.likedAt,
-                    bookmarkedAt = local.bookmarkedAt ?: chart.bookmarkedAt,
-                    isInstalled = if (local.isInstalled == true) true else chart.isInstalled,
+    private val chartStateCache = object :
+        LinkedHashMap<String, StateFlow<Chart>>(16, 0.75f, true) {
+        override fun removeEldestEntry(
+            eldest: MutableMap.MutableEntry<String, StateFlow<Chart>>
+        ) = size > 10
+    }
+
+    fun observeChartState(chart: Chart): StateFlow<Chart> =
+        chartStateCache.getOrPut(chart.id) {
+            flow {
+                val stored = chartLocalRepository.getItem(chart.id).first().getOrNull()
+                emit(
+                    stored?.let { local ->
+                        chart.copy(
+                            likedAt = local.likedAt ?: chart.likedAt,
+                            bookmarkedAt = local.bookmarkedAt ?: chart.bookmarkedAt,
+                            isInstalled = if (local.isInstalled == true) true else chart.isInstalled,
+                        )
+                    } ?: chart
                 )
-            } ?: chart
-        )
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.Eagerly,
-        initialValue = chart
-    )
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.Eagerly,
+                initialValue = chart
+            )
+        }
 
     private suspend fun handleDownloadEvent(event: DownloadEvent) {
         val chartId = event.id
@@ -365,12 +379,16 @@ class ContentViewModel @Inject constructor(
 
     /**
      * Seeds the download state of every chart of a tour pass so the aggregate
-     * state reflects already installed charts without a new download.
+     * state reflects already installed charts without a new download. Charts
+     * embedded in the tour pass payload carry no local install state, so the
+     * locally persisted flag is read instead.
      */
     fun checkTourPassStatus(tourPass: TourPass) {
         viewModelScope.launch {
             tourPass.charts.forEach { chart ->
-                if (chart.isInstalled == true && _downloadStates.value[chart.id] == null) {
+                val local = chartLocalRepository.getItem(chart.id).first().getOrNull()
+                val isInstalled = local?.isInstalled == true || chart.isInstalled == true
+                if (isInstalled && _downloadStates.value[chart.id] == null) {
                     updateState(chart.id, DownloadState.Installed(chart.id))
                 }
             }

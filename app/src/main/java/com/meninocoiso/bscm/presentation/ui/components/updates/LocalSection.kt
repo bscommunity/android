@@ -89,6 +89,7 @@ fun LazyListScope.localContentSection(
                             stringResource(R.string.tour_passes),
                             stringResource(R.string.themes)
                         ),
+                        selectedIndex = selectedFilter,
                         onSelected = onFilterSelected
                     )
                 }

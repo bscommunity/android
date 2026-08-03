@@ -207,7 +207,6 @@ fun ChartDetailsScreen(
     // Download events
     // -------------------------------------------------------------------------
     LaunchedEffect(Unit) {
-        contentViewModel.checkStatus(effectiveChart)
         contentViewModel.events.collect { event ->
             if (event.id != chart.id) return@collect
             when (event) {
@@ -216,6 +215,13 @@ fun ChartDetailsScreen(
                 else -> {}
             }
         }
+    }
+
+    // Check the install state whenever the locally merged chart arrives: the
+    // chart passed by the navigator (e.g. from a tour pass) has no install
+    // flag, and observeChartState resolves it from the local database.
+    LaunchedEffect(effectiveChart.id, effectiveChart.isInstalled) {
+        contentViewModel.checkStatus(effectiveChart)
     }
 
     // -------------------------------------------------------------------------

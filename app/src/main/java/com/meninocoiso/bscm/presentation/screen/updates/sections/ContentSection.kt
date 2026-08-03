@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -84,7 +85,7 @@ internal fun ContentSection(
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
     val cacheState by viewModel.cacheState.collectAsStateWithLifecycle()
 
-    var selectedLocalFilter by remember { mutableIntStateOf(-1) }
+    var selectedLocalFilter by rememberSaveable { mutableIntStateOf(-1) }
 
     val itemsUpdating = remember { mutableStateListOf<String>() }
     val showLocalItemDialog = remember { mutableStateOf(false) }
