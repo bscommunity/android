@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -88,6 +89,7 @@ fun TourPassDetailsScreen(
 ) {
     var playingUrl by remember { mutableStateOf<String?>(null) }
     val audioPreviewPlayer = remember { AudioPreviewPlayer { playingUrl = it } }
+    val scrollState = rememberScrollState()
 
     DisposableEffect(Unit) {
         onDispose { audioPreviewPlayer.stop() }
@@ -310,7 +312,7 @@ fun TourPassDetailsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(innerPadding),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -318,8 +320,9 @@ fun TourPassDetailsScreen(
             Box(modifier = Modifier.padding(top = 16.dp, bottom = 8.dp, start = 16.dp, end = 16.dp)) {
                 CoverArt(
                     url = tourPass.coverUrl ?: "",
+                    modifier = Modifier.fillMaxWidth().height(196.dp),
                     width = Dp.Unspecified,
-                    height = 96.dp,
+                    height = 196.dp,
                     borderRadius = 16.dp
                 )
             }
@@ -344,7 +347,8 @@ fun TourPassDetailsScreen(
             Section(title = stringResource(R.string.tracklist)) {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
                 ) {
                     tourPass.charts.chunked(3).forEach { rowCharts ->
                         Row {
