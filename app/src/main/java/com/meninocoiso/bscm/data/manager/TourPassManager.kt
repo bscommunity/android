@@ -43,8 +43,34 @@ class TourPassManager @Inject constructor(
     private val _searchTourPasses = MutableStateFlow<List<TourPass>?>(null)
     val searchTourPasses: StateFlow<List<TourPass>?> = _searchTourPasses.asStateFlow()
 
+    /**
+     * Reactive flow of every tour pass cached in the local database. Used to
+     * derive the list of downloaded tour passes.
+     */
+    val cachedTourPasses: Flow<List<TourPass>> = localRepository.observeTourPasses()
+
     fun updateFeedState(newState: ContentState) {
         _feedState.value = newState
+    }
+
+    /**
+     * Marks a tour pass as installed once all of its charts have been
+     * downloaded. Persists the flag locally and updates the in-memory feed.
+     */
+    fun markInstalled(id: String) {
+        coroutineScope.launch {
+            try {
+                val result = localRepository.getTourPass(id).first()
+                val tourPass = result.getOrNull() ?: return@launch
+                val updated = tourPass.copy(isInstalled = true)
+                localRepository.update(listOf(updated)).first()
+                _tourPasses.value = _tourPasses.value.map { tourPass ->
+                    if (tourPass.id == id) tourPass.copy(isInstalled = true) else tourPass
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to mark tour pass as installed: $id", e)
+            }
+        }
     }
 
     fun getTourPassesLength(): Int = _tourPasses.value.size

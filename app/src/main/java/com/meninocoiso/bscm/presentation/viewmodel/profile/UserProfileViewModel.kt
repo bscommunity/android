@@ -70,13 +70,13 @@ class UserProfileViewModel @Inject constructor(
         val likes: PagedSection<CatalogItem> = PagedSection(),
         val collections: CollectionSectionState = CollectionSectionState(),
     ) {
-        /** (charts, tourPasses, themes) — only charts are tracked today; others default to 0. */
+        /** (charts, tourPasses, themes) from the server, falling back to the chart total. */
         val likesCounts: Triple<Int, Int, Int>
-            get() = Triple(likes.total ?: 0, 0, 0)
+            get() = likes.counts ?: Triple(likes.total ?: 0, 0, 0)
 
-        /** (charts, tourPasses, themes) — only charts are tracked today; others default to 0. */
+        /** (charts, tourPasses, themes) from the server, falling back to the chart total. */
         val bookmarksCounts: Triple<Int, Int, Int>
-            get() = Triple(collections.bookmarks.total ?: 0, 0, 0)
+            get() = collections.bookmarks.counts ?: Triple(collections.bookmarks.total ?: 0, 0, 0)
 
         /** Total number of custom collections. */
         val collectionsCount: Int

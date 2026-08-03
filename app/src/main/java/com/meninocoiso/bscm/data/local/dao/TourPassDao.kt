@@ -24,6 +24,9 @@ interface TourPassDao {
     @Query("SELECT * FROM tour_passes WHERE id = :id")
     fun getTourPass(id: String): TourPass?
 
+    @Query("SELECT * FROM tour_passes ORDER BY updated_at DESC")
+    fun observeTourPasses(): Flow<List<TourPass>>
+
     @Query("SELECT * FROM tour_passes WHERE id IN (:ids)")
     fun getTourPassesByIds(ids: List<String>): List<TourPass>
 
@@ -31,8 +34,27 @@ interface TourPassDao {
         SELECT * FROM tour_passes 
         WHERE liked_at IS NOT NULL 
         ORDER BY liked_at DESC
+        LIMIT :limit OFFSET :offset
+    """)
+    fun getLikedTourPasses(limit: Int, offset: Int): List<TourPass>
+
+    @Query("""
+        SELECT * FROM tour_passes 
+        WHERE liked_at IS NOT NULL 
+        ORDER BY liked_at DESC
     """)
     fun observeLikedTourPasses(): Flow<List<TourPass>>
+
+    @Query("""
+        SELECT tp.* FROM tour_passes tp
+        INNER JOIN collection_item_cross_ref ref 
+            ON tp.id = ref.content_id
+        WHERE ref.collection_id = 'bookmarks'
+        AND ref.content_type = 'TOUR_PASS'
+        ORDER BY ref.added_at DESC
+        LIMIT :limit OFFSET :offset
+    """)
+    fun getBookmarkedTourPasses(limit: Int, offset: Int): List<TourPass>
 
     @Query("""
         SELECT tp.* FROM tour_passes tp
@@ -54,10 +76,10 @@ interface TourPassDao {
     fun update(tourPasses: List<TourPass>)
 
     @Query("UPDATE tour_passes SET liked_at = :likedAt WHERE id = :tourPassId")
-    suspend fun updateLikedAt(tourPassId: String, likedAt: String?)
+    suspend fun updateLikedAt(tourPassId: String, likedAt: Long?)
 
     @Query("UPDATE tour_passes SET bookmarked_at = :bookmarkedAt WHERE id = :tourPassId")
-    suspend fun updateBookmarkedAt(tourPassId: String, bookmarkedAt: String?)
+    suspend fun updateBookmarkedAt(tourPassId: String, bookmarkedAt: Long?)
 
     @Delete
     fun delete(tourPass: TourPass)

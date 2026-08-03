@@ -140,7 +140,7 @@ class KtorApiClient @Inject constructor(
             // url("https://api-cyb1.onrender.com")
             url {
                 protocol = URLProtocol.HTTP
-                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.6"
+                host = if (DevelopmentUtils.isEmulator()) "10.0.2.2" else "192.168.0.4"
                 port = 8080
             }
             contentType(KtorContentType.Application.Json)
@@ -369,7 +369,7 @@ class KtorApiClient @Inject constructor(
         }.body()
     }
 
-    override suspend fun getUserCharts(id: String, limit: Int?, offset: Int?): ItemsPage<Chart> {
+    override suspend fun getUserCharts(id: String, limit: Int?, offset: Int?): ItemsPage<CatalogItem> {
         return client.get("users/$id/charts") {
             url {
                 limit?.let { parameters.append("limit", it.toString()) }
@@ -417,7 +417,7 @@ class KtorApiClient @Inject constructor(
         }.body()
     }
 
-    override suspend fun getMyLikes(limit: Int?, offset: Int?, types: List<CatalogItemType>?): ItemsPage<Chart> {
+    override suspend fun getMyLikes(limit: Int?, offset: Int?, types: List<CatalogItemType>?): ItemsPage<CatalogItem> {
         return client.get("me/likes") {
             url {
                 limit?.let { parameters.append("limit", it.toString()) }
@@ -427,7 +427,7 @@ class KtorApiClient @Inject constructor(
         }.body()
     }
 
-    override suspend fun getMyBookmarks(limit: Int?, offset: Int?, types: List<CatalogItemType>?): ItemsPage<Chart> {
+    override suspend fun getMyBookmarks(limit: Int?, offset: Int?, types: List<CatalogItemType>?): ItemsPage<CatalogItem> {
         return client.get("me/bookmarks") {
             url {
                 limit?.let { parameters.append("limit", it.toString()) }

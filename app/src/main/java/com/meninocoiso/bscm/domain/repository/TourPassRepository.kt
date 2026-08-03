@@ -24,6 +24,8 @@ interface TourPassLocalRepository {
 
     suspend fun getTourPass(id: String): Flow<Result<TourPass>>
 
+    fun observeTourPasses(): Flow<List<TourPass>>
+
     suspend fun insert(items: List<TourPass>): Flow<Result<Boolean>>
 
     suspend fun update(items: List<TourPass>): Flow<Result<Boolean>>

@@ -6,12 +6,16 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.data.manager.TourPassManager
+import com.meninocoiso.bscm.data.manager.TourPassStorageManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.repository.DownloadRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
 import com.meninocoiso.bscm.domain.enums.ErrorType
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.model.internal.Settings
+import com.meninocoiso.bscm.domain.repository.ChartLocalRepository
 import com.meninocoiso.bscm.domain.state.DownloadState
 import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,6 +28,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -41,6 +48,9 @@ class ContentViewModel @Inject constructor(
     private val apiClient: ApiClient,
     private val downloadServiceMonitor: DownloadServiceMonitor,
     private val downloadRepository: DownloadRepository,
+    private val tourPassManager: TourPassManager,
+    private val tourPassStorageManager: TourPassStorageManager,
+    private val chartLocalRepository: ChartLocalRepository,
     settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
@@ -113,6 +123,30 @@ class ContentViewModel @Inject constructor(
             }
         }
     }
+
+    /**
+     * Merges the locally persisted state of a chart (like/bookmark timestamps,
+     * install flag) into the chart object currently being displayed. Charts
+     * embedded in tour passes come from the tour pass payload and carry no
+     * interaction state, so without this merge the details screen would show
+     * charts as never liked/bookmarked/downloaded even when they are.
+     */
+    fun observeChartState(chart: Chart): StateFlow<Chart> = flow {
+        val stored = chartLocalRepository.getItem(chart.id).first().getOrNull()
+        emit(
+            stored?.let { local ->
+                chart.copy(
+                    likedAt = local.likedAt ?: chart.likedAt,
+                    bookmarkedAt = local.bookmarkedAt ?: chart.bookmarkedAt,
+                    isInstalled = if (local.isInstalled == true) true else chart.isInstalled,
+                )
+            } ?: chart
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = chart
+    )
 
     private suspend fun handleDownloadEvent(event: DownloadEvent) {
         val chartId = event.id
@@ -294,6 +328,31 @@ class ContentViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Uninstalls a tour pass: deletes every associated chart folder, marks each
+     * chart as not installed, and removes the tour pass from the root manifest.
+     */
+    fun uninstallTourPass(
+        tourPass: TourPass,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                tourPass.charts.forEach { chart ->
+                    downloadRepository.deleteChart(chart.id, chart.id)
+                    updateState(chart.id, DownloadState.Idle)
+                }
+                tourPassStorageManager.removeInstalledTourPass(tourPass.id)
+                emitEvent(DownloadEvent.Complete(tourPass.id))
+                onSuccess()
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to uninstall tour pass: ${tourPass.id}", e)
+                onError(context.getString(R.string.failed_to_delete_chart))
+            }
+        }
+    }
+
     fun getDownloadState(chartId: String): StateFlow<DownloadState> {
         return downloadStates
             .map { it[chartId] ?: DownloadState.Idle }
@@ -302,5 +361,161 @@ class ContentViewModel @Inject constructor(
                 started = SharingStarted.Lazily,
                 initialValue = _downloadStates.value[chartId] ?: DownloadState.Idle
             )
+    }
+
+    /**
+     * Seeds the download state of every chart of a tour pass so the aggregate
+     * state reflects already installed charts without a new download.
+     */
+    fun checkTourPassStatus(tourPass: TourPass) {
+        viewModelScope.launch {
+            tourPass.charts.forEach { chart ->
+                if (chart.isInstalled == true && _downloadStates.value[chart.id] == null) {
+                    updateState(chart.id, DownloadState.Installed(chart.id))
+                }
+            }
+        }
+    }
+
+    /**
+     * Downloads every chart of a tour pass sequentially, exposing the overall
+     * progress through [getTourPassDownloadState]. Once all charts are
+     * installed the tour pass is marked as installed in the local cache.
+     */
+    fun downloadTourPass(tourPass: TourPass) {
+        viewModelScope.launch {
+            try {
+                tourPass.charts.forEach { chart ->
+                    // Charts that are already installed do not need to be downloaded again.
+                    if (chart.isInstalled == true) return@forEach
+
+                    try {
+                        if (chart.bundleHash == null) {
+                            throw IllegalArgumentException("Bundle hash is empty")
+                        }
+
+                        // Fetch the actual bundle download URL from the API.
+                        val bundleResponse = apiClient.getChartBundleUrl(chart.id)
+
+                        // Start the download through the foreground service.
+                        downloadServiceMonitor.startDownload(
+                            id = chart.id,
+                            contentId = chart.id,
+                            name = "${chart.track.title} - ${chart.track.artist}",
+                            bundleUrl = bundleResponse.url,
+                            isUpdate = false
+                        )
+
+                        // Wait for the chart to finish (or fail) before moving on.
+                        val terminalState = waitForChartTerminalState(chart.id)
+                        if (terminalState !is DownloadState.Installed) {
+                            emitEvent(
+                                DownloadEvent.Error(
+                                    tourPass.id,
+                                    context.getString(R.string.download_failed),
+                                    ErrorType.DOWNLOAD_ERROR
+                                )
+                            )
+                            return@launch
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to download chart ${chart.id} for tour pass ${tourPass.id}", e)
+                        val errorMessage = context.getString(R.string.failed_to_start_download)
+                        updateState(
+                            chart.id,
+                            DownloadState.Error(chart.id, errorMessage, ErrorType.DOWNLOAD_ERROR)
+                        )
+                        emitEvent(DownloadEvent.Error(tourPass.id, errorMessage, ErrorType.DOWNLOAD_ERROR))
+                        return@launch
+                    }
+                }
+
+                // Mark the tour pass as installed so it shows up in the updates page.
+                tourPassManager.markInstalled(tourPass.id)
+
+                // Record the tour pass in the root manifest (survives app
+                // uninstalls) and keep the local database in sync.
+                tourPassStorageManager.addInstalledTourPass(tourPass)
+
+                emitEvent(DownloadEvent.Complete(tourPass.id))
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to download tour pass: ${tourPass.id}", e)
+                val errorMessage = context.getString(R.string.failed_to_start_download)
+                emitEvent(DownloadEvent.Error(tourPass.id, errorMessage, ErrorType.DOWNLOAD_ERROR))
+            }
+        }
+    }
+
+    /**
+     * Aggregated download state for a whole tour pass, derived from the
+     * per-chart download states. Progress is the average of every chart's
+     * progress (installed charts count as fully done).
+     */
+    fun getTourPassDownloadState(tourPass: TourPass): StateFlow<DownloadState> {
+        return _downloadStates
+            .map { states -> aggregateTourPassDownloadState(tourPass, states) }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.Lazily,
+                initialValue = aggregateTourPassDownloadState(tourPass, _downloadStates.value)
+            )
+    }
+
+    private suspend fun waitForChartTerminalState(chartId: String): DownloadState {
+        return _downloadStates
+            .map { it[chartId] }
+            .filterNotNull()
+            .first { state -> state is DownloadState.Installed || state is DownloadState.Error }
+    }
+
+    private fun aggregateTourPassDownloadState(
+        tourPass: TourPass,
+        states: Map<String, DownloadState>
+    ): DownloadState {
+        val charts = tourPass.charts
+        if (charts.isEmpty()) return DownloadState.Idle
+
+        val step = 1f / charts.size
+        var progress = 0f
+        var installedCount = 0
+        var hasActiveDownload = false
+        var error: DownloadState.Error? = null
+
+        for (chart in charts) {
+            val state = states[chart.id]
+            if (state == null) {
+                if (chart.isInstalled == true) {
+                    progress += step
+                    installedCount++
+                }
+                continue
+            }
+            when (state) {
+                is DownloadState.Installed -> {
+                    progress += step
+                    installedCount++
+                }
+
+                is DownloadState.Downloading -> {
+                    hasActiveDownload = true
+                    progress += step * state.progress.coerceIn(0f, 1f)
+                }
+
+                is DownloadState.Extracting -> {
+                    hasActiveDownload = true
+                    progress += step * state.progress.coerceIn(0f, 1f)
+                }
+
+                is DownloadState.Error -> error = state
+                is DownloadState.Idle -> {}
+            }
+        }
+
+        return when {
+            installedCount == charts.size -> DownloadState.Installed(tourPass.id)
+            hasActiveDownload -> DownloadState.Downloading(tourPass.id, progress.coerceIn(0f, 1f))
+            error != null -> DownloadState.Error(tourPass.id, error.message, error.type)
+            else -> DownloadState.Idle
+        }
     }
 }

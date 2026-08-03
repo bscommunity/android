@@ -21,6 +21,7 @@ fun TourPassDetailsRoute(
     contentId: String?,
     onReturn: () -> Unit,
     onNavigateToDetails: (CatalogItem) -> Unit,
+    onNavigateToSettings: () -> Unit,
     viewModel: TourPassDetailsViewModel = hiltViewModel()
 ) {
     val state by viewModel.tourPass.collectAsStateWithLifecycle()
@@ -41,6 +42,7 @@ fun TourPassDetailsRoute(
                     onNavigateToChart = { chart ->
                         onNavigateToDetails(chart)
                     },
+                    onNavigateToSettings = onNavigateToSettings,
                 )
             }
 

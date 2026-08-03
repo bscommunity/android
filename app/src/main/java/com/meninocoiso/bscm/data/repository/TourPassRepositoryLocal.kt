@@ -36,6 +36,9 @@ class TourPassRepositoryLocal(
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
+    override fun observeTourPasses(): Flow<List<TourPass>> =
+        tourPassDao.observeTourPasses()
+
     override suspend fun insert(items: List<TourPass>): Flow<Result<Boolean>> = flow {
         tourPassDao.insert(items)
         emit(Result.success(true))

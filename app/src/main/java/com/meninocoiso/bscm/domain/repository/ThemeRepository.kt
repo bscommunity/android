@@ -24,6 +24,8 @@ interface ThemeLocalRepository {
 
     suspend fun getTheme(id: String): Flow<Result<Theme>>
 
+    fun observeThemes(): Flow<List<Theme>>
+
     suspend fun insert(items: List<Theme>): Flow<Result<Boolean>>
 
     suspend fun update(items: List<Theme>): Flow<Result<Boolean>>

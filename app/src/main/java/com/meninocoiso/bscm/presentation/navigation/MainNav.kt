@@ -250,6 +250,10 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
                         },
                         onNavigateToDetails = { item ->
                             onNavigateToDetails(item)
+                        },
+                        onNavigateToSettings = {
+                            navController.popBackStack<MainRoute>(inclusive = false)
+                            onNavigateToSettings()
                         }
                     )
                 }
@@ -287,6 +291,10 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
                         },
                         onNavigateToChart = { chart ->
                             onNavigateToDetails(chart)
+                        },
+                        onNavigateToSettings = {
+                            navController.popBackStack<MainRoute>(inclusive = false)
+                            onNavigateToSettings()
                         }
                     )
                 }

@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.res.Resources.NotFoundException
 import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.manager.DownloadManager
+import com.meninocoiso.bscm.data.manager.TourPassStorageManager
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.UiText
@@ -21,6 +22,7 @@ import javax.inject.Singleton
 class DownloadRepository @Inject constructor(
     private val downloadManager: DownloadManager,
     private val chartManager: ChartManager,
+    private val tourPassStorageManager: TourPassStorageManager,
     downloadServiceMonitor: DownloadServiceMonitor,
     @param:ApplicationContext private val context: Context,
 ) {
@@ -59,13 +61,20 @@ class DownloadRepository @Inject constructor(
 
         // Extract the zip file to the folder
         try {
-            downloadManager.extractZipToFolder(
+            val chartFolder = downloadManager.extractZipToFolder(
                 downloadedFile,
                 internalChartId,
                 contentId,
                 folderUri,
                 listOf("songs"),
                 onExtractProgress
+            )
+
+            // Write the per-chart manifest so the hydration system can identify
+            // the chart by its canonical id even after an app reinstall.
+            tourPassStorageManager.writeChartIdFile(
+                folder = chartFolder,
+                id = contentId?.takeIf { it.isNotBlank() } ?: internalChartId
             )
         } catch (e: IOException) {
             throw e

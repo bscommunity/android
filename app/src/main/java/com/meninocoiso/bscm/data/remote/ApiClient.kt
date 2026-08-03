@@ -70,7 +70,7 @@ interface ApiClient {
     suspend fun getUserProfile(id: String): UserProfileResponse
     suspend fun getUserProfileByUsername(username: String, counts: Set<String> = emptySet()): UserProfileResponse
     suspend fun getUserActivity(id: String, limit: Int? = null, offset: Int? = null): List<ActivityItemResponse>
-    suspend fun getUserCharts(id: String, limit: Int? = null, offset: Int? = null): ItemsPage<Chart>
+    suspend fun getUserCharts(id: String, limit: Int? = null, offset: Int? = null): ItemsPage<CatalogItem>
     // suspend fun getUserTourPasses(userId: String, limit: Int? = null, offset: Int? = null): ItemsPage<TourPass>
     // suspend fun getUserThemes(userId: String, limit: Int? = null, offset: Int? = null): ItemsPage<Theme>
     suspend fun getUserCollections(userId: String, limit: Int? = null, offset: Int? = null): ItemsPage<Collection>
@@ -81,8 +81,8 @@ interface ApiClient {
     suspend fun getMyProfile(): UserProfileResponse
     suspend fun getMyActivity(limit: Int? = null, offset: Int? = null): List<ActivityItemResponse>
     suspend fun getMyCollections(limit: Int? = null, offset: Int? = null): ItemsPage<Collection>
-    suspend fun getMyLikes(limit: Int? = null, offset: Int? = null, types: List<CatalogItemType>? = null): ItemsPage<Chart>
-    suspend fun getMyBookmarks(limit: Int? = null, offset: Int? = null, types: List<CatalogItemType>? = null): ItemsPage<Chart>
+    suspend fun getMyLikes(limit: Int? = null, offset: Int? = null, types: List<CatalogItemType>? = null): ItemsPage<CatalogItem>
+    suspend fun getMyBookmarks(limit: Int? = null, offset: Int? = null, types: List<CatalogItemType>? = null): ItemsPage<CatalogItem>
     suspend fun addLike(contentId: String): Boolean
     suspend fun removeLike(contentId: String): Boolean
     suspend fun addBookmark(contentId: String): Boolean

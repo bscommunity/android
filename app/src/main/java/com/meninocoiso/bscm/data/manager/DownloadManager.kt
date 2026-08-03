@@ -204,7 +204,7 @@ class DownloadManager @Inject constructor(
         rootUri: Uri,
         subFolders: List<String> = listOf("songs"),
         onProgress: (Float) -> Unit = {}
-    ) = withContext(Dispatchers.IO) {
+    ): DocumentFile = withContext(Dispatchers.IO) {
         try {
             // Validate inputs
             if (!zipFile.exists() || !zipFile.canRead()) {
@@ -240,6 +240,8 @@ class DownloadManager @Inject constructor(
                 }
                 throw ExtractionException("Failed to extract ZIP file", e)
             }
+
+            chartFolder
         } catch (e: ExtractionException) {
             throw e
         } catch (e: Exception) {

@@ -42,6 +42,12 @@ class ThemeManager @Inject constructor(
     private val _searchThemes = MutableStateFlow<List<Theme>?>(null)
     val searchThemes: StateFlow<List<Theme>?> = _searchThemes.asStateFlow()
 
+    /**
+     * Reactive flow of every theme cached in the local database. Used to show
+     * locally available themes on the updates page.
+     */
+    val cachedThemes: Flow<List<Theme>> = localRepository.observeThemes()
+
     fun updateFeedState(newState: ContentState) {
         _feedState.value = newState
     }

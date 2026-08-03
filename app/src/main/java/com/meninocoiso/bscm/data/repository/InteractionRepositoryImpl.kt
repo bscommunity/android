@@ -3,6 +3,8 @@ package com.meninocoiso.bscm.data.repository
 import android.util.Log
 import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.data.local.dao.CollectionDao
+import com.meninocoiso.bscm.data.local.dao.ThemeDao
+import com.meninocoiso.bscm.data.local.dao.TourPassDao
 import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.domain.enums.CollectionKind
@@ -16,6 +18,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
+import java.time.ZoneId
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,6 +36,8 @@ class InteractionRepositoryImpl @Inject constructor(
     private val queueManager: InteractionQueueManager,
     private val chartManager: ChartManager,
     private val chartDao: ChartDao,
+    private val tourPassDao: TourPassDao,
+    private val themeDao: ThemeDao,
     private val collectionDao: CollectionDao,
     private val profileCacheRepository: ProfileCacheRepository,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -50,7 +55,11 @@ class InteractionRepositoryImpl @Inject constructor(
     override suspend fun likeContent(id: String, contentId: String): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
-                val shouldIncrement = chartDao.getChart(id)?.likedAt == null
+                val shouldIncrement = when (resolveContentType(id)) {
+                    CatalogItemType.TOUR_PASS -> tourPassDao.getTourPass(id)?.likedAt == null
+                    CatalogItemType.THEME -> themeDao.getTheme(id)?.likedAt == null
+                    else -> chartDao.getChart(id)?.likedAt == null
+                }
                 updateLocalState(id = id, operation = OperationOption.LIKE)
                 if (shouldIncrement) {
                     profileCacheRepository.adjustLikesCount(delta = 1)
@@ -67,7 +76,11 @@ class InteractionRepositoryImpl @Inject constructor(
     override suspend fun unlikeContent(id: String, contentId: String): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
-                val shouldDecrement = chartDao.getChart(id)?.likedAt != null
+                val shouldDecrement = when (resolveContentType(id)) {
+                    CatalogItemType.TOUR_PASS -> tourPassDao.getTourPass(id)?.likedAt != null
+                    CatalogItemType.THEME -> themeDao.getTheme(id)?.likedAt != null
+                    else -> chartDao.getChart(id)?.likedAt != null
+                }
                 updateLocalState(id = id, operation = OperationOption.UNLIKE)
                 if (shouldDecrement) {
                     profileCacheRepository.adjustLikesCount(delta = -1)
@@ -92,7 +105,7 @@ class InteractionRepositoryImpl @Inject constructor(
                         CollectionItemCrossRef(
                             collectionId = BOOKMARKS_COLLECTION_ID,
                             contentId = contentId,
-                            contentType = CatalogItemType.CHART
+                            contentType = resolveContentType(contentId)
                         )
                     )
                 }
@@ -141,12 +154,13 @@ class InteractionRepositoryImpl @Inject constructor(
                 val now = LocalDateTime.now()
 
                 ensureBookmarksCollectionExists(now)
+                val contentType = resolveContentType(contentId)
                 if (!before.hasBookmarkMembership) {
                     collectionDao.upsertCrossRef(
                         CollectionItemCrossRef(
                             collectionId = BOOKMARKS_COLLECTION_ID,
                             contentId = contentId,
-                            contentType = CatalogItemType.CHART,
+                            contentType = contentType,
                             addedAt = now,
                         )
                     )
@@ -156,7 +170,7 @@ class InteractionRepositoryImpl @Inject constructor(
                         CollectionItemCrossRef(
                             collectionId = collectionId,
                             contentId = contentId,
-                            contentType = CatalogItemType.CHART,
+                            contentType = contentType,
                             addedAt = now,
                         )
                     )
@@ -233,16 +247,20 @@ class InteractionRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Captures local membership and chart flags used to detect saved-state transitions.
+     * Captures local membership and item flags used to detect saved-state transitions.
      */
     private suspend fun getSavedSnapshot(id: String, contentId: String): SavedSnapshot {
-        val chart = chartDao.getChart(id)
+        val itemBookmarkedAt = when (resolveContentType(id)) {
+            CatalogItemType.TOUR_PASS -> tourPassDao.getTourPass(id)?.bookmarkedAt
+            CatalogItemType.THEME -> themeDao.getTheme(id)?.bookmarkedAt
+            else -> chartDao.getChart(id)?.bookmarkedAt
+        }
         val hasBookmarkMembership = collectionDao.hasCrossRef(BOOKMARKS_COLLECTION_ID, contentId)
         val userCollectionIds = collectionDao.getUserCollectionIdsForContent(contentId)
         return SavedSnapshot(
             hasBookmarkMembership = hasBookmarkMembership,
             userCollectionIds = userCollectionIds,
-            isSaved = chart?.bookmarkedAt != null || hasBookmarkMembership || userCollectionIds.isNotEmpty(),
+            isSaved = itemBookmarkedAt != null || hasBookmarkMembership || userCollectionIds.isNotEmpty(),
         )
     }
 
@@ -264,17 +282,54 @@ class InteractionRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Updates local chart state by chart `id` (the primary key).
-     * Used by like/unlike/bookmark/unbookmark where we always have the chart id.
+     * Updates local state for the content identified by `id` (the primary key).
+     * Used by like/unlike/bookmark/unbookmark where we always have the item id.
      */
     private suspend fun updateLocalState(id: String, operation: OperationOption) {
-        try {
-            val result = chartManager.updateContentById(id, operation)
-            if (result !is ContentResult.Success) {
-                Log.e(TAG, "Failed to update local chart for id=$id, operation=$operation, result=$result")
+        when (resolveContentType(id)) {
+            CatalogItemType.TOUR_PASS -> {
+                when (operation) {
+                    OperationOption.LIKE -> tourPassDao.updateLikedAt(id, epochMillisNow())
+                    OperationOption.UNLIKE -> tourPassDao.updateLikedAt(id, null)
+                    OperationOption.BOOKMARK -> tourPassDao.updateBookmarkedAt(id, epochMillisNow())
+                    OperationOption.UNBOOKMARK -> tourPassDao.updateBookmarkedAt(id, null)
+                    else -> {}
+                }
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Exception updating local chart for id=$id, operation=$operation", e)
+
+            CatalogItemType.THEME -> {
+                when (operation) {
+                    OperationOption.LIKE -> themeDao.updateLikedAt(id, epochMillisNow())
+                    OperationOption.UNLIKE -> themeDao.updateLikedAt(id, null)
+                    OperationOption.BOOKMARK -> themeDao.updateBookmarkedAt(id, epochMillisNow())
+                    OperationOption.UNBOOKMARK -> themeDao.updateBookmarkedAt(id, null)
+                    else -> {}
+                }
+            }
+
+            else -> {
+                try {
+                    val result = chartManager.updateContentById(id, operation)
+                    if (result !is ContentResult.Success) {
+                        Log.e(TAG, "Failed to update local chart for id=$id, operation=$operation, result=$result")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Exception updating local chart for id=$id, operation=$operation", e)
+                }
+            }
         }
     }
+
+    /**
+     * Resolves the catalog type of an item by probing the local tables.
+     * Defaults to [CatalogItemType.CHART] to keep the legacy chart-first behavior.
+     */
+    private fun resolveContentType(id: String): CatalogItemType = when {
+        tourPassDao.getTourPass(id) != null -> CatalogItemType.TOUR_PASS
+        themeDao.getTheme(id) != null -> CatalogItemType.THEME
+        else -> CatalogItemType.CHART
+    }
+
+    private fun epochMillisNow(): Long =
+        LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 }

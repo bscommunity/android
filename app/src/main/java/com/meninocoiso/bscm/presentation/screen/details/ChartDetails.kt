@@ -117,7 +117,11 @@ fun ChartDetailsScreen(
     // -------------------------------------------------------------------------
     // State collection
     // -------------------------------------------------------------------------
-    val chartState by contentViewModel.getDownloadState(chart.id)
+    // Merge locally persisted interaction state (like/bookmark/install) into the
+    // chart passed by the navigator, which for tour pass charts has no state.
+    val effectiveChart by contentViewModel.observeChartState(chart)
+        .collectAsStateWithLifecycle()
+    val chartState by contentViewModel.getDownloadState(effectiveChart.id)
         .collectAsStateWithLifecycle()
     val isLoggedIn by authViewModel.isLoggedInFlow
         .collectAsStateWithLifecycle(false)
@@ -138,9 +142,9 @@ fun ChartDetailsScreen(
         .filter { it.kind == CollectionKind.USER }
         .map { it.id }
         .toSet()
-    val hasPersistedBookmark = hasLiveBookmarkMembership || chart.bookmarkedAt != null
+    val hasPersistedBookmark = hasLiveBookmarkMembership || effectiveChart.bookmarkedAt != null
 
-    val isLiked = optimisticLiked ?: (chart.likedAt != null)
+    val isLiked = optimisticLiked ?: (effectiveChart.likedAt != null)
     val isBookmarked = optimisticBookmarked ?: hasPersistedBookmark
 
     // Shared toggle handler used by toolbar action and bottom-sheet auto-bookmark item.
@@ -153,10 +157,10 @@ fun ChartDetailsScreen(
     }
 
     // Clear optimistic state once persistence catches up
-    LaunchedEffect(chart.likedAt) {
-        if (optimisticLiked != null && chart.likedAt != null) optimisticLiked = null
+    LaunchedEffect(effectiveChart.likedAt) {
+        if (optimisticLiked != null && effectiveChart.likedAt != null) optimisticLiked = null
     }
-    LaunchedEffect(savedCollections, chart.bookmarkedAt) {
+    LaunchedEffect(savedCollections, effectiveChart.bookmarkedAt) {
         // Reset optimistic bookmark when local/remote persistence reflects final intent.
         optimisticBookmarked?.let { optimistic ->
             val confirmed = if (optimistic) hasPersistedBookmark else !hasPersistedBookmark
@@ -203,7 +207,7 @@ fun ChartDetailsScreen(
     // Download events
     // -------------------------------------------------------------------------
     LaunchedEffect(Unit) {
-        contentViewModel.checkStatus(chart)
+        contentViewModel.checkStatus(effectiveChart)
         contentViewModel.events.collect { event ->
             if (event.id != chart.id) return@collect
             when (event) {
@@ -381,7 +385,7 @@ fun ChartDetailsScreen(
                 },
                 floatingActionButton = {
                     DownloadButton(
-                        chart = chart,
+                        chart = effectiveChart,
                         downloadState = chartState,
                         contentViewModel = contentViewModel,
                     )

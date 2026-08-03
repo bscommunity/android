@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
+import com.meninocoiso.bscm.data.manager.TourPassStorageManager
+import com.meninocoiso.bscm.data.manager.TourPassStorageManager.BscmChartMetadata
 import com.meninocoiso.bscm.data.parser.ChartMetadataParser
 import com.meninocoiso.bscm.data.parser.ExternalContentConfig
 import com.meninocoiso.bscm.data.parser.ExternalContentMetadata
@@ -22,7 +24,8 @@ private const val TAG = "ChartStorageScanner"
  */
 class ChartStorageScanner @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val metadataParser: ChartMetadataParser
+    private val metadataParser: ChartMetadataParser,
+    private val tourPassStorageManager: TourPassStorageManager,
 ) : ContentStorageScanner<InstalledContentEntry<ExternalContentMetadata>> {
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -40,9 +43,19 @@ class ChartStorageScanner @Inject constructor(
 
                     val infoFile = folder.findFile("info.json")
                     val configFile = folder.findFile("config.json")
-                    val metadata = infoFile?.let { metadataParser.parseMetadata(it) }
+                    val infoMetadata = infoFile?.let { metadataParser.parseMetadata(it) }
                     val config = configFile?.let { readExternalChartConfig(it) }
-                    val contentId = normalizeIdentifier(metadata?.contentId)
+
+                    // The per-chart bscm.json written by the downloader (or
+                    // shipped inside the bundle) carries the canonical id and
+                    // display metadata and survives app reinstalls, so it is the
+                    // preferred identifier even when info.json is missing. Its
+                    // metadata is also used to render the chart when info.json
+                    // is not present.
+                    val bscmMetadata = tourPassStorageManager.readChartMetadata(folder)
+                    val manifestId = normalizeIdentifier(bscmMetadata?.resolvedId())
+                    val metadata = infoMetadata ?: bscmMetadata?.toExternalContentMetadata()
+                    val contentId = normalizeIdentifier(metadata?.contentId) ?: manifestId
                     val localId = normalizeIdentifier(metadata?.id)
 
                     if (infoFile == null) {
@@ -86,5 +99,49 @@ class ChartStorageScanner @Inject constructor(
 
     companion object {
         internal fun normalizeIdentifier(value: String?): String? = value?.takeIf { it.isNotBlank() }
+
+        /**
+         * Maps a bscm.json role name to the role id used by the contributor
+         * pipe-separated format consumed by [ContributorParser].
+         */
+        private val roleIdsByName = mapOf(
+            "author" to 0,
+            "chart" to 1,
+            "charter" to 1,
+            "audio" to 2,
+            "revision" to 3,
+            "effects" to 4,
+            "sync" to 5,
+            "gameplay" to 6,
+            "art" to 7,
+            "textures" to 8,
+        )
+
+        internal fun roleIdFor(role: String?): Int = roleIdsByName[role?.lowercase()] ?: 0
     }
+}
+
+/**
+ * Converts the per-chart bscm.json metadata into the generic external metadata
+ * shape used by the placeholder factory, so charts can still be rendered from
+ * the manifest alone when info.json is missing or the server is unreachable.
+ */
+private fun BscmChartMetadata.toExternalContentMetadata(): ExternalContentMetadata? {
+    val id = resolvedId() ?: return null
+    return ExternalContentMetadata(
+        title = track?.takeIf { it.isNotBlank() } ?: id,
+        artist = artist ?: "",
+        id = id,
+        difficulty = difficulty,
+        bpm = bpm,
+        contentId = id,
+        duration = duration,
+        notes = notes,
+        effects = effects,
+        contributors = contributors.mapNotNull { contributor ->
+            val username = contributor.username?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            "$username|${contributor.avatarUrl ?: ""}|${ChartStorageScanner.roleIdFor(contributor.role)}"
+        }.joinToString("||").takeIf { it.isNotBlank() },
+        cover = cover,
+    )
 }

@@ -167,31 +167,42 @@ class ChartManager @Inject constructor(
 
             // Identify any installed charts that are missing from memory and attempt to hydrate them from storage metadata
             val contentIdsToHydrate = findMissingContentIdsToHydrate(installedContentIds, current)
-            val placeholders = createLocalPlaceholders(installedEntries, current)
             Log.d(
                 TAG,
-                "Sync installed charts: ${installedContentIds.size} contentIds to match, ${contentIdsToHydrate.size} canonical charts to hydrate, ${placeholders.size} local placeholders to show"
+                "Sync installed charts: ${installedContentIds.size} contentIds to match, ${contentIdsToHydrate.size} canonical charts to hydrate"
             )
 
             // Hydrate any missing canonical charts
-            if (contentIdsToHydrate.isNotEmpty()) {
-                val hydratedCharts = hydrateMissingInstalledCharts(contentIdsToHydrate)
-                if (hydratedCharts.isNotEmpty()) {
-                    memoryStore.addWithoutAffectingFeed(hydratedCharts, getId = { it.id })
+            val hydratedCharts = if (contentIdsToHydrate.isNotEmpty()) {
+                hydrateMissingInstalledCharts(contentIdsToHydrate)
+            } else {
+                emptyList()
+            }
+            if (hydratedCharts.isNotEmpty()) {
+                memoryStore.addWithoutAffectingFeed(hydratedCharts, getId = { it.id })
 
-                    val persistResult = localChartRepository.insert(hydratedCharts).first()
-                    if (persistResult.isFailure) {
-                        Log.e(TAG, "Failed to persist hydrated charts", persistResult.exceptionOrNull())
-                    } else {
-                        Log.d(TAG, "Successfully persisted ${hydratedCharts.size} hydrated charts")
-                    }
+                val persistResult = localChartRepository.insert(hydratedCharts).first()
+                if (persistResult.isFailure) {
+                    Log.e(TAG, "Failed to persist hydrated charts", persistResult.exceptionOrNull())
+                } else {
+                    Log.d(TAG, "Successfully persisted ${hydratedCharts.size} hydrated charts")
                 }
             }
 
-            // Add local placeholders for any installed entries that couldn't be matched to existing charts
+            // Add local placeholders for any installed entries that couldn't be matched
+            // to existing or hydrated charts, so they still show up offline/unknown.
+            val hydratedIds = hydratedCharts.mapTo(mutableSetOf()) { it.id }
+            val placeholders = createLocalPlaceholders(installedEntries, current, hydratedIds)
             if (placeholders.isNotEmpty()) {
                 memoryStore.addWithoutAffectingFeed(placeholders, getId = { it.id })
-                Log.d(TAG, "Added ${placeholders.size} local placeholders to memory")
+
+                // Persist placeholders so they survive navigation and process death.
+                val persistResult = localChartRepository.insert(placeholders).first()
+                if (persistResult.isFailure) {
+                    Log.e(TAG, "Failed to persist local placeholders", persistResult.exceptionOrNull())
+                } else {
+                    Log.d(TAG, "Persisted ${placeholders.size} local placeholders")
+                }
             }
 
             val totalInstalled = memoryStore.contentById.value.values.count { it.isInstalled == true }
@@ -215,7 +226,10 @@ class ChartManager @Inject constructor(
         val remoteResult = remoteChartRepository.getItemsByContentIds(contentIds.toList()).first()
         remoteResult.fold(
             onSuccess = { charts ->
-                hydrated.addAll(charts)
+                // These charts were found on disk, so their install state is local
+                // device state that the server cannot know about. Mark them installed
+                // so they surface in the installed charts and installed tour passes.
+                hydrated.addAll(charts.map { it.copy(isInstalled = true) })
                 Log.d(TAG, "Hydrated ${charts.size} charts from remote for missing contentIds")
             },
             onFailure = { err ->
@@ -228,7 +242,8 @@ class ChartManager @Inject constructor(
 
     private fun createLocalPlaceholders(
         entries: Map<String, InstalledContentEntry<ExternalContentMetadata>>,
-        currentCharts: List<Chart>
+        currentCharts: List<Chart>,
+        hydratedIds: Set<String>
     ): List<Chart> {
         if (entries.isEmpty()) return emptyList()
 
@@ -236,10 +251,11 @@ class ChartManager @Inject constructor(
         return entries.values.mapNotNull { entry ->
             val metadata = entry.metadata ?: return@mapNotNull null
             val localId = metadata.id.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-            if (!entry.contentId.isNullOrBlank()) return@mapNotNull null
 
-            val existing = existingById[localId]
-            if (existing != null) return@mapNotNull null
+            // Skip entries that were matched to a real chart (existing in memory
+            // or successfully hydrated from the server).
+            if (!entry.contentId.isNullOrBlank() && entry.contentId in hydratedIds) return@mapNotNull null
+            if (localId in existingById) return@mapNotNull null
 
             try {
                 val config = entry.config as? ExternalContentConfig

@@ -87,6 +87,7 @@
     <string name="extracting_progress_description">Extracting files… %1$d%%</string>
     <string name="download_complete">Download complete</string>
     <string name="download_chart">Download chart</string>
+    <string name="download_tour_pass">Download tour pass</string>
     <string name="downloaded">Downloaded (%1$s)</string>
     <string name="concluded_progress">%1$d%% concluded</string>
     <string name="installed">Installed</string>
@@ -209,6 +210,9 @@
         able to download it again later.</string>
     <string name="chart_deleted">Chart deleted</string>
     <string name="failed_to_delete_chart">Failed to delete chart</string>
+    <string name="delete_tour_pass">Delete tour pass</string>
+    <string name="delete_tour_pass_description">Are you sure you want to delete this tour pass?\nThis will remove all of its charts from your device.</string>
+    <string name="tour_pass_deleted">Tour pass deleted</string>
 
     <!-- 📋 Menu & Interface Elements -->
     <string name="more_options_menu">More options menu</string>

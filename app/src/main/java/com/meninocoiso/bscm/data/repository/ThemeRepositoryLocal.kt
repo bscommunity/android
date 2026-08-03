@@ -36,6 +36,8 @@ class ThemeRepositoryLocal(
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
+    override fun observeThemes(): Flow<List<Theme>> = themeDao.observeThemes()
+
     override suspend fun insert(items: List<Theme>): Flow<Result<Boolean>> = flow {
         themeDao.insert(items)
         emit(Result.success(true))

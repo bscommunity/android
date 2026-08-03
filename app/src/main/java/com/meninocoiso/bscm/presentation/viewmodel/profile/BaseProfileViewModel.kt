@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 data class PagedSection<T>(
     val items: List<T> = emptyList(),
     val total: Int? = null,
+    val counts: Triple<Int, Int, Int>? = null,
     val state: ContentState = ContentState.Loading,
     val isRefreshing: Boolean = false,
     val isLoadingMore: Boolean = false,
@@ -47,6 +48,8 @@ data class PagedSection<T>(
 data class PagedResult<T>(
     val items: List<T>,
     val total: Int? = null,
+    /** (charts, tourPasses, themes) per-type counts reported by the server. */
+    val counts: Triple<Int, Int, Int>? = null,
 )
 
 // ---------------------------------------------------------------------------
@@ -135,8 +138,9 @@ abstract class BaseProfileViewModel : ViewModel() {
                     setSection(
                         PagedSection(
                             items = merged,
-                            // Preserve existing total if the new page didn't return one
+                            // Preserve existing total/counts if the new page didn't return one
                             total = result.total ?: getSection().total,
+                            counts = result.counts ?: getSection().counts,
                             state = ContentState.Success,
                             isRefreshing = false,
                             isLoadingMore = false,
