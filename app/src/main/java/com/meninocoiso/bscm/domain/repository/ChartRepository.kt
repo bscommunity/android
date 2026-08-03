@@ -29,4 +29,12 @@ interface ChartRemoteRepository :
 /** Local-only chart repository contracts. */
 interface ChartLocalRepository :
     ContentLocalRepository<Chart, SortOption, ChartQuery>,
-    ContentItemRepository<Chart>
+    ContentItemRepository<Chart> {
+
+    /**
+     * Live single-chart stream: re-emits whenever the local chart row changes
+     * (like/bookmark timestamps, install flag), unlike [ContentItemRepository.getItem]
+     * which is a one-shot read.
+     */
+    fun observeItem(id: String): Flow<Chart?>
+}

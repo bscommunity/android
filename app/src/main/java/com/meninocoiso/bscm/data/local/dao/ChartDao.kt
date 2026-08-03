@@ -25,6 +25,9 @@ interface ChartDao {
     @Query("SELECT * FROM charts WHERE id = :id")
     fun getChart(id: String): Chart?
 
+    @Query("SELECT * FROM charts WHERE id = :id")
+    fun observeChart(id: String): Flow<Chart?>
+
     @Query("SELECT * FROM charts WHERE id IN (:ids)")
     fun getChartsByIds(ids: List<String>): List<Chart>
 

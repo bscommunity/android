@@ -44,6 +44,9 @@ class ChartRepositoryLocal(
         emit(Result.failure(e))
     }.flowOn(dispatcher)
 
+    override fun observeItem(id: String): Flow<Chart?> =
+        chartDao.observeChart(id).flowOn(dispatcher)
+
     override suspend fun getItemByContentId(contentId: String): Flow<Result<Chart>> = flow {
         val chart = chartDao.getChart(contentId)
         if (chart != null) {

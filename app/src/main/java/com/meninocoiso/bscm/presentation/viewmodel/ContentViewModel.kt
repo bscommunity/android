@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -131,9 +132,11 @@ class ContentViewModel @Inject constructor(
      * interaction state, so without this merge the details screen would show
      * charts as never liked/bookmarked/downloaded even when they are.
      *
-     * The flow is cached per chart id: recreating it on every recomposition
-     * would re-emit the un-merged payload chart first (making the like button
-     * flicker) and re-trigger the Room read repeatedly.
+     * The underlying stream is live (Room re-emits on row changes), so the
+     * merged chart follows like/unlike and bookmark toggles made anywhere in
+     * the app, exactly like the bookmark membership flow. The flow is cached
+     * per chart id: recreating it on every recomposition would re-emit the
+     * un-merged payload chart first (making the like button flicker).
      */
     private val chartStateCache = object :
         LinkedHashMap<String, StateFlow<Chart>>(16, 0.75f, true) {
@@ -144,9 +147,8 @@ class ContentViewModel @Inject constructor(
 
     fun observeChartState(chart: Chart): StateFlow<Chart> =
         chartStateCache.getOrPut(chart.id) {
-            flow {
-                val stored = chartLocalRepository.getItem(chart.id).first().getOrNull()
-                emit(
+            chartLocalRepository.observeItem(chart.id)
+                .map { stored ->
                     stored?.let { local ->
                         chart.copy(
                             likedAt = local.likedAt ?: chart.likedAt,
@@ -154,12 +156,13 @@ class ContentViewModel @Inject constructor(
                             isInstalled = if (local.isInstalled == true) true else chart.isInstalled,
                         )
                     } ?: chart
+                }
+                .distinctUntilChanged()
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.Eagerly,
+                    initialValue = chart
                 )
-            }.stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.Eagerly,
-                initialValue = chart
-            )
         }
 
     private suspend fun handleDownloadEvent(event: DownloadEvent) {
