@@ -354,8 +354,13 @@ fun TourPassDetailsScreen(
                         Row {
                             rowCharts.forEach { chart ->
                                 Column(Modifier.weight(1f)) {
+                                    val chartStateFlow = remember(chart.id) {
+                                        contentViewModel.getDownloadState(chart.id)
+                                    }
+                                    val chartState by chartStateFlow.collectAsStateWithLifecycle()
                                     TourPassTrackPreview(
                                         chart = chart,
+                                        downloadState = chartState,
                                         isPlaying = playingUrl != null && playingUrl == chart.track.previewUrl,
                                         onTogglePlay = {
                                             chart.track.previewUrl?.let { url ->

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.state.DownloadState
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 
 /**
@@ -36,12 +38,22 @@ import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 @Composable
 fun TourPassTrackPreview(
     chart: Chart,
+    downloadState: DownloadState = DownloadState.Idle,
     isPlaying: Boolean,
     onTogglePlay: () -> Unit,
     onClick: () -> Unit
 ) {
     val track = chart.track
     val hasPreview = track.previewUrl != null
+
+    val isInstalling = downloadState is DownloadState.Downloading ||
+        downloadState is DownloadState.Extracting
+    val isInstalled = downloadState is DownloadState.Installed
+    val downloadProgress = when (downloadState) {
+        is DownloadState.Downloading -> downloadState.progress
+        is DownloadState.Extracting -> downloadState.progress
+        else -> null
+    }
 
     Column(
         modifier = Modifier
@@ -62,7 +74,7 @@ fun TourPassTrackPreview(
                 width = Dp.Unspecified,
                 height = Dp.Unspecified,
             )
-            if (hasPreview) {
+            if (hasPreview || isInstalling || isInstalled) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
@@ -70,21 +82,70 @@ fun TourPassTrackPreview(
                         .size(36.dp)
                         .clip(CircleShape)
                         .background(Color.Black.copy(alpha = 0.5f))
-                        .border(1.5.dp, Color.White, CircleShape)
-                        .clickable(onClick = onTogglePlay),
+                        .then(
+                            if (isInstalling) Modifier
+                            else Modifier.border(1.5.dp, Color.White, CircleShape)
+                        )
+                        .clickable(
+                            enabled = !isInstalling && !isInstalled,
+                            onClick = onTogglePlay
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        painter = painterResource(
-                            if (isPlaying) R.drawable.pause_24px
-                            else R.drawable.play_arrow_24px
-                        ),
-                        contentDescription = stringResource(
-                            if (isPlaying) R.string.stop_preview else R.string.play_preview
-                        ),
-                        tint = Color.White,
-                        modifier = Modifier.size(28.dp)
-                    )
+                    when {
+                        isInstalling -> {
+                            Icon(
+                                painter = painterResource(R.drawable.rounded_download_24),
+                                contentDescription = stringResource(
+                                    if (downloadState is DownloadState.Downloading) {
+                                        R.string.downloading
+                                    } else {
+                                        R.string.extracting
+                                    }
+                                ),
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
+                            )
+                            val progress = downloadProgress
+                            if (progress != null && progress > 0f) {
+                                CircularProgressIndicator(
+                                    progress = { progress },
+                                    modifier = Modifier.fillMaxSize(),
+                                    color = Color.White,
+                                    trackColor = Color.White.copy(alpha = 0.3f),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.fillMaxSize(),
+                                    color = Color.White,
+                                    trackColor = Color.White.copy(alpha = 0.3f),
+                                    strokeWidth = 2.dp
+                                )
+                            }
+                        }
+                        isInstalled -> {
+                            Icon(
+                                painter = painterResource(R.drawable.rounded_download_done_24),
+                                contentDescription = stringResource(R.string.installed),
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                        else -> {
+                            Icon(
+                                painter = painterResource(
+                                    if (isPlaying) R.drawable.pause_24px
+                                    else R.drawable.play_arrow_24px
+                                ),
+                                contentDescription = stringResource(
+                                    if (isPlaying) R.string.stop_preview else R.string.play_preview
+                                ),
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
