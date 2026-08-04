@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -91,6 +92,23 @@ class ContentViewModel @Inject constructor(
     @Volatile
     private var allowExplicitContent = Settings().allowExplicitContent
 
+    /**
+     * Ids of every tour pass persisted as installed (local database). The
+     * stream is live, so it flips the moment a tour pass is downloaded or
+     * uninstalled. A tour pass only counts as installed once this flag is set,
+     * i.e. after the user pressed the "download tour pass" button, never just
+     * because some of its charts happen to be installed.
+     */
+    private val installedTourPassIds = tourPassManager.cachedTourPasses
+        .map { tourPasses ->
+            tourPasses.mapNotNullTo(mutableSetOf()) { if (it.isInstalled == true) it.id else null }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptySet()
+        )
+
     init {
         observeDownloadEvents()
         observeSettings()
@@ -110,16 +128,34 @@ class ContentViewModel @Inject constructor(
      * straight from the in-memory content store. Because the store is a
      * StateFlow-backed cache, this reflects already-installed charts on the
      * very first frame of a details screen, without waiting for per-chart
-     * database reads.
+     * database reads. The store is shared across screens, so when a chart is
+     * deleted anywhere (e.g. from its chart details screen) the flow re-emits
+     * without it and stale states are cleared, keeping every details screen in
+     * sync without having to leave and re-enter.
      */
     private fun observeInstalledCharts() {
         viewModelScope.launch {
+            var previouslyInstalled = emptySet<String>()
             chartManager.installedCharts.collect { charts ->
-                charts.forEach { chart ->
-                    if (chart.isInstalled == true && _downloadStates.value[chart.id] == null) {
-                        updateState(chart.id, DownloadState.Installed(chart.id))
+                val currentlyInstalled = charts.mapNotNullTo(mutableSetOf()) {
+                    if (it.isInstalled == true) it.id else null
+                }
+
+                // Seed charts that just became installed.
+                (currentlyInstalled - previouslyInstalled).forEach { id ->
+                    if (_downloadStates.value[id] == null) {
+                        updateState(id, DownloadState.Installed(id))
                     }
                 }
+
+                // Clear charts that were uninstalled so screens update reactively.
+                (previouslyInstalled - currentlyInstalled).forEach { id ->
+                    if (_downloadStates.value[id] is DownloadState.Installed) {
+                        updateState(id, DownloadState.Idle)
+                    }
+                }
+
+                previouslyInstalled = currentlyInstalled
             }
         }
     }
@@ -455,8 +491,8 @@ class ContentViewModel @Inject constructor(
      * progress through [getTourPassDownloadState]. Charts that are explicit
      * (when explicit content is disabled in settings) are skipped. A failure on
      * any chart does not abort the tour pass: the remaining charts are still
-     * downloaded, but the tour pass is only marked as installed once every
-     * available chart is installed.
+     * downloaded. The tour pass is considered installed as long as at least one
+     * of its available charts is installed.
      */
     fun downloadTourPass(tourPass: TourPass) {
         viewModelScope.launch {
@@ -466,10 +502,14 @@ class ContentViewModel @Inject constructor(
             if (charts.isEmpty()) return@launch
 
             var hasFailure = false
+            var installedAny = false
             try {
                 charts.forEach { chart ->
                     // Charts that are already installed do not need to be downloaded again.
-                    if (isChartInstalledLocally(chart)) return@forEach
+                    if (isChartInstalledLocally(chart)) {
+                        installedAny = true
+                        return@forEach
+                    }
 
                     // Reflect the ongoing operation immediately, before the
                     // first service event arrives, so the UI shows the loading
@@ -495,7 +535,9 @@ class ContentViewModel @Inject constructor(
 
                         // Wait for the chart to finish (or fail) before moving on.
                         val terminalState = waitForChartTerminalState(chart.id)
-                        if (terminalState !is DownloadState.Installed) {
+                        if (terminalState is DownloadState.Installed) {
+                            installedAny = true
+                        } else {
                             hasFailure = true
                         }
                     } catch (e: Exception) {
@@ -508,32 +550,34 @@ class ContentViewModel @Inject constructor(
                         hasFailure = true
                     }
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to download tour pass: ${tourPass.id}", e)
+                hasFailure = true
+            }
 
-                if (hasFailure) {
-                    // Not every chart was installed: keep the tour pass
-                    // uninstalled and ask the user to retry the remaining charts.
-                    emitEvent(
-                        DownloadEvent.Error(
-                            tourPass.id,
-                            context.getString(R.string.download_failed),
-                            ErrorType.DOWNLOAD_ERROR
-                        )
-                    )
-                    return@launch
-                }
-
+            // The tour pass stays installed as long as at least one of its
+            // available charts remains installed.
+            if (installedAny) {
                 // Mark the tour pass as installed so it shows up in the updates page.
                 tourPassManager.markInstalled(tourPass.id)
 
                 // Record the tour pass in the root manifest (survives app
                 // uninstalls) and keep the local database in sync.
                 tourPassStorageManager.addInstalledTourPass(tourPass)
+            }
 
+            if (hasFailure) {
+                // Not every chart was installed: the user can retry the
+                // remaining charts from their individual details screens.
+                emitEvent(
+                    DownloadEvent.Error(
+                        tourPass.id,
+                        context.getString(R.string.download_failed),
+                        ErrorType.DOWNLOAD_ERROR
+                    )
+                )
+            } else {
                 emitEvent(DownloadEvent.Complete(tourPass.id))
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to download tour pass: ${tourPass.id}", e)
-                val errorMessage = context.getString(R.string.failed_to_start_download)
-                emitEvent(DownloadEvent.Error(tourPass.id, errorMessage, ErrorType.DOWNLOAD_ERROR))
             }
         }
     }
@@ -545,15 +589,25 @@ class ContentViewModel @Inject constructor(
      * be downloaded (e.g. explicit content when disabled in settings) are
      * excluded from the totals, so the tour pass is only considered installed
      * once all of its available charts are installed.
+     *
+     * The tour pass only reaches the installed state after the user pressed the
+     * "download tour pass" button (persisted in the local database), never just
+     * because some of its charts were installed individually. It stays
+     * installed until the user uninstalls the tour pass or manually deletes
+     * every available chart.
      */
     fun getTourPassDownloadState(tourPass: TourPass): StateFlow<DownloadState> {
-        return _downloadStates
-            .map { states -> aggregateTourPassDownloadState(tourPass, states) }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.Lazily,
-                initialValue = aggregateTourPassDownloadState(tourPass, _downloadStates.value)
+        return combine(_downloadStates, installedTourPassIds) { states, installedIds ->
+            aggregateTourPassDownloadState(tourPass, states, tourPass.id in installedIds)
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Lazily,
+            initialValue = aggregateTourPassDownloadState(
+                tourPass,
+                _downloadStates.value,
+                tourPass.id in installedTourPassIds.value
             )
+        )
     }
 
     private suspend fun waitForChartTerminalState(chartId: String): DownloadState {
@@ -573,7 +627,8 @@ class ContentViewModel @Inject constructor(
 
     private fun aggregateTourPassDownloadState(
         tourPass: TourPass,
-        states: Map<String, DownloadState>
+        states: Map<String, DownloadState>,
+        isTourPassInstalled: Boolean
     ): DownloadState {
         val charts = tourPass.charts.filter { isDownloadEligible(it) }
         if (charts.isEmpty()) return DownloadState.Idle
@@ -616,13 +671,18 @@ class ContentViewModel @Inject constructor(
         }
 
         return when {
-            installedCount == total -> DownloadState.Installed(tourPass.id)
             hasActiveDownload -> DownloadState.Downloading(
                 tourPass.id,
                 progress.coerceIn(0f, 1f),
                 installedCount,
                 total
             )
+            // The tour pass only counts as installed once it was downloaded as
+            // a tour pass (persisted flag), and as long as at least one of its
+            // available charts remains installed. Deleting some charts manually
+            // keeps it installed; it reverts only when uninstalled or when
+            // every available chart has been deleted.
+            isTourPassInstalled && installedCount >= 1 -> DownloadState.Installed(tourPass.id)
             error != null -> DownloadState.Error(tourPass.id, error.message, error.type)
             else -> DownloadState.Idle
         }

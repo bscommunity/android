@@ -235,6 +235,7 @@ fun ChartDetailsScreen(
             message = stringResource(R.string.delete_chart_description),
             onDismiss = { currentDialog = ChartDialog.None },
             onConfirm = {
+                currentDialog = ChartDialog.None
                 contentViewModel.deleteChart(
                     chart,
                     onSuccess = { scope.launch { snackbarHostState.showReplacingSnackbar(chartDeletedMsg) } },
