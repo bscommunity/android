@@ -64,6 +64,30 @@ fun TourPassDownloadButton(
         contentViewModel.downloadTourPass(tourPass = tourPass)
     }
 
+    // While a tour pass is being installed, the disabled button shows how many
+    // charts have been downloaded out of the total.
+    val downloadsCountText: String? = when (downloadState) {
+        is DownloadState.Downloading -> if (downloadState.totalCount > 0) {
+            stringResource(
+                R.string.tour_pass_downloads_progress,
+                downloadState.installedCount,
+                downloadState.totalCount
+            )
+        } else {
+            null
+        }
+        is DownloadState.Extracting -> if (downloadState.totalCount > 0) {
+            stringResource(
+                R.string.tour_pass_downloads_progress,
+                downloadState.installedCount,
+                downloadState.totalCount
+            )
+        } else {
+            null
+        }
+        else -> null
+    }
+
     Button(
         shape = FloatingActionButtonDefaults.extendedFabShape,
         colors = ButtonColors(
@@ -110,8 +134,8 @@ fun TourPassDownloadButton(
             Text(
                 text = when (downloadState) {
                     is DownloadState.Idle -> stringResource(R.string.download)
-                    is DownloadState.Downloading -> stringResource(R.string.downloading)
-                    is DownloadState.Extracting -> stringResource(R.string.extracting)
+                    is DownloadState.Downloading, is DownloadState.Extracting ->
+                        downloadsCountText ?: stringResource(R.string.downloading)
                     is DownloadState.Installed -> stringResource(R.string.installed)
                     is DownloadState.Error -> stringResource(R.string.try_again)
                 }
