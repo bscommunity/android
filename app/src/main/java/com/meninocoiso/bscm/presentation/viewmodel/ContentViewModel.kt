@@ -21,6 +21,7 @@ import com.meninocoiso.bscm.domain.state.DownloadState
 import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,6 +41,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.io.IOException
 import javax.inject.Inject
 
@@ -93,21 +95,15 @@ class ContentViewModel @Inject constructor(
     private var allowExplicitContent = Settings().allowExplicitContent
 
     /**
-     * Ids of every tour pass persisted as installed (local database). The
-     * stream is live, so it flips the moment a tour pass is downloaded or
-     * uninstalled. A tour pass only counts as installed once this flag is set,
-     * i.e. after the user pressed the "download tour pass" button, never just
-     * because some of its charts happen to be installed.
+     * Ids of every tour pass persisted as installed. Seeded synchronously from
+     * the root manifest (bscm.json) and the locally fetched tour pass when a
+     * details screen is entered, so the installed status shows on the very
+     * first frame instead of after a database round trip. A tour pass only
+     * counts as installed once this flag is set, i.e. after the user pressed
+     * the "download tour pass" button, never just because some of its charts
+     * happen to be installed.
      */
-    private val installedTourPassIds = tourPassManager.cachedTourPasses
-        .map { tourPasses ->
-            tourPasses.mapNotNullTo(mutableSetOf()) { if (it.isInstalled == true) it.id else null }
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = emptySet()
-        )
+    private val _installedTourPassIds = MutableStateFlow<Set<String>>(emptySet())
 
     init {
         observeDownloadEvents()
@@ -169,12 +165,17 @@ class ContentViewModel @Inject constructor(
     }
 
     /**
-     * Checks the installation status of a chart
+     * Checks the installation status of a chart. The install flag is resolved
+     * from the in-memory store when the chart is known there (feed charts,
+     * scanned/downloaded charts), so the status appears on the first frame even
+     * when the chart passed by the navigator (e.g. from a tour pass) carries no
+     * install state and no database read is needed.
      */
     fun checkStatus(chart: Chart) {
         viewModelScope.launch {
             try {
-                val isInstalled = chart.isInstalled == true
+                val storeChart = chartManager.getChartFromStore(chart.id)
+                val isInstalled = storeChart?.isInstalled == true || chart.isInstalled == true
                 val isDownloadActive = downloadServiceMonitor.isDownloadActive(chart.id)
 
                 val state = when {
@@ -240,9 +241,28 @@ class ContentViewModel @Inject constructor(
                 .stateIn(
                     scope = viewModelScope,
                     started = SharingStarted.Eagerly,
-                    initialValue = chart
+                    // Merge whatever the in-memory store already knows about the
+                    // chart, so the merged state (install/like/bookmark) is
+                    // correct on the very first frame, before the Room read
+                    // arrives. For feed charts the store already carries the
+                    // merged local state; for tour pass charts the Room read
+                    // refines it moments later.
+                    initialValue = mergeStoredState(chart)
                 )
         }
+
+    /**
+     * Merges the locally persisted interaction state (like/bookmark/install)
+     * held by the in-memory store into a chart object, without any I/O.
+     */
+    private fun mergeStoredState(chart: Chart): Chart {
+        val stored = chartManager.getChartFromStore(chart.id) ?: return chart
+        return chart.copy(
+            likedAt = stored.likedAt ?: chart.likedAt,
+            bookmarkedAt = stored.bookmarkedAt ?: chart.bookmarkedAt,
+            isInstalled = if (stored.isInstalled == true) true else chart.isInstalled,
+        )
+    }
 
     private suspend fun handleDownloadEvent(event: DownloadEvent) {
         val chartId = event.id
@@ -440,6 +460,7 @@ class ContentViewModel @Inject constructor(
                     updateState(chart.id, DownloadState.Idle)
                 }
                 tourPassStorageManager.removeInstalledTourPass(tourPass.id)
+                _installedTourPassIds.update { it - tourPass.id }
                 emitEvent(DownloadEvent.Complete(tourPass.id))
                 onSuccess()
             } catch (e: Exception) {
@@ -469,6 +490,17 @@ class ContentViewModel @Inject constructor(
      */
     fun checkTourPassStatus(tourPass: TourPass) {
         viewModelScope.launch {
+            // Seed the persisted installed flag from the root manifest
+            // (bscm.json, which survives app reinstalls) and from the locally
+            // fetched tour pass, so the installed status is available
+            // immediately instead of after a database round trip.
+            val manifestInstalled = withContext(Dispatchers.IO) {
+                tourPassStorageManager.readInstalledTourPasses().map { it.id }.toSet()
+            }
+            if (tourPass.isInstalled == true || tourPass.id in manifestInstalled) {
+                _installedTourPassIds.update { it + tourPass.id }
+            }
+
             val chartIds = tourPass.charts.map { it.id }
             val localCharts = chartLocalRepository.getItems(chartIds).first().getOrNull() ?: emptyList()
             val installedIds = localCharts
@@ -564,6 +596,7 @@ class ContentViewModel @Inject constructor(
                 // Record the tour pass in the root manifest (survives app
                 // uninstalls) and keep the local database in sync.
                 tourPassStorageManager.addInstalledTourPass(tourPass)
+                _installedTourPassIds.update { it + tourPass.id }
             }
 
             if (hasFailure) {
@@ -597,7 +630,7 @@ class ContentViewModel @Inject constructor(
      * every available chart.
      */
     fun getTourPassDownloadState(tourPass: TourPass): StateFlow<DownloadState> {
-        return combine(_downloadStates, installedTourPassIds) { states, installedIds ->
+        return combine(_downloadStates, _installedTourPassIds) { states, installedIds ->
             aggregateTourPassDownloadState(tourPass, states, tourPass.id in installedIds)
         }.stateIn(
             scope = viewModelScope,
@@ -605,7 +638,9 @@ class ContentViewModel @Inject constructor(
             initialValue = aggregateTourPassDownloadState(
                 tourPass,
                 _downloadStates.value,
-                tourPass.id in installedTourPassIds.value
+                // The manifest seed lands a few frames later, so the locally
+                // fetched install flag bridges the very first frame.
+                tourPass.isInstalled == true || tourPass.id in _installedTourPassIds.value
             )
         )
     }

@@ -58,6 +58,13 @@ class ChartManager @Inject constructor(
 
     fun getChartsLength(): Int = memoryStore.contentById.value.size
 
+    /**
+     * Synchronous lookup of a chart in the in-memory store. Lets install state
+     * be resolved on the very first frame of a details screen without waiting
+     * for a database read.
+     */
+    fun getChartFromStore(id: String): Chart? = memoryStore.contentById.value[id]
+
     fun updateCacheState(newState: ContentState) = contentManager.updateCacheState(newState)
     fun updateFeedState(newState: ContentState) = contentManager.updateFeedState(newState)
 
