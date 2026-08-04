@@ -79,6 +79,8 @@ fun TourPassTrackPreview(
         ) {
             CoverArt(
                 url = track.coverUrl ?: "",
+                difficulty = chart.difficulty,
+                floatingDifficulty = true,
                 modifier = Modifier.fillMaxSize(),
                 borderRadius = 0.dp,
                 width = Dp.Unspecified,
