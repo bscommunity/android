@@ -77,6 +77,14 @@ class ContentViewModel @Inject constructor(
             initialValue = Settings().enableGameplayPreviewVideo
         )
 
+    val isExplicitContentAllowed = settingsRepository.settingsFlow
+        .map { it.allowExplicitContent }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = Settings().allowExplicitContent
+        )
+
     // Cached setting read by download/aggregation logic (which is not a composable).
     @Volatile
     private var allowExplicitContent = Settings().allowExplicitContent

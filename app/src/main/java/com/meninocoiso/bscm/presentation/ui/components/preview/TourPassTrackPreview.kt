@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -39,8 +40,10 @@ import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 fun TourPassTrackPreview(
     chart: Chart,
     downloadState: DownloadState = DownloadState.Idle,
+    isDisabled: Boolean = false,
     isPlaying: Boolean,
     onTogglePlay: () -> Unit,
+    onDisabled: () -> Unit = {},
     onClick: () -> Unit
 ) {
     val track = chart.track
@@ -58,7 +61,14 @@ fun TourPassTrackPreview(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .graphicsLayer { alpha = if (isDisabled) 0.5f else 1f }
+            .clickable(onClick = {
+                if (isDisabled) {
+                    onDisabled()
+                } else {
+                    onClick()
+                }
+            })
             .padding(16.dp)
     ) {
         Box(
@@ -87,7 +97,7 @@ fun TourPassTrackPreview(
                             else Modifier.border(1.5.dp, Color.White, CircleShape)
                         )
                         .clickable(
-                            enabled = !isInstalling && !isInstalled,
+                            enabled = !isInstalling && !isInstalled && !isDisabled,
                             onClick = onTogglePlay
                         ),
                     contentAlignment = Alignment.Center

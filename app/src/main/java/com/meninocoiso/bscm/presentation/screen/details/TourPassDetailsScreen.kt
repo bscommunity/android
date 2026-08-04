@@ -152,6 +152,8 @@ fun TourPassDetailsScreen(
     // -------------------------------------------------------------------------
     val tourPassState by contentViewModel.getTourPassDownloadState(tourPass)
         .collectAsStateWithLifecycle()
+    val isExplicitContentAllowed by contentViewModel.isExplicitContentAllowed
+        .collectAsStateWithLifecycle()
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -163,6 +165,8 @@ fun TourPassDetailsScreen(
     val connectLabel = stringResource(R.string.connect)
     val tourPassDeletedMsg = stringResource(R.string.tour_pass_deleted)
     val failedToDeleteMsg = stringResource(R.string.failed_to_delete_chart)
+    val explicitContentDisabledMsg = stringResource(R.string.explicit_content_disabled)
+    val goToSettingsLabel = stringResource(R.string.go_to_settings)
 
     var currentDialog by rememberSaveable { mutableStateOf(TourPassDialog.None) }
 
@@ -347,8 +351,7 @@ fun TourPassDetailsScreen(
             Section(title = stringResource(R.string.tracklist)) {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
+                        .fillMaxWidth(),
                 ) {
                     tourPass.charts.chunked(3).forEach { rowCharts ->
                         Row {
@@ -361,10 +364,23 @@ fun TourPassDetailsScreen(
                                     TourPassTrackPreview(
                                         chart = chart,
                                         downloadState = chartState,
+                                        isDisabled = chart.isExplicit && !isExplicitContentAllowed,
                                         isPlaying = playingUrl != null && playingUrl == chart.track.previewUrl,
                                         onTogglePlay = {
                                             chart.track.previewUrl?.let { url ->
                                                 audioPreviewPlayer.toggle(url)
+                                            }
+                                        },
+                                        onDisabled = {
+                                            scope.launch {
+                                                val result = snackbarHostState.showReplacingSnackbar(
+                                                    message = explicitContentDisabledMsg,
+                                                    actionLabel = goToSettingsLabel,
+                                                    duration = SnackbarDuration.Short
+                                                )
+                                                if (result == SnackbarResult.ActionPerformed) {
+                                                    onNavigateToSettings()
+                                                }
                                             }
                                         },
                                         onClick = { onNavigateToChart(chart) }
