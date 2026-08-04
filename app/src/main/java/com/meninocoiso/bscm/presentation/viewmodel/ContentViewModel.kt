@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.manager.TourPassManager
 import com.meninocoiso.bscm.data.manager.TourPassStorageManager
 import com.meninocoiso.bscm.data.remote.ApiClient
@@ -49,6 +50,7 @@ class ContentViewModel @Inject constructor(
     private val apiClient: ApiClient,
     private val downloadServiceMonitor: DownloadServiceMonitor,
     private val downloadRepository: DownloadRepository,
+    private val chartManager: ChartManager,
     private val tourPassManager: TourPassManager,
     private val tourPassStorageManager: TourPassStorageManager,
     private val chartLocalRepository: ChartLocalRepository,
@@ -92,12 +94,32 @@ class ContentViewModel @Inject constructor(
     init {
         observeDownloadEvents()
         observeSettings()
+        observeInstalledCharts()
     }
 
     private fun observeSettings() {
         viewModelScope.launch {
             settingsRepository.settingsFlow.collect { settings ->
                 allowExplicitContent = settings.allowExplicitContent
+            }
+        }
+    }
+
+    /**
+     * Seeds the download state of every chart the user has already installed,
+     * straight from the in-memory content store. Because the store is a
+     * StateFlow-backed cache, this reflects already-installed charts on the
+     * very first frame of a details screen, without waiting for per-chart
+     * database reads.
+     */
+    private fun observeInstalledCharts() {
+        viewModelScope.launch {
+            chartManager.installedCharts.collect { charts ->
+                charts.forEach { chart ->
+                    if (chart.isInstalled == true && _downloadStates.value[chart.id] == null) {
+                        updateState(chart.id, DownloadState.Installed(chart.id))
+                    }
+                }
             }
         }
     }
@@ -405,13 +427,22 @@ class ContentViewModel @Inject constructor(
      * Seeds the download state of every chart of a tour pass so the aggregate
      * state reflects already installed charts without a new download. Charts
      * embedded in the tour pass payload carry no local install state, so the
-     * locally persisted flag is read instead.
+     * locally persisted flag is read instead. All charts are resolved in a
+     * single batched query so the installed status appears as fast as it does
+     * on the chart details screen.
      */
     fun checkTourPassStatus(tourPass: TourPass) {
         viewModelScope.launch {
+            val chartIds = tourPass.charts.map { it.id }
+            val localCharts = chartLocalRepository.getItems(chartIds).first().getOrNull() ?: emptyList()
+            val installedIds = localCharts
+                .asSequence()
+                .filter { it.isInstalled == true }
+                .map { it.id }
+                .toSet()
+
             tourPass.charts.forEach { chart ->
-                val local = chartLocalRepository.getItem(chart.id).first().getOrNull()
-                val isInstalled = local?.isInstalled == true || chart.isInstalled == true
+                val isInstalled = chart.id in installedIds || chart.isInstalled == true
                 if (isInstalled && _downloadStates.value[chart.id] == null) {
                     updateState(chart.id, DownloadState.Installed(chart.id))
                 }
