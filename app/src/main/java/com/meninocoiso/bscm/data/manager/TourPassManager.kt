@@ -10,14 +10,19 @@ import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.domain.result.UiText
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,18 +30,28 @@ private const val TAG = "TourPassManager"
 
 /**
  * Tour pass-specific manager. Tour passes are not versionable and have no
- * install/update lifecycle, so this manager stays lean: remote feed + search,
- * with a local cache for offline display.
+ * update lifecycle: it handles the remote feed + search with a local cache
+ * for offline display, and owns the single source of truth for "which tour
+ * passes the user downloaded as a tour pass" ([installedTourPassIds]). That
+ * flag is a live signal, seeded from the root manifest at construction and
+ * updated optimistically on install/uninstall, so feed writes can never
+ * clobber it.
  */
 @Singleton
 class TourPassManager @Inject constructor(
     private val remoteRepository: TourPassRemoteRepository,
     private val localRepository: TourPassLocalRepository,
+    private val tourPassStorageManager: TourPassStorageManager,
     @param:ApplicationScope private val coroutineScope: CoroutineScope,
 ) {
     private val _feedState = MutableStateFlow<ContentState>(ContentState.Loading)
     val feedState: StateFlow<ContentState> = _feedState.asStateFlow()
 
+    /**
+     * Pure feed data, exactly what the server returned. It never carries the
+     * installed flag: that lives in [_installedTourPassIds] and is merged in
+     * by [tourPassesUiState].
+     */
     private val _tourPasses = MutableStateFlow<List<TourPass>>(emptyList())
     val tourPasses: StateFlow<List<TourPass>> = _tourPasses.asStateFlow()
 
@@ -44,10 +59,51 @@ class TourPassManager @Inject constructor(
     val searchTourPasses: StateFlow<List<TourPass>?> = _searchTourPasses.asStateFlow()
 
     /**
+     * Ids of every tour pass the user downloaded as a tour pass (persisted in
+     * the root manifest). This is the one place install truth lives: seeded
+     * from the manifest at construction, updated optimistically the instant a
+     * tour pass is installed or uninstalled, and never derived from or stored
+     * in feed data.
+     */
+    private val _installedTourPassIds = MutableStateFlow<Set<String>>(emptySet())
+    val installedTourPassIds: StateFlow<Set<String>> = _installedTourPassIds.asStateFlow()
+
+    /**
      * Reactive flow of every tour pass cached in the local database. Used to
      * derive the list of downloaded tour passes.
      */
     val cachedTourPasses: Flow<List<TourPass>> = localRepository.observeTourPasses()
+
+    /**
+     * Feed merged with the installed ids, so consumers always read the
+     * correct install status no matter which feed write happened last. The
+     * combine re-emits as soon as [installedTourPassIds] changes, so a cold
+     * start self-heals once the manifest seed lands.
+     */
+    val tourPassesUiState: StateFlow<List<TourPass>> =
+        combine(_tourPasses, _installedTourPassIds) { feed, installedIds ->
+            feed.map { it.copy(isInstalled = it.id in installedIds) }
+        }.stateIn(coroutineScope, SharingStarted.Eagerly, emptyList())
+
+    /**
+     * Search results merged with the installed ids, same as [tourPassesUiState].
+     */
+    val searchTourPassesUiState: StateFlow<List<TourPass>?> =
+        combine(_searchTourPasses, _installedTourPassIds) { search, installedIds ->
+            search?.map { it.copy(isInstalled = it.id in installedIds) }
+        }.stateIn(coroutineScope, SharingStarted.Eagerly, null)
+
+    init {
+        refreshInstalledIds()
+    }
+
+    private fun refreshInstalledIds() {
+        coroutineScope.launch {
+            _installedTourPassIds.value = withContext(Dispatchers.IO) {
+                tourPassStorageManager.readInstalledTourPasses().mapTo(mutableSetOf()) { it.id }
+            }
+        }
+    }
 
     fun updateFeedState(newState: ContentState) {
         _feedState.value = newState
@@ -55,23 +111,40 @@ class TourPassManager @Inject constructor(
 
     /**
      * Marks a tour pass as installed once all of its charts have been
-     * downloaded. Persists the flag locally and updates the in-memory feed.
+     * downloaded. Updates the live installed-ids signal immediately (no I/O)
+     * and persists the flag locally in the background.
      */
     fun markInstalled(id: String) {
+        _installedTourPassIds.value = _installedTourPassIds.value + id
         coroutineScope.launch {
             try {
                 val result = localRepository.getTourPass(id).first()
                 val tourPass = result.getOrNull() ?: return@launch
-                val updated = tourPass.copy(isInstalled = true)
-                localRepository.update(listOf(updated)).first()
-                _tourPasses.value = _tourPasses.value.map { tourPass ->
-                    if (tourPass.id == id) tourPass.copy(isInstalled = true) else tourPass
-                }
+                localRepository.update(listOf(tourPass.copy(isInstalled = true))).first()
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to mark tour pass as installed: $id", e)
             }
         }
     }
+
+    /**
+     * Drops a tour pass from the live installed-ids signal immediately.
+     * Persistence is handled by the caller.
+     */
+    fun markUninstalled(id: String) {
+        _installedTourPassIds.value = _installedTourPassIds.value - id
+    }
+
+    /**
+     * Synchronous lookup of a tour pass in the in-memory cache, with the
+     * installed flag merged from [installedTourPassIds]. Lets the installed
+     * status resolve on the very first frame of a details screen without
+     * waiting for a database read.
+     */
+    fun getTourPassFromStore(id: String): TourPass? =
+        _tourPasses.value.firstOrNull { it.id == id }?.let { stored ->
+            if (stored.id in _installedTourPassIds.value) stored.copy(isInstalled = true) else stored
+        }
 
     fun getTourPassesLength(): Int = _tourPasses.value.size
 

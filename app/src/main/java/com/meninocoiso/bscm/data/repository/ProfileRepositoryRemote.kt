@@ -6,6 +6,7 @@ import com.meninocoiso.bscm.data.local.dao.ThemeDao
 import com.meninocoiso.bscm.data.local.dao.TourPassDao
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
+import com.meninocoiso.bscm.data.remote.dto.user.SectionCounts
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
 import com.meninocoiso.bscm.domain.enums.CatalogItemType
 import com.meninocoiso.bscm.domain.model.CatalogItem
@@ -109,7 +110,11 @@ class ProfileRepositoryRemote @Inject constructor(
                         (charts + tourPasses + themes).distinctBy { it.id }
                     }
                     Log.d(TAG, "Cached library for user $userId: ${cachedItems.size} items")
-                    return@runCatching PagedResult(cachedItems, cached.total)
+                    return@runCatching PagedResult(
+                        items = cachedItems,
+                        total = cached.total,
+                        counts = profileCacheRepository.getLibraryCounts(userId)?.toTriple(),
+                    )
                 }
             }
 
@@ -134,6 +139,12 @@ class ProfileRepositoryRemote @Inject constructor(
                         if (themes.isNotEmpty()) themeDao.insert(themes)
                     }
                     profileCacheRepository.cacheLibrary(userId, page.items, t)
+                    page.counts?.let { counts ->
+                        profileCacheRepository.cacheLibraryCounts(
+                            userId,
+                            SectionCounts(counts.charts, counts.tourPasses, counts.themes)
+                        )
+                    }
                 }
             } else null
 

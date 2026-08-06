@@ -150,7 +150,12 @@ fun TourPassDetailsScreen(
     // -------------------------------------------------------------------------
     // Download state
     // -------------------------------------------------------------------------
-    val tourPassState by contentViewModel.getTourPassDownloadState(tourPass)
+    // Merge the live install flag (manager's manifest-seeded + optimistic
+    // signal) into the payload passed by the navigator, so the download
+    // action reflects the true state from the first frame.
+    val effectiveTourPass by contentViewModel.observeTourPassState(tourPass)
+        .collectAsStateWithLifecycle()
+    val tourPassState by contentViewModel.getTourPassDownloadState(effectiveTourPass)
         .collectAsStateWithLifecycle()
     val isExplicitContentAllowed by contentViewModel.isExplicitContentAllowed
         .collectAsStateWithLifecycle()
@@ -178,7 +183,7 @@ fun TourPassDetailsScreen(
             onConfirm = {
                 currentDialog = TourPassDialog.None
                 contentViewModel.uninstallTourPass(
-                    tourPass,
+                    effectiveTourPass,
                     onSuccess = {
                         scope.launch { snackbarHostState.showReplacingSnackbar(tourPassDeletedMsg) }
                     },
@@ -191,8 +196,13 @@ fun TourPassDetailsScreen(
         TourPassDialog.None -> {}
     }
 
-    LaunchedEffect(tourPass.id) {
-        contentViewModel.checkTourPassStatus(tourPass)
+    // Check the install state whenever the live install flag arrives or
+    // changes: the payload passed by the navigator may carry no install
+    // flag, and observeTourPassState resolves it from the manager's signal.
+    // Keying on the flag (not just the id) re-fires after install/uninstall,
+    // mirroring how the chart details screen keys on effectiveChart.
+    LaunchedEffect(effectiveTourPass.id, effectiveTourPass.isInstalled) {
+        contentViewModel.checkTourPassStatus(effectiveTourPass)
     }
 
     LaunchedEffect(tourPass.id) {
@@ -305,7 +315,7 @@ fun TourPassDetailsScreen(
                 },
                 floatingActionButton = {
                     TourPassDownloadButton(
-                        tourPass = tourPass,
+                        tourPass = effectiveTourPass,
                         downloadState = tourPassState,
                         contentViewModel = contentViewModel,
                     )

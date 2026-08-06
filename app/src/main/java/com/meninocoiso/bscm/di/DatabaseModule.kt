@@ -14,14 +14,13 @@ import com.meninocoiso.bscm.data.manager.ContentManager
 import com.meninocoiso.bscm.data.manager.ContentMemoryStore
 import com.meninocoiso.bscm.data.manager.ThemeManager
 import com.meninocoiso.bscm.data.manager.TourPassManager
+import com.meninocoiso.bscm.data.manager.TourPassStorageManager
 import com.meninocoiso.bscm.data.repository.ChartRepositoryLocal
 import com.meninocoiso.bscm.data.repository.ThemeRepositoryLocal
 import com.meninocoiso.bscm.data.repository.TourPassRepositoryLocal
 import com.meninocoiso.bscm.data.service.FeedOrchestrator
 import com.meninocoiso.bscm.domain.enums.SortOption
 import com.meninocoiso.bscm.domain.model.Chart
-import com.meninocoiso.bscm.domain.model.Theme
-import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.repository.ChartLocalRepository
 import com.meninocoiso.bscm.domain.repository.ChartQuery
 import com.meninocoiso.bscm.domain.repository.ChartRemoteRepository
@@ -140,10 +139,12 @@ object DatabaseModule {
         remoteRepository: TourPassRemoteRepository,
         localRepository: TourPassLocalRepository,
         @ApplicationScope coroutineScope: CoroutineScope,
+        tourPassStorageManager: TourPassStorageManager
     ): TourPassManager = TourPassManager(
         remoteRepository = remoteRepository,
         localRepository = localRepository,
         coroutineScope = coroutineScope,
+        tourPassStorageManager = tourPassStorageManager
     )
 
     @Provides

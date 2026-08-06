@@ -9,6 +9,7 @@ import com.meninocoiso.bscm.data.manager.ChartStateMerger
 import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
+import com.meninocoiso.bscm.data.remote.dto.user.SectionCounts
 import com.meninocoiso.bscm.di.ApplicationScope
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.enums.CatalogItemType
@@ -79,12 +80,15 @@ class MeRepositoryRemote @Inject constructor(
                 }
                 if (localLikes.isNotEmpty()) {
                     Log.d(TAG, "Returning likes from Room (${localLikes.size} items)")
-                    // Restore cached total count so the UI can show it without a network hit
+                    // Restore cached total + per-type counts so the UI can show
+                    // them without a network hit
                     val cachedTotal = profileCacheRepository.getLikesCount()?.toInt()
+                    val cachedCounts = profileCacheRepository.getLikesCounts()
                     return@runCatching PagedResult(
                         items = localLikes,
                         total = cachedTotal,
-                        counts = cachedTotal?.let { Triple(it, 0, 0) }
+                        counts = cachedCounts?.toTriple()
+                            ?: cachedTotal?.let { Triple(it, 0, 0) }
                     )
                 }
             }
@@ -105,8 +109,11 @@ class MeRepositoryRemote @Inject constructor(
 
             // Persist total count from the first-page response
             if (offset == 0) {
-                page.counts?.charts?.let { count ->
-                    profileCacheRepository.cacheLikesCount(count.toLong())
+                page.counts?.let { counts ->
+                    profileCacheRepository.cacheLikesCount(counts.charts.toLong())
+                    profileCacheRepository.cacheLikesCounts(
+                        SectionCounts(counts.charts, counts.tourPasses, counts.themes)
+                    )
                 }
             }
 
@@ -143,10 +150,12 @@ class MeRepositoryRemote @Inject constructor(
             if (localBookmarks.isNotEmpty()) {
                 Log.d(TAG, "Returning bookmarks from Room (${localBookmarks.size} items)")
                 val cachedTotal = profileCacheRepository.getBookmarksCount()?.toInt()
+                val cachedCounts = profileCacheRepository.getBookmarksCounts()
                 return@runCatching PagedResult(
                     items = localBookmarks,
                     total = cachedTotal,
-                    counts = cachedTotal?.let { Triple(it, 0, 0) }
+                    counts = cachedCounts?.toTriple()
+                        ?: cachedTotal?.let { Triple(it, 0, 0) }
                 )
             }
         }
@@ -184,8 +193,11 @@ class MeRepositoryRemote @Inject constructor(
 
         // Persist total count from the first-page response
         if (offset == 0) {
-            page.counts?.charts?.let { count ->
-                profileCacheRepository.cacheBookmarksCount(count.toLong())
+            page.counts?.let { counts ->
+                profileCacheRepository.cacheBookmarksCount(counts.charts.toLong())
+                profileCacheRepository.cacheBookmarksCounts(
+                    SectionCounts(counts.charts, counts.tourPasses, counts.themes)
+                )
             }
         }
 

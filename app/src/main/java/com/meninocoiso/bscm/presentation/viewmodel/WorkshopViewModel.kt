@@ -67,9 +67,9 @@ class WorkshopViewModel @Inject constructor(
     val feedCharts: Flow<List<Chart>> = chartManager.feedCharts
     val searchCharts: Flow<List<Chart>> = chartManager.searchCharts
 
-    // Tour pass flows
-    val feedTourPasses: StateFlow<List<TourPass>> = tourPassManager.tourPasses
-    val searchTourPasses: StateFlow<List<TourPass>?> = tourPassManager.searchTourPasses
+    // Tour pass flows (install status merged from the manager's live signal).
+    val feedTourPasses: StateFlow<List<TourPass>> = tourPassManager.tourPassesUiState
+    val searchTourPasses: StateFlow<List<TourPass>?> = tourPassManager.searchTourPassesUiState
     val tourPassState: StateFlow<ContentState> = tourPassManager.feedState
 
     // Theme flows

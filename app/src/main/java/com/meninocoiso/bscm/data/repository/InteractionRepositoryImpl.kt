@@ -55,14 +55,15 @@ class InteractionRepositoryImpl @Inject constructor(
     override suspend fun likeContent(id: String, contentId: String): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
-                val shouldIncrement = when (resolveContentType(id)) {
+                val contentType = resolveContentType(id)
+                val shouldIncrement = when (contentType) {
                     CatalogItemType.TOUR_PASS -> tourPassDao.getTourPass(id)?.likedAt == null
                     CatalogItemType.THEME -> themeDao.getTheme(id)?.likedAt == null
                     else -> chartDao.getChart(id)?.likedAt == null
                 }
                 updateLocalState(id = id, operation = OperationOption.LIKE)
                 if (shouldIncrement) {
-                    profileCacheRepository.adjustLikesCount(delta = 1)
+                    profileCacheRepository.adjustLikesCounts(contentType, delta = 1)
                 }
                 queueManager.queueAndSyncLike(contentId, isLike = true)
             }.onFailure { e ->
@@ -76,14 +77,15 @@ class InteractionRepositoryImpl @Inject constructor(
     override suspend fun unlikeContent(id: String, contentId: String): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
-                val shouldDecrement = when (resolveContentType(id)) {
+                val contentType = resolveContentType(id)
+                val shouldDecrement = when (contentType) {
                     CatalogItemType.TOUR_PASS -> tourPassDao.getTourPass(id)?.likedAt != null
                     CatalogItemType.THEME -> themeDao.getTheme(id)?.likedAt != null
                     else -> chartDao.getChart(id)?.likedAt != null
                 }
                 updateLocalState(id = id, operation = OperationOption.UNLIKE)
                 if (shouldDecrement) {
-                    profileCacheRepository.adjustLikesCount(delta = -1)
+                    profileCacheRepository.adjustLikesCounts(contentType, delta = -1)
                 }
                 queueManager.queueAndSyncLike(contentId, isLike = false)
             }.onFailure { e ->
@@ -271,12 +273,12 @@ class InteractionRepositoryImpl @Inject constructor(
         when {
             !wasSaved && isSaved -> {
                 updateLocalState(id = id, operation = OperationOption.BOOKMARK)
-                profileCacheRepository.adjustBookmarksCount(delta = 1)
+                profileCacheRepository.adjustBookmarksCounts(resolveContentType(id), delta = 1)
             }
 
             wasSaved && !isSaved -> {
                 updateLocalState(id = id, operation = OperationOption.UNBOOKMARK)
-                profileCacheRepository.adjustBookmarksCount(delta = -1)
+                profileCacheRepository.adjustBookmarksCounts(resolveContentType(id), delta = -1)
             }
         }
     }

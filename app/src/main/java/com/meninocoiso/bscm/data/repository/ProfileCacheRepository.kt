@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.user.SectionCounts
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
+import com.meninocoiso.bscm.domain.enums.CatalogItemType
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedResult
 import kotlinx.coroutines.flow.first
@@ -46,9 +47,12 @@ class ProfileCacheRepository @Inject constructor(
 
         // Counts
         fun libraryCountKey(userId: String) = longPreferencesKey("library_count_$userId")
+        fun libraryCountsKey(userId: String) = stringPreferencesKey("library_counts_$userId")
         fun collectionsCountKey(userId: String) = longPreferencesKey("collections_count_$userId")
         val likesCountKey = longPreferencesKey("likes_count")
+        val likesCountsKey = stringPreferencesKey("likes_counts")
         val bookmarksCountKey = longPreferencesKey("bookmarks_count")
+        val bookmarksCountsKey = stringPreferencesKey("bookmarks_counts")
     }
 
     private val json = Json {
@@ -268,6 +272,82 @@ class ProfileCacheRepository @Inject constructor(
 
     suspend fun adjustBookmarksCount(delta: Int): Long {
         return adjustCount(bookmarksCountKey, delta)
+    }
+
+    // ------------------- Per-type counts (likes / bookmarks / library) --------------------
+
+    private suspend fun writeSectionCounts(key: Preferences.Key<String>, counts: SectionCounts) {
+        val encoded = json.encodeToString(SectionCounts.serializer(), counts)
+        dataStore.edit { preferences ->
+            preferences[key] = encoded
+        }
+    }
+
+    private suspend fun readSectionCounts(key: Preferences.Key<String>): SectionCounts? {
+        return try {
+            val preferences = dataStore.data.first()
+            val encoded = preferences[key] ?: return null
+            json.decodeFromString(SectionCounts.serializer(), encoded)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading section counts from cache", e)
+            null
+        }
+    }
+
+    suspend fun cacheLikesCounts(counts: SectionCounts) = writeSectionCounts(likesCountsKey, counts)
+
+    suspend fun getLikesCounts(): SectionCounts? = readSectionCounts(likesCountsKey)
+
+    suspend fun cacheBookmarksCounts(counts: SectionCounts) = writeSectionCounts(bookmarksCountsKey, counts)
+
+    suspend fun getBookmarksCounts(): SectionCounts? = readSectionCounts(bookmarksCountsKey)
+
+    suspend fun cacheLibraryCounts(userId: String, counts: SectionCounts) =
+        writeSectionCounts(libraryCountsKey(userId), counts)
+
+    suspend fun getLibraryCounts(userId: String): SectionCounts? =
+        readSectionCounts(libraryCountsKey(userId))
+
+    /**
+     * Optimistically updates the cached per-type likes count (and the aggregate
+     * count) in one go, so the profile counts stay in sync as the user
+     * likes/unlikes content.
+     */
+    suspend fun adjustLikesCounts(type: CatalogItemType, delta: Int) {
+        adjustSectionCounts(likesCountsKey, type, delta)
+        adjustCount(likesCountKey, delta)
+    }
+
+    /**
+     * Optimistically updates the cached per-type bookmarks count (and the
+     * aggregate count) in one go.
+     */
+    suspend fun adjustBookmarksCounts(type: CatalogItemType, delta: Int) {
+        adjustSectionCounts(bookmarksCountsKey, type, delta)
+        adjustCount(bookmarksCountKey, delta)
+    }
+
+    private suspend fun adjustSectionCounts(
+        key: Preferences.Key<String>,
+        type: CatalogItemType,
+        delta: Int,
+    ): SectionCounts {
+        var updated = SectionCounts()
+        dataStore.edit { preferences ->
+            val current = preferences[key]
+                ?.let { runCatching { json.decodeFromString<SectionCounts>(it) }.getOrNull() }
+                ?: SectionCounts()
+            updated = when (type) {
+                CatalogItemType.CHART ->
+                    current.copy(charts = (current.charts + delta).coerceAtLeast(0))
+                CatalogItemType.TOUR_PASS ->
+                    current.copy(tourPasses = (current.tourPasses + delta).coerceAtLeast(0))
+                CatalogItemType.THEME ->
+                    current.copy(themes = (current.themes + delta).coerceAtLeast(0))
+            }
+            preferences[key] = json.encodeToString(SectionCounts.serializer(), updated)
+        }
+        return updated
     }
 
     // -------------------- Cache Management --------------------
