@@ -38,6 +38,18 @@ interface TourPassDao {
     """)
     fun getLikedTourPasses(limit: Int, offset: Int): List<TourPass>
 
+    @Query("SELECT COUNT(*) FROM tour_passes WHERE liked_at IS NOT NULL")
+    fun countLikedTourPasses(): Int
+
+    @Query("""
+        SELECT COUNT(*) FROM tour_passes tp
+        INNER JOIN collection_item_cross_ref ref 
+            ON tp.id = ref.content_id
+        WHERE ref.collection_id = 'bookmarks'
+        AND ref.content_type = 'TOUR_PASS'
+    """)
+    fun countBookmarkedTourPasses(): Int
+
     @Query("""
         SELECT * FROM tour_passes 
         WHERE liked_at IS NOT NULL 

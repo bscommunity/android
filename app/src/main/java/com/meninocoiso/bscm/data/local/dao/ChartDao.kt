@@ -45,6 +45,18 @@ interface ChartDao {
     """)
     fun getBookmarkedCharts(limit: Int, offset: Int): List<Chart>
 
+    @Query("SELECT COUNT(*) FROM charts WHERE liked_at IS NOT NULL")
+    fun countLikedCharts(): Int
+
+    @Query("""
+        SELECT COUNT(*) FROM charts c
+        INNER JOIN collection_item_cross_ref ref 
+            ON c.id = ref.content_id
+        WHERE ref.collection_id = 'bookmarks'
+        AND ref.content_type = 'CHART'
+    """)
+    fun countBookmarkedCharts(): Int
+
     @Query("SELECT * FROM charts WHERE liked_at IS NOT NULL ORDER BY liked_at DESC")
     fun observeLikedCharts(): Flow<List<Chart>>
 

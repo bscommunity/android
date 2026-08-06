@@ -32,6 +32,8 @@ import java.time.LocalDateTime
 
 private const val TAG = "MeRepositoryRemote"
 
+private typealias ContentCountsTriple = Triple<Int, Int, Int>
+
 class MeRepositoryRemote @Inject constructor(
     @param:ApplicationScope private val coroutineScope: CoroutineScope,
     private val apiClient: ApiClient,
@@ -81,14 +83,24 @@ class MeRepositoryRemote @Inject constructor(
                 if (localLikes.isNotEmpty()) {
                     Log.d(TAG, "Returning likes from Room (${localLikes.size} items)")
                     // Restore cached total + per-type counts so the UI can show
-                    // them without a network hit
+                    // them without a network hit. Fall back to (or merge with)
+                    // counts computed from Room so they never disagree with the
+                    // sections the observers are already showing.
                     val cachedTotal = profileCacheRepository.getLikesCount()?.toInt()
-                    val cachedCounts = profileCacheRepository.getLikesCounts()
+                    val cachedCounts = profileCacheRepository.getLikesCounts()?.toTriple()
+                    val localCounts = withContext(Dispatchers.IO) {
+                        Triple(
+                            chartDao.countLikedCharts(),
+                            tourPassDao.countLikedTourPasses(),
+                            themeDao.countLikedThemes()
+                        )
+                    }
+                    val counts = cachedCounts?.let { mergeCounts(it, localCounts) }
+                        ?: localCounts
                     return@runCatching PagedResult(
                         items = localLikes,
-                        total = cachedTotal,
-                        counts = cachedCounts?.toTriple()
-                            ?: cachedTotal?.let { Triple(it, 0, 0) }
+                        total = cachedTotal ?: counts.toList().sum(),
+                        counts = counts
                     )
                 }
             }
@@ -150,12 +162,20 @@ class MeRepositoryRemote @Inject constructor(
             if (localBookmarks.isNotEmpty()) {
                 Log.d(TAG, "Returning bookmarks from Room (${localBookmarks.size} items)")
                 val cachedTotal = profileCacheRepository.getBookmarksCount()?.toInt()
-                val cachedCounts = profileCacheRepository.getBookmarksCounts()
+                val cachedCounts = profileCacheRepository.getBookmarksCounts()?.toTriple()
+                val localCounts = withContext(Dispatchers.IO) {
+                    Triple(
+                        chartDao.countBookmarkedCharts(),
+                        tourPassDao.countBookmarkedTourPasses(),
+                        themeDao.countBookmarkedThemes()
+                    )
+                }
+                val counts = cachedCounts?.let { mergeCounts(it, localCounts) }
+                    ?: localCounts
                 return@runCatching PagedResult(
                     items = localBookmarks,
-                    total = cachedTotal,
-                    counts = cachedCounts?.toTriple()
-                        ?: cachedTotal?.let { Triple(it, 0, 0) }
+                    total = cachedTotal ?: counts.toList().sum(),
+                    counts = counts
                 )
             }
         }
@@ -308,4 +328,20 @@ class MeRepositoryRemote @Inject constructor(
         ) { charts, tourPasses, themes ->
             charts + tourPasses + themes
         }
+
+    /**
+     * Per-type counts for the cache path. The cached server counts can be
+     * stale-low (e.g. persisted before the auth fix / before local sync), while
+     * the Room counts can be low when only a subset of pages was fetched.
+     * Taking the per-type maximum keeps the badge consistent with the highest
+     * known truth without ever under-reporting what the observer shows.
+     */
+    private fun mergeCounts(
+        cached: ContentCountsTriple,
+        local: ContentCountsTriple
+    ): ContentCountsTriple = Triple(
+        maxOf(cached.first, local.first),
+        maxOf(cached.second, local.second),
+        maxOf(cached.third, local.third)
+    )
 }

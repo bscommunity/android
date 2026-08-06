@@ -38,6 +38,18 @@ interface ThemeDao {
     """)
     fun getLikedThemes(limit: Int, offset: Int): List<Theme>
 
+    @Query("SELECT COUNT(*) FROM themes WHERE liked_at IS NOT NULL")
+    fun countLikedThemes(): Int
+
+    @Query("""
+        SELECT COUNT(*) FROM themes t
+        INNER JOIN collection_item_cross_ref ref 
+            ON t.id = ref.content_id
+        WHERE ref.collection_id = 'bookmarks'
+        AND ref.content_type = 'THEME'
+    """)
+    fun countBookmarkedThemes(): Int
+
     @Query("""
         SELECT * FROM themes 
         WHERE liked_at IS NOT NULL 
