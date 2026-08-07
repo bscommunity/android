@@ -7,4 +7,4 @@ import kotlinx.serialization.Serializable
 data class TourPassDetails(val tourPass: TourPass)
 
 @Serializable
-data class DeepLinkTourPassDetails(val contentId: String)
+data class DeepLinkTourPassDetails(val id: String)

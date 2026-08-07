@@ -12,10 +12,10 @@ class InteractionSemanticsTest {
     @Test
     fun `bookmark overlay ignores custom collection mutations`() {
         val pending = listOf(
-            queued(contentId = "chart-1", kind = CollectionKind.USER, action = ActionType.ADD, collectionId = "mixes"),
-            queued(contentId = "chart-2", kind = CollectionKind.USER, action = ActionType.REMOVE, collectionId = "mixes"),
-            queued(contentId = "chart-3", kind = CollectionKind.BOOKMARKS, action = ActionType.ADD),
-            queued(contentId = "chart-4", kind = CollectionKind.BOOKMARKS, action = ActionType.REMOVE),
+            queued(id = "chart-1", kind = CollectionKind.USER, action = ActionType.ADD, collectionId = "mixes"),
+            queued(id = "chart-2", kind = CollectionKind.USER, action = ActionType.REMOVE, collectionId = "mixes"),
+            queued(id = "chart-3", kind = CollectionKind.BOOKMARKS, action = ActionType.ADD),
+            queued(id = "chart-4", kind = CollectionKind.BOOKMARKS, action = ActionType.REMOVE),
         )
 
         val overlay = buildCollectionMembershipOverlay(
@@ -23,16 +23,16 @@ class InteractionSemanticsTest {
             collectionKind = CollectionKind.BOOKMARKS,
         )
 
-        assertEquals(setOf("chart-3"), overlay.forceIncludeContentIds)
-        assertEquals(setOf("chart-4"), overlay.forceExcludeContentIds)
+        assertEquals(setOf("chart-3"), overlay.forceIncludeIds)
+        assertEquals(setOf("chart-4"), overlay.forceExcludeIds)
     }
 
     @Test
     fun `user collection overlay stays scoped to one collection id`() {
         val pending = listOf(
-            queued(contentId = "chart-1", kind = CollectionKind.USER, action = ActionType.ADD, collectionId = "mixes"),
-            queued(contentId = "chart-2", kind = CollectionKind.USER, action = ActionType.ADD, collectionId = "favorites"),
-            queued(contentId = "chart-3", kind = CollectionKind.USER, action = ActionType.REMOVE, collectionId = "mixes"),
+            queued(id = "chart-1", kind = CollectionKind.USER, action = ActionType.ADD, collectionId = "mixes"),
+            queued(id = "chart-2", kind = CollectionKind.USER, action = ActionType.ADD, collectionId = "favorites"),
+            queued(id = "chart-3", kind = CollectionKind.USER, action = ActionType.REMOVE, collectionId = "mixes"),
         )
 
         val overlay = buildCollectionMembershipOverlay(
@@ -41,36 +41,36 @@ class InteractionSemanticsTest {
             collectionId = "mixes",
         )
 
-        assertEquals(setOf("chart-1"), overlay.forceIncludeContentIds)
-        assertEquals(setOf("chart-3"), overlay.forceExcludeContentIds)
+        assertEquals(setOf("chart-1"), overlay.forceIncludeIds)
+        assertEquals(setOf("chart-3"), overlay.forceExcludeIds)
     }
 
     @Test
     fun `bookmark state mapping ignores user collection actions`() {
         assertEquals(
             ActionType.ADD,
-            bookmarkActionForState(queued(contentId = "chart-1", kind = CollectionKind.BOOKMARKS, action = ActionType.ADD))
+            bookmarkActionForState(queued(id = "chart-1", kind = CollectionKind.BOOKMARKS, action = ActionType.ADD))
         )
         assertEquals(
             ActionType.REMOVE,
-            bookmarkActionForState(queued(contentId = "chart-1", kind = CollectionKind.BOOKMARKS, action = ActionType.REMOVE))
+            bookmarkActionForState(queued(id = "chart-1", kind = CollectionKind.BOOKMARKS, action = ActionType.REMOVE))
         )
         assertNull(
-            bookmarkActionForState(queued(contentId = "chart-1", kind = CollectionKind.USER, action = ActionType.ADD, collectionId = "mixes"))
+            bookmarkActionForState(queued(id = "chart-1", kind = CollectionKind.USER, action = ActionType.ADD, collectionId = "mixes"))
         )
         assertNull(
-            bookmarkActionForState(queued(contentId = "chart-1", kind = CollectionKind.USER, action = ActionType.REMOVE, collectionId = "mixes"))
+            bookmarkActionForState(queued(id = "chart-1", kind = CollectionKind.USER, action = ActionType.REMOVE, collectionId = "mixes"))
         )
     }
 
     private fun queued(
-        contentId: String,
+        id: String,
         kind: CollectionKind,
         action: ActionType,
         collectionId: String? = null,
         timestamp: Long = 1L,
     ) = QueuedInteractionEntity(
-        contentId = contentId,
+        id = id,
         collectionId = collectionId,
         collectionKind = kind,
         action = action,

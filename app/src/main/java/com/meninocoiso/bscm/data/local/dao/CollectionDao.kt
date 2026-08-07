@@ -53,26 +53,26 @@ interface CollectionDao {
     @Upsert
     suspend fun upsertCharts(charts: List<Chart>)
 
-    @Query("DELETE FROM collection_item_cross_ref WHERE collection_id = :collectionId AND content_id = :contentId")
-    suspend fun deleteCrossRef(collectionId: String, contentId: String)
+    @Query("DELETE FROM collection_item_cross_ref WHERE collection_id = :collectionId AND content_id = :id")
+    suspend fun deleteCrossRef(collectionId: String, id: String)
 
-    @Query("DELETE FROM collection_item_cross_ref WHERE content_id = :contentId AND collection_id IN (SELECT id FROM collections WHERE kind = 'USER')")
-    suspend fun deleteUserCrossRefsForContent(contentId: String)
+    @Query("DELETE FROM collection_item_cross_ref WHERE content_id = :id AND collection_id IN (SELECT id FROM collections WHERE kind = 'USER')")
+    suspend fun deleteUserCrossRefsForContent(id: String)
 
-    @Query("SELECT collection_id FROM collection_item_cross_ref WHERE content_id = :contentId AND collection_id IN (SELECT id FROM collections WHERE kind = 'USER')")
-    suspend fun getUserCollectionIdsForContent(contentId: String): List<String>
+    @Query("SELECT collection_id FROM collection_item_cross_ref WHERE content_id = :id AND collection_id IN (SELECT id FROM collections WHERE kind = 'USER')")
+    suspend fun getUserCollectionIdsForContent(id: String): List<String>
 
     /**
-     * Removes all cross-refs for [collectionId] whose content_id is NOT in [retainedContentIds].
+     * Removes all cross-refs for [collectionId] whose content_id is NOT in [retainedIds].
      * Use this after a full remote sync to evict stale local entries (e.g. items moved out of
      * Bookmarks into a custom collection that the server no longer returns in the bookmarks list).
      */
-    @Query("DELETE FROM collection_item_cross_ref WHERE collection_id = :collectionId AND content_id NOT IN (:retainedContentIds)")
-    suspend fun deleteStaleCrossRefs(collectionId: String, retainedContentIds: List<String>)
+    @Query("DELETE FROM collection_item_cross_ref WHERE collection_id = :collectionId AND content_id NOT IN (:retainedIds)")
+    suspend fun deleteStaleCrossRefs(collectionId: String, retainedIds: List<String>)
 
     /**
      * Removes ALL cross-refs for [collectionId]. Used when the server returns an empty list
-     * (so retainedContentIds would be empty, which is not valid for a SQL IN clause).
+     * (so retainedIds would be empty, which is not valid for a SQL IN clause).
      */
     @Query("DELETE FROM collection_item_cross_ref WHERE collection_id = :collectionId")
     suspend fun deleteAllCrossRefsForCollection(collectionId: String)
@@ -106,21 +106,21 @@ interface CollectionDao {
         ORDER BY added_at DESC
     """
     )
-    fun observeChartContentIdsForCollection(collectionId: String): Flow<List<String>>
+    fun observeChartIdsForCollection(collectionId: String): Flow<List<String>>
 
     @Query(
         """
         SELECT c.id, c.kind FROM collections c
         INNER JOIN collection_item_cross_ref ref 
             ON c.id = ref.collection_id
-        WHERE ref.content_id = :contentId
+        WHERE ref.content_id = :id
         ORDER BY CASE WHEN c.kind = 'BOOKMARKS' THEN 0 ELSE 1 END, ref.added_at DESC
     """
     )
-    fun getCollectionsForContent(contentId: String): Flow<List<SimplifiedCollection>>
+    fun getCollectionsForContent(id: String): Flow<List<SimplifiedCollection>>
 
-    @Query("SELECT EXISTS(SELECT 1 FROM collection_item_cross_ref WHERE collection_id = :collectionId AND content_id = :contentId)")
-    suspend fun hasCrossRef(collectionId: String, contentId: String): Boolean
+    @Query("SELECT EXISTS(SELECT 1 FROM collection_item_cross_ref WHERE collection_id = :collectionId AND content_id = :id)")
+    suspend fun hasCrossRef(collectionId: String, id: String): Boolean
 
     // Same pattern for TourPass, Theme when those tables exist
 }

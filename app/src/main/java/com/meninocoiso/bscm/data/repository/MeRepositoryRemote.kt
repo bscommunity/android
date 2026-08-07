@@ -197,13 +197,13 @@ class MeRepositoryRemote @Inject constructor(
         val remoteTourPasses = page.items.filterIsInstance<TourPass>()
         val remoteThemes = page.items.filterIsInstance<Theme>()
         val filteredCharts = if (overlay != null) {
-            remoteCharts.filterNot { it.id in overlay.forceExcludeContentIds }
+            remoteCharts.filterNot { it.id in overlay.forceExcludeIds }
         } else {
             remoteCharts
         }
         val missingPendingBookmarks = if (overlay != null && offset == 0) {
             chartStateMerger.getChartsByIds(
-                overlay.forceIncludeContentIds - filteredCharts.map { it.id }.toSet()
+                overlay.forceIncludeIds - filteredCharts.map { it.id }.toSet()
             )
         } else {
             emptyList()
@@ -242,11 +242,11 @@ class MeRepositoryRemote @Inject constructor(
 
             val crossRefs = buildList {
                 filteredCharts.forEach { chart ->
-                    if (overlay?.forceExcludeContentIds?.contains(chart.id) != true) {
+                    if (overlay?.forceExcludeIds?.contains(chart.id) != true) {
                         add(
                             CollectionItemCrossRef(
                                 collectionId = "bookmarks",
-                                contentId = chart.id,
+                                id = chart.id,
                                 contentType = CatalogItemType.CHART
                             )
                         )
@@ -256,7 +256,7 @@ class MeRepositoryRemote @Inject constructor(
                     add(
                         CollectionItemCrossRef(
                             collectionId = "bookmarks",
-                            contentId = chart.id,
+                            id = chart.id,
                             contentType = CatalogItemType.CHART
                         )
                     )
@@ -265,7 +265,7 @@ class MeRepositoryRemote @Inject constructor(
                     add(
                         CollectionItemCrossRef(
                             collectionId = "bookmarks",
-                            contentId = tourPass.id,
+                            id = tourPass.id,
                             contentType = CatalogItemType.TOUR_PASS
                         )
                     )
@@ -274,7 +274,7 @@ class MeRepositoryRemote @Inject constructor(
                     add(
                         CollectionItemCrossRef(
                             collectionId = "bookmarks",
-                            contentId = theme.id,
+                            id = theme.id,
                             contentType = CatalogItemType.THEME
                         )
                     )

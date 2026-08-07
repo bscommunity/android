@@ -5,22 +5,22 @@ import com.meninocoiso.bscm.domain.enums.ErrorType
 sealed class DownloadState {
     data object Idle : DownloadState()
     data class Downloading(
-        val contentId: String,
+        val id: String,
         val progress: Float,
         val installedCount: Int = 0,
         val totalCount: Int = 0
     ) : DownloadState()
     data class Extracting(
-        val contentId: String,
+        val id: String,
         val progress: Float,
         val installedCount: Int = 0,
         val totalCount: Int = 0
     ) : DownloadState()
     data class Error(
-        val contentId: String,
+        val id: String,
         val message: String,
         val type: ErrorType? = null,
         val timestamp: Long = System.currentTimeMillis()
     ) : DownloadState()
-    data class Installed(val contentId: String) : DownloadState()
+    data class Installed(val id: String) : DownloadState()
 }

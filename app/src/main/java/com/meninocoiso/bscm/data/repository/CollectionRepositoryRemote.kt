@@ -185,13 +185,13 @@ class CollectionRepositoryRemote @Inject constructor(
         }
         val mergedCharts = chartStateMerger.mergeRemoteCharts(page.items.filterIsInstance<Chart>())
         val filteredCharts = if (overlay != null) {
-            mergedCharts.filterNot { it.id in overlay.forceExcludeContentIds }
+            mergedCharts.filterNot { it.id in overlay.forceExcludeIds }
         } else {
             mergedCharts
         }
         val missingPendingCharts = if (overlay != null) {
             chartStateMerger.getChartsByIds(
-                overlay.forceIncludeContentIds - filteredCharts.map { it.id }.toSet()
+                overlay.forceIncludeIds - filteredCharts.map { it.id }.toSet()
             )
         } else {
             emptyList()
@@ -211,14 +211,14 @@ class CollectionRepositoryRemote @Inject constructor(
                 val crossRefs = items.map { item ->
                     CollectionItemCrossRef(
                         collectionId = collectionId,
-                        contentId = item.id,
+                        id = item.id,
                         contentType = CatalogItemType.CHART,
                     )
                 }
-                val retainedContentIds = crossRefs.map { it.contentId }
+                val retainedIds = crossRefs.map { it.id }
 
-                if (retainedContentIds.isNotEmpty()) {
-                    collectionDao.deleteStaleCrossRefs(collectionId, retainedContentIds)
+                if (retainedIds.isNotEmpty()) {
+                    collectionDao.deleteStaleCrossRefs(collectionId, retainedIds)
                     collectionDao.upsertCrossRefs(crossRefs)
                 } else {
                     collectionDao.deleteAllCrossRefsForCollection(collectionId)
@@ -231,20 +231,20 @@ class CollectionRepositoryRemote @Inject constructor(
 
     override suspend fun addItemToCollection(
         collectionId: String,
-        contentId: String
+        id: String
     ): Result<Unit> = runCatching {
-        apiClient.addItemToCollection(collectionId, contentId)
+        apiClient.addItemToCollection(collectionId, id)
     }
 
     override suspend fun removeItemFromCollection(
         collectionId: String,
-        contentId: String
+        id: String
     ): Result<Unit> = runCatching {
-        apiClient.removeItemFromCollection(collectionId, contentId)
+        apiClient.removeItemFromCollection(collectionId, id)
     }
 
-    override fun observeCollectionChartContentIds(collectionId: String): Flow<List<String>> =
-        collectionDao.observeChartContentIdsForCollection(collectionId)
+    override fun observeCollectionChartIds(collectionId: String): Flow<List<String>> =
+        collectionDao.observeChartIdsForCollection(collectionId)
 
     override fun observeUserCollections(): Flow<List<Collection>> =
         collectionDao.observeUserCollections()

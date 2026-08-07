@@ -24,7 +24,6 @@ import com.meninocoiso.bscm.domain.model.internal.ContributionCategory
 
 interface ApiClient {
     suspend fun getChart(id: String): Chart
-    suspend fun getChartByContentId(contentId: String): Chart
     suspend fun getCharts(
         query: String?,
         sortBy: SortOption? = null,
@@ -33,7 +32,6 @@ interface ApiClient {
         limit: Int? = 10,
         offset: Int = 0
     ): List<Chart>
-    suspend fun getChartsByContentIds(contentIds: List<String>): List<Chart>
 
     suspend fun getChartsByIds(ids: List<String>): List<Chart>
     suspend fun getSuggestions(query: String, limit: Int? = null): List<String>
@@ -83,10 +81,10 @@ interface ApiClient {
     suspend fun getMyCollections(limit: Int? = null, offset: Int? = null): ItemsPage<Collection>
     suspend fun getMyLikes(limit: Int? = null, offset: Int? = null, types: List<CatalogItemType>? = null): ItemsPage<CatalogItem>
     suspend fun getMyBookmarks(limit: Int? = null, offset: Int? = null, types: List<CatalogItemType>? = null): ItemsPage<CatalogItem>
-    suspend fun addLike(contentId: String): Boolean
-    suspend fun removeLike(contentId: String): Boolean
-    suspend fun addBookmark(contentId: String): Boolean
-    suspend fun removeBookmark(contentId: String): Boolean
+    suspend fun addLike(id: String): Boolean
+    suspend fun removeLike(id: String): Boolean
+    suspend fun addBookmark(id: String): Boolean
+    suspend fun removeBookmark(id: String): Boolean
 
     // Collections
     suspend fun getCollection(collectionId: String): Collection
@@ -100,8 +98,8 @@ interface ApiClient {
         limit: Int? = null,
         offset: Int? = null
     ): ItemsPage<CatalogItem>
-    suspend fun addItemToCollection(collectionId: String, contentId: String): Boolean
-    suspend fun removeItemFromCollection(collectionId: String, contentId: String): Boolean
+    suspend fun addItemToCollection(collectionId: String, id: String): Boolean
+    suspend fun removeItemFromCollection(collectionId: String, id: String): Boolean
 
     // Batch interactions
     suspend fun batchProcessInteractions(interactions: List<BatchCollectionItemRequest>): Boolean

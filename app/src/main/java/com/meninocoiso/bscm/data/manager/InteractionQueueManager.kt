@@ -22,8 +22,8 @@ private const val TAG = "InteractionQueueManager"
 private const val RECENT_SYNCED_ACTION_TTL_MILLIS = 30_000L
 
 data class CollectionMembershipOverlay(
-    val forceIncludeContentIds: Set<String> = emptySet(),
-    val forceExcludeContentIds: Set<String> = emptySet(),
+    val forceIncludeIds: Set<String> = emptySet(),
+    val forceExcludeIds: Set<String> = emptySet(),
 )
 
 internal fun buildCollectionMembershipOverlay(
@@ -32,34 +32,34 @@ internal fun buildCollectionMembershipOverlay(
     collectionId: String? = null,
 ): CollectionMembershipOverlay = when (collectionKind) {
     CollectionKind.BOOKMARKS -> CollectionMembershipOverlay(
-        forceIncludeContentIds = pending
+        forceIncludeIds = pending
             .filter { it.collectionKind == CollectionKind.BOOKMARKS && it.action == ActionType.ADD }
-            .map { it.contentId }
+            .map { it.id }
             .toSet(),
-        forceExcludeContentIds = pending
+        forceExcludeIds = pending
             .filter { it.collectionKind == CollectionKind.BOOKMARKS && it.action == ActionType.REMOVE }
-            .map { it.contentId }
+            .map { it.id }
             .toSet(),
     )
 
     CollectionKind.USER -> {
         val effectiveCollectionId = collectionId ?: return CollectionMembershipOverlay()
         CollectionMembershipOverlay(
-            forceIncludeContentIds = pending
+            forceIncludeIds = pending
                 .filter {
                     it.collectionKind == CollectionKind.USER &&
                         it.collectionId == effectiveCollectionId &&
                         it.action == ActionType.ADD
                 }
-                .map { it.contentId }
+                .map { it.id }
                 .toSet(),
-            forceExcludeContentIds = pending
+            forceExcludeIds = pending
                 .filter {
                     it.collectionKind == CollectionKind.USER &&
                         it.collectionId == effectiveCollectionId &&
                         it.action == ActionType.REMOVE
                 }
-                .map { it.contentId }
+                .map { it.id }
                 .toSet(),
         )
     }
@@ -68,7 +68,7 @@ internal fun buildCollectionMembershipOverlay(
 }
 
 private data class RecentSyncedAction(
-    val contentId: String,
+    val id: String,
     val collectionId: String?,
     val collectionKind: CollectionKind,
     val action: ActionType,
@@ -91,29 +91,29 @@ class InteractionQueueManager @Inject constructor(
      * The queue is the safety net — if the app dies before sync completes, the
      * interaction is already persisted and will be retried on next session.
      */
-    suspend fun queueAndSyncLike(contentId: String, isLike: Boolean) {
+    suspend fun queueAndSyncLike(id: String, isLike: Boolean) {
         val action = if (isLike) ActionType.ADD else ActionType.REMOVE
-        queueAndSync(contentId, null, CollectionKind.LIKES, action)
+        queueAndSync(id, null, CollectionKind.LIKES, action)
     }
 
     /**
      * Queues a bookmark/unbookmark interaction and attempts an immediate sync if connected.
      */
-    suspend fun queueAndSyncBookmark(contentId: String, isBookmarked: Boolean) {
+    suspend fun queueAndSyncBookmark(id: String, isBookmarked: Boolean) {
         val action = if (isBookmarked) ActionType.ADD else ActionType.REMOVE
-        queueAndSync(contentId, null, CollectionKind.BOOKMARKS, action)
+        queueAndSync(id, null, CollectionKind.BOOKMARKS, action)
     }
 
     /**
      * Queues a collection add/remove interaction and attempts an immediate sync if connected.
      */
     suspend fun queueAndSyncCollection(
-        contentId: String,
+        id: String,
         collectionId: String,
         isAdd: Boolean
     ) {
         val action = if (isAdd) ActionType.ADD else ActionType.REMOVE
-        queueAndSync(contentId, collectionId, CollectionKind.USER, action)
+        queueAndSync(id, collectionId, CollectionKind.USER, action)
     }
 
     /**
@@ -125,23 +125,23 @@ class InteractionQueueManager @Inject constructor(
      * 4. On failure: leave in queue for the batch processor to retry later
      */
     private suspend fun queueAndSync(
-        contentId: String,
+        id: String,
         collectionId: String?,
         collectionKind: CollectionKind,
         action: ActionType,
     ) = withContext(Dispatchers.IO) {
         val interaction = QueuedInteractionEntity(
-            contentId = contentId,
+            id = id,
             collectionId = collectionId,
             collectionKind = collectionKind,
             action = action,
             timestamp = System.currentTimeMillis()
         )
         queueDao.insert(interaction)
-        Log.d(TAG, "Queued interaction: contentId=$contentId, collection=$collectionId, kind=$collectionKind, action=$action")
+        Log.d(TAG, "Queued interaction: id=$id, collection=$collectionId, kind=$collectionKind, action=$action")
 
         if (!networkMonitor.isCurrentlyConnected()) {
-            Log.d(TAG, "Offline, interaction queued for later sync: contentId=$contentId")
+            Log.d(TAG, "Offline, interaction queued for later sync: id=$id")
             return@withContext
         }
 
@@ -186,12 +186,12 @@ class InteractionQueueManager @Inject constructor(
         pending.forEach { mergedByKey[buildInteractionKey(it)] = it }
 
         recent.forEach { action ->
-            val key = buildInteractionKey(action.contentId, action.collectionKind, action.collectionId)
+            val key = buildInteractionKey(action.id, action.collectionKind, action.collectionId)
             val existing = mergedByKey[key]
             if (existing == null || action.timestamp > existing.timestamp) {
                 mergedByKey[key] = QueuedInteractionEntity(
-                    id = existing?.id ?: 0L,
-                    contentId = action.contentId,
+                    rowId = existing?.rowId ?: 0L,
+                    id = action.id,
                     collectionId = action.collectionId,
                     collectionKind = action.collectionKind,
                     action = action.action,
@@ -229,14 +229,14 @@ class InteractionQueueManager @Inject constructor(
                     return@withLock
                 }
 
-                val processedIds = allInteractions.map { it.id }
+                val processedIds = allInteractions.map { it.rowId }
                 val deduplicatedInteractions = deduplicateLatest(allInteractions)
 
                 Log.d(TAG, "Processing ${allInteractions.size} queued interactions")
 
                 val batchRequest = deduplicatedInteractions.map { entity ->
                     BatchCollectionItemRequest(
-                        catalogId = entity.contentId,
+                        catalogId = entity.id,
                         collectionId = entity.collectionId,
                         collectionKind = entity.collectionKind,
                         action = entity.action
@@ -290,7 +290,7 @@ class InteractionQueueManager @Inject constructor(
             pruneExpiredRecentActionsLocked(now)
             interactions.forEach { interaction ->
                 recentSyncedActions[buildInteractionKey(interaction)] = RecentSyncedAction(
-                    contentId = interaction.contentId,
+                    id = interaction.id,
                     collectionId = interaction.collectionId,
                     collectionKind = interaction.collectionKind,
                     action = interaction.action,
@@ -319,12 +319,12 @@ class InteractionQueueManager @Inject constructor(
     }
 
     private fun buildInteractionKey(interaction: QueuedInteractionEntity): String =
-        buildInteractionKey(interaction.contentId, interaction.collectionKind, interaction.collectionId)
+        buildInteractionKey(interaction.id, interaction.collectionKind, interaction.collectionId)
 
     private fun buildInteractionKey(
-        contentId: String,
+        id: String,
         collectionKind: CollectionKind,
         collectionId: String?,
     ): String =
-        "$contentId:$collectionKind:${collectionId.orEmpty()}"
+        "$id:$collectionKind:${collectionId.orEmpty()}"
 }

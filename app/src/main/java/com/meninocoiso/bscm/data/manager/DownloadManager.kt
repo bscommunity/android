@@ -199,8 +199,7 @@ class DownloadManager @Inject constructor(
 
     suspend fun extractZipToFolder(
         zipFile: File,
-        chartId: String,
-        contentId: String? = null,
+        id: String,
         rootUri: Uri,
         subFolders: List<String> = listOf("songs"),
         onProgress: (Float) -> Unit = {}
@@ -211,7 +210,7 @@ class DownloadManager @Inject constructor(
                 throw ExtractionException("ZIP file does not exist or is not readable: ${zipFile.path}")
             }
 
-            val sanitizedFolderName = sanitizeFileName(StorageUtils.getChartFolderName(chartId, contentId))
+            val sanitizedFolderName = sanitizeFileName(StorageUtils.getChartFolderName(id))
             val destination = StorageUtils.getFolder(rootUri, subFolders, context)
 
             // Create (or recreate) the chart folder
@@ -250,13 +249,12 @@ class DownloadManager @Inject constructor(
     }
 
     suspend fun deleteFolderFromUri(
-        chartId: String,
-        contentId: String? = null,
+        id: String,
         destinationFolderUri: Uri,
         subFolders: List<String>
     ) = withContext(Dispatchers.IO) {
         try {
-            val sanitizedFolderName = sanitizeFileName(StorageUtils.getChartFolderName(chartId, contentId))
+            val sanitizedFolderName = sanitizeFileName(StorageUtils.getChartFolderName(id))
             val rootFolder = DocumentFile.fromTreeUri(context, destinationFolderUri)
                 ?: throw DeletionException("Could not access root folder")
 

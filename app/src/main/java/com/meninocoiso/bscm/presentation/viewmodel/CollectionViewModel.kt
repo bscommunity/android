@@ -279,19 +279,19 @@ class CollectionViewModel @Inject constructor(
     private fun startCollectionMembershipObserver(collectionId: String) {
         collectionMembershipObserverJob?.cancel()
         collectionMembershipObserverJob = viewModelScope.launch {
-            collectionRepository.observeCollectionChartContentIds(collectionId)
+            collectionRepository.observeCollectionChartIds(collectionId)
                 .catch { e -> Log.e(TAG, "Collection membership observer error", e) }
-                .collect { contentIds ->
-                    val ids = contentIds.toHashSet()
+                .collect { ids ->
+                    val idSet = ids.toHashSet()
                     val current = _uiState.value.items
 
                     // Keep currently loaded items in sync with local membership mutations
                     // (e.g. remove-from-collection in details) without issuing a full refresh.
                     val filtered = current.items.filter { item ->
                         val key = item.id
-                        key in ids
+                        key in idSet
                     }
-                    val nextTotal = contentIds.size
+                    val nextTotal = ids.size
 
                     if (filtered != current.items || current.total != nextTotal) {
                         _uiState.update { state ->

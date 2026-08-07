@@ -52,7 +52,7 @@ class InteractionRepositoryImpl @Inject constructor(
     /**
      * Marks content as liked locally and queues remote sync.
      */
-    override suspend fun likeContent(id: String, contentId: String): Result<Unit> =
+    override suspend fun likeContent(id: String): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
                 val contentType = resolveContentType(id)
@@ -65,16 +65,16 @@ class InteractionRepositoryImpl @Inject constructor(
                 if (shouldIncrement) {
                     profileCacheRepository.adjustLikesCounts(contentType, delta = 1)
                 }
-                queueManager.queueAndSyncLike(contentId, isLike = true)
+                queueManager.queueAndSyncLike(id, isLike = true)
             }.onFailure { e ->
-                Log.e(TAG, "Unexpected error in likeContent for contentId: $contentId", e)
+                Log.e(TAG, "Unexpected error in likeContent for id: $id", e)
             }
         }
 
     /**
      * Removes local like state and queues remote sync.
      */
-    override suspend fun unlikeContent(id: String, contentId: String): Result<Unit> =
+    override suspend fun unlikeContent(id: String): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
                 val contentType = resolveContentType(id)
@@ -87,34 +87,34 @@ class InteractionRepositoryImpl @Inject constructor(
                 if (shouldDecrement) {
                     profileCacheRepository.adjustLikesCounts(contentType, delta = -1)
                 }
-                queueManager.queueAndSyncLike(contentId, isLike = false)
+                queueManager.queueAndSyncLike(id, isLike = false)
             }.onFailure { e ->
-                Log.e(TAG, "Unexpected error in unlikeContent for contentId: $contentId", e)
+                Log.e(TAG, "Unexpected error in unlikeContent for id: $id", e)
             }
         }
 
     /**
      * Ensures bookmark membership exists locally and queues bookmark sync.
      */
-    override suspend fun bookmarkContent(id: String, contentId: String): Result<Unit> =
+    override suspend fun bookmarkContent(id: String): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
-                val before = getSavedSnapshot(id, contentId)
+                val before = getSavedSnapshot(id)
 
                 ensureBookmarksCollectionExists()
                 if (!before.hasBookmarkMembership) {
                     collectionDao.upsertCrossRef(
                         CollectionItemCrossRef(
                             collectionId = BOOKMARKS_COLLECTION_ID,
-                            contentId = contentId,
-                            contentType = resolveContentType(contentId)
+                            id = id,
+                            contentType = resolveContentType(id)
                         )
                     )
                 }
                 syncSavedState(id, wasSaved = before.isSaved, isSaved = true)
-                queueManager.queueAndSyncBookmark(contentId, isBookmarked = true)
+                queueManager.queueAndSyncBookmark(id, isBookmarked = true)
             }.onFailure { e ->
-                Log.e(TAG, "Unexpected error in bookmarkContent for contentId: $contentId", e)
+                Log.e(TAG, "Unexpected error in bookmarkContent for id: $id", e)
             }
         }
 
@@ -123,21 +123,21 @@ class InteractionRepositoryImpl @Inject constructor(
      *
      * Custom USER collection memberships are intentionally preserved by contract.
      */
-    override suspend fun unbookmarkContent(id: String, contentId: String): Result<Unit> =
+    override suspend fun unbookmarkContent(id: String): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
-                val before = getSavedSnapshot(id, contentId)
+                val before = getSavedSnapshot(id)
 
-                collectionDao.deleteCrossRef(BOOKMARKS_COLLECTION_ID, contentId)
+                collectionDao.deleteCrossRef(BOOKMARKS_COLLECTION_ID, id)
 
                 // New contract: unbookmark only removes auto-bookmarks membership.
                 // Saved status now depends on whether custom memberships still exist.
                 val isStillSaved = before.userCollectionIds.isNotEmpty()
                 syncSavedState(id, wasSaved = before.isSaved, isSaved = isStillSaved)
 
-                queueManager.queueAndSyncBookmark(contentId, isBookmarked = false)
+                queueManager.queueAndSyncBookmark(id, isBookmarked = false)
             }.onFailure { e ->
-                Log.e(TAG, "Unexpected error in unbookmarkContent for contentId: $contentId", e)
+                Log.e(TAG, "Unexpected error in unbookmarkContent for id: $id", e)
             }
         }
 
@@ -146,22 +146,21 @@ class InteractionRepositoryImpl @Inject constructor(
      */
     override suspend fun addToCollection(
         id: String,
-        contentId: String,
         collectionId: String
     ): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
-                val before = getSavedSnapshot(id, contentId)
-                val hasCollectionMembership = collectionDao.hasCrossRef(collectionId, contentId)
+                val before = getSavedSnapshot(id)
+                val hasCollectionMembership = collectionDao.hasCrossRef(collectionId, id)
                 val now = LocalDateTime.now()
 
                 ensureBookmarksCollectionExists(now)
-                val contentType = resolveContentType(contentId)
+                val contentType = resolveContentType(id)
                 if (!before.hasBookmarkMembership) {
                     collectionDao.upsertCrossRef(
                         CollectionItemCrossRef(
                             collectionId = BOOKMARKS_COLLECTION_ID,
-                            contentId = contentId,
+                            id = id,
                             contentType = contentType,
                             addedAt = now,
                         )
@@ -171,7 +170,7 @@ class InteractionRepositoryImpl @Inject constructor(
                     collectionDao.upsertCrossRef(
                         CollectionItemCrossRef(
                             collectionId = collectionId,
-                            contentId = contentId,
+                            id = id,
                             contentType = contentType,
                             addedAt = now,
                         )
@@ -181,11 +180,11 @@ class InteractionRepositoryImpl @Inject constructor(
                 syncSavedState(id, wasSaved = before.isSaved, isSaved = true)
 
                 if (!before.hasBookmarkMembership) {
-                    queueManager.queueAndSyncBookmark(contentId, isBookmarked = true)
+                    queueManager.queueAndSyncBookmark(id, isBookmarked = true)
                 }
-                queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = true)
+                queueManager.queueAndSyncCollection(id, collectionId, isAdd = true)
             }.onFailure { e ->
-                Log.e(TAG, "Failed to add to collection for contentId: $contentId, collectionId: $collectionId", e)
+                Log.e(TAG, "Failed to add to collection for id: $id, collectionId: $collectionId", e)
             }
         }
 
@@ -194,33 +193,32 @@ class InteractionRepositoryImpl @Inject constructor(
      */
     override suspend fun removeFromCollection(
         id: String,
-        contentId: String,
         collectionId: String
     ): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
-                val before = getSavedSnapshot(id, contentId)
-                val hadCollectionMembership = collectionDao.hasCrossRef(collectionId, contentId)
+                val before = getSavedSnapshot(id)
+                val hadCollectionMembership = collectionDao.hasCrossRef(collectionId, id)
 
                 if (hadCollectionMembership) {
-                    collectionDao.deleteCrossRef(collectionId, contentId)
+                    collectionDao.deleteCrossRef(collectionId, id)
                 }
 
                 // Recompute saved status after local delete to keep counters/chart flags consistent.
                 val hasBookmarkMembershipAfter =
                     if (collectionId == BOOKMARKS_COLLECTION_ID) false
-                    else collectionDao.hasCrossRef(BOOKMARKS_COLLECTION_ID, contentId)
-                val userCollectionIdsAfter = collectionDao.getUserCollectionIdsForContent(contentId)
+                    else collectionDao.hasCrossRef(BOOKMARKS_COLLECTION_ID, id)
+                val userCollectionIdsAfter = collectionDao.getUserCollectionIdsForContent(id)
                 val isSavedAfter = hasBookmarkMembershipAfter || userCollectionIdsAfter.isNotEmpty()
                 syncSavedState(id, wasSaved = before.isSaved, isSaved = isSavedAfter)
 
                 if (collectionId == BOOKMARKS_COLLECTION_ID) {
-                    queueManager.queueAndSyncBookmark(contentId, isBookmarked = false)
+                    queueManager.queueAndSyncBookmark(id, isBookmarked = false)
                 } else if (hadCollectionMembership) {
-                    queueManager.queueAndSyncCollection(contentId, collectionId, isAdd = false)
+                    queueManager.queueAndSyncCollection(id, collectionId, isAdd = false)
                 }
             }.onFailure { e ->
-                Log.e(TAG, "Failed to remove from collection for contentId: $contentId, collectionId: $collectionId", e)
+                Log.e(TAG, "Failed to remove from collection for id: $id, collectionId: $collectionId", e)
             }
         }
 
@@ -251,14 +249,14 @@ class InteractionRepositoryImpl @Inject constructor(
     /**
      * Captures local membership and item flags used to detect saved-state transitions.
      */
-    private suspend fun getSavedSnapshot(id: String, contentId: String): SavedSnapshot {
+    private suspend fun getSavedSnapshot(id: String): SavedSnapshot {
         val itemBookmarkedAt = when (resolveContentType(id)) {
             CatalogItemType.TOUR_PASS -> tourPassDao.getTourPass(id)?.bookmarkedAt
             CatalogItemType.THEME -> themeDao.getTheme(id)?.bookmarkedAt
             else -> chartDao.getChart(id)?.bookmarkedAt
         }
-        val hasBookmarkMembership = collectionDao.hasCrossRef(BOOKMARKS_COLLECTION_ID, contentId)
-        val userCollectionIds = collectionDao.getUserCollectionIdsForContent(contentId)
+        val hasBookmarkMembership = collectionDao.hasCrossRef(BOOKMARKS_COLLECTION_ID, id)
+        val userCollectionIds = collectionDao.getUserCollectionIdsForContent(id)
         return SavedSnapshot(
             hasBookmarkMembership = hasBookmarkMembership,
             userCollectionIds = userCollectionIds,

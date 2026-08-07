@@ -387,7 +387,6 @@ class ContentViewModel @Inject constructor(
                 // Start the download
                 downloadServiceMonitor.startDownload(
                     id = chartId,
-                    contentId = chart.id,
                     name = "${chart.track.title} - ${chart.track.artist}",
                     bundleUrl = bundleUrl,
                     isUpdate = chart.availableVersion != null
@@ -441,7 +440,7 @@ class ContentViewModel @Inject constructor(
                 }
 
                 // Remove files and persist deletion state from a single repository path.
-                downloadRepository.deleteChart(chartId, chart.id)
+                downloadRepository.deleteChart(chartId)
 
                 // Reset the state and clear operation
                 updateState(chartId, DownloadState.Idle)
@@ -477,7 +476,7 @@ class ContentViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 tourPass.charts.forEach { chart ->
-                    downloadRepository.deleteChart(chart.id, chart.id)
+                    downloadRepository.deleteChart(chart.id)
                     updateState(chart.id, DownloadState.Idle)
                 }
                 tourPassStorageManager.removeInstalledTourPass(tourPass.id)
@@ -635,7 +634,6 @@ class ContentViewModel @Inject constructor(
                         // Start the download through the foreground service.
                         downloadServiceMonitor.startDownload(
                             id = chart.id,
-                            contentId = chart.id,
                             name = "${chart.track.title} - ${chart.track.artist}",
                             bundleUrl = bundleResponse.url,
                             isUpdate = false

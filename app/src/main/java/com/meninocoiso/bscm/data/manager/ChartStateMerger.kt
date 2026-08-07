@@ -26,10 +26,10 @@ class ChartStateMerger @Inject constructor(
         val pending = queueManager.getPendingInteractionsSnapshot()
         val latestLikeActions = pending
             .filter { it.collectionKind == CollectionKind.LIKES }
-            .associate { it.contentId to it.action }
+            .associate { it.id to it.action }
         val latestBookmarkActions = pending
             .mapNotNull { interaction ->
-                bookmarkActionForState(interaction)?.let { interaction.contentId to it }
+                bookmarkActionForState(interaction)?.let { interaction.id to it }
             }
             .toMap()
 
@@ -46,9 +46,9 @@ class ChartStateMerger @Inject constructor(
                 remote
             }
 
-            val contentId = merged.id
+            val id = merged.id
 
-            when (latestLikeActions[contentId]) {
+            when (latestLikeActions[id]) {
                 ActionType.ADD -> if (merged.likedAt == null) {
                     merged = merged.copy(likedAt = local?.likedAt ?: LocalDateTime.now())
                 }
@@ -56,7 +56,7 @@ class ChartStateMerger @Inject constructor(
                 null -> Unit
             }
 
-            when (latestBookmarkActions[contentId]) {
+            when (latestBookmarkActions[id]) {
                 ActionType.ADD -> if (merged.bookmarkedAt == null) {
                     merged = merged.copy(bookmarkedAt = local?.bookmarkedAt ?: LocalDateTime.now())
                 }

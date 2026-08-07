@@ -108,8 +108,8 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
 
         when (uri.host) {
             "chart" -> {
-                val contentId = pathSegments.getOrNull(0) ?: return
-                navController.navigate(DeepLinkChartDetails(contentId = contentId)) {
+                val id = pathSegments.getOrNull(0) ?: return
+                navController.navigate(DeepLinkChartDetails(id = id)) {
                     launchSingleTop = true
                     // KEY: make sure MainRoute stays at the bottom of the stack
                     restoreState = true
@@ -131,8 +131,8 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
                 }
             }
             "tourpass" -> {
-                val contentId = pathSegments.getOrNull(0) ?: return
-                navController.navigate(DeepLinkTourPassDetails(contentId = contentId)) {
+                val id = pathSegments.getOrNull(0) ?: return
+                navController.navigate(DeepLinkTourPassDetails(id = id)) {
                     launchSingleTop = true
                     restoreState = true
                 }
@@ -179,12 +179,12 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
                 // Deep link to chart details
                 composableWithTransitions<DeepLinkChartDetails>(
                     deepLinks = listOf(
-                        navDeepLink { uriPattern = "bscm://chart/{contentId}" }
+                        navDeepLink { uriPattern = "bscm://chart/{id}" }
                     )
                 ) { backStackEntry ->
                     val chartDetails: DeepLinkChartDetails = backStackEntry.toRoute()
                     ChartDetailsRoute(
-                        contentId = chartDetails.contentId,
+                        id = chartDetails.id,
                         onReturn = {
                             navController.navigateUp()
                         },
@@ -239,12 +239,12 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
                 // Deep link to tour pass details
                 composableWithTransitions<DeepLinkTourPassDetails>(
                     deepLinks = listOf(
-                        navDeepLink { uriPattern = "bscm://tourpass/{contentId}" }
+                        navDeepLink { uriPattern = "bscm://tourpass/{id}" }
                     )
                 ) { backStackEntry ->
                     val tourPassDetails: DeepLinkTourPassDetails = backStackEntry.toRoute()
                     TourPassDetailsRoute(
-                        contentId = tourPassDetails.contentId,
+                        id = tourPassDetails.id,
                         onReturn = {
                             navController.navigateUp()
                         },

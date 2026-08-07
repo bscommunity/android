@@ -18,7 +18,7 @@ import com.meninocoiso.bscm.presentation.viewmodel.TourPassDetailsViewModel
 
 @Composable
 fun TourPassDetailsRoute(
-    contentId: String?,
+    id: String?,
     onReturn: () -> Unit,
     onNavigateToDetails: (CatalogItem) -> Unit,
     onNavigateToSettings: () -> Unit,
@@ -26,9 +26,9 @@ fun TourPassDetailsRoute(
 ) {
     val state by viewModel.tourPass.collectAsStateWithLifecycle()
 
-    // If we don't have a tour pass from typed navigation, fetch it using contentId
-    LaunchedEffect(contentId) {
-        viewModel.fetchTourPassById(contentId)
+    // If we don't have a tour pass from typed navigation, fetch it using id
+    LaunchedEffect(id) {
+        viewModel.fetchTourPassById(id)
     }
 
     RouteUI {
@@ -52,7 +52,7 @@ fun TourPassDetailsRoute(
                     message = (state as ContentResult.Error).message.asString(),
                     icon = R.drawable.rounded_error_24,
                     onClick = {
-                        viewModel.fetchTourPassById(contentId)
+                        viewModel.fetchTourPassById(id)
                     },
                     buttonLabel = stringResource(R.string.retry),
                 )

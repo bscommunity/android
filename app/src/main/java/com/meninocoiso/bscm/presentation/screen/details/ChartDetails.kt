@@ -82,7 +82,7 @@ import kotlinx.serialization.Serializable
 data class ChartDetails(val chart: Chart)
 
 @Serializable
-data class DeepLinkChartDetails(val contentId: String)
+data class DeepLinkChartDetails(val id: String)
 
 val DropdownItemPadding = PaddingValues(
     start = 16.dp,
@@ -150,7 +150,7 @@ fun ChartDetailsScreen(
     // Shared toggle handler used by toolbar action and bottom-sheet auto-bookmark item.
     val toggleBookmarkSelection: (Boolean) -> Unit = { shouldBeBookmarked ->
         optimisticBookmarked = shouldBeBookmarked
-        interactionViewModel.enqueueBookmarkMutation(chart.id, chart.id, shouldBeBookmarked)
+        interactionViewModel.enqueueBookmarkMutation(chart.id, shouldBeBookmarked)
         if (!shouldBeBookmarked) {
             snackbarHostState.currentSnackbarData?.dismiss()
         }
@@ -361,7 +361,7 @@ fun ChartDetailsScreen(
                                         duration = SnackbarDuration.Short
                                     )
                                     if (result == SnackbarResult.ActionPerformed) {
-                                        interactionViewModel.flushPendingBookmarkMutation(chart.id, chart.id)
+                                        interactionViewModel.flushPendingBookmarkMutation(chart.id)
                                         showCollectionSheet = true
                                     }
                                 }
@@ -387,7 +387,7 @@ fun ChartDetailsScreen(
                             }
                         ) { newValue ->
                             optimisticLiked = newValue
-                            interactionViewModel.enqueueLikeMutation(chart.id, chart.id, newValue)
+                            interactionViewModel.enqueueLikeMutation(chart.id, newValue)
                         }
                 },
                 floatingActionButton = {
@@ -481,7 +481,7 @@ fun ChartDetailsScreen(
             },
             onCollectionToggled = { collectionId, collectionName, shouldBeSelected ->
                 if (shouldBeSelected) {
-                    interactionViewModel.addToCollection(chart.id, chart.id, collectionId)
+                    interactionViewModel.addToCollection(chart.id, collectionId)
                     scope.launch {
                         snackbarHostState.showReplacingSnackbar(
                             savedToCollectionMsg(collectionName),
@@ -489,14 +489,14 @@ fun ChartDetailsScreen(
                         )
                     }
                 } else {
-                    interactionViewModel.removeFromCollection(chart.id, chart.id, collectionId)
+                    interactionViewModel.removeFromCollection(chart.id, collectionId)
                 }
             },
             onCreateCollection = { name, isPublic ->
                 scope.launch {
                     try {
                         val newCollectionId = collectionViewModel.createCollection(name, isPublic)
-                        interactionViewModel.addToCollection(chart.id, chart.id, newCollectionId)
+                        interactionViewModel.addToCollection(chart.id, newCollectionId)
                         snackbarHostState.showReplacingSnackbar(savedToCollectionMsg(name), duration = SnackbarDuration.Short)
                     } catch (e: ApiException) {
                         Log.e("ChartDetailsScreen", "Error creating collection", e)

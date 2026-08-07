@@ -5,22 +5,22 @@ interface InteractionRepository {
     /**
      * Queues a like interaction for offline-first processing
      */
-    suspend fun likeContent(id: String, contentId: String): Result<Unit>
+    suspend fun likeContent(id: String): Result<Unit>
 
     /**
      * Queues an unlike interaction for offline-first processing
      */
-    suspend fun unlikeContent(id: String, contentId: String): Result<Unit>
+    suspend fun unlikeContent(id: String): Result<Unit>
 
     /**
      * Queues a bookmark interaction for offline-first processing
      */
-    suspend fun bookmarkContent(id: String, contentId: String): Result<Unit>
+    suspend fun bookmarkContent(id: String): Result<Unit>
 
     /**
      * Queues an unbookmark interaction for offline-first processing
      */
-    suspend fun unbookmarkContent(id: String, contentId: String): Result<Unit>
+    suspend fun unbookmarkContent(id: String): Result<Unit>
 
     /**
      * Adds content to a custom collection while preserving bookmark state.
@@ -28,7 +28,6 @@ interface InteractionRepository {
      */
     suspend fun addToCollection(
         id: String,
-        contentId: String,
         collectionId: String
     ): Result<Unit>
 
@@ -37,7 +36,6 @@ interface InteractionRepository {
      */
     suspend fun removeFromCollection(
         id: String,
-        contentId: String,
         collectionId: String
     ): Result<Unit>
 

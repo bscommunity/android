@@ -105,8 +105,8 @@ class ChartManager @Inject constructor(
         operation: OperationOption
     ): ContentResult<Chart> = contentManager.updateContent(internalId, operation)
 
-    fun getChartByContentId(contentId: String): Flow<ContentResult<Chart>> =
-        contentManager.getItemByContentId(contentId)
+    fun getChart(id: String): Flow<ContentResult<Chart>> =
+        contentManager.getItem(id)
 
     fun getSuggestions(query: String): Flow<List<String>> = contentManager.getSuggestions(query)
 
@@ -158,11 +158,11 @@ class ChartManager @Inject constructor(
             Log.d(TAG, "Scanned local storage: found ${installedEntries.size} folders in songs")
 
             // Update existing charts with installed status, and persist any changes to the local repository
-            val installedContentIds = installedEntries.values.mapNotNull { it.contentId }.toSet()
+            val installedIds = installedEntries.values.mapNotNull { it.id }.toSet()
             val current = memoryStore.contentById.value.values.toList()
 
             val updatedCharts = current.map { chart ->
-                val isInstalled = shouldMarkInstalled(chart, installedContentIds)
+                val isInstalled = shouldMarkInstalled(chart, installedIds)
                 Log.d(
                     TAG,
                     "Chart ${chart.id} installed status: ${chart.isInstalled} -> $isInstalled"
@@ -173,15 +173,15 @@ class ChartManager @Inject constructor(
             memoryStore.upsertContent(updatedCharts) { it.id }
 
             // Identify any installed charts that are missing from memory and attempt to hydrate them from storage metadata
-            val contentIdsToHydrate = findMissingContentIdsToHydrate(installedContentIds, current)
+            val idsToHydrate = findMissingIdsToHydrate(installedIds, current)
             Log.d(
                 TAG,
-                "Sync installed charts: ${installedContentIds.size} contentIds to match, ${contentIdsToHydrate.size} canonical charts to hydrate"
+                "Sync installed charts: ${installedIds.size} ids to match, ${idsToHydrate.size} canonical charts to hydrate"
             )
 
             // Hydrate any missing canonical charts
-            val hydratedCharts = if (contentIdsToHydrate.isNotEmpty()) {
-                hydrateMissingInstalledCharts(contentIdsToHydrate)
+            val hydratedCharts = if (idsToHydrate.isNotEmpty()) {
+                hydrateMissingInstalledCharts(idsToHydrate)
             } else {
                 emptyList()
             }
@@ -226,18 +226,18 @@ class ChartManager @Inject constructor(
         updateFeedState(ContentState.Loading)
     }
 
-    private suspend fun hydrateMissingInstalledCharts(contentIds: Collection<String>): List<Chart> {
-        if (contentIds.isEmpty()) return emptyList()
+    private suspend fun hydrateMissingInstalledCharts(ids: Collection<String>): List<Chart> {
+        if (ids.isEmpty()) return emptyList()
 
         val hydrated = mutableListOf<Chart>()
-        val remoteResult = remoteChartRepository.getItemsByContentIds(contentIds.toList()).first()
+        val remoteResult = remoteChartRepository.getItems(ids.toList()).first()
         remoteResult.fold(
             onSuccess = { charts ->
                 // These charts were found on disk, so their install state is local
                 // device state that the server cannot know about. Mark them installed
                 // so they surface in the installed charts and installed tour passes.
                 hydrated.addAll(charts.map { it.copy(isInstalled = true) })
-                Log.d(TAG, "Hydrated ${charts.size} charts from remote for missing contentIds")
+                Log.d(TAG, "Hydrated ${charts.size} charts from remote for missing ids")
             },
             onFailure = { err ->
                 Log.e(TAG, "Failed to hydrate missing installed charts", err)
@@ -261,7 +261,7 @@ class ChartManager @Inject constructor(
 
             // Skip entries that were matched to a real chart (existing in memory
             // or successfully hydrated from the server).
-            if (!entry.contentId.isNullOrBlank() && entry.contentId in hydratedIds) return@mapNotNull null
+            if (!entry.id.isNullOrBlank() && entry.id in hydratedIds) return@mapNotNull null
             if (localId in existingById) return@mapNotNull null
 
             try {
@@ -295,15 +295,15 @@ class ChartManager @Inject constructor(
     companion object {
         internal fun shouldMarkInstalled(
             chart: Chart,
-            installedContentIds: Set<String>
-        ): Boolean = chart.id in installedContentIds
+            installedIds: Set<String>
+        ): Boolean = chart.id in installedIds
 
-        internal fun findMissingContentIdsToHydrate(
-            installedContentIds: Set<String>,
+        internal fun findMissingIdsToHydrate(
+            installedIds: Set<String>,
             currentCharts: List<Chart>
         ): Set<String> {
-            val existingContentIds = currentCharts.map { it.id }.toSet()
-            return installedContentIds.filterNot { it in existingContentIds }.toSet()
+            val existingIds = currentCharts.map { it.id }.toSet()
+            return installedIds.filterNot { it in existingIds }.toSet()
         }
     }
 }

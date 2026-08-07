@@ -151,10 +151,6 @@ class KtorApiClient @Inject constructor(
         return client.get("charts/$id").body()
     }
 
-    override suspend fun getChartByContentId(contentId: String): Chart {
-        return client.get("charts/$contentId").body()
-    }
-
     override suspend fun getCharts(
         query: String?,
         sortBy: SortOption?,
@@ -181,14 +177,6 @@ class KtorApiClient @Inject constructor(
         return client.get("charts") {
             url {
                 parameters.append("ids", ids.joinToString(","))
-            }
-        }.body()
-    }
-
-    override suspend fun getChartsByContentIds(contentIds: List<String>): List<Chart> {
-        return client.get("charts") {
-            url {
-                parameters.append("ids", contentIds.joinToString(","))
             }
         }.body()
     }
@@ -437,23 +425,23 @@ class KtorApiClient @Inject constructor(
         }.body()
     }
 
-    override suspend fun addLike(contentId: String): Boolean {
-        val response = client.post("me/likes/$contentId")
+    override suspend fun addLike(id: String): Boolean {
+        val response = client.post("me/likes/$id")
         return response.status.isSuccess()
     }
 
-    override suspend fun removeLike(contentId: String): Boolean {
-        val response = client.delete("me/likes/$contentId")
+    override suspend fun removeLike(id: String): Boolean {
+        val response = client.delete("me/likes/$id")
         return response.status.isSuccess()
     }
 
-    override suspend fun addBookmark(contentId: String): Boolean {
-        val response = client.post("me/bookmarks/$contentId")
+    override suspend fun addBookmark(id: String): Boolean {
+        val response = client.post("me/bookmarks/$id")
         return response.status.isSuccess()
     }
 
-    override suspend fun removeBookmark(contentId: String): Boolean {
-        val response = client.delete("me/bookmarks/$contentId")
+    override suspend fun removeBookmark(id: String): Boolean {
+        val response = client.delete("me/bookmarks/$id")
         return response.status.isSuccess()
     }
 
@@ -515,11 +503,11 @@ class KtorApiClient @Inject constructor(
         }.body()
     }
 
-    override suspend fun addItemToCollection(collectionId: String, contentId: String): Boolean {
+    override suspend fun addItemToCollection(collectionId: String, id: String): Boolean {
         val response = client.post("collections/$collectionId/items") {
             setBody(
                 CreateCollectionItemRequest(
-                    catalogId = contentId,
+                    catalogId = id,
                     action = ActionType.ADD
                 )
             )
@@ -529,9 +517,9 @@ class KtorApiClient @Inject constructor(
 
     override suspend fun removeItemFromCollection(
         collectionId: String,
-        contentId: String
+        id: String
     ): Boolean {
-        val response = client.delete("collections/$collectionId/items/$contentId")
+        val response = client.delete("collections/$collectionId/items/$id")
         return response.status.isSuccess()
     }
 

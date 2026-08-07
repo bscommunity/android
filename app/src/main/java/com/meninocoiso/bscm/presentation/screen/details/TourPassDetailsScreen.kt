@@ -284,7 +284,6 @@ fun TourPassDetailsScreen(
                         optimisticBookmarked = newValue
                         interactionViewModel.enqueueBookmarkMutation(
                             tourPass.id,
-                            tourPass.id,
                             newValue
                         )
                     }
@@ -307,7 +306,6 @@ fun TourPassDetailsScreen(
                     ) { newValue ->
                         optimisticLiked = newValue
                         interactionViewModel.enqueueLikeMutation(
-                            tourPass.id,
                             tourPass.id,
                             newValue
                         )

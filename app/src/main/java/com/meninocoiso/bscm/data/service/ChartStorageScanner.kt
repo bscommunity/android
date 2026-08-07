@@ -55,8 +55,7 @@ class ChartStorageScanner @Inject constructor(
                     val bscmMetadata = tourPassStorageManager.readChartMetadata(folder)
                     val manifestId = normalizeIdentifier(bscmMetadata?.resolvedId())
                     val metadata = infoMetadata ?: bscmMetadata?.toExternalContentMetadata()
-                    val contentId = normalizeIdentifier(metadata?.contentId) ?: manifestId
-                    val localId = normalizeIdentifier(metadata?.id)
+                    val id = normalizeIdentifier(metadata?.id) ?: manifestId
 
                     if (infoFile == null) {
                         Log.d(TAG, "Folder ${folder.name} has no info.json")
@@ -67,11 +66,11 @@ class ChartStorageScanner @Inject constructor(
 
                     Log.d(
                         TAG,
-                        "Scanned folder ${folder.name}: contentId=${contentId ?: "none"}, metadataId=${localId ?: "none"}, config=${config != null}"
+                        "Scanned folder ${folder.name}: id=${id ?: "none"}, config=${config != null}"
                     )
 
                     entries[folder.uri.toString()] = InstalledContentEntry(
-                        contentId = contentId,
+                        id = id,
                         metadata = metadata,
                         config = config,
                         folder = folder
@@ -134,7 +133,6 @@ private fun BscmChartMetadata.toExternalContentMetadata(): ExternalContentMetada
         id = id,
         difficulty = difficulty,
         bpm = bpm,
-        contentId = id,
         duration = duration,
         notes = notes,
         effects = effects,

@@ -47,27 +47,8 @@ class ChartRepositoryLocal(
     override fun observeItem(id: String): Flow<Chart?> =
         chartDao.observeChart(id).flowOn(dispatcher)
 
-    override suspend fun getItemByContentId(contentId: String): Flow<Result<Chart>> = flow {
-        val chart = chartDao.getChart(contentId)
-        if (chart != null) {
-            emit(Result.success(chart))
-        } else {
-            emit(Result.failure(IllegalArgumentException("Chart with contentId $contentId not found")))
-        }
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
     override suspend fun getItems(ids: List<String>): Flow<Result<List<Chart>>> = flow {
-        val charts = chartDao.getChartsByIds(ids)
-        emit(Result.success(charts))
-    }.catch { e ->
-        emit(Result.failure(e))
-    }.flowOn(dispatcher)
-
-    override suspend fun getItemsByContentIds(contentIds: List<String>): Flow<Result<List<Chart>>> = flow {
-        val charts = chartDao.getChartsByIds(contentIds)
-        emit(Result.success(charts))
+        emit(Result.success(chartDao.getChartsByIds(ids)))
     }.catch { e ->
         emit(Result.failure(e))
     }.flowOn(dispatcher)

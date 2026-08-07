@@ -6,31 +6,15 @@ import org.junit.Test
 class StorageUtilsTest {
 
     @Test
-    fun `getChartFolderName prefers contentId when available`() {
-        val result = StorageUtils.getChartFolderName(
-            chartId = "7d7dd9d0-8f7b-4cc1-9dd2-raw-id",
-            contentId = "shape-of-you"
-        )
+    fun `getChartFolderName uses the chart id`() {
+        val result = StorageUtils.getChartFolderName("shape-of-you")
 
         assertEquals("bscm_shape-of-you", result)
     }
 
     @Test
-    fun `getChartFolderName falls back to chart id when contentId is missing`() {
-        val result = StorageUtils.getChartFolderName(
-            chartId = "7d7dd9d0-8f7b-4cc1-9dd2-raw-id",
-            contentId = null
-        )
-
-        assertEquals("bscm_7d7dd9d0-8f7b-4cc1-9dd2-raw-id", result)
-    }
-
-    @Test
-    fun `getChartFolderName falls back to chart id when contentId is blank`() {
-        val result = StorageUtils.getChartFolderName(
-            chartId = "7d7dd9d0-8f7b-4cc1-9dd2-raw-id",
-            contentId = "   "
-        )
+    fun `getChartFolderName keeps raw ids as is`() {
+        val result = StorageUtils.getChartFolderName("7d7dd9d0-8f7b-4cc1-9dd2-raw-id")
 
         assertEquals("bscm_7d7dd9d0-8f7b-4cc1-9dd2-raw-id", result)
     }

@@ -44,7 +44,6 @@ class DownloadServiceMonitor @Inject constructor(
      */
     suspend fun startDownload(
         id: String,
-        contentId: String? = null,
         name: String,
         bundleUrl: String,
         isUpdate: Boolean = false
@@ -71,7 +70,6 @@ class DownloadServiceMonitor @Inject constructor(
         try {
             val intent = Intent(context, DownloadService::class.java).apply {
                 putExtra(DownloadService.EXTRA_ID, id)
-                putExtra(DownloadService.EXTRA_CONTENT_ID, contentId)
                 putExtra(DownloadService.EXTRA_BUNDLE_URL, bundleUrl)
                 putExtra(DownloadService.EXTRA_NAME, name)
                 putExtra(DownloadService.EXTRA_IS_UPDATE, isUpdate)

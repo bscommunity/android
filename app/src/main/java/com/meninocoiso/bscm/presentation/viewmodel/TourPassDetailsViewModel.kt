@@ -27,8 +27,8 @@ class TourPassDetailsViewModel @Inject constructor(
     private val _tourPass = MutableStateFlow<ContentResult<TourPass>>(ContentResult.Loading)
     val tourPass: StateFlow<ContentResult<TourPass>> = _tourPass.asStateFlow()
 
-    fun fetchTourPassById(contentId: String?) {
-        if (contentId.isNullOrEmpty()) {
+    fun fetchTourPassById(id: String?) {
+        if (id.isNullOrEmpty()) {
             _tourPass.value = ContentResult.Error(UiText.Res(R.string.invalid_tour_pass_id))
             return
         }
@@ -37,7 +37,7 @@ class TourPassDetailsViewModel @Inject constructor(
             _tourPass.value = ContentResult.Loading
 
             try {
-                tourPassManager.getTourPass(contentId).collect { result ->
+                tourPassManager.getTourPass(id).collect { result ->
                     when (result) {
                         is ContentResult.Success -> {
                             Log.d(TAG, "Tour pass data loaded successfully")
