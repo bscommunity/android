@@ -46,6 +46,7 @@ import com.meninocoiso.bscm.presentation.screen.profile.DeepLinkProfile
 import com.meninocoiso.bscm.presentation.screen.profile.Profile
 import com.meninocoiso.bscm.presentation.screen.profile.ProfileRoute
 import com.meninocoiso.bscm.presentation.screen.profile.ProfileScreen
+import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import kotlin.reflect.typeOf
@@ -55,7 +56,13 @@ object MainRoute
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean, intentFlow: Flow<Intent>) {
+fun MainNav(
+    startOAuth: (Uri) -> Unit,
+    user: SimplifiedUser?,
+    hasUpdate: Boolean,
+    intentFlow: Flow<Intent>,
+    authViewModel: AuthViewModel
+) {
     val navController = rememberNavController()
     val bottomNavController = rememberNavController()
 
@@ -173,6 +180,7 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
                         hasUpdate,
                         user,
                         startOAuth,
+                        authViewModel,
                     )
                 }
 
