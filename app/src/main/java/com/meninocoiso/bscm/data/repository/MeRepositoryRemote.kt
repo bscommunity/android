@@ -113,7 +113,17 @@ class MeRepositoryRemote @Inject constructor(
             // Subsequent pages: filter to CHART only (the only type we paginate)
             val types = if (offset == 0) null else listOf(CatalogItemType.CHART)
             val page = apiClient.getMyLikes(limit, offset, types)
-            val remoteCharts = chartStateMerger.mergeRemoteCharts(page.items.filterIsInstance<Chart>())
+            // The /me/likes payload never carries like timestamps, so membership
+            // in this list is the source of truth: backfill a missing timestamp
+            // before persisting, otherwise Room's liked_at IS NOT NULL
+            // observers/cache would drop these rows and make the list vanish.
+val remoteCharts = chartStateMerger.mergeRemoteCharts(page.items.filterIsInstance<Chart>())
+            // The /me/bookmarks payload never carries bookmark timestamps, so
+            // membership in this list is the source of truth: backfill a missing
+            // timestamp before persisting, otherwise Room's bookmarked_at IS NOT
+            // NULL observers/cache would drop these rows and make the list vanish.
+            .map { it.copy(bookmarkedAt = it.bookmarkedAt ?: LocalDateTime.now()) }
+                .map { it.copy(likedAt = it.likedAt ?: LocalDateTime.now()) }
             val remoteTourPasses = page.items.filterIsInstance<TourPass>()
             val remoteThemes = page.items.filterIsInstance<Theme>()
             Log.d(TAG, "Fetched likes from API (offset=$offset): ${remoteCharts.size} charts, " +
