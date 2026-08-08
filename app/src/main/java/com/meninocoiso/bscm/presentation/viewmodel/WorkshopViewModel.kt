@@ -280,7 +280,12 @@ class WorkshopViewModel @Inject constructor(
             // Reset pagination
             currentTourPassFeedPage = 0
             isLoadingMoreTourPasses = false
-            hasMoreTourPasses = true
+            // The scroll observer fires as soon as a short list sits at the end
+            // of the viewport, which happens BEFORE this refresh resolves. Derive
+            // "has more" from the data we already have (loadCachedTourPasses
+            // loads the whole local list), so it cannot eagerly fetch page 1 of
+            // a single-item feed right after startup.
+            hasMoreTourPasses = tourPassManager.tourPasses.value.size >= BATCH_SIZE
 
             if (showLoading) {
                 tourPassManager.updateFeedState(ContentState.Loading)

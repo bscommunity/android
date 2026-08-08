@@ -113,6 +113,20 @@ class TourPassStorageManager @Inject constructor(
 
         for (entry in entries) {
             try {
+                val cached = tourPassLocalRepository.getTourPass(entry.id).first().getOrNull()
+                // Once the row is known locally (from an earlier visit, the
+                // feed or a previous hydration), re-fetching it on every
+                // Updates screen visit is a wasted round trip: re-affirm the
+                // installed flag and move on. Only missing or incomplete rows
+                // are hydrated from the API, so reinstall self-healing keeps
+                // working.
+                if (cached != null && cached.charts.isNotEmpty()) {
+                    if (cached.isInstalled != true) {
+                        tourPassLocalRepository.update(listOf(cached.copy(isInstalled = true))).first()
+                    }
+                    continue
+                }
+
                 val result = tourPassRemoteRepository.getTourPass(entry.id).first()
                 val tourPass = result.getOrNull() ?: continue
                 tourPassLocalRepository.insert(listOf(tourPass.copy(isInstalled = true))).first()

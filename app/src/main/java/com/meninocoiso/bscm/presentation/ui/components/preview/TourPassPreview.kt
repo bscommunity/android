@@ -20,6 +20,7 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.bscm.presentation.ui.modifiers.debouncedClickable
+import com.meninocoiso.bscm.util.PreviewUtils.secondaryContainer
 import com.meninocoiso.bscm.util.PreviewUtils.titleContent
 import com.meninocoiso.bscm.util.StringUtils
 
@@ -37,6 +38,7 @@ fun TourPassPreview(
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .secondaryContainer(isSecondary)
             .graphicsLayer {
                 alpha = if ((tourPass.isInstalled == true || isDisabled) && !isLocal) 0.5f else 1f
             }
