@@ -57,9 +57,14 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
         return items.map { incoming ->
             val existing = memoryStore.contentById.value[incoming.id]
             if (incoming is Chart && existing is Chart) {
-                // Device install status is local-only state and must survive remote refreshes.
-                val mergedInstalled = if (existing.isInstalled == true) true else incoming.isInstalled
-                incoming.copy(isInstalled = mergedInstalled) as T
+                // Device install/state is local-only and must survive remote
+                // refreshes, even in mixed lists (tour passes, collections).
+                incoming.copy(
+                    isInstalled = if (existing.isInstalled == true) true else incoming.isInstalled,
+                    likedAt = existing.likedAt ?: incoming.likedAt,
+                    bookmarkedAt = existing.bookmarkedAt ?: incoming.bookmarkedAt,
+                    availableVersion = incoming.availableVersion ?: existing.availableVersion,
+                ) as T
             } else {
                 incoming
             }
@@ -92,16 +97,18 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
         val localResult = localItemRepository.getItem(id).first()
         localResult.fold(
             onSuccess = { item ->
-                memoryStore.upsertContent(listOf(item)) { it.id }
-                emit(ContentResult.Success(item))
+                val merged = mergeRemoteWithLocalDeviceState(listOf(item))
+                memoryStore.upsertContent(merged) { it.id }
+                emit(ContentResult.Success(merged.first()))
             },
             onFailure = {
                 val remoteResult = remoteItemRepository.getItem(id).first()
                 remoteResult.fold(
                     onSuccess = { item ->
-                        memoryStore.upsertContent(listOf(item)) { it.id }
-                        coroutineScope.launch { localRepository.insert(listOf(item)).first() }
-                        emit(ContentResult.Success(item))
+                        val merged = mergeRemoteWithLocalDeviceState(listOf(item))
+                        memoryStore.upsertContent(merged) { it.id }
+                        coroutineScope.launch { localRepository.insert(merged).first() }
+                        emit(ContentResult.Success(merged.first()))
                     },
                     onFailure = { err ->
                         emit(
@@ -129,8 +136,9 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
         localResult.fold(
             onSuccess = { items ->
                 Log.d("ContentManager", "Fetched ${items.size} items from local DB for IDs: $ids")
-                memoryStore.upsertContent(items) { it.id }
-                emit(ContentResult.Success(items))
+                val merged = mergeRemoteWithLocalDeviceState(items)
+                memoryStore.upsertContent(merged) { it.id }
+                emit(ContentResult.Success(merged))
             },
             onFailure = {
                 val remoteResult = remoteItemRepository.getItems(ids).first()
@@ -140,9 +148,10 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
                             "ContentManager",
                             "Fetched ${items.size} items from remote for IDs: $ids"
                         )
-                        memoryStore.upsertContent(items) { it.id }
-                        coroutineScope.launch { localRepository.insert(items).first() }
-                        emit(ContentResult.Success(items))
+                        val merged = mergeRemoteWithLocalDeviceState(items)
+                        memoryStore.upsertContent(merged) { it.id }
+                        coroutineScope.launch { localRepository.insert(merged).first() }
+                        emit(ContentResult.Success(merged))
                     },
                     onFailure = { err ->
                         emit(

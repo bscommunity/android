@@ -230,19 +230,25 @@ class ChartManager @Inject constructor(
         if (ids.isEmpty()) return emptyList()
 
         val hydrated = mutableListOf<Chart>()
-        val remoteResult = remoteChartRepository.getItems(ids.toList()).first()
-        remoteResult.fold(
-            onSuccess = { charts ->
-                // These charts were found on disk, so their install state is local
-                // device state that the server cannot know about. Mark them installed
-                // so they surface in the installed charts and installed tour passes.
-                hydrated.addAll(charts.map { it.copy(isInstalled = true) })
-                Log.d(TAG, "Hydrated ${charts.size} charts from remote for missing ids")
-            },
-            onFailure = { err ->
-                Log.e(TAG, "Failed to hydrate missing installed charts", err)
-            }
-        )
+        // The batch endpoint ignores the ids (it is the feed endpoint), so the
+        // per-id endpoint is the only one that resolves the actual chart.
+        for (id in ids) {
+            val result = runCatching { remoteChartRepository.getItem(id).first() }.getOrNull()
+            result?.fold(
+                onSuccess = { chart ->
+                    // These charts were found on disk, so their install state is local
+                    // device state that the server cannot know about. Mark them installed
+                    // so they surface in the installed charts and installed tour passes.
+                    hydrated.add(chart.copy(isInstalled = true))
+                },
+                onFailure = { err ->
+                    Log.d(TAG, "Failed to hydrate chart $id", err)
+                }
+            )
+        }
+        if (hydrated.isNotEmpty()) {
+            Log.d(TAG, "Hydrated ${hydrated.size} charts from remote for missing ids")
+        }
 
         return hydrated
     }
@@ -257,16 +263,23 @@ class ChartManager @Inject constructor(
         val existingById = currentCharts.associateBy { it.id }
         return entries.values.mapNotNull { entry ->
             val metadata = entry.metadata ?: return@mapNotNull null
-            val localId = metadata.id.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            val metaId = metadata.id.takeIf { it.isNotBlank() } ?: return@mapNotNull null
 
             // Skip entries that were matched to a real chart (existing in memory
             // or successfully hydrated from the server).
             if (!entry.id.isNullOrBlank() && entry.id in hydratedIds) return@mapNotNull null
+
+            // The placeholder is keyed by the resolved id (manifest/folder based),
+            // which is the canonical chart id, so it can be rebound into a real
+            // chart later without leaving a ghost duplicate behind.
+            val localId = entry.id ?: metaId
             if (localId in existingById) return@mapNotNull null
+            val placeholderMetadata =
+                if (entry.id == null || entry.id == metaId) metadata else metadata.copy(id = entry.id)
 
             try {
                 val config = entry.config as? ExternalContentConfig
-                chartPlaceholderFactory.createPlaceholderChart(metadata, config)
+                chartPlaceholderFactory.createPlaceholderChart(placeholderMetadata, config)
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to create local placeholder for ${entry.folder.name}", e)
                 null

@@ -27,6 +27,8 @@ import com.meninocoiso.bscm.domain.repository.ChartQuery
 import com.meninocoiso.bscm.domain.result.ContentEvent
 import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.ContentState
+import com.meninocoiso.bscm.util.StorageUtils
+import com.meninocoiso.bscm.util.StorageUtils.BEATSTAR_URI
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.FlowPreview
@@ -185,12 +187,12 @@ class WorkshopViewModel @Inject constructor(
         }
 
         // Load local/external charts independently if permission is available
-        /*viewModelScope.launch {
+        viewModelScope.launch {
             val rootUri = StorageUtils.getFolderUri(context, BEATSTAR_URI)
             if (rootUri != null) {
                 chartManager.scanLocalCharts(rootUri)
             }
-        }*/
+        }
 
         // Load search history
         getSearchHistory()

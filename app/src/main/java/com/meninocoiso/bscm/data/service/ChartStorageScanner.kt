@@ -55,7 +55,16 @@ class ChartStorageScanner @Inject constructor(
                     val bscmMetadata = tourPassStorageManager.readChartMetadata(folder)
                     val manifestId = normalizeIdentifier(bscmMetadata?.resolvedId())
                     val metadata = infoMetadata ?: bscmMetadata?.toExternalContentMetadata()
-                    val id = normalizeIdentifier(metadata?.id) ?: manifestId
+                    // The per-chart bscm.json id is canonical, followed by the
+                    // folder name (bscm_<id>) written by the downloader, with
+                    // the info.json id as last resort since legacy/community
+                    // packs often carry a local id that does not match the
+                    // canonical chart id.
+                    val folderId = normalizeIdentifier(
+                        folder.name?.takeIf { it.startsWith(StorageUtils.CHART_FOLDER_PREFIX) }
+                            ?.removePrefix(StorageUtils.CHART_FOLDER_PREFIX)
+                    )
+                    val id = manifestId ?: folderId ?: normalizeIdentifier(metadata?.id)
 
                     if (infoFile == null) {
                         Log.d(TAG, "Folder ${folder.name} has no info.json")

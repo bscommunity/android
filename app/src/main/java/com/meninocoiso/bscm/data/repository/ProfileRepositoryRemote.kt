@@ -4,6 +4,7 @@ import android.util.Log
 import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.data.local.dao.ThemeDao
 import com.meninocoiso.bscm.data.local.dao.TourPassDao
+import com.meninocoiso.bscm.data.manager.ChartStateMerger
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.data.remote.dto.user.SectionCounts
@@ -27,6 +28,7 @@ class ProfileRepositoryRemote @Inject constructor(
     private val chartDao: ChartDao,
     private val tourPassDao: TourPassDao,
     private val themeDao: ThemeDao,
+    private val chartStateMerger: ChartStateMerger,
 ) : ProfileRepository {
     override suspend fun getProfileHeader(
         username: String,
@@ -120,7 +122,9 @@ class ProfileRepositoryRemote @Inject constructor(
 
             // Fetch from API
             val page = apiClient.getUserCharts(userId, limit, offset)
-            val charts = page.items.filterIsInstance<Chart>()
+            val charts = chartStateMerger.mergeRemoteCharts(
+                page.items.filterIsInstance<Chart>()
+            )
             val tourPasses = page.items.filterIsInstance<TourPass>()
             val themes = page.items.filterIsInstance<Theme>()
             Log.d(
@@ -131,6 +135,8 @@ class ProfileRepositoryRemote @Inject constructor(
 
             // Cache only first page — persist must complete before caching IDs so
             // that a subsequent getByIds() call finds the rows in the DB/memory store.
+            // Charts are merged with device state before persisting (the DAO uses
+            // REPLACE which would otherwise wipe install/like/bookmark state).
             val total = if (offset == 0) {
                 page.counts?.charts?.toLong().also { t ->
                     withContext(Dispatchers.IO) {
