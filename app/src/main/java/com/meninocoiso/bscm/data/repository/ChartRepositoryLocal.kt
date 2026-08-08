@@ -47,6 +47,13 @@ class ChartRepositoryLocal(
     override fun observeItem(id: String): Flow<Chart?> =
         chartDao.observeChart(id).flowOn(dispatcher)
 
+    override suspend fun deleteLocalPlaceholders(): Flow<Result<Boolean>> = flow {
+        chartDao.deleteLocalPlaceholders()
+        emit(Result.success(true))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }.flowOn(dispatcher)
+
     override suspend fun getItems(ids: List<String>): Flow<Result<List<Chart>>> = flow {
         emit(Result.success(chartDao.getChartsByIds(ids)))
     }.catch { e ->

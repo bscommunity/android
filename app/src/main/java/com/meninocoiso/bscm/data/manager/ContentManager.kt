@@ -351,7 +351,12 @@ class ContentManager<T : CatalogItem, S, Q : ContentQuery> @Inject constructor(
 private fun <T> StateFlow<List<String>>.combineWith(
     contentFlow: StateFlow<Map<String, T>>
 ): Flow<List<T>> = kotlinx.coroutines.flow.combine(this, contentFlow) { order, map ->
-    if (order.isEmpty()) map.values.toList() else order.mapNotNull { map[it] }
+    // Feed order is the source of truth: without it (initial load, cache
+    // invalidation, offline) the list is empty rather than dumping the whole
+    // map — the map also holds installed placeholders/hydrated locals, and
+    // showing them here would duplicate the same charts at the bottom of the
+    // feed once the real items land. Installed content has its own flow.
+    order.mapNotNull { map[it] }
 }
 
 // Nullable variant: null order = no active search (empty), empty list = 0 results (empty)

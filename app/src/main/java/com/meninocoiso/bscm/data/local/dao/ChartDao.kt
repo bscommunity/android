@@ -127,6 +127,12 @@ interface ChartDao {
             "json_extract(track, '$.artist') LIKE :last LIMIT 1")
     fun findByName(first: String, last: String): Chart
 
+    @Query("""
+        DELETE FROM charts 
+        WHERE json_extract(track, '$.id') = id
+    """)
+    suspend fun deleteLocalPlaceholders()
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(charts: List<Chart>)
 

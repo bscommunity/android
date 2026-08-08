@@ -153,6 +153,12 @@ class ChartManager @Inject constructor(
 
     suspend fun scanLocalCharts(rootUri: Uri) {
         try {
+            // Placeholders from previous sessions must not survive in the
+            // database: they would leak into the cached feed as duplicate
+            // "local" entries at the bottom on the next cold start. They are
+            // re-created in memory for the current session below.
+            localChartRepository.deleteLocalPlaceholders().first()
+
             // Scan local storage for installed charts
             val installedEntries = chartStorageScanner.scanInstalledContent(rootUri)
             Log.d(TAG, "Scanned local storage: found ${installedEntries.size} folders in songs")
@@ -213,20 +219,16 @@ class ChartManager @Inject constructor(
                 }
             }
 
-            // Add local placeholders for any installed entries that couldn't be matched
+// Add local placeholders for any installed entries that couldn't be matched
             // to existing or hydrated charts, so they still show up offline/unknown.
+            // They live in memory only: persisting them would make the cached
+            // feed (loaded from Room on cold starts) show "local duplicate"
+            // entries at the bottom next to the canonical charts.
             val hydratedIds = hydratedCharts.mapTo(mutableSetOf()) { it.id }
             val placeholders = createLocalPlaceholders(installedEntries, current, hydratedIds)
-            if (placeholders.isNotEmpty()) {
+if (placeholders.isNotEmpty()) {
                 memoryStore.addWithoutAffectingFeed(placeholders, getId = { it.id })
-
-                // Persist placeholders so they survive navigation and process death.
-                val persistResult = localChartRepository.insert(placeholders).first()
-                if (persistResult.isFailure) {
-                    Log.e(TAG, "Failed to persist local placeholders", persistResult.exceptionOrNull())
-                } else {
-                    Log.d(TAG, "Persisted ${placeholders.size} local placeholders")
-                }
+                Log.d(TAG, "Added ${placeholders.size} local placeholders to memory")
             }
 
             val totalInstalled = memoryStore.contentById.value.values.count { it.isInstalled == true }
