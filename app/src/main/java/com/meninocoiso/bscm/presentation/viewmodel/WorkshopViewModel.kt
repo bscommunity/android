@@ -146,7 +146,7 @@ class WorkshopViewModel @Inject constructor(
         }
 
         // Initialize by loading cached charts and local charts independently, then fetch fresh data
-        viewModelScope.launch {
+        val cacheLoadedJob = viewModelScope.launch {
             currentSortOption = cacheRepository.getLatestWorkshopSort() ?: SortOption.LAST_UPDATED
 
             // Set initial feed state to loading
@@ -154,8 +154,12 @@ class WorkshopViewModel @Inject constructor(
 
             // Load cached charts first (without searching for external charts yet)
             chartManager.loadCachedCharts(currentSortOption)
+        }
 
-            // Then fetch fresh data
+        // Then fetch fresh data (waiting for the cache load so the feed can
+        // short-circuit on cached items when possible)
+        viewModelScope.launch {
+            cacheLoadedJob.join()
             fetchFeedCharts(false) // Don't show loading again, we already set it above
 
             // Observe scroll state for pagination
@@ -188,6 +192,7 @@ class WorkshopViewModel @Inject constructor(
 
         // Load local/external charts independently if permission is available
         viewModelScope.launch {
+            cacheLoadedJob.join()
             val rootUri = StorageUtils.getFolderUri(context, BEATSTAR_URI)
             if (rootUri != null) {
                 chartManager.scanLocalCharts(rootUri)

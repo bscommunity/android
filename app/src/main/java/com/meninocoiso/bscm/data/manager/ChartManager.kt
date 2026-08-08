@@ -173,11 +173,28 @@ class ChartManager @Inject constructor(
             memoryStore.upsertContent(updatedCharts) { it.id }
 
             // Identify any installed charts that are missing from memory and attempt to hydrate them from storage metadata
-            val idsToHydrate = findMissingIdsToHydrate(installedIds, current)
+            var idsToHydrate = findMissingIdsToHydrate(installedIds, current)
             Log.d(
                 TAG,
                 "Sync installed charts: ${installedIds.size} ids to match, ${idsToHydrate.size} canonical charts to hydrate"
             )
+
+            // Charts already persisted in Room must not be refetched over the
+            // network: the cache load may simply not have reached memory yet
+            // (or a large library may exceed the in-memory window).
+            if (idsToHydrate.isNotEmpty()) {
+                val persistedIds = localChartRepository.getItems(idsToHydrate.toList())
+                    .first()
+                    .getOrNull()
+                    .orEmpty()
+                    .map { it.id }
+                    .toSet()
+                idsToHydrate = idsToHydrate - persistedIds
+                Log.d(
+                    TAG,
+                    "After Room check: ${idsToHydrate.size} ids still missing, ${persistedIds.size} already persisted"
+                )
+            }
 
             // Hydrate any missing canonical charts
             val hydratedCharts = if (idsToHydrate.isNotEmpty()) {
