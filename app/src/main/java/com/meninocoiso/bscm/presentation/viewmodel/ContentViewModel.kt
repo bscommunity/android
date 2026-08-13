@@ -424,7 +424,12 @@ class ContentViewModel @Inject constructor(
 
 
     /**
-     * Deletes a chart
+     * Deletes a chart.
+     *
+     * Runs in the application scope: the user may leave the details screen
+     * (destroying this ViewModel and cancelling its scope) while the folder
+     * deletion is in flight, and the operation must still complete to keep
+     * the file system, store and database consistent.
      */
     fun deleteChart(
         chart: Chart,
@@ -433,7 +438,7 @@ class ContentViewModel @Inject constructor(
     ) {
         val chartId = chart.id
 
-        viewModelScope.launch {
+        applicationScope.launch {
             try {
                 // Check if operation is already in progress
                 if (!setChartOperation(chartId, "delete")) {
@@ -479,14 +484,29 @@ class ContentViewModel @Inject constructor(
     /**
      * Uninstalls a tour pass: deletes every associated chart folder, marks each
      * chart as not installed, and removes the tour pass from the root manifest.
+     *
+     * Runs in the application scope so the deletion completes even if the user
+     * leaves the details screen mid-operation. Every chart's operation lock is
+     * acquired before any file is touched, so an in-flight download cannot race
+     * the deletion; if any chart is busy the whole uninstall is aborted.
      */
     fun uninstallTourPass(
         tourPass: TourPass,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        viewModelScope.launch {
+        applicationScope.launch {
+            val acquiredLocks = mutableListOf<String>()
             try {
+                tourPass.charts.forEach { chart ->
+                    if (!setChartOperation(chart.id, "delete")) {
+                        val errorMsg = context.getString(R.string.operation_in_progress)
+                        onError(errorMsg)
+                        return@launch
+                    }
+                    acquiredLocks += chart.id
+                }
+
                 tourPass.charts.forEach { chart ->
                     downloadRepository.deleteChart(chart.id)
                     updateState(chart.id, DownloadState.Idle)
@@ -498,6 +518,8 @@ class ContentViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to uninstall tour pass: ${tourPass.id}", e)
                 onError(context.getString(R.string.failed_to_delete_chart))
+            } finally {
+                acquiredLocks.forEach { clearChartOperation(it) }
             }
         }
     }
