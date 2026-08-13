@@ -49,6 +49,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.ButtonVariant
+import com.meninocoiso.bscm.domain.enums.CatalogItemType
 import com.meninocoiso.bscm.domain.model.SimplifiedCollection
 import com.meninocoiso.bscm.presentation.screen.details.DropdownItemPadding
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
@@ -76,6 +77,15 @@ data class Collection(val collection: SimplifiedCollection)
 @Serializable
 data class DeepLinkCollection(val username: String, val slug: String)
 
+/**
+ * Maps the mandatory single-type filter index used by [CatalogFilters]
+ * to the content types requested from the API.
+ */
+private fun Int.toCatalogTypes(): List<CatalogItemType> = when (this) {
+    1 -> listOf(CatalogItemType.TOUR_PASS)
+    else -> listOf(CatalogItemType.CHART)
+}
+
 private enum class CollectionDialog { None, DeleteConfirmation }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
@@ -95,6 +105,10 @@ fun CollectionScreen(
     var currentCollection by remember { mutableStateOf(collection) }
     var isDeleting by remember { mutableStateOf(false) }
 
+    // Mandatory single-type filter: exactly one content type is always selected
+    // (0 = charts, 1 = tour passes), so each type is shown as its own section.
+    var selectedFilter by rememberSaveable { mutableStateOf(0) }
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val items = uiState.items
     val filterCounts = remember(uiState.itemCounts) { uiState.itemCounts }
@@ -113,8 +127,8 @@ fun CollectionScreen(
 
     // Initial load — resets automatically when collection.id changes.
     // Local membership observer in CollectionViewModel keeps removals synced without full refresh.
-    LaunchedEffect(collection.id) {
-        viewModel.loadItems(collection.id, reset = true)
+    LaunchedEffect(collection.id, selectedFilter) {
+        viewModel.loadItems(collection.id, reset = true, types = selectedFilter.toCatalogTypes())
     }
 
     // Scroll-driven pagination
@@ -310,7 +324,13 @@ fun CollectionScreen(
                 item {
                     CatalogFilters(
                         itemsAmount = filterCounts,
-                        onFilterSelected = {},
+                        currentSelected = selectedFilter,
+                        showThemes = false,
+                        onFilterSelected = { filterId ->
+                            if (filterId != selectedFilter) {
+                                selectedFilter = filterId
+                            }
+                        },
                     )
                 }
                 contentList(

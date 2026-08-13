@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.room.withTransaction
 import com.meninocoiso.bscm.data.local.AppDatabase
 import com.meninocoiso.bscm.data.local.dao.CollectionDao
+import com.meninocoiso.bscm.data.local.dao.TourPassDao
 import com.meninocoiso.bscm.data.manager.ChartStateMerger
 import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.data.remote.ApiClient
@@ -14,10 +15,13 @@ import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.CollectionItemCrossRef
+import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.repository.CollectionRepository
 import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedResult
 import jakarta.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 
 private const val TAG = "CollectionRepositoryRemote"
@@ -26,6 +30,7 @@ class CollectionRepositoryRemote @Inject constructor(
     private val apiClient: ApiClient,
     private val appDatabase: AppDatabase,
     private val collectionDao: CollectionDao,
+    private val tourPassDao: TourPassDao,
     private val profileCacheRepository: ProfileCacheRepository,
     private val queueManager: InteractionQueueManager,
     private val chartStateMerger: ChartStateMerger,
@@ -180,11 +185,23 @@ class CollectionRepositoryRemote @Inject constructor(
         types: List<CatalogItemType>?,
         useCache: Boolean
     ): Result<PagedResult<CatalogItem>> = runCatching {
-        Log.d(TAG, "Getting items for collection $collectionId (limit=$limit, offset=$offset, useCache=$useCache)")
+        Log.d(TAG, "Getting items for collection $collectionId (limit=$limit, offset=$offset, types=$types, useCache=$useCache)")
+
+        val filterType = types?.firstOrNull()
 
         // Return Room-cached items on the first page when cache is allowed
         if (useCache && offset == 0) {
-            val cached = collectionDao.getChartItems(collectionId, limit, offset)
+            val cachedCharts = if (filterType == null || filterType == CatalogItemType.CHART) {
+                collectionDao.getChartItems(collectionId, limit, offset)
+            } else {
+                emptyList()
+            }
+            val cachedTourPasses = if (filterType == null || filterType == CatalogItemType.TOUR_PASS) {
+                collectionDao.getTourPassItems(collectionId, limit, offset)
+            } else {
+                emptyList()
+            }
+            val cached = cachedCharts + cachedTourPasses
             if (cached.isNotEmpty()) {
                 Log.d(TAG, "Returning cached items for collection $collectionId (${cached.size} items)")
                 return@runCatching PagedResult(cached)
@@ -196,7 +213,7 @@ class CollectionRepositoryRemote @Inject constructor(
         }
 
         // Fetch from API
-        val page = apiClient.getCollectionItems(collectionId, limit = limit, offset = offset)
+        val page = apiClient.getCollectionItems(collectionId, types = types, limit = limit, offset = offset)
 
         if (offset == 0 && page.counts != null) {
             profileCacheRepository.cacheCollectionItemCounts(
@@ -218,10 +235,16 @@ class CollectionRepositoryRemote @Inject constructor(
             null
         }
         val mergedCharts = chartStateMerger.mergeRemoteCharts(page.items.filterIsInstance<Chart>())
+        val remoteTourPasses = page.items.filterIsInstance<TourPass>()
         val filteredCharts = if (overlay != null) {
             mergedCharts.filterNot { it.id in overlay.forceExcludeIds }
         } else {
             mergedCharts
+        }
+        val filteredTourPasses = if (overlay != null) {
+            remoteTourPasses.filterNot { it.id in overlay.forceExcludeIds }
+        } else {
+            remoteTourPasses
         }
         val missingPendingCharts = if (overlay != null) {
             chartStateMerger.getChartsByIds(
@@ -230,33 +253,55 @@ class CollectionRepositoryRemote @Inject constructor(
         } else {
             emptyList()
         }
-        val items = (filteredCharts + missingPendingCharts)
+        val missingPendingTourPasses = if (overlay != null) {
+            withContext(Dispatchers.IO) {
+                tourPassDao.getTourPassesByIds(
+                    (overlay.forceIncludeIds - filteredTourPasses.map { it.id }.toSet()).toList()
+                )
+            }
+        } else {
+            emptyList()
+        }
+        val items = (filteredCharts + missingPendingCharts + filteredTourPasses + missingPendingTourPasses)
             .distinctBy { it.id }
         Log.d(TAG, "Fetched ${items.size} items for collection $collectionId from API")
 
-        // Persist charts to Room and update cross-refs after the fresh response arrives,
-        // so observers never see a transient empty collection during pull-to-refresh.
+        // Persist charts and tour passes to Room and update cross-refs after the
+        // fresh response arrives, so observers never see a transient empty
+        // collection during pull-to-refresh.
         if (offset == 0) {
             appDatabase.withTransaction {
                 if (items.isNotEmpty()) {
-                    collectionDao.upsertCharts(items)
+                    collectionDao.upsertCharts(items.filterIsInstance<Chart>())
+                    collectionDao.upsertTourPasses(items.filterIsInstance<TourPass>())
                 }
 
                 val crossRefs = items.map { item ->
                     CollectionItemCrossRef(
                         collectionId = collectionId,
                         id = item.id,
-                        contentType = CatalogItemType.CHART,
+                        contentType = item.type,
                     )
                 }
                 val retainedIds = crossRefs.map { it.id }
 
-                if (retainedIds.isNotEmpty()) {
-                    collectionDao.deleteStaleCrossRefs(collectionId, retainedIds)
-                    collectionDao.upsertCrossRefs(crossRefs)
+                if (filterType == null) {
+                    // Unfiltered sync: rebuild the whole cross-ref set for the collection.
+                    if (retainedIds.isNotEmpty()) {
+                        collectionDao.deleteStaleCrossRefs(collectionId, retainedIds)
+                    } else {
+                        collectionDao.deleteAllCrossRefsForCollection(collectionId)
+                    }
                 } else {
-                    collectionDao.deleteAllCrossRefsForCollection(collectionId)
+                    // Type-filtered sync: only evict stale cross-refs of that type,
+                    // so other types' cross-refs are preserved.
+                    if (crossRefs.isNotEmpty()) {
+                        collectionDao.deleteStaleCrossRefs(collectionId, filterType, retainedIds)
+                    } else {
+                        collectionDao.deleteAllCrossRefsForCollection(collectionId, filterType)
+                    }
                 }
+                collectionDao.upsertCrossRefs(crossRefs)
             }
         }
 
@@ -279,6 +324,9 @@ class CollectionRepositoryRemote @Inject constructor(
 
     override fun observeCollectionChartIds(collectionId: String): Flow<List<String>> =
         collectionDao.observeChartIdsForCollection(collectionId)
+
+    override fun observeCollectionItemIds(collectionId: String): Flow<List<String>> =
+        collectionDao.observeItemIdsForCollection(collectionId)
 
     override fun observeUserCollections(): Flow<List<Collection>> =
         collectionDao.observeUserCollections()

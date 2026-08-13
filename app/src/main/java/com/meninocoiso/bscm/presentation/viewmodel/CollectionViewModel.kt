@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.ApiException
 import com.meninocoiso.bscm.data.repository.ProfileCacheRepository
+import com.meninocoiso.bscm.domain.enums.CatalogItemType
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.SimplifiedCollection
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -69,6 +71,7 @@ class CollectionViewModel @Inject constructor(
     private val itemsPagination = PaginationState(pageSize = 20)
     private val collectionsPagination = PaginationState(pageSize = 20)
     private var currentCollectionId: String? = null
+    private var currentTypes: List<CatalogItemType>? = null
     private var collectionMembershipObserverJob: Job? = null
     private var itemsFetchJob: Job? = null
 
@@ -95,23 +98,25 @@ class CollectionViewModel @Inject constructor(
     /**
      * Entry point called by [com.meninocoiso.bscm.presentation.screen.collection.CollectionScreen] whenever the collection changes or
      * a pull-to-refresh is triggered. Passing a new [collectionId] automatically
-     * resets the cursor so stale data is never shown.
+     * resets the cursor so stale data is never shown. [types] restricts the fetch
+     * to specific content types (the collection screen shows one type at a time).
      */
-    fun loadItems(collectionId: String, reset: Boolean = false) {
-        if (itemsFetchJob?.isActive == true && collectionId == currentCollectionId) {
+    fun loadItems(collectionId: String, reset: Boolean = false, types: List<CatalogItemType>? = null) {
+        if (itemsFetchJob?.isActive == true && collectionId == currentCollectionId && types == currentTypes) {
             return
         }
 
-        val idChanged = collectionId != currentCollectionId
+        val idChanged = collectionId != currentCollectionId || types != currentTypes
         if (idChanged || reset) {
             currentCollectionId = collectionId
+            currentTypes = types
             itemsPagination.reset()
             _uiState.update { it.copy(items = PagedSection(), itemCounts = Triple(0, 0, 0)) }
             hydrateCollectionItemCounts(collectionId)
             startCollectionMembershipObserver(collectionId)
         }
 
-        Log.d(TAG, "Loading items for collection $collectionId (reset=$reset, idChanged=$idChanged)")
+        Log.d(TAG, "Loading items for collection $collectionId (types=$types, reset=$reset, idChanged=$idChanged)")
 
         itemsFetchJob = fetchPaged(
             pagination = itemsPagination,
@@ -121,6 +126,7 @@ class CollectionViewModel @Inject constructor(
                     collectionId = collectionId,
                     limit = limit,
                     offset = offset,
+                    types = types,
                     useCache = cache,
                 )
             },
@@ -136,7 +142,7 @@ class CollectionViewModel @Inject constructor(
 
     fun loadMoreItems(collectionId: String) {
         if (!_uiState.value.items.isLoadingMore && !_uiState.value.items.isRefreshing && _uiState.value.items.hasMore) {
-            loadItems(collectionId)
+            loadItems(collectionId, types = currentTypes)
         }
     }
 
@@ -147,6 +153,7 @@ class CollectionViewModel @Inject constructor(
                 collectionId = collectionId,
                 limit = limit,
                 offset = offset,
+                types = currentTypes,
                 useCache = cache,
             )
         },
@@ -279,19 +286,23 @@ class CollectionViewModel @Inject constructor(
     private fun startCollectionMembershipObserver(collectionId: String) {
         collectionMembershipObserverJob?.cancel()
         collectionMembershipObserverJob = viewModelScope.launch {
-            collectionRepository.observeCollectionChartIds(collectionId)
+            combine(
+                collectionRepository.observeCollectionChartIds(collectionId),
+                collectionRepository.observeCollectionItemIds(collectionId),
+            ) { chartIds, allIds ->
+                chartIds.toSet() to allIds.toSet()
+            }
                 .catch { e -> Log.e(TAG, "Collection membership observer error", e) }
-                .collect { ids ->
-                    val idSet = ids.toHashSet()
+                .collect { (chartIdSet, allIdSet) ->
                     val current = _uiState.value.items
 
                     // Keep currently loaded items in sync with local membership mutations
                     // (e.g. remove-from-collection in details) without issuing a full refresh.
+                    // All content types are observed so tour passes are not dropped.
                     val filtered = current.items.filter { item ->
-                        val key = item.id
-                        key in idSet
+                        item.id in allIdSet
                     }
-                    val nextTotal = ids.size
+                    val nextTotal = allIdSet.size
 
                     if (filtered != current.items || current.total != nextTotal) {
                         _uiState.update { state ->
@@ -300,7 +311,7 @@ class CollectionViewModel @Inject constructor(
                                     items = filtered,
                                     total = nextTotal,
                                 ),
-                                itemCounts = state.itemCounts.copy(first = nextTotal)
+                                itemCounts = state.itemCounts.copy(first = chartIdSet.size)
                             )
                         }
                     }

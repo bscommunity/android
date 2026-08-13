@@ -7,9 +7,11 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
 import com.meninocoiso.bscm.data.remote.dto.collection.SimplifiedCollection
+import com.meninocoiso.bscm.domain.enums.CatalogItemType
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.CollectionItemCrossRef
+import com.meninocoiso.bscm.domain.model.TourPass
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDateTime
 
@@ -56,6 +58,9 @@ interface CollectionDao {
     @Upsert
     suspend fun upsertCharts(charts: List<Chart>)
 
+    @Upsert
+    suspend fun upsertTourPasses(tourPasses: List<TourPass>)
+
     @Query("DELETE FROM collection_item_cross_ref WHERE collection_id = :collectionId AND content_id = :id")
     suspend fun deleteCrossRef(collectionId: String, id: String)
 
@@ -74,11 +79,25 @@ interface CollectionDao {
     suspend fun deleteStaleCrossRefs(collectionId: String, retainedIds: List<String>)
 
     /**
+     * Same as [deleteStaleCrossRefs], but scoped to a single [contentType] so a
+     * type-filtered fetch (e.g. tour passes only) never evicts other types.
+     */
+    @Query("DELETE FROM collection_item_cross_ref WHERE collection_id = :collectionId AND content_type = :contentType AND content_id NOT IN (:retainedIds)")
+    suspend fun deleteStaleCrossRefs(collectionId: String, contentType: CatalogItemType, retainedIds: List<String>)
+
+    /**
      * Removes ALL cross-refs for [collectionId]. Used when the server returns an empty list
      * (so retainedIds would be empty, which is not valid for a SQL IN clause).
      */
     @Query("DELETE FROM collection_item_cross_ref WHERE collection_id = :collectionId")
     suspend fun deleteAllCrossRefsForCollection(collectionId: String)
+
+    /**
+     * Same as [deleteAllCrossRefsForCollection], but scoped to a single [contentType]
+     * so a type-filtered fetch never wipes other types' cross-refs.
+     */
+    @Query("DELETE FROM collection_item_cross_ref WHERE collection_id = :collectionId AND content_type = :contentType")
+    suspend fun deleteAllCrossRefsForCollection(collectionId: String, contentType: CatalogItemType)
 
     @Query("SELECT * FROM collections WHERE kind = 'USER' ORDER BY updated_at DESC")
     fun observeUserCollections(): Flow<List<Collection>>
@@ -103,6 +122,23 @@ interface CollectionDao {
 
     @Query(
         """
+        SELECT tp.* FROM tour_passes tp
+        INNER JOIN collection_item_cross_ref ref 
+            ON tp.id = ref.content_id
+        WHERE ref.collection_id = :collectionId
+        AND ref.content_type = 'TOUR_PASS'
+        ORDER BY ref.added_at DESC
+        LIMIT :limit OFFSET :offset
+    """
+    )
+    suspend fun getTourPassItems(
+        collectionId: String,
+        limit: Int,
+        offset: Int
+    ): List<TourPass>
+
+    @Query(
+        """
         SELECT content_id FROM collection_item_cross_ref
         WHERE collection_id = :collectionId
         AND content_type = 'CHART'
@@ -110,6 +146,15 @@ interface CollectionDao {
     """
     )
     fun observeChartIdsForCollection(collectionId: String): Flow<List<String>>
+
+    @Query(
+        """
+        SELECT content_id FROM collection_item_cross_ref
+        WHERE collection_id = :collectionId
+        ORDER BY added_at DESC
+    """
+    )
+    fun observeItemIdsForCollection(collectionId: String): Flow<List<String>>
 
     @Query(
         """
