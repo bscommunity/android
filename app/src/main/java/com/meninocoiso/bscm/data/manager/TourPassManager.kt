@@ -69,6 +69,18 @@ class TourPassManager @Inject constructor(
     val installedTourPassIds: StateFlow<Set<String>> = _installedTourPassIds.asStateFlow()
 
     /**
+     * Whether the manifest seed for [installedTourPassIds] has landed. The ids
+     * are seeded asynchronously at construction; until then an empty set is
+     * indistinguishable from "nothing installed", so consumers may bridge the
+     * gap with the payload's own install flag. Once seeded, the live set is
+     * the single source of truth and stale payload flags must be ignored.
+     */
+    @Volatile
+    private var installedIdsSeeded = false
+
+    fun hasSeededInstalledIds(): Boolean = installedIdsSeeded
+
+    /**
      * Reactive flow of every tour pass cached in the local database. Used to
      * derive the list of downloaded tour passes.
      */
@@ -102,6 +114,7 @@ class TourPassManager @Inject constructor(
             _installedTourPassIds.value = withContext(Dispatchers.IO) {
                 tourPassStorageManager.readInstalledTourPasses().mapTo(mutableSetOf()) { it.id }
             }
+            installedIdsSeeded = true
         }
     }
 

@@ -272,7 +272,16 @@ class ContentViewModel @Inject constructor(
         tourPassMergedCache.getOrPut(tourPass.id) {
             tourPassManager.installedTourPassIds
                 .map { installedIds ->
-                    if (tourPass.id in installedIds) tourPass.copy(isInstalled = true) else tourPass
+                    // The manager's seeded signal is the single source of truth;
+                    // the payload's own flag only bridges the window before the
+                    // manifest seed lands. Deriving the flag this way lets the
+                    // merged state downgrade right after an uninstall instead of
+                    // pinning the stale payload flag forever.
+                    tourPass.copy(
+                        isInstalled = tourPass.id in installedIds ||
+                            (tourPass.isInstalled == true &&
+                                !tourPassManager.hasSeededInstalledIds())
+                    )
                 }
                 .distinctUntilChanged()
                 .stateIn(
@@ -742,15 +751,17 @@ class ContentViewModel @Inject constructor(
 
     /**
      * Resolves the installed flag of a tour pass from in-memory sources only,
-     * without any I/O: the tour pass's own payload flag, the manager's live
-     * installed-ids signal (manifest-seeded + optimistic), and the shared
-     * in-memory cache. Mirrors [storeInstallState] for charts, so the tour
-     * pass shows as installed on the very first frame instead of after a
-     * database or manifest read.
+     * without any I/O: the manager's live installed-ids signal (manifest-seeded
+     * + optimistic), the shared in-memory cache, and — only until the manifest
+     * seed lands — the tour pass's own payload flag. Mirrors
+     * [storeInstallState] for charts, so the tour pass shows as installed on
+     * the very first frame instead of after a database or manifest read. Once
+     * the seed lands, the payload flag is ignored so an uninstall drops the
+     * state to Idle immediately.
      */
     private fun isTourPassInstalled(tourPass: TourPass, installedIds: Set<String>): Boolean =
-        tourPass.isInstalled == true ||
-            tourPass.id in installedIds ||
+        tourPass.id in installedIds ||
+            (tourPass.isInstalled == true && !tourPassManager.hasSeededInstalledIds()) ||
             tourPassManager.getTourPassFromStore(tourPass.id)?.isInstalled == true
 
     private suspend fun waitForChartTerminalState(chartId: String): DownloadState {
