@@ -14,26 +14,32 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SegmentedButtonUI(
     options: List<String>,
-    selectedIndex: Int = -1,
-    disabled: Boolean = false,
+    selectedIndex: Int? = null,
+    enabled: List<Boolean> = emptyList(),
     onSelected: (Int) -> Unit,
 ) {
     SingleChoiceSegmentedButtonRow(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp, 0.dp, 16.dp, 16.dp)
+            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
     ) {
         options.forEachIndexed { index, label ->
             SegmentedButton(
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                shape = SegmentedButtonDefaults.itemShape(
+                    index = index,
+                    count = options.size,
+                ),
                 onClick = {
-                    // Tapping the selected segment deselects it again.
                     onSelected(if (selectedIndex != index) index else -1)
                 },
                 selected = index == selectedIndex,
-                enabled = !disabled
+                enabled = enabled.getOrNull(index) ?: true,
             ) {
-                Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    text = label,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }

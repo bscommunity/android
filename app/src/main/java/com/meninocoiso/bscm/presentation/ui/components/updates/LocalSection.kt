@@ -90,6 +90,7 @@ fun LazyListScope.localContentSection(
                             stringResource(R.string.themes)
                         ),
                         selectedIndex = selectedFilter,
+                        enabled = listOf(true, true, false),
                         onSelected = onFilterSelected
                     )
                 }
