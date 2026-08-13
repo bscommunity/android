@@ -42,7 +42,11 @@ class CollectionRepositoryRemote @Inject constructor(
             val localCollections = collectionDao.getUserCollections(limit, offset)
             if (localCollections.isNotEmpty()) {
                 Log.d(TAG, "Returning owner collections from Room (${localCollections.size} items)")
+                // Fall back to the Room list size when no quick-cache total was ever
+                // stored (e.g. first run after creating a collection), so the profile
+                // never reports a null/0 count while only Room data is available.
                 val cachedTotal = profileCacheRepository.getCollections(userId).total
+                    ?: localCollections.size
                 return@runCatching PagedResult(
                     mergeLocalItemCounts(localCollections),
                     cachedTotal

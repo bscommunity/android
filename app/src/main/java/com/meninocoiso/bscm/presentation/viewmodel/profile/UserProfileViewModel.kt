@@ -262,26 +262,25 @@ class UserProfileViewModel @Inject constructor(
                 .catch { e -> Log.e(TAG, "Collections observer error", e) }
                 .collect { freshCollections ->
                     val current = _uiState.value.collections.customCollections
-                    if (current.state !is ContentState.Loading || current.items.isNotEmpty()) {
-                        // Reconcile the total against Room, which is the source of
-                        // truth for locally created/deleted collections, so the
-                        // "custom collections" count stays correct without a
-                        // server round trip (mirrors the likes/bookmarks observers).
-                        val updatedTotal = reconcileObservedTotal(
-                            previousItems = current.items,
-                            freshItems = freshCollections,
-                            previousTotal = current.total,
-                            idSelector = { it.id },
-                        )
-                        _uiState.update { state ->
-                            state.copy(
-                                collections = state.collections.copy(
-                                    customCollections = state.collections.customCollections
-                                        .copy(items = freshCollections, total = updatedTotal),
-                                    items = mergeCollections(customCollections = freshCollections),
-                                )
+                    // Reconcile unconditionally (unlike the likes/bookmarks observers):
+                    // on a fresh load the collections list can come back from Room with
+                    // a null total while the section is still Loading, and this observer
+                    // is the only source that can seed a non-null total from the full
+                    // local list before the first server fetch completes.
+                    val updatedTotal = reconcileObservedTotal(
+                        previousItems = current.items,
+                        freshItems = freshCollections,
+                        previousTotal = current.total,
+                        idSelector = { it.id },
+                    )
+                    _uiState.update { state ->
+                        state.copy(
+                            collections = state.collections.copy(
+                                customCollections = state.collections.customCollections
+                                    .copy(items = freshCollections, total = updatedTotal),
+                                items = mergeCollections(customCollections = freshCollections),
                             )
-                        }
+                        )
                     }
                 }
         }
