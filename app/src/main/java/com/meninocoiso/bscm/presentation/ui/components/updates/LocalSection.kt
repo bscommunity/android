@@ -115,9 +115,9 @@ fun LazyListScope.localContentSection(
             )
         }
 
-        item {
+        /*item {
             Spacer(modifier = Modifier.padding(bottom = 24.dp))
-        }
+        }*/
     }
 
     if (showTourPasses && tourPasses.isNotEmpty()) {

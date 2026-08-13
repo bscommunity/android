@@ -44,7 +44,7 @@ fun ChartPreview(
             .secondaryContainer(isSecondary)
             .graphicsLayer {
                 alpha =
-                    if (chart.isInstalled == true || isDisabled) 0.5f else 1f
+                    if (isDisabled) 0.5f else 1f
             }
             .debouncedClickable(onClick = {
                 if (isDisabled) {
@@ -127,7 +127,7 @@ fun ChartPreview(
                         authors = chart.contributors
                     )
                 }
-                if (chart.isInstalled == true) PreviewInstalledTag(false)
+                if (chart.isInstalled == true && !isSecondary) PreviewInstalledTag(false)
             }
             if (showInteractions && (chart.likedAt != null || chart.bookmarkedAt != null)) {
                 Box(
