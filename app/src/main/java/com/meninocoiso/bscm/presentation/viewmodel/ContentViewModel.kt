@@ -35,7 +35,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -63,6 +62,12 @@ class ContentViewModel @Inject constructor(
 
     private val _downloadStates = MutableStateFlow<Map<String, DownloadState>>(emptyMap())
     private val downloadStates: StateFlow<Map<String, DownloadState>> = _downloadStates.asStateFlow()
+
+    // Tour pass ids with a download currently in flight. Between one chart's
+    // terminal state and the next chart's Downloading state no chart is active
+    // in the state map, which would otherwise flash the aggregate back to Idle
+    // (and the button back to the install state) for the frame in between.
+    private val _tourPassDownloads = MutableStateFlow<Set<String>>(emptySet())
 
     // Event flow for one-time notifications
     private val _events = MutableSharedFlow<DownloadEvent>(
@@ -656,6 +661,12 @@ class ContentViewModel @Inject constructor(
             val charts = tourPass.charts.filter { isDownloadEligible(it) }
             if (charts.isEmpty()) return@launch
 
+            // Mark the tour pass as downloading so the aggregate keeps showing
+            // progress during the gaps between charts (no active chart in the
+            // state map between one chart's terminal state and the next
+            // chart's Downloading state).
+            _tourPassDownloads.update { it + tourPass.id }
+
             var hasFailure = false
             var installedAny = false
             try {
@@ -707,6 +718,8 @@ class ContentViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to download tour pass: ${tourPass.id}", e)
                 hasFailure = true
+            } finally {
+                _tourPassDownloads.update { it - tourPass.id }
             }
 
             // The tour pass stays installed as long as at least one of its
@@ -783,11 +796,12 @@ class ContentViewModel @Inject constructor(
 
     fun getTourPassDownloadState(tourPass: TourPass): StateFlow<DownloadState> =
         tourPassStateCache.getOrPut(tourPass.id) {
-            combine(_downloadStates, tourPassManager.installedTourPassIds) { states, installedIds ->
+            combine(_downloadStates, tourPassManager.installedTourPassIds, _tourPassDownloads) { states, installedIds, downloadsInProgress ->
                 aggregateTourPassDownloadState(
                     tourPass,
                     states,
-                    isTourPassInstalled(tourPass, installedIds)
+                    isTourPassInstalled(tourPass, installedIds),
+                    tourPass.id in downloadsInProgress
                 )
             }.stateIn(
                 scope = viewModelScope,
@@ -798,7 +812,8 @@ class ContentViewModel @Inject constructor(
                 initialValue = aggregateTourPassDownloadState(
                     tourPass,
                     _downloadStates.value,
-                    isTourPassInstalled(tourPass, tourPassManager.installedTourPassIds.value)
+                    isTourPassInstalled(tourPass, tourPassManager.installedTourPassIds.value),
+                    tourPass.id in _tourPassDownloads.value
                 )
             )
         }
@@ -836,7 +851,8 @@ class ContentViewModel @Inject constructor(
     private fun aggregateTourPassDownloadState(
         tourPass: TourPass,
         states: Map<String, DownloadState>,
-        isTourPassInstalled: Boolean
+        isTourPassInstalled: Boolean,
+        tourPassDownloadInProgress: Boolean
     ): DownloadState {
         val charts = tourPass.charts.filter { isDownloadEligible(it) }
         if (charts.isEmpty()) return DownloadState.Idle
@@ -874,7 +890,12 @@ class ContentViewModel @Inject constructor(
 
                 is DownloadState.Extracting -> {
                     hasActiveDownload = true
-                    progress += step * state.progress.coerceIn(0f, 1f)
+                    // Extraction is the last phase of a chart's install: count
+                    // the chart's full share instead of the extraction progress,
+                    // otherwise the bar regresses from the 100% download value
+                    // back to the extraction-start value for every chart.
+                    progress += step
+                    // progress += step * state.progress.coerceIn(0f, 1f)
                 }
 
                 is DownloadState.Error -> error = state
@@ -884,6 +905,16 @@ class ContentViewModel @Inject constructor(
 
         return when {
             hasActiveDownload -> DownloadState.Downloading(
+                tourPass.id,
+                progress.coerceIn(0f, 1f),
+                installedCount,
+                total
+            )
+            // Between charts (and right after the last chart's terminal state)
+            // no chart is active in the state map, but the tour pass download
+            // itself is still running: keep showing the progress reached so
+            // far instead of flashing back to the install state.
+            tourPassDownloadInProgress -> DownloadState.Downloading(
                 tourPass.id,
                 progress.coerceIn(0f, 1f),
                 installedCount,

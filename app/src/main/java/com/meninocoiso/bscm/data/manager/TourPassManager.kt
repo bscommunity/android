@@ -150,13 +150,15 @@ class TourPassManager @Inject constructor(
 
     /**
      * Synchronous lookup of a tour pass in the in-memory cache, with the
-     * installed flag merged from [installedTourPassIds]. Lets the installed
-     * status resolve on the very first frame of a details screen without
-     * waiting for a database read.
+     * installed flag merged from [installedTourPassIds]. The cached copy may
+     * carry a stale persisted flag (e.g. written when the tour pass was
+     * installed but never refreshed after an uninstall), so the live ids
+     * signal — the single source of truth — wins in both directions, exactly
+     * like [tourPassesUiState].
      */
     fun getTourPassFromStore(id: String): TourPass? =
         _tourPasses.value.firstOrNull { it.id == id }?.let { stored ->
-            if (stored.id in _installedTourPassIds.value) stored.copy(isInstalled = true) else stored
+            stored.copy(isInstalled = stored.id in _installedTourPassIds.value)
         }
 
     fun getTourPassesLength(): Int = _tourPasses.value.size
