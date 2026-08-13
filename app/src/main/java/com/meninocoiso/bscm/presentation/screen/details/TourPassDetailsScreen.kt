@@ -529,17 +529,23 @@ fun TourPassDetailsScreen(
                 try {
                     val newCollectionId = collectionViewModel.createCollection(name, isPublic)
                     interactionViewModel.addToCollection(tourPass.id, newCollectionId)
-                    snackbarHostState.showReplacingSnackbar(
-                        savedToCollectionMsg(name),
-                        duration = SnackbarDuration.Short
-                    )
+                    // Fire-and-forget: showReplacingSnackbar suspends until dismissal,
+                    // which would keep the sheet open long after creation succeeded.
+                    scope.launch {
+                        snackbarHostState.showReplacingSnackbar(
+                            savedToCollectionMsg(name),
+                            duration = SnackbarDuration.Short
+                        )
+                    }
                     true
                 } catch (e: ApiException) {
                     Log.e("TourPassDetailsScreen", "Error creating collection", e)
-                    if (e.status == HttpStatusCode.BadRequest) {
-                        snackbarHostState.showReplacingSnackbar(collectionNameExistsMsg)
-                    } else {
-                        snackbarHostState.showReplacingSnackbar(errorCreatingCollectionMsg(e.message))
+                    scope.launch {
+                        if (e.status == HttpStatusCode.BadRequest) {
+                            snackbarHostState.showReplacingSnackbar(collectionNameExistsMsg)
+                        } else {
+                            snackbarHostState.showReplacingSnackbar(errorCreatingCollectionMsg(e.message))
+                        }
                     }
                     false
                 }
