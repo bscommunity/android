@@ -39,21 +39,19 @@ class UpdatesViewModel @Inject constructor(
     val cachedThemes: Flow<List<Theme>> = themeManager.cachedThemes
 
     /**
-     * Tour passes whose charts are all installed. Computed from the local
-     * tour pass cache combined with the currently installed charts, so it
-     * stays accurate even when charts are downloaded individually.
+     * Tour passes marked as installed by the manager's installed-ids signal
+     * (the same source of truth the details screens use), resolved against
+     * the cached tour pass data. The cache also holds tour passes the user
+     * merely viewed (feed/search visits) or deleted, so only tour passes the
+     * manager still considers installed are emitted.
      */
     val installedTourPasses: Flow<List<TourPass>> = combine(
         tourPassManager.cachedTourPasses,
-        installedCharts
-    ) { tourPasses, charts ->
-        val installedChartIds = charts.mapTo(mutableSetOf()) { it.id }
-        tourPasses.map { tourPass ->
-            tourPass.copy(
-                isInstalled = tourPass.charts.isNotEmpty() &&
-                        tourPass.charts.all { it.id in installedChartIds }
-            )
-        }
+        tourPassManager.installedTourPassIds
+    ) { tourPasses, installedIds ->
+        tourPasses
+            .filter { it.id in installedIds }
+            .map { tourPass -> tourPass.copy(isInstalled = true) }
     }
 
     val cacheState = chartManager.cacheState

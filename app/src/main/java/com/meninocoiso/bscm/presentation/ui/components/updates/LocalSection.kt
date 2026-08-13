@@ -114,10 +114,6 @@ fun LazyListScope.localContentSection(
                 onPress = { onNavigateToDetails(chart) },
             )
         }
-
-        /*item {
-            Spacer(modifier = Modifier.padding(bottom = 24.dp))
-        }*/
     }
 
     if (showTourPasses && tourPasses.isNotEmpty()) {
@@ -142,6 +138,10 @@ fun LazyListScope.localContentSection(
         item {
             Spacer(modifier = Modifier.padding(bottom = 24.dp))
         }
+    } else {
+        item {
+            Spacer(modifier = Modifier.padding(bottom = 24.dp))
+        }
     }
 
     if (showThemes && themes.isNotEmpty()) {
@@ -163,6 +163,10 @@ fun LazyListScope.localContentSection(
             )
         }
 
+        item {
+            Spacer(modifier = Modifier.padding(bottom = 24.dp))
+        }
+    } else {
         item {
             Spacer(modifier = Modifier.padding(bottom = 24.dp))
         }

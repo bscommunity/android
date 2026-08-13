@@ -12,6 +12,7 @@ import com.meninocoiso.bscm.data.manager.TourPassStorageManager
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.repository.DownloadRepository
 import com.meninocoiso.bscm.data.repository.SettingsRepository
+import com.meninocoiso.bscm.di.ApplicationScope
 import com.meninocoiso.bscm.domain.enums.ErrorType
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.TourPass
@@ -21,6 +22,7 @@ import com.meninocoiso.bscm.domain.state.DownloadState
 import com.meninocoiso.bscm.monitor.DownloadServiceMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,6 +50,7 @@ private const val TAG = "ContentViewModel"
 @HiltViewModel
 class ContentViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
+    @param:ApplicationScope private val applicationScope: CoroutineScope,
     private val apiClient: ApiClient,
     private val downloadServiceMonitor: DownloadServiceMonitor,
     private val downloadRepository: DownloadRepository,
@@ -673,11 +676,26 @@ class ContentViewModel @Inject constructor(
             // The tour pass stays installed as long as at least one of its
             // available charts remains installed.
             if (installedAny) {
-                // Record the tour pass in the root manifest (survives app
-                // uninstalls), keep the local database in sync, and update the
-                // live installed-ids signal immediately.
-                tourPassStorageManager.addInstalledTourPass(tourPass)
+                // Update the live installed-ids signal before persisting: the
+                // aggregate flips to Installed as soon as the last chart's
+                // terminal state lands, so seeding the flag only after the
+                // manifest write would briefly re-show the download button
+                // (Idle flash) while that I/O is in flight.
                 tourPassManager.markInstalled(tourPass.id)
+                // Persist in the application scope: the user may leave the
+                // screen (destroying this ViewModel and cancelling its scope)
+                // right after the in-memory signal lands, and the manifest
+                // write must still complete for the installed state to
+                // survive restarts.
+                applicationScope.launch {
+                    try {
+                        // Record the tour pass in the root manifest (survives
+                        // app uninstalls) and keep the local database in sync.
+                        tourPassStorageManager.addInstalledTourPass(tourPass)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to persist installed tour pass: ${tourPass.id}", e)
+                    }
+                }
             }
 
             if (hasFailure) {
