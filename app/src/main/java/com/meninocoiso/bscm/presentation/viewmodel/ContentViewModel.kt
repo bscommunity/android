@@ -447,9 +447,15 @@ class ContentViewModel @Inject constructor(
                     return@launch
                 }
 
-                // Validate chart state
+                // Validate chart state: refuse while a download is in flight,
+                // either one tracked by this ViewModel or by the (singleton)
+                // download service. The service check covers downloads started
+                // from another screen/ViewModel instance, which this instance's
+                // own state map cannot see.
                 val currentState = _downloadStates.value[chartId]
-                if (currentState is DownloadState.Downloading || currentState is DownloadState.Extracting) {
+                if (currentState is DownloadState.Downloading || currentState is DownloadState.Extracting ||
+                    downloadServiceMonitor.isDownloadActive(chartId)
+                ) {
                     clearChartOperation(chartId)
                     val errorMsg = context.getString(R.string.cannot_delete_during_download)
                     onError(errorMsg)
@@ -499,6 +505,14 @@ class ContentViewModel @Inject constructor(
             val acquiredLocks = mutableListOf<String>()
             try {
                 tourPass.charts.forEach { chart ->
+                    // Refuse while the chart is being downloaded by the
+                    // (singleton) download service, which may have been started
+                    // from another screen or outlive this ViewModel instance.
+                    if (downloadServiceMonitor.isDownloadActive(chart.id)) {
+                        val errorMsg = context.getString(R.string.cannot_delete_during_download)
+                        onError(errorMsg)
+                        return@launch
+                    }
                     if (!setChartOperation(chart.id, "delete")) {
                         val errorMsg = context.getString(R.string.operation_in_progress)
                         onError(errorMsg)
