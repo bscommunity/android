@@ -175,6 +175,12 @@ class InteractionRepositoryImpl @Inject constructor(
                             addedAt = now,
                         )
                     )
+                    // The just-added item is now the collection's most recent one,
+                    // so its cover becomes the collection cover — mirroring the
+                    // server's "latest added item" rule. Without this the local
+                    // cache (and the UI) keeps the null cover written at creation
+                    // time until the next server fetch resolves it.
+                    updateCollectionCoverIfNeeded(collectionId, id, contentType)
                 }
                 // Any custom collection membership implies content is considered saved.
                 syncSavedState(id, wasSaved = before.isSaved, isSaved = true)
@@ -321,13 +327,34 @@ class InteractionRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Resolves the catalog type of an item by probing the local tables.
+     * Resolves the type of an item by probing the local tables.
      * Defaults to [CatalogItemType.CHART] to keep the legacy chart-first behavior.
      */
     private fun resolveContentType(id: String): CatalogItemType = when {
         tourPassDao.getTourPass(id) != null -> CatalogItemType.TOUR_PASS
         themeDao.getTheme(id) != null -> CatalogItemType.THEME
         else -> CatalogItemType.CHART
+    }
+
+    /**
+     * Writes the item's cover onto the collection row when the item was newly
+     * added. The Bookmarks collection is skipped: it is a local synthetic
+     * collection that the server never gives a cover.
+     */
+    private suspend fun updateCollectionCoverIfNeeded(
+        collectionId: String,
+        id: String,
+        contentType: CatalogItemType,
+    ) {
+        if (collectionId == BOOKMARKS_COLLECTION_ID) return
+        val coverUrl = when (contentType) {
+            CatalogItemType.TOUR_PASS -> tourPassDao.getTourPass(id)?.coverUrl
+            CatalogItemType.THEME -> themeDao.getTheme(id)?.coverUrl
+            else -> chartDao.getChart(id)?.track?.coverUrl
+        }
+        if (!coverUrl.isNullOrBlank()) {
+            collectionDao.updateCollectionCoverUrl(collectionId, coverUrl)
+        }
     }
 
     private fun epochMillisNow(): Long =

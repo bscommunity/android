@@ -43,6 +43,9 @@ interface CollectionDao {
         updatedAt: LocalDateTime
     )
 
+    @Query("UPDATE collections SET cover_url = :coverUrl WHERE id = :collectionId")
+    suspend fun updateCollectionCoverUrl(collectionId: String, coverUrl: String)
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertCrossRef(crossRef: CollectionItemCrossRef)
