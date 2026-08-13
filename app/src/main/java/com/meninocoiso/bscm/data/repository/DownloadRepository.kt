@@ -2,7 +2,6 @@ package com.meninocoiso.bscm.data.repository
 
 import DownloadEvent
 import android.content.Context
-import android.content.res.Resources.NotFoundException
 import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.manager.DownloadManager
 import com.meninocoiso.bscm.data.manager.TourPassStorageManager
@@ -96,15 +95,14 @@ class DownloadRepository @Inject constructor(
         val destinationFolderUri = StorageUtils.getFolderUri(context, BEATSTAR_URI)
             ?: throw IllegalStateException("Could not access or create beatstar folder")
 
-        try {
-            downloadManager.deleteFolderFromUri(
-                id,
-                destinationFolderUri,
-                listOf("songs"),
-            )
-        } catch (_: NotFoundException) {
-            // Folder does not exist, nothing to delete
-        }
+        // Deletion is idempotent: a missing chart folder is a no-op, so
+        // charts that were never downloaded (e.g. explicit charts skipped in a
+        // tour pass) do not abort the deletion.
+        downloadManager.deleteFolderFromUri(
+            id,
+            destinationFolderUri,
+            listOf("songs"),
+        )
 
         // Update the chart list
         val updateResult = chartManager.updateContentById(id, OperationOption.DELETE)

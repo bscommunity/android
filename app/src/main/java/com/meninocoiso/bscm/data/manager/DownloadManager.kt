@@ -263,11 +263,11 @@ class DownloadManager @Inject constructor(
             // Navigate to the target subfolder
             for (subFolderName in subFolders) {
                 currentFolder = currentFolder.findFile(subFolderName)
-                    ?: throw DeletionException("Could not find subfolder: $subFolderName")
+                    ?: return@withContext // Folder does not exist, nothing to delete
             }
 
             val chartFolder = currentFolder.findFile(sanitizedFolderName)
-                ?: throw DeletionException("Chart folder not found: $sanitizedFolderName")
+                ?: return@withContext // Folder does not exist, nothing to delete
 
             if (!chartFolder.delete()) {
                 throw DeletionException("Failed to delete chart folder: $sanitizedFolderName")
