@@ -383,6 +383,8 @@
     <string name="manage_collection">Manage collection</string>
     <string name="collection_by">Collection by %1$s</string>
     <string name="no_content_in_collection">No content in this collection</string>
+    <string name="no_charts_in_collection">No charts in this collection</string>
+    <string name="no_tour_passes_in_collection">No tour passes in this collection</string>
 
     <!-- 📰 Activity Feed -->
     <string name="activity_followed_user">Followed a user</string>

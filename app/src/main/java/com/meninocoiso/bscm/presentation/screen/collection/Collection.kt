@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
@@ -49,8 +51,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.ButtonVariant
-import com.meninocoiso.bscm.domain.enums.CatalogItemType
+import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.SimplifiedCollection
+import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.presentation.screen.details.DropdownItemPadding
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.ButtonUI
@@ -77,15 +80,6 @@ data class Collection(val collection: SimplifiedCollection)
 @Serializable
 data class DeepLinkCollection(val username: String, val slug: String)
 
-/**
- * Maps the mandatory single-type filter index used by [CatalogFilters]
- * to the content types requested from the API.
- */
-private fun Int.toCatalogTypes(): List<CatalogItemType> = when (this) {
-    1 -> listOf(CatalogItemType.TOUR_PASS)
-    else -> listOf(CatalogItemType.CHART)
-}
-
 private enum class CollectionDialog { None, DeleteConfirmation }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
@@ -105,9 +99,10 @@ fun CollectionScreen(
     var currentCollection by remember { mutableStateOf(collection) }
     var isDeleting by remember { mutableStateOf(false) }
 
-    // Mandatory single-type filter: exactly one content type is always selected
-    // (0 = charts, 1 = tour passes), so each type is shown as its own section.
-    var selectedFilter by rememberSaveable { mutableStateOf(0) }
+    // Content-type sections: the full item list is loaded once (all types mixed)
+    // and split into per-type pages via a horizontal pager, so switching filters
+    // never replaces the list (no visual flashes). 0 = charts, 1 = tour passes.
+    val pagerState = rememberPagerState(pageCount = { 2 })
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val items = uiState.items
@@ -127,17 +122,9 @@ fun CollectionScreen(
 
     // Initial load — resets automatically when collection.id changes.
     // Local membership observer in CollectionViewModel keeps removals synced without full refresh.
-    LaunchedEffect(collection.id, selectedFilter) {
-        viewModel.loadItems(collection.id, reset = true, types = selectedFilter.toCatalogTypes())
+    LaunchedEffect(collection.id) {
+        viewModel.loadItems(collection.id, reset = true)
     }
-
-    // Scroll-driven pagination
-    OnScrollLoadMore(
-        listState = listState,
-        hasMore = items.hasMore,
-        isLoadingMore = items.isLoadingMore,
-        onLoadMore = { viewModel.loadMoreItems(collection.id) },
-    )
 
     // -------------------------------------------------------------------------
     // Dialog management
@@ -257,98 +244,120 @@ fun CollectionScreen(
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
-        BaseContainer(
+        Column(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
                 .nestedScroll(scrollBehavior.nestedScrollConnection),
-            pullToRefreshState = pullToRefreshState,
-            state = items.state,
-            isRefreshing = items.isRefreshing,
-            onRetry = { viewModel.refreshItems(collection.id) },
-            isEmpty = items.items.isEmpty(),
-            empty = {
-                StatusMessageUI(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(top = 48.dp),
-                    message = stringResource(R.string.no_content_in_collection),
-                    icon = R.drawable.outline_library_music_24,
-                )
-            }
         ) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize(),
-                state = listState,
-                verticalArrangement = Arrangement.Top,
-                horizontalAlignment = Alignment.Start,
-            ) {
-                item {
-                    if (isOwner) {
-                        ButtonUI(
-                            text = stringResource(R.string.manage_collection),
-                            icon = R.drawable.outline_settings_24,
-                            onClick = {
-                                showBottomSheet = true
-                            },
-                            modifier = Modifier.padding(start = 16.dp),
-                            variant = ButtonVariant.Tonal
-                        )
-                    } else {
-                        Row(
+            if (isOwner) {
+                ButtonUI(
+                    text = stringResource(R.string.manage_collection),
+                    icon = R.drawable.outline_settings_24,
+                    onClick = {
+                        showBottomSheet = true
+                    },
+                    modifier = Modifier.padding(start = 16.dp),
+                    variant = ButtonVariant.Tonal
+                )
+            } else {
+                Row(
+                    modifier = Modifier
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Avatar(
+                        url = collection.owner.avatarUrl,
+                        alt = collection.owner.username.first().toString(),
+                        size = 16.dp
+                    )
+                    Text(
+                        style = MaterialTheme.typography.bodySmall,
+                        text = stringResource(
+                            R.string.collection_by,
+                            collection.owner.username
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                }
+            }
+
+            CatalogFilters(
+                itemsAmount = filterCounts,
+                currentSelected = pagerState.currentPage,
+                showThemes = false,
+                onFilterSelected = { index ->
+                    scope.launch {
+                        pagerState.animateScrollToPage(index)
+                    }
+                },
+            )
+
+            HorizontalPager(
+                state = pagerState,
+                key = { it },
+                beyondViewportPageCount = 1,
+                verticalAlignment = Alignment.Top,
+            ) { index ->
+                val filteredItems = when (index) {
+                    0 -> items.items.filterIsInstance<Chart>()
+                    else -> items.items.filterIsInstance<TourPass>()
+                }
+
+                OnScrollLoadMore(
+                    listState = listState,
+                    hasMore = items.hasMore,
+                    isLoadingMore = items.isLoadingMore,
+                    onLoadMore = { viewModel.loadMoreItems(collection.id) },
+                )
+
+                BaseContainer(
+                    pullToRefreshState = pullToRefreshState,
+                    state = items.state,
+                    isRefreshing = items.isRefreshing,
+                    onRetry = { viewModel.refreshItems(collection.id) },
+                    isEmpty = filteredItems.isEmpty(),
+                    empty = {
+                        StatusMessageUI(
                             modifier = Modifier
-                                .padding(top = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Avatar(
-                                url = collection.owner.avatarUrl,
-                                alt = collection.owner.username.first().toString(),
-                                size = 16.dp
-                            )
-                            Text(
-                                style = MaterialTheme.typography.bodySmall,
-                                text = stringResource(
-                                    R.string.collection_by,
-                                    collection.owner.username
-                                ),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false)
+                                .fillMaxSize()
+                                .padding(top = 48.dp),
+                            message = stringResource(
+                                if (index == 0) R.string.no_charts_in_collection
+                                else R.string.no_tour_passes_in_collection
+                            ),
+                            icon = R.drawable.outline_library_music_24,
+                        )
+                    }
+                ) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        state = listState,
+                        verticalArrangement = Arrangement.Top,
+                        horizontalAlignment = Alignment.Start,
+                    ) {
+                        contentList(
+                            items = filteredItems,
+                            showInteractions = !isOwner,
+                            onNavigateToDetails = onNavigateToDetails
+                        )
+                        pagination(
+                            isLoadingMore = items.isLoadingMore,
+                            showMessage = !items.hasMore
+                        )
+                        // TODO: Workaround to avoid bugging the scroll when the list has few items
+                        item {
+                            Spacer(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(1200.dp)
                             )
                         }
                     }
-                }
-
-                item {
-                    CatalogFilters(
-                        itemsAmount = filterCounts,
-                        currentSelected = selectedFilter,
-                        showThemes = false,
-                        onFilterSelected = { filterId ->
-                            if (filterId != selectedFilter) {
-                                selectedFilter = filterId
-                            }
-                        },
-                    )
-                }
-                contentList(
-                    items = items.items,
-                    showInteractions = !isOwner,
-                    onNavigateToDetails = onNavigateToDetails
-                )
-                pagination(
-                    isLoadingMore = items.isLoadingMore,
-                    showMessage = !items.hasMore
-                )
-                // TODO: Workaround to avoid bugging the scroll when the list has few items
-                item {
-                    Spacer(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(1200.dp)
-                    )
                 }
             }
         }

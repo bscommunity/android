@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.data.remote.ApiException
 import com.meninocoiso.bscm.data.repository.ProfileCacheRepository
-import com.meninocoiso.bscm.domain.enums.CatalogItemType
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.domain.model.SimplifiedCollection
@@ -71,7 +70,6 @@ class CollectionViewModel @Inject constructor(
     private val itemsPagination = PaginationState(pageSize = 20)
     private val collectionsPagination = PaginationState(pageSize = 20)
     private var currentCollectionId: String? = null
-    private var currentTypes: List<CatalogItemType>? = null
     private var collectionMembershipObserverJob: Job? = null
     private var itemsFetchJob: Job? = null
 
@@ -98,25 +96,24 @@ class CollectionViewModel @Inject constructor(
     /**
      * Entry point called by [com.meninocoiso.bscm.presentation.screen.collection.CollectionScreen] whenever the collection changes or
      * a pull-to-refresh is triggered. Passing a new [collectionId] automatically
-     * resets the cursor so stale data is never shown. [types] restricts the fetch
-     * to specific content types (the collection screen shows one type at a time).
+     * resets the cursor so stale data is never shown. All content types are fetched
+     * into a single list; the screen splits it into per-type sections via a pager.
      */
-    fun loadItems(collectionId: String, reset: Boolean = false, types: List<CatalogItemType>? = null) {
-        if (itemsFetchJob?.isActive == true && collectionId == currentCollectionId && types == currentTypes) {
+    fun loadItems(collectionId: String, reset: Boolean = false) {
+        if (itemsFetchJob?.isActive == true && collectionId == currentCollectionId) {
             return
         }
 
-        val idChanged = collectionId != currentCollectionId || types != currentTypes
+        val idChanged = collectionId != currentCollectionId
         if (idChanged || reset) {
             currentCollectionId = collectionId
-            currentTypes = types
             itemsPagination.reset()
             _uiState.update { it.copy(items = PagedSection(), itemCounts = Triple(0, 0, 0)) }
             hydrateCollectionItemCounts(collectionId)
             startCollectionMembershipObserver(collectionId)
         }
 
-        Log.d(TAG, "Loading items for collection $collectionId (types=$types, reset=$reset, idChanged=$idChanged)")
+        Log.d(TAG, "Loading items for collection $collectionId (reset=$reset, idChanged=$idChanged)")
 
         itemsFetchJob = fetchPaged(
             pagination = itemsPagination,
@@ -126,7 +123,6 @@ class CollectionViewModel @Inject constructor(
                     collectionId = collectionId,
                     limit = limit,
                     offset = offset,
-                    types = types,
                     useCache = cache,
                 )
             },
@@ -142,7 +138,7 @@ class CollectionViewModel @Inject constructor(
 
     fun loadMoreItems(collectionId: String) {
         if (!_uiState.value.items.isLoadingMore && !_uiState.value.items.isRefreshing && _uiState.value.items.hasMore) {
-            loadItems(collectionId, types = currentTypes)
+            loadItems(collectionId)
         }
     }
 
@@ -153,7 +149,6 @@ class CollectionViewModel @Inject constructor(
                 collectionId = collectionId,
                 limit = limit,
                 offset = offset,
-                types = currentTypes,
                 useCache = cache,
             )
         },
