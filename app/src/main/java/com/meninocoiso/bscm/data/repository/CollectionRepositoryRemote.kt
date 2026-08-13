@@ -43,7 +43,10 @@ class CollectionRepositoryRemote @Inject constructor(
             if (localCollections.isNotEmpty()) {
                 Log.d(TAG, "Returning owner collections from Room (${localCollections.size} items)")
                 val cachedTotal = profileCacheRepository.getCollections(userId).total
-                return@runCatching PagedResult(localCollections, cachedTotal)
+                return@runCatching PagedResult(
+                    mergeLocalItemCounts(localCollections),
+                    cachedTotal
+                )
             }
         }
 
@@ -55,7 +58,10 @@ class CollectionRepositoryRemote @Inject constructor(
                     .sortedBy { cachedIds.items.indexOf(it.id) }
                 if (cachedCollections.isNotEmpty()) {
                     Log.d(TAG, "Returning cached collections for user $userId (${cachedCollections.size} items)")
-                    return@runCatching PagedResult(cachedCollections, cachedIds.total)
+                    return@runCatching PagedResult(
+                        mergeLocalItemCounts(cachedCollections),
+                        cachedIds.total
+                    )
                 }
             }
         }
@@ -85,7 +91,7 @@ class CollectionRepositoryRemote @Inject constructor(
             }
         } else null
 
-        PagedResult(userCollections, total?.toInt())
+        PagedResult(mergeLocalItemCounts(userCollections), total?.toInt())
     }.onFailure { error ->
         Log.e(TAG, "Failed to get collections for user $userId: ${error.message}", error)
     }
@@ -272,4 +278,30 @@ class CollectionRepositoryRemote @Inject constructor(
 
     override fun observeUserCollections(): Flow<List<Collection>> =
         collectionDao.observeUserCollections()
+
+    /**
+     * Overrides the server-side item counts with counts computed from the local
+     * cross-ref table when the app has local data for a collection, so mutations
+     * done offline (or not yet re-fetched) are reflected immediately. Collections
+     * without local cross-refs keep their server-provided counts.
+     */
+    private suspend fun mergeLocalItemCounts(collections: List<Collection>): List<Collection> {
+        if (collections.isEmpty()) return collections
+
+        val localCounts = collectionDao.getItemCounts(collections.map { it.id })
+            .associate { it.collectionId to Triple(it.chartCount, it.tourPassCount, it.themeCount) }
+
+        return collections.map { collection ->
+            val counts = localCounts[collection.id]
+            if (counts != null && (counts.first > 0 || counts.second > 0 || counts.third > 0)) {
+                collection.copy(
+                    chartCount = counts.first,
+                    tourPassCount = counts.second,
+                    themeCount = counts.third,
+                )
+            } else {
+                collection
+            }
+        }
+    }
 }

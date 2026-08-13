@@ -125,5 +125,23 @@ interface CollectionDao {
     @Query("SELECT EXISTS(SELECT 1 FROM collection_item_cross_ref WHERE collection_id = :collectionId AND content_id = :id)")
     suspend fun hasCrossRef(collectionId: String, id: String): Boolean
 
+    /**
+     * Item counts per collection, computed from the locally synced cross-ref table.
+     * Local mutations (add/remove) are reflected immediately, unlike the server-side
+     * counts carried by the collections API.
+     */
+    @Query(
+        """
+        SELECT collection_id AS collectionId,
+               COUNT(CASE WHEN content_type = 'CHART' THEN 1 END) AS chartCount,
+               COUNT(CASE WHEN content_type = 'TOUR_PASS' THEN 1 END) AS tourPassCount,
+               COUNT(CASE WHEN content_type = 'THEME' THEN 1 END) AS themeCount
+        FROM collection_item_cross_ref
+        WHERE collection_id IN (:collectionIds)
+        GROUP BY collection_id
+    """
+    )
+    suspend fun getItemCounts(collectionIds: List<String>): List<CollectionItemCounts>
+
     // Same pattern for TourPass, Theme when those tables exist
 }

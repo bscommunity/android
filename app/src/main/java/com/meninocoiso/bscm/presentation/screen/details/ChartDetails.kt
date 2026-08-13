@@ -493,19 +493,19 @@ fun ChartDetailsScreen(
                 }
             },
             onCreateCollection = { name, isPublic ->
-                scope.launch {
-                    try {
-                        val newCollectionId = collectionViewModel.createCollection(name, isPublic)
-                        interactionViewModel.addToCollection(chart.id, newCollectionId)
-                        snackbarHostState.showReplacingSnackbar(savedToCollectionMsg(name), duration = SnackbarDuration.Short)
-                    } catch (e: ApiException) {
-                        Log.e("ChartDetailsScreen", "Error creating collection", e)
-                        if (e.status == HttpStatusCode.BadRequest) {
-                            snackbarHostState.showReplacingSnackbar(collectionNameExistsMsg)
-                        } else {
-                            snackbarHostState.showReplacingSnackbar(errorCreatingCollectionMsg(e.message))
-                        }
+                try {
+                    val newCollectionId = collectionViewModel.createCollection(name, isPublic)
+                    interactionViewModel.addToCollection(chart.id, newCollectionId)
+                    snackbarHostState.showReplacingSnackbar(savedToCollectionMsg(name), duration = SnackbarDuration.Short)
+                    true
+                } catch (e: ApiException) {
+                    Log.e("ChartDetailsScreen", "Error creating collection", e)
+                    if (e.status == HttpStatusCode.BadRequest) {
+                        snackbarHostState.showReplacingSnackbar(collectionNameExistsMsg)
+                    } else {
+                        snackbarHostState.showReplacingSnackbar(errorCreatingCollectionMsg(e.message))
                     }
+                    false
                 }
             }
         )

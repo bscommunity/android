@@ -25,9 +25,12 @@ data class Collection(
     @ColumnInfo(name = "cover_url") val coverUrl: String? = null,
     @ColumnInfo(name = "created_at") val createdAt: LocalDateTime,
     @ColumnInfo(name = "updated_at") val updatedAt: LocalDateTime,
-    // Server-side gathered field — not persisted in Room, but deserialized from API responses
-    // when fetching a specific collection (e.g. deep-link). Profile screens provide the owner
-    // themselves since the collections-list API does not return it.
+    // Server-side gathered fields — not persisted in Room, but deserialized from API responses.
+    // Counts are also overridden locally from the cross-ref table when the app has local data
+    // (see CollectionRepositoryRemote.mergeLocalItemCounts).
+    @Ignore val chartCount: Int = 0,
+    @Ignore val tourPassCount: Int = 0,
+    @Ignore val themeCount: Int = 0,
     @Ignore val owner: SimplifiedUser? = null,
 ) {
     // Secondary constructor required by Room (which ignores @Ignore fields)

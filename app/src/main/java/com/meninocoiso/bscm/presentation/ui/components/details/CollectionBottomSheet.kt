@@ -79,7 +79,7 @@ fun CollectionCreateBottomSheet(
     errorMessage: String? = null,
     onAutoBookmarksToggle: (shouldBeBookmarked: Boolean) -> Unit,
     onCollectionToggled: (collectionId: String, collectionName: String, shouldBeSelected: Boolean) -> Unit,
-    onCreateCollection: suspend (name: String, isPublic: Boolean) -> Unit,
+    onCreateCollection: suspend (name: String, isPublic: Boolean) -> Boolean,
 ) {
     val coroutineScope = rememberCoroutineScope()
     val horizontalPagerState = rememberPagerState { 2 }
@@ -179,11 +179,16 @@ fun CollectionCreateBottomSheet(
                     1 -> CollectionFormSection(
                         isLoading = isMutating,
                         onSave = { name, isPublic ->
-                            // Wait for creation to complete before closing so state remains coherent.
-                            onCreateCollection(name, isPublic)
-                            coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
-                                if (!sheetState.isVisible) {
-                                    onDismissRequest()
+                            // Keep the sheet open until creation finishes so the user
+                            // cannot leave mid-request: isMutating stays true while the
+                            // callback suspends, blocking back/gesture/outside dismiss.
+                            // Only close on success; on failure the sheet stays up so
+                            // the input can be fixed (e.g. duplicate name) and retried.
+                            if (onCreateCollection(name, isPublic)) {
+                                coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
+                                    if (!sheetState.isVisible) {
+                                        onDismissRequest()
+                                    }
                                 }
                             }
                         }
@@ -324,7 +329,11 @@ fun CollectionsListSection(
                     name = collection.name,
                     coverUrl = collection.coverUrl ?: "",
                     isPublic = collection.isPublic,
-                    contentCounts = Triple(0, 0, 0),
+                    contentCounts = Triple(
+                        collection.chartCount,
+                        collection.tourPassCount,
+                        collection.themeCount,
+                    ),
                     checked = checkedCollectionIds.contains(collection.id),
                     enabled = !isMutating,
                     onCheckedChange = { checked ->
