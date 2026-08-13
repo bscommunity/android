@@ -1,6 +1,7 @@
 package com.meninocoiso.bscm.presentation.screen.details
 
 import DownloadEvent
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -39,6 +41,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -46,12 +49,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.data.remote.ApiException
 import com.meninocoiso.bscm.domain.enums.CollectionKind
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Contributor
 import com.meninocoiso.bscm.domain.model.TourPass
+import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.domain.state.DownloadState
 import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
+import com.meninocoiso.bscm.presentation.ui.components.details.CollectionCreateBottomSheet
 import com.meninocoiso.bscm.presentation.ui.components.details.InteractionButton
 import com.meninocoiso.bscm.presentation.ui.components.details.StatListItem
 import com.meninocoiso.bscm.presentation.ui.components.details.TourPassDownloadButton
@@ -63,10 +69,12 @@ import com.meninocoiso.bscm.presentation.ui.components.preview.PreviewContributo
 import com.meninocoiso.bscm.presentation.ui.components.preview.TourPassTrackPreview
 import com.meninocoiso.bscm.presentation.ui.utils.showReplacingSnackbar
 import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
+import com.meninocoiso.bscm.presentation.viewmodel.CollectionViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.InteractionViewModel
 import com.meninocoiso.bscm.util.AudioPreviewPlayer
 import com.meninocoiso.bscm.util.StringUtils
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.launch
 
 private enum class TourPassDialog { None, DeleteConfirmation }
@@ -85,11 +93,13 @@ fun TourPassDetailsScreen(
     onNavigateToSettings: () -> Unit,
     contentViewModel: ContentViewModel = hiltViewModel(),
     interactionViewModel: InteractionViewModel = hiltViewModel(),
+    collectionViewModel: CollectionViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     var playingUrl by remember { mutableStateOf<String?>(null) }
     val audioPreviewPlayer = remember { AudioPreviewPlayer { playingUrl = it } }
     val scrollState = rememberScrollState()
+    val resources = LocalResources.current
 
     DisposableEffect(Unit) {
         onDispose { audioPreviewPlayer.stop() }
@@ -132,6 +142,10 @@ fun TourPassDetailsScreen(
     var optimisticBookmarked by rememberSaveable { mutableStateOf<Boolean?>(null) }
 
     val hasLiveBookmarkMembership = savedCollections.any { it.kind == CollectionKind.BOOKMARKS }
+    val selectedUserCollectionIds = savedCollections
+        .filter { it.kind == CollectionKind.USER }
+        .map { it.id }
+        .toSet()
 
     val isLiked = optimisticLiked ?: (tourPass.likedAt != null)
     val isBookmarked = optimisticBookmarked ?: (hasLiveBookmarkMembership || tourPass.bookmarkedAt != null)
@@ -172,6 +186,36 @@ fun TourPassDetailsScreen(
     val failedToDeleteMsg = stringResource(R.string.failed_to_delete_chart)
     val explicitContentDisabledMsg = stringResource(R.string.explicit_content_disabled)
     val goToSettingsLabel = stringResource(R.string.go_to_settings)
+    val addedToFavoritesMsg = stringResource(R.string.added_to_favorites)
+    val manageMsg = stringResource(R.string.manage)
+    val collectionNameExistsMsg = stringResource(R.string.collection_name_exists)
+    val savedToCollectionMsg = { name: String -> resources.getString(R.string.saved_to_collection, name) }
+    val errorCreatingCollectionMsg = { msg: String -> resources.getString(R.string.error_creating_collection, msg) }
+
+    // -------------------------------------------------------------------------
+    // Collection sheet state
+    // -------------------------------------------------------------------------
+    val collectionSheetState = rememberModalBottomSheetState()
+    var showCollectionSheet by rememberSaveable { mutableStateOf(false) }
+    val collectionUiState by collectionViewModel.uiState.collectAsStateWithLifecycle()
+    val userCollections = collectionUiState.userCollections.items
+    val isCollectionsLoading = collectionUiState.userCollections.state is ContentState.Loading
+    val hasError = collectionUiState.userCollections.state is ContentState.Error
+    val errorMessage = if (hasError) stringResource(R.string.failed_to_load_collections) else null
+
+    LaunchedEffect(showCollectionSheet) {
+        if (showCollectionSheet) collectionViewModel.fetchUserCollections(reset = true)
+    }
+
+    // Shared toggle handler used by the bottom-bar button and the sheet's
+    // auto-bookmarks item, mirroring the chart details screen.
+    val toggleBookmarkSelection: (Boolean) -> Unit = { shouldBeBookmarked ->
+        optimisticBookmarked = shouldBeBookmarked
+        interactionViewModel.enqueueBookmarkMutation(tourPass.id, shouldBeBookmarked)
+        if (!shouldBeBookmarked) {
+            snackbarHostState.currentSnackbarData?.dismiss()
+        }
+    }
 
     var currentDialog by rememberSaveable { mutableStateOf(TourPassDialog.None) }
 
@@ -279,13 +323,34 @@ fun TourPassDetailsScreen(
                                 )
                                 if (result == SnackbarResult.ActionPerformed) onNavigateToSettings()
                             }
-                        }
+                        },
+                        beforeToggle = { current, next ->
+                            // Unbookmark action is managed through the sheet to allow collection edits.
+                            if (current && !next) {
+                                showCollectionSheet = true
+                                false
+                            } else {
+                                true
+                            }
+                        },
                     ) { newValue ->
-                        optimisticBookmarked = newValue
-                        interactionViewModel.enqueueBookmarkMutation(
-                            tourPass.id,
-                            newValue
-                        )
+                        toggleBookmarkSelection(newValue)
+
+                        if (newValue) {
+                            scope.launch {
+                                val result = snackbarHostState.showReplacingSnackbar(
+                                    message = addedToFavoritesMsg,
+                                    actionLabel = manageMsg,
+                                    duration = SnackbarDuration.Short
+                                )
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    interactionViewModel.flushPendingBookmarkMutation(tourPass.id)
+                                    showCollectionSheet = true
+                                }
+                            }
+                        } else {
+                            snackbarHostState.currentSnackbarData?.dismiss()
+                        }
                     }
 
                     InteractionButton(
@@ -427,6 +492,59 @@ fun TourPassDetailsScreen(
                 )
             }
         }
+    }
+
+    if (showCollectionSheet) {
+        CollectionCreateBottomSheet(
+            sheetState = collectionSheetState,
+            onDismissRequest = { showCollectionSheet = false },
+            onClose = {
+                scope.launch { collectionSheetState.hide() }.invokeOnCompletion {
+                    if (!collectionSheetState.isVisible) showCollectionSheet = false
+                }
+            },
+            collections = userCollections,
+            checkedCollectionIds = selectedUserCollectionIds,
+            isBookmarked = isBookmarked,
+            isLoading = isCollectionsLoading,
+            isMutating = collectionUiState.isCreating,
+            errorMessage = errorMessage,
+            onAutoBookmarksToggle = { shouldBeBookmarked ->
+                toggleBookmarkSelection(shouldBeBookmarked)
+            },
+            onCollectionToggled = { collectionId, collectionName, shouldBeSelected ->
+                if (shouldBeSelected) {
+                    interactionViewModel.addToCollection(tourPass.id, collectionId)
+                    scope.launch {
+                        snackbarHostState.showReplacingSnackbar(
+                            savedToCollectionMsg(collectionName),
+                            duration = SnackbarDuration.Short
+                        )
+                    }
+                } else {
+                    interactionViewModel.removeFromCollection(tourPass.id, collectionId)
+                }
+            },
+            onCreateCollection = { name, isPublic ->
+                scope.launch {
+                    try {
+                        val newCollectionId = collectionViewModel.createCollection(name, isPublic)
+                        interactionViewModel.addToCollection(tourPass.id, newCollectionId)
+                        snackbarHostState.showReplacingSnackbar(
+                            savedToCollectionMsg(name),
+                            duration = SnackbarDuration.Short
+                        )
+                    } catch (e: ApiException) {
+                        Log.e("TourPassDetailsScreen", "Error creating collection", e)
+                        if (e.status == HttpStatusCode.BadRequest) {
+                            snackbarHostState.showReplacingSnackbar(collectionNameExistsMsg)
+                        } else {
+                            snackbarHostState.showReplacingSnackbar(errorCreatingCollectionMsg(e.message))
+                        }
+                    }
+                }
+            }
+        )
     }
 }
 

@@ -111,6 +111,19 @@ class CollectionRepositoryRemote @Inject constructor(
 
             collectionDao.upsertCollection(collection)
 
+            // Keep the quick-cache total in sync so a profile opened after a
+            // local creation does not report a stale count (e.g. 0). Room is
+            // the source of truth for local mutations; the cached total is only
+            // adjusted when it is already known, never guessed from scratch.
+            val cached = profileCacheRepository.getCollections("user")
+            if (cached.total != null) {
+                profileCacheRepository.cacheCollectionIds(
+                    "user",
+                    (cached.items + collection.id).distinct(),
+                    cached.total.toLong() + 1,
+                )
+            }
+
             collection
         }
 
@@ -137,6 +150,17 @@ class CollectionRepositoryRemote @Inject constructor(
         apiClient.deleteCollection(collectionId)
 
         collectionDao.deleteCollectionById(collectionId)
+
+        // Mirror the create path: keep the quick-cache total in sync with the
+        // local deletion when the total is already known.
+        val cached = profileCacheRepository.getCollections("user")
+        if (cached.total != null) {
+            profileCacheRepository.cacheCollectionIds(
+                "user",
+                cached.items - collectionId,
+                (cached.total - 1).coerceAtLeast(0).toLong(),
+            )
+        }
     }
 
     override suspend fun getCollectionItems(

@@ -263,11 +263,21 @@ class UserProfileViewModel @Inject constructor(
                 .collect { freshCollections ->
                     val current = _uiState.value.collections.customCollections
                     if (current.state !is ContentState.Loading || current.items.isNotEmpty()) {
+                        // Reconcile the total against Room, which is the source of
+                        // truth for locally created/deleted collections, so the
+                        // "custom collections" count stays correct without a
+                        // server round trip (mirrors the likes/bookmarks observers).
+                        val updatedTotal = reconcileObservedTotal(
+                            previousItems = current.items,
+                            freshItems = freshCollections,
+                            previousTotal = current.total,
+                            idSelector = { it.id },
+                        )
                         _uiState.update { state ->
                             state.copy(
                                 collections = state.collections.copy(
                                     customCollections = state.collections.customCollections
-                                        .copy(items = freshCollections),
+                                        .copy(items = freshCollections, total = updatedTotal),
                                     items = mergeCollections(customCollections = freshCollections),
                                 )
                             )
