@@ -12,7 +12,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.presentation.ui.components.dialog.RequestAppDownloadDialog
-import com.meninocoiso.bscm.util.LinkingUtils.launchBeatClone
+import com.meninocoiso.bscm.util.LinkingUtils.launchGame
 
 @Composable
 fun LaunchAppButton(
@@ -33,7 +33,7 @@ fun LaunchAppButton(
 			)
 		},
 		onClick = {
-			launchBeatClone(context, (openAlertDialog::value)::set)
+			launchGame(context, (openAlertDialog::value)::set)
 		},
 		expanded = extended // This drives the built-in animation
 	)

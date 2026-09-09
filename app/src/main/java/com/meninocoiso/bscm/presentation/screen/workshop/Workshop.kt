@@ -10,6 +10,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -49,12 +50,28 @@ fun WorkshopScreen(
     val searchBarState = rememberSearchBarState()
     val scope = rememberCoroutineScope()
 
+    // Re-route the active query when switching tabs so each tab searches its own content type
+    LaunchedEffect(horizontalPagerState.currentPage) {
+        val query = viewModel.searchFieldState.text.toString()
+        if (query.isNotEmpty()) {
+            when (horizontalPagerState.currentPage) {
+                1 -> viewModel.searchTourPasses(query)
+                2 -> viewModel.searchThemes(query)
+                else -> viewModel.searchCharts(query)
+            }
+        }
+    }
+
     // Register a close-search action so the caller (BottomNav) can trigger it on tab reselection
     onWorkshopReselected {
         if (searchBarState.currentValue == SearchBarValue.Expanded || viewModel.searchFieldState.text.isNotEmpty()) {
             scope.launch { searchBarState.animateToCollapsed() }
             viewModel.searchFieldState.setTextAndPlaceCursorAtEnd("")
-            viewModel.searchCharts("")
+            when (horizontalPagerState.currentPage) {
+                1 -> viewModel.searchTourPasses("")
+                2 -> viewModel.searchThemes("")
+                else -> viewModel.searchCharts("")
+            }
         }
     }
 
@@ -83,8 +100,16 @@ fun WorkshopScreen(
                     viewModel = viewModel
                 )
 
-                1 -> TourPassesSection(onFabStateChange)
-                2 -> ThemesSection(onFabStateChange)
+                1 -> TourPassesSection(
+                    onFabStateChange = onFabStateChange,
+                    onNavigateToDetails = onNavigateToDetails,
+                    viewModel = viewModel
+                )
+                2 -> ThemesSection(
+                    onFabStateChange = onFabStateChange,
+                    onNavigateToDetails = onNavigateToDetails,
+                    viewModel = viewModel
+                )
             }
         }
     }
@@ -103,7 +128,11 @@ fun WorkshopScreen(
             },
             suggestions = viewModel.suggestions,
             onSearch = { query ->
-                viewModel.searchCharts(query)
+                when (horizontalPagerState.currentPage) {
+                    1 -> viewModel.searchTourPasses(query)
+                    2 -> viewModel.searchThemes(query)
+                    else -> viewModel.searchCharts(query)
+                }
             },
             searchBarState = searchBarState,
         )

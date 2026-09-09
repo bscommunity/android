@@ -4,6 +4,8 @@ import android.content.Context
 import com.meninocoiso.bscm.data.local.dao.ChartDao
 import com.meninocoiso.bscm.data.local.dao.CollectionDao
 import com.meninocoiso.bscm.data.local.dao.InteractionQueueDao
+import com.meninocoiso.bscm.data.local.dao.ThemeDao
+import com.meninocoiso.bscm.data.local.dao.TourPassDao
 import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.manager.InteractionQueueManager
 import com.meninocoiso.bscm.data.remote.ApiClient
@@ -53,12 +55,16 @@ object InteractionModule {
         queueManager: InteractionQueueManager,
         chartManager: ChartManager,
         chartDao: ChartDao,
+        tourPassDao: TourPassDao,
+        themeDao: ThemeDao,
         collectionDao: CollectionDao,
         profileCacheRepository: ProfileCacheRepository,
     ): InteractionRepository = InteractionRepositoryImpl(
         queueManager,
         chartManager,
         chartDao,
+        tourPassDao,
+        themeDao,
         collectionDao,
         profileCacheRepository,
     )

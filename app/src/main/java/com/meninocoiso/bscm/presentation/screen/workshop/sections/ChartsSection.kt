@@ -152,7 +152,7 @@ internal fun ChartsSection(
                     itemsIndexed(charts) { _, chart ->
                         ChartPreview(
                             chart = chart,
-                            isDisabled = chart.latestVersion.isExplicit && !isExplicitAllowed.value,
+                            isDisabled = chart.isExplicit && !isExplicitAllowed.value,
                             onDisabled = {
                                 onSnackbar.show(
                                     message = explicitContentDisabledMsg,

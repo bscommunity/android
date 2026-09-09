@@ -2,10 +2,18 @@ package com.meninocoiso.bscm.data.repository
 
 import android.util.Log
 import com.meninocoiso.bscm.data.local.dao.ChartDao
+import com.meninocoiso.bscm.data.local.dao.ThemeDao
+import com.meninocoiso.bscm.data.local.dao.TourPassDao
+import com.meninocoiso.bscm.data.manager.ChartStateMerger
 import com.meninocoiso.bscm.data.remote.ApiClient
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
+import com.meninocoiso.bscm.data.remote.dto.user.SectionCounts
 import com.meninocoiso.bscm.data.remote.dto.user.UserProfileResponse
+import com.meninocoiso.bscm.domain.enums.CatalogItemType
 import com.meninocoiso.bscm.domain.model.CatalogItem
+import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.Theme
+import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.repository.ProfileRepository
 import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedResult
 import jakarta.inject.Inject
@@ -17,7 +25,10 @@ private const val TAG = "ProfileRepositoryRemote"
 class ProfileRepositoryRemote @Inject constructor(
     private val apiClient: ApiClient,
     private val profileCacheRepository: ProfileCacheRepository,
-    private val chartDao: ChartDao
+    private val chartDao: ChartDao,
+    private val tourPassDao: TourPassDao,
+    private val themeDao: ThemeDao,
+    private val chartStateMerger: ChartStateMerger,
 ) : ProfileRepository {
     override suspend fun getProfileHeader(
         username: String,
@@ -88,31 +99,66 @@ class ProfileRepositoryRemote @Inject constructor(
                 val cached = profileCacheRepository.getLibrary(userId)
                 if (cached != null) {
                     Log.d(TAG, "Returning cached library for user: $userId")
-                    val cachedCharts =
-                        withContext(Dispatchers.IO) { chartDao.getChartsByIds(cached.items) }
-                    Log.d(TAG, "Cached charts for user $userId: ${cachedCharts.size} items")
-                    return@runCatching PagedResult(cachedCharts, cached.total)
+                    val cachedItems = withContext(Dispatchers.IO) {
+                        val charts = chartDao.getChartsByIds(
+                            cached.items.filter { it.type == CatalogItemType.CHART.name }.map { it.id }
+                        )
+                        val tourPasses = tourPassDao.getTourPassesByIds(
+                            cached.items.filter { it.type == CatalogItemType.TOUR_PASS.name }.map { it.id }
+                        )
+                        val themes = themeDao.getThemesByIds(
+                            cached.items.filter { it.type == CatalogItemType.THEME.name }.map { it.id }
+                        )
+                        (charts + tourPasses + themes).distinctBy { it.id }
+                    }
+                    Log.d(TAG, "Cached library for user $userId: ${cachedItems.size} items")
+                    return@runCatching PagedResult(
+                        items = cachedItems,
+                        total = cached.total,
+                        counts = profileCacheRepository.getLibraryCounts(userId)?.toTriple(),
+                    )
                 }
             }
 
             // Fetch from API
             val page = apiClient.getUserCharts(userId, limit, offset)
-            val charts = page.items
+            val charts = chartStateMerger.mergeRemoteCharts(
+                page.items.filterIsInstance<Chart>()
+            )
+            val tourPasses = page.items.filterIsInstance<TourPass>()
+            val themes = page.items.filterIsInstance<Theme>()
             Log.d(
                 TAG,
-                "Fetched library charts for user $userId from API (${charts.size} items)"
+                "Fetched library for user $userId from API (${charts.size} charts, " +
+                        "${tourPasses.size} tour passes, ${themes.size} themes)"
             )
 
             // Cache only first page — persist must complete before caching IDs so
-            // that a subsequent getChartsById() call finds the rows in the DB/memory store.
+            // that a subsequent getByIds() call finds the rows in the DB/memory store.
+            // Charts are merged with device state before persisting (the DAO uses
+            // REPLACE which would otherwise wipe install/like/bookmark state).
             val total = if (offset == 0) {
                 page.counts?.charts?.toLong().also { t ->
-                    withContext(Dispatchers.IO) { chartDao.insert(charts) }
-                    profileCacheRepository.cacheLibrary(userId, charts.map { it.id }, t)
+                    withContext(Dispatchers.IO) {
+                        if (charts.isNotEmpty()) chartDao.insert(charts)
+                        if (tourPasses.isNotEmpty()) tourPassDao.insert(tourPasses)
+                        if (themes.isNotEmpty()) themeDao.insert(themes)
+                    }
+                    profileCacheRepository.cacheLibrary(userId, page.items, t)
+                    page.counts?.let { counts ->
+                        profileCacheRepository.cacheLibraryCounts(
+                            userId,
+                            SectionCounts(counts.charts, counts.tourPasses, counts.themes)
+                        )
+                    }
                 }
             } else null
 
-            PagedResult(charts, total?.toInt())
+            PagedResult(
+                items = page.items,
+                total = total?.toInt(),
+                counts = page.counts?.let { Triple(it.charts, it.tourPasses, it.themes) },
+            )
         }
 
     override suspend fun followUser(userId: String, username: String): Result<Unit> = runCatching {

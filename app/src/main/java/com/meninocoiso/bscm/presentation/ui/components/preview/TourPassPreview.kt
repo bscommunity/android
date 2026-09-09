@@ -20,6 +20,7 @@ import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
 import com.meninocoiso.bscm.presentation.ui.modifiers.debouncedClickable
+import com.meninocoiso.bscm.util.PreviewUtils.secondaryContainer
 import com.meninocoiso.bscm.util.PreviewUtils.titleContent
 import com.meninocoiso.bscm.util.StringUtils
 
@@ -37,6 +38,7 @@ fun TourPassPreview(
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .secondaryContainer(isSecondary)
             .graphicsLayer {
                 alpha = if ((tourPass.isInstalled == true || isDisabled) && !isLocal) 0.5f else 1f
             }
@@ -56,7 +58,7 @@ fun TourPassPreview(
         ) {
             CoverArt(
                 modifier = Modifier.fillMaxWidth(),
-                url = tourPass.coverUrl,
+                url = tourPass.coverUrl ?: "",
                 borderRadius = if (isLocal) 8.dp else 0.dp,
                 width = 400.dp,
                 height = 100.dp
@@ -73,7 +75,7 @@ fun TourPassPreview(
                             titleContent(tourPass.name, false, false)
                             Text(
                                 style = MaterialTheme.typography.labelLarge,
-                                text = StringUtils.toRelativeString(tourPass.updatedAt)
+                                text = tourPass.updatedAt?.let { StringUtils.toRelativeString(it) } ?: ""
                             )
                         }
                     } else {
@@ -92,14 +94,20 @@ fun TourPassPreview(
                             )
                         }
                     }
-                    Text(style = MaterialTheme.typography.labelMedium, text = tourPass.artist ?: stringResource(R.string.multiple_artists))
+                    tourPass.artist?.let {
+                        Text(style = MaterialTheme.typography.labelMedium, text = tourPass.artist)
+
+                    }
                 }
-                PreviewAuthors(
-                    contentString = stringResource(
-                        R.string.chart_by,
-                        tourPass.contributors[0].user.username
-                    ),
-                    authors = tourPass.contributors)
+                val contributors = tourPass.contributors
+                if (contributors.isNotEmpty()) {
+                    PreviewAuthors(
+                        contentString = stringResource(
+                            R.string.chart_by,
+                            contributors[0].user.username
+                        ),
+                        authors = contributors)
+                }
                 if (!isLocal && tourPass.isInstalled == true) PreviewInstalledTag(false)
             }
         }

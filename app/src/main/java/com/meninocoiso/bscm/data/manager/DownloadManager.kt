@@ -199,19 +199,18 @@ class DownloadManager @Inject constructor(
 
     suspend fun extractZipToFolder(
         zipFile: File,
-        chartId: String,
-        contentId: String? = null,
+        id: String,
         rootUri: Uri,
         subFolders: List<String> = listOf("songs"),
         onProgress: (Float) -> Unit = {}
-    ) = withContext(Dispatchers.IO) {
+    ): DocumentFile = withContext(Dispatchers.IO) {
         try {
             // Validate inputs
             if (!zipFile.exists() || !zipFile.canRead()) {
                 throw ExtractionException("ZIP file does not exist or is not readable: ${zipFile.path}")
             }
 
-            val sanitizedFolderName = sanitizeFileName(StorageUtils.getChartFolderName(chartId, contentId))
+            val sanitizedFolderName = sanitizeFileName(StorageUtils.getChartFolderName(id))
             val destination = StorageUtils.getFolder(rootUri, subFolders, context)
 
             // Create (or recreate) the chart folder
@@ -240,6 +239,8 @@ class DownloadManager @Inject constructor(
                 }
                 throw ExtractionException("Failed to extract ZIP file", e)
             }
+
+            chartFolder
         } catch (e: ExtractionException) {
             throw e
         } catch (e: Exception) {
@@ -248,13 +249,12 @@ class DownloadManager @Inject constructor(
     }
 
     suspend fun deleteFolderFromUri(
-        chartId: String,
-        contentId: String? = null,
+        id: String,
         destinationFolderUri: Uri,
         subFolders: List<String>
     ) = withContext(Dispatchers.IO) {
         try {
-            val sanitizedFolderName = sanitizeFileName(StorageUtils.getChartFolderName(chartId, contentId))
+            val sanitizedFolderName = sanitizeFileName(StorageUtils.getChartFolderName(id))
             val rootFolder = DocumentFile.fromTreeUri(context, destinationFolderUri)
                 ?: throw DeletionException("Could not access root folder")
 
@@ -263,11 +263,11 @@ class DownloadManager @Inject constructor(
             // Navigate to the target subfolder
             for (subFolderName in subFolders) {
                 currentFolder = currentFolder.findFile(subFolderName)
-                    ?: throw DeletionException("Could not find subfolder: $subFolderName")
+                    ?: return@withContext // Folder does not exist, nothing to delete
             }
 
             val chartFolder = currentFolder.findFile(sanitizedFolderName)
-                ?: throw DeletionException("Chart folder not found: $sanitizedFolderName")
+                ?: return@withContext // Folder does not exist, nothing to delete
 
             if (!chartFolder.delete()) {
                 throw DeletionException("Failed to delete chart folder: $sanitizedFolderName")

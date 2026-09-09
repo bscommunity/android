@@ -40,13 +40,13 @@ internal fun UpdateListItem(
             CoverArt(
                 difficulty = null,
                 borderRadius = 2.dp,
-                url = chart.coverUrl,
+                url = chart.track.coverUrl ?: "",
                 size = 40.dp
             )
         },
         headlineContent = {
             Text(
-                text = chart.track,
+                text = chart.track.title,
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -57,8 +57,8 @@ internal fun UpdateListItem(
             Text(
                 text = stringResource(
                     R.string.update_from_to,
-                    chart.latestVersion.index,
-                    chart.availableVersion?.index ?: 0
+                    chart.latestVersion?.versionCode ?: 0,
+                    chart.availableVersion?.versionCode ?: 0
                 ),
                 style = MaterialTheme.typography.bodyMedium,
                 lineHeight = TextUnit(1f, TextUnitType.Em)

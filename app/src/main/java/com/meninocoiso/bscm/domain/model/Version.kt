@@ -4,30 +4,24 @@ import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.meninocoiso.bscm.domain.enums.Difficulty
 import com.meninocoiso.bscm.domain.serialization.LocalDateTimeSerializer
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import java.time.LocalDateTime
 
 @Entity(tableName = "versions")
 @Serializable
 @Parcelize
 data class Version(
-    @PrimaryKey @ColumnInfo(name = "id") val id: Long,
-    @ColumnInfo(name = "chart_id") val chartId: String,
-    val index: Int,
-    val duration: Float,
-    @ColumnInfo(name = "notes_amount") val notesAmount: Int,
-    @ColumnInfo(name = "effects_amount") val effectsAmount: Int,
-    val bpm: Int,
-    val difficulty: Difficulty,
-    @ColumnInfo(name = "is_deluxe") val isDeluxe: Boolean,
-    @ColumnInfo(name = "isExplicit") val isExplicit: Boolean,
-    @ColumnInfo(name = "bundle_url") val bundleUrl: String,
-    @ColumnInfo(name = "preview_url") val previewUrl: String? = null,
+    @PrimaryKey @ColumnInfo(name = "id") val id: String,
+    @ColumnInfo(name = "catalog_item_id") val catalogItemId: String,
+    @ColumnInfo(name = "version_code") val versionCode: Int,
     @ColumnInfo(name = "downloads_amount") val downloadsAmount: Int = 0,
-    @ColumnInfo(name = "known_issues") val knownIssues: List<KnownIssue> = emptyList(),
+    @ColumnInfo(name = "file_size_bytes") val fileSizeBytes: Long,
+    @ColumnInfo(name = "changelog") val changelog: String? = null,
+    @ColumnInfo(name = "discord_attachment_id") val discordAttachmentId: String? = null,
     @Serializable(with = LocalDateTimeSerializer::class)
     @ColumnInfo(name = "created_at") val createdAt: LocalDateTime,
+    @ColumnInfo(name = "bundle_hash") val bundleHash: String? = null,
 ) : Parcelable

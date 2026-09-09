@@ -7,10 +7,6 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -18,29 +14,32 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SegmentedButtonUI(
     options: List<String>,
-    disabled: Boolean = false,
+    selectedIndex: Int? = null,
+    enabled: List<Boolean> = emptyList(),
     onSelected: (Int) -> Unit,
 ) {
-    var selectedIndex by remember {
-        mutableIntStateOf(-1)
-    }
-
     SingleChoiceSegmentedButtonRow(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp, 0.dp, 16.dp, 16.dp)
+            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
     ) {
         options.forEachIndexed { index, label ->
             SegmentedButton(
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                shape = SegmentedButtonDefaults.itemShape(
+                    index = index,
+                    count = options.size,
+                ),
                 onClick = {
-                    selectedIndex = if (selectedIndex != index) index else -1
-                    onSelected(selectedIndex)
+                    onSelected(if (selectedIndex != index) index else -1)
                 },
                 selected = index == selectedIndex,
-                enabled = !disabled
+                enabled = enabled.getOrNull(index) ?: true,
             ) {
-                Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    text = label,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }

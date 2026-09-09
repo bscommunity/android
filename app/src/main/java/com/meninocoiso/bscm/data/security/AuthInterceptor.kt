@@ -2,6 +2,10 @@ package com.meninocoiso.bscm.data.security
 
 import android.util.Log
 import com.meninocoiso.bscm.data.manager.SecureTokenManager
+import com.meninocoiso.bscm.di.ApplicationScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
@@ -11,12 +15,12 @@ private const val TAG = "AuthInterceptor"
 
 @Singleton
 class AuthInterceptor @Inject constructor(
-    private val tokenManager: SecureTokenManager
+    private val tokenManager: SecureTokenManager,
+    @param:ApplicationScope private val coroutineScope: CoroutineScope
 ) {
     private val refreshMutex = Mutex()
     private var tokenRefreshCallback: (suspend () -> Boolean)? = null
-    @Volatile
-    private var isCurrentlyRefreshing = false
+    private var refreshJob: Deferred<Boolean>? = null
 
     fun setTokenRefreshCallback(callback: suspend () -> Boolean) {
         tokenRefreshCallback = callback
@@ -40,7 +44,7 @@ class AuthInterceptor @Inject constructor(
         }
 
         Log.d(TAG, "Token is expired or about to expire, attempting refresh")
-        return refreshInternal(allowSkipWhenValid = true)
+        return refreshInternal()
     }
 
     /**
@@ -49,32 +53,29 @@ class AuthInterceptor @Inject constructor(
      */
     suspend fun forceRefreshToken(): Boolean {
         Log.d(TAG, "Forcing token refresh after 401")
-        return refreshInternal(allowSkipWhenValid = false)
+        return refreshInternal()
     }
 
-    private suspend fun refreshInternal(allowSkipWhenValid: Boolean): Boolean {
+    /**
+     * Single-flight token refresh: concurrent callers (e.g. several requests
+     * getting a 401 at the same time) all wait on the same in-flight refresh
+     * instead of each POSTing to /auth/refresh independently.
+     */
+    private suspend fun refreshInternal(): Boolean {
         return refreshMutex.withLock {
-            if (allowSkipWhenValid && !tokenManager.isTokenExpired()) {
-                Log.d(TAG, "Token was already refreshed by another coroutine")
-                return@withLock true
-            }
-
-            if (isCurrentlyRefreshing) {
-                Log.d(TAG, "Token refresh already in progress")
-                return@withLock false
-            }
-
-            isCurrentlyRefreshing = true
-            try {
-                val refreshed = tokenRefreshCallback?.invoke() ?: false
-                if (!refreshed) {
-                    Log.e(TAG, "Token refresh failed")
-                    return@withLock false
+            val active = refreshJob
+            if (active != null) {
+                Log.d(TAG, "Token refresh already in progress, awaiting result")
+                active.await()
+            } else {
+                // Run the refresh outside the request's coroutine so a cancelled
+                // caller (e.g. a request that timed out) doesn't cancel the shared refresh.
+                val job = coroutineScope.async {
+                    tokenRefreshCallback?.invoke() ?: false
                 }
-                // Log.d(TAG, "Token refreshed successfully")
-                true
-            } finally {
-                isCurrentlyRefreshing = false
+                refreshJob = job
+                job.invokeOnCompletion { refreshJob = null }
+                job.await()
             }
         }
     }

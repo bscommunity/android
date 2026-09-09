@@ -17,16 +17,16 @@ import com.meninocoiso.bscm.presentation.ui.utils.asString
 
 @Composable
 fun ChartDetailsRoute(
-    contentId: String?,
+    id: String?,
     onReturn: () -> Unit,
     onNavigateToSettings: () -> Unit,
     viewModel: ChartDetailsViewModel = hiltViewModel()
 ) {
     val state by viewModel.chart.collectAsStateWithLifecycle()
 
-    // If we don't have a chart from typed navigation, fetch it using contentId
-    LaunchedEffect(contentId) {
-        viewModel.fetchChartById(contentId)
+    // If we don't have a chart from typed navigation, fetch it using id
+    LaunchedEffect(id) {
+        viewModel.fetchChartById(id)
     }
 
     RouteUI {
@@ -47,7 +47,7 @@ fun ChartDetailsRoute(
                     message = (state as ContentResult.Error).message.asString(),
                     icon = R.drawable.rounded_error_24,
                     onClick = {
-                        viewModel.fetchChartById(contentId)
+                        viewModel.fetchChartById(id)
                     },
                     buttonLabel = stringResource(R.string.retry),
                 )

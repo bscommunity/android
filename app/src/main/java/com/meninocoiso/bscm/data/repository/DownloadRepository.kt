@@ -2,9 +2,9 @@ package com.meninocoiso.bscm.data.repository
 
 import DownloadEvent
 import android.content.Context
-import android.content.res.Resources.NotFoundException
 import com.meninocoiso.bscm.data.manager.ChartManager
 import com.meninocoiso.bscm.data.manager.DownloadManager
+import com.meninocoiso.bscm.data.manager.TourPassStorageManager
 import com.meninocoiso.bscm.domain.enums.OperationOption
 import com.meninocoiso.bscm.domain.result.ContentResult
 import com.meninocoiso.bscm.domain.result.UiText
@@ -21,6 +21,7 @@ import javax.inject.Singleton
 class DownloadRepository @Inject constructor(
     private val downloadManager: DownloadManager,
     private val chartManager: ChartManager,
+    private val tourPassStorageManager: TourPassStorageManager,
     downloadServiceMonitor: DownloadServiceMonitor,
     @param:ApplicationContext private val context: Context,
 ) {
@@ -29,16 +30,14 @@ class DownloadRepository @Inject constructor(
     /**
      * Downloads and extracts a chart to the beatstar folder
      * @param url URL of the chart zip file
-     * @param internalChartId Internal chart ID used as local primary key
-     * @param contentId Canonical content ID used as the preferred /songs folder name
+     * @param id Chart id used as local primary key and preferred /songs folder name
      * @param operation Operation type (INSTALL or UPDATE)
      * @param onDownloadProgress Callback for download progress
      * @param onExtractProgress Callback for extraction progress
      */
     suspend fun downloadChart(
         url: String,
-        internalChartId: String,
-        contentId: String? = null,
+        id: String,
         operation: OperationOption,
         onDownloadProgress: (Float) -> Unit = {},
         onExtractProgress: (Float) -> Unit = {}
@@ -49,23 +48,29 @@ class DownloadRepository @Inject constructor(
         // Download the zip file to cache
         val downloadedFile = downloadManager.downloadFileToCache(
             url,
-            contentId ?: internalChartId,
+            id,
             "zip",
             onDownloadProgress
         )
 
         // Notify server about the download (this should not block)
-        chartManager.postAnalytics(internalChartId, operation)
+        chartManager.postAnalytics(id, operation)
 
         // Extract the zip file to the folder
         try {
-            downloadManager.extractZipToFolder(
+            val chartFolder = downloadManager.extractZipToFolder(
                 downloadedFile,
-                internalChartId,
-                contentId,
+                id,
                 folderUri,
                 listOf("songs"),
                 onExtractProgress
+            )
+
+            // Write the per-chart manifest so the hydration system can identify
+            // the chart by its canonical id even after an app reinstall.
+            tourPassStorageManager.writeChartIdFile(
+                folder = chartFolder,
+                id = id
             )
         } catch (e: IOException) {
             throw e
@@ -76,7 +81,7 @@ class DownloadRepository @Inject constructor(
         }
 
         // Update the chart list
-        val updateResult = chartManager.updateContentById(internalChartId, operation)
+        val updateResult = chartManager.updateContentById(id, operation)
         if (updateResult is ContentResult.Error) {
             val msg = when (val m = updateResult.message) {
                 is UiText.Plain -> m.value
@@ -86,23 +91,21 @@ class DownloadRepository @Inject constructor(
         }
     }
 
-    suspend fun deleteChart(internalChartId: String, contentId: String? = null) {
+    suspend fun deleteChart(id: String) {
         val destinationFolderUri = StorageUtils.getFolderUri(context, BEATSTAR_URI)
             ?: throw IllegalStateException("Could not access or create beatstar folder")
 
-        try {
-            downloadManager.deleteFolderFromUri(
-                internalChartId,
-                contentId,
-                destinationFolderUri,
-                listOf("songs"),
-            )
-        } catch (_: NotFoundException) {
-            // Folder does not exist, nothing to delete
-        }
+        // Deletion is idempotent: a missing chart folder is a no-op, so
+        // charts that were never downloaded (e.g. explicit charts skipped in a
+        // tour pass) do not abort the deletion.
+        downloadManager.deleteFolderFromUri(
+            id,
+            destinationFolderUri,
+            listOf("songs"),
+        )
 
         // Update the chart list
-        val updateResult = chartManager.updateContentById(internalChartId, OperationOption.DELETE)
+        val updateResult = chartManager.updateContentById(id, OperationOption.DELETE)
         if (updateResult is ContentResult.Error) {
             val msg = when (val m = updateResult.message) {
                 is UiText.Plain -> m.value

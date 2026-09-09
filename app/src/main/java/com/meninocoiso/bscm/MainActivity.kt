@@ -175,6 +175,7 @@ class MainActivity : AppCompatActivity() {
                     // Pass a lambda to start OAuth so Composables don't need to know launchers
                     startOAuth = { uri -> startOAuth(uri) },
                     intentFlow = intentFlow,
+                    authViewModel = authViewModel,
                 )
 
                 NotificationsPermissionDialog()

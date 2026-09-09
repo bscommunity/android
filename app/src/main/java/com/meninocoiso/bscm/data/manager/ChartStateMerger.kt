@@ -18,6 +18,7 @@ internal fun bookmarkActionForState(interaction: QueuedInteractionEntity): Actio
 class ChartStateMerger @Inject constructor(
     private val chartDao: ChartDao,
     private val queueManager: InteractionQueueManager,
+    private val memoryStore: ContentMemoryStore<Chart>,
 ) {
     suspend fun mergeRemoteCharts(incoming: List<Chart>): List<Chart> = withContext(Dispatchers.IO) {
         if (incoming.isEmpty()) return@withContext incoming
@@ -26,39 +27,50 @@ class ChartStateMerger @Inject constructor(
         val pending = queueManager.getPendingInteractionsSnapshot()
         val latestLikeActions = pending
             .filter { it.collectionKind == CollectionKind.LIKES }
-            .associate { it.contentId to it.action }
+            .associate { it.id to it.action }
         val latestBookmarkActions = pending
             .mapNotNull { interaction ->
-                bookmarkActionForState(interaction)?.let { interaction.contentId to it }
+                bookmarkActionForState(interaction)?.let { interaction.id to it }
             }
             .toMap()
 
         incoming.map { remote ->
             val local = localById[remote.id]
-            var merged = if (local != null) {
-                remote.copy(
-                    isInstalled = local.isInstalled || remote.isInstalled,
-                    likedAt = local.likedAt ?: remote.likedAt,
-                    bookmarkedAt = local.bookmarkedAt ?: remote.bookmarkedAt,
-                    availableVersion = remote.availableVersion ?: local.availableVersion,
-                )
-            } else {
-                remote
-            }
+            val inMemory = memoryStore.contentById.value[remote.id]
 
-            val contentId = merged.contentId ?: return@map merged
+            // Device-only state (install flag and like/bookmark timestamps) is
+            // sourced from the live in-memory store, then the persisted Room
+            // row, then the server payload. Server payloads never carry these
+            // (their defaults are false/null), so a refresh — e.g. the forced
+            // refresh after login — must not let them overwrite device state.
+            var merged = remote.copy(
+                isInstalled = (inMemory?.isInstalled == true) ||
+                    (local?.isInstalled == true) ||
+                    (remote.isInstalled == true),
+                likedAt = inMemory?.likedAt ?: local?.likedAt ?: remote.likedAt,
+                bookmarkedAt = inMemory?.bookmarkedAt ?: local?.bookmarkedAt ?: remote.bookmarkedAt,
+                availableVersion = remote.availableVersion
+                    ?: inMemory?.availableVersion
+                    ?: local?.availableVersion,
+            )
 
-            when (latestLikeActions[contentId]) {
+            val id = merged.id
+
+            when (latestLikeActions[id]) {
                 ActionType.ADD -> if (merged.likedAt == null) {
-                    merged = merged.copy(likedAt = local?.likedAt ?: LocalDateTime.now())
+                    merged = merged.copy(
+                        likedAt = inMemory?.likedAt ?: local?.likedAt ?: LocalDateTime.now()
+                    )
                 }
                 ActionType.REMOVE -> merged = merged.copy(likedAt = null)
                 null -> Unit
             }
 
-            when (latestBookmarkActions[contentId]) {
+            when (latestBookmarkActions[id]) {
                 ActionType.ADD -> if (merged.bookmarkedAt == null) {
-                    merged = merged.copy(bookmarkedAt = local?.bookmarkedAt ?: LocalDateTime.now())
+                    merged = merged.copy(
+                        bookmarkedAt = inMemory?.bookmarkedAt ?: local?.bookmarkedAt ?: LocalDateTime.now()
+                    )
                 }
                 ActionType.REMOVE -> merged = merged.copy(bookmarkedAt = null)
                 null -> Unit
@@ -68,8 +80,8 @@ class ChartStateMerger @Inject constructor(
         }
     }
 
-    suspend fun getChartsByContentIds(contentIds: Collection<String>): List<Chart> = withContext(Dispatchers.IO) {
-        if (contentIds.isEmpty()) return@withContext emptyList()
-        chartDao.getChartsByContentIds(contentIds.toList())
+    suspend fun getChartsByIds(ids: Collection<String>): List<Chart> = withContext(Dispatchers.IO) {
+        if (ids.isEmpty()) return@withContext emptyList()
+        chartDao.getChartsByIds(ids.toList())
     }
 }

@@ -2,7 +2,6 @@ package com.meninocoiso.bscm.domain.repository
 
 import com.meninocoiso.bscm.data.remote.dto.activity.ActivityItemResponse
 import com.meninocoiso.bscm.domain.model.CatalogItem
-import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedResult
 import kotlinx.coroutines.flow.Flow
 
@@ -20,14 +19,14 @@ interface MeRepository {
     // -----------------------------------------------------------------
 
     /**
-     * A hot stream of all liked charts from the local DB.
-     * Emits a new list automatically whenever a like/unlike happens.
+     * A hot stream of all liked content (charts, tour passes, themes) from the
+     * local DB. Emits a new list automatically whenever a like/unlike happens.
      */
-    fun observeLikes(): Flow<List<Chart>>
+    fun observeLikes(): Flow<List<CatalogItem>>
 
     /**
-     * A hot stream of all bookmarked charts from the local DB.
-     * Emits a new list automatically whenever a bookmark changes.
+     * A hot stream of all bookmarked content (charts, tour passes, themes) from
+     * the local DB. Emits a new list automatically whenever a bookmark changes.
      */
-    fun observeBookmarks(): Flow<List<Chart>>
+    fun observeBookmarks(): Flow<List<CatalogItem>>
 }

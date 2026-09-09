@@ -52,7 +52,7 @@ fun SettingsScreen(
     onSnackbar: OnSnackbar,
     onNavigateToProfile: OnNavigateToProfile,
     viewModel: SettingsViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()

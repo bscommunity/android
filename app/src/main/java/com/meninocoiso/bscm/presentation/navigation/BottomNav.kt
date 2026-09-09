@@ -33,6 +33,7 @@ import com.meninocoiso.bscm.presentation.screen.workshop.WorkshopScreen
 import com.meninocoiso.bscm.presentation.ui.components.layout.LaunchAppButton
 import com.meninocoiso.bscm.presentation.ui.components.layout.SwipeableSnackbarHost
 import com.meninocoiso.bscm.presentation.ui.utils.showReplacingSnackbar
+import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -109,6 +110,7 @@ fun BottomNav(
     hasUpdate: Boolean = false,
     user: SimplifiedUser?,
     startOAuth: (Uri) -> Unit,
+    authViewModel: AuthViewModel,
 ) {
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
 
@@ -246,7 +248,8 @@ fun BottomNav(
                     startOAuth = startOAuth,
                     onFabStateChange = onFabStateChange,
                     onSnackbar = onSnackbar,
-                    onNavigateToProfile = onNavigateToProfile
+                    onNavigateToProfile = onNavigateToProfile,
+                    authViewModel = authViewModel
                 )
             }
         }

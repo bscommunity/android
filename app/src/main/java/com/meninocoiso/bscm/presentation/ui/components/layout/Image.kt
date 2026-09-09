@@ -58,6 +58,7 @@ fun CoverArt(
 fun CoverArt(
     modifier: Modifier = Modifier,
     difficulty: Difficulty? = null,
+    floatingDifficulty: Boolean = false,
     borderRadius: Dp = 0.dp,
     width: Dp = 76.dp,
     height: Dp = 76.dp,
@@ -129,25 +130,40 @@ fun CoverArt(
             }
         )
         if (difficultyIcon != null) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp),
-                contentAlignment = Alignment.BottomEnd
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.corner),
-                    contentDescription = null,
-                    tint = Color.Black,
+            when (floatingDifficulty) {
+                true -> Box(
+                    contentAlignment = Alignment.TopEnd,
+                    modifier = Modifier.matchParentSize()
+                ) {
+                    Image(
+                        painter = painterResource(id = difficultyIcon),
+                        modifier = Modifier
+                            .size(40.dp)
+                            .offset(x = 10.dp, y = (-5).dp),
+                        contentDescription = null,
+                    )
+                }
+
+                false -> Box(
                     modifier = Modifier
                         .size(40.dp),
-                )
-                Image(
-                    painter = painterResource(id = difficultyIcon),
-                    modifier = Modifier
-                        .size(24.dp)
-                        .offset(x = 0.8.dp),
-                    contentDescription = null,
-                )
+                    contentAlignment = Alignment.BottomEnd
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.corner),
+                        contentDescription = null,
+                        tint = Color.Black,
+                        modifier = Modifier
+                            .size(40.dp),
+                    )
+                    Image(
+                        painter = painterResource(id = difficultyIcon),
+                        modifier = Modifier
+                            .size(24.dp)
+                            .offset(x = 0.8.dp),
+                        contentDescription = null,
+                    )
+                }
             }
         }
     }

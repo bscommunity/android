@@ -1,20 +1,22 @@
 package com.meninocoiso.bscm.presentation.ui.components.profile
 
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.CatalogItem
+import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.Theme
+import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
-import com.meninocoiso.bscm.presentation.ui.components.SegmentedButtonUI
-import com.meninocoiso.bscm.presentation.ui.components.StatusMessageSize
-import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
+import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileLikes(
@@ -30,45 +32,47 @@ fun ProfileLikes(
     hasMore: Boolean,
     onLoadMore: () -> Unit,
 ) {
-    OnScrollLoadMore(
-        listState = listState,
-        hasMore = hasMore,
-        isLoadingMore = isLoadingMore,
-        onLoadMore = onLoadMore
-    )
+    val coroutineScope = rememberCoroutineScope()
+    val pagerState = rememberPagerState { 3 }
 
-    BaseContainer(
-        isEmpty = items.isEmpty(),
-        state = state,
-        isRefreshing = isRefreshing,
-        onRetry = onFetch,
-        empty = {
-            StatusMessageUI(
-                modifier = Modifier.fillMaxSize(),
-                message = stringResource(R.string.no_liked_content),
-                size = StatusMessageSize.Medium,
-                icon = R.drawable.rounded_favorite_24
+    Column(modifier) {
+        if (state == ContentState.Success) {
+            CatalogFilters(
+                itemsAmount = counts,
+                currentSelected = pagerState.currentPage,
+                onFilterSelected = { index ->
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(index)
+                    }
+                },
             )
         }
-    ) {
-        LazyColumn(
-            modifier = modifier,
-            state = listState,
-            contentPadding = PaddingValues(vertical = 16.dp),
-        ) {
-            item {
-                SegmentedButtonUI(
-                    options = listOf(
-                        stringResource(R.string.charts),
-                        stringResource(R.string.tour_passes),
-                        stringResource(R.string.themes)
-                    ),
-                    disabled = true,
-                    onSelected = {}
-                )
+
+        HorizontalPager(
+            state = pagerState,
+            key = { it },
+            beyondViewportPageCount = 1,
+            verticalAlignment = Alignment.Top
+        ) { index ->
+            val filteredItems = when (index) {
+                0 -> items.filterIsInstance<Chart>()
+                1 -> items.filterIsInstance<TourPass>()
+                else -> items.filterIsInstance<Theme>()
             }
-            contentList(items, false, onNavigateToDetails)
-            pagination(isLoadingMore = isLoadingMore, showMessage = !hasMore)
+
+            ProfileCollectionTabContent(
+                items = filteredItems,
+                state = state,
+                isRefreshing = isRefreshing,
+                onFetch = onFetch,
+                onNavigateToDetails = onNavigateToDetails,
+                listState = listState,
+                isLoadingMore = isLoadingMore,
+                hasMore = hasMore,
+                onLoadMore = onLoadMore,
+                emptyMessageResource = R.string.no_liked_content,
+                emptyIconRes = R.drawable.rounded_favorite_24,
+            )
         }
     }
 }

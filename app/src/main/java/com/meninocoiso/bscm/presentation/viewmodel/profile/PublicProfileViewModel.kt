@@ -56,9 +56,9 @@ class PublicProfileViewModel @Inject constructor(
         val isFollowing: Boolean = false,
         val isFollowLoading: Boolean = false,
     ) {
-        /** (charts, tourPasses, themes) — only charts are tracked today; others default to 0. */
+        /** (charts, tourPasses, themes) from the server, falling back to the chart total. */
         val libraryCounts: Triple<Int, Int, Int>
-            get() = Triple(library.total ?: 0, 0, 0)
+            get() = library.counts ?: Triple(library.total ?: 0, 0, 0)
     }
 
     private val _uiState = MutableStateFlow(PublicProfileUiState())

@@ -38,6 +38,7 @@ class StreamingUrlBuilder @Inject constructor() {
             StreamingPlatform.AMAZON_MUSIC -> "https://music.amazon.com"
             StreamingPlatform.SOUNDCLOUD -> "https://soundcloud.com"
             StreamingPlatform.LAST_FM -> "https://www.last.fm"
+            else -> ""
         }
     }
 }

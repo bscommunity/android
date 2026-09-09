@@ -29,4 +29,20 @@ interface ChartRemoteRepository :
 /** Local-only chart repository contracts. */
 interface ChartLocalRepository :
     ContentLocalRepository<Chart, SortOption, ChartQuery>,
-    ContentItemRepository<Chart>
+    ContentItemRepository<Chart> {
+
+    /**
+     * Live single-chart stream: re-emits whenever the local chart row changes
+     * (like/bookmark timestamps, install flag), unlike [ContentItemRepository.getItem]
+     * which is a one-shot read.
+     */
+    fun observeItem(id: String): Flow<Chart?>
+
+    /**
+     * Removes local-placeholder rows (charts whose track.id equals the chart
+     * id — created by the storage scanner for on-disk-only charts). These must
+     * never leak into the cached feed: they are re-created in memory on every
+     * scan and real data replaces them once the server is reachable.
+     */
+    suspend fun deleteLocalPlaceholders(): Flow<Result<Boolean>>
+}

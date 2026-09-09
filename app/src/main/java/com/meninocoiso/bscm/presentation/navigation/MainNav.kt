@@ -29,6 +29,7 @@ import com.meninocoiso.bscm.domain.model.toSimplifiedUser
 import com.meninocoiso.bscm.domain.serialization.ChartParameterType
 import com.meninocoiso.bscm.domain.serialization.SimplifiedCollectionParameterType
 import com.meninocoiso.bscm.domain.serialization.SimplifiedUserParameterType
+import com.meninocoiso.bscm.domain.serialization.TourPassParameterType
 import com.meninocoiso.bscm.presentation.screen.collection.Collection
 import com.meninocoiso.bscm.presentation.screen.collection.CollectionRoute
 import com.meninocoiso.bscm.presentation.screen.collection.CollectionScreen
@@ -37,10 +38,15 @@ import com.meninocoiso.bscm.presentation.screen.details.ChartDetails
 import com.meninocoiso.bscm.presentation.screen.details.ChartDetailsRoute
 import com.meninocoiso.bscm.presentation.screen.details.ChartDetailsScreen
 import com.meninocoiso.bscm.presentation.screen.details.DeepLinkChartDetails
+import com.meninocoiso.bscm.presentation.screen.details.DeepLinkTourPassDetails
+import com.meninocoiso.bscm.presentation.screen.details.TourPassDetails
+import com.meninocoiso.bscm.presentation.screen.details.TourPassDetailsRoute
+import com.meninocoiso.bscm.presentation.screen.details.TourPassDetailsScreen
 import com.meninocoiso.bscm.presentation.screen.profile.DeepLinkProfile
 import com.meninocoiso.bscm.presentation.screen.profile.Profile
 import com.meninocoiso.bscm.presentation.screen.profile.ProfileRoute
 import com.meninocoiso.bscm.presentation.screen.profile.ProfileScreen
+import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import kotlin.reflect.typeOf
@@ -50,7 +56,13 @@ object MainRoute
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean, intentFlow: Flow<Intent>) {
+fun MainNav(
+    startOAuth: (Uri) -> Unit,
+    user: SimplifiedUser?,
+    hasUpdate: Boolean,
+    intentFlow: Flow<Intent>,
+    authViewModel: AuthViewModel
+) {
     val navController = rememberNavController()
     val bottomNavController = rememberNavController()
 
@@ -64,13 +76,16 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
                 }
             }
 
+            is TourPass -> {
+                // Navigate to tour pass details
+                navController.navigate(route = TourPassDetails(tourPass = item)) {
+                    launchSingleTop = true
+                }
+            }
+
             else -> {
                 // For unsupported types, open the web page as a fallback
-                val url = when (item) {
-                    is TourPass -> "https://bscm.dev/tourpass/${item.id}"
-                    is Theme -> "https://bscm.dev/theme/${item.id}"
-                }
-                startOAuth(url.toUri())
+                startOAuth("https://bscm.netlify.app/link/theme/${item.id}".toUri())
             }
         }
     }
@@ -100,8 +115,8 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
 
         when (uri.host) {
             "chart" -> {
-                val contentId = pathSegments.getOrNull(0) ?: return
-                navController.navigate(DeepLinkChartDetails(contentId = contentId)) {
+                val id = pathSegments.getOrNull(0) ?: return
+                navController.navigate(DeepLinkChartDetails(id = id)) {
                     launchSingleTop = true
                     // KEY: make sure MainRoute stays at the bottom of the stack
                     restoreState = true
@@ -118,6 +133,13 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
                 val username = pathSegments.getOrNull(0) ?: return
                 val slug = pathSegments.getOrNull(1) ?: return
                 navController.navigate(DeepLinkCollection(username = username, slug = slug)) {
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+            "tourpass" -> {
+                val id = pathSegments.getOrNull(0) ?: return
+                navController.navigate(DeepLinkTourPassDetails(id = id)) {
                     launchSingleTop = true
                     restoreState = true
                 }
@@ -158,18 +180,19 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
                         hasUpdate,
                         user,
                         startOAuth,
+                        authViewModel,
                     )
                 }
 
                 // Deep link to chart details
                 composableWithTransitions<DeepLinkChartDetails>(
                     deepLinks = listOf(
-                        navDeepLink { uriPattern = "bscm://chart/{contentId}" }
+                        navDeepLink { uriPattern = "bscm://chart/{id}" }
                     )
                 ) { backStackEntry ->
                     val chartDetails: DeepLinkChartDetails = backStackEntry.toRoute()
                     ChartDetailsRoute(
-                        contentId = chartDetails.contentId,
+                        id = chartDetails.id,
                         onReturn = {
                             navController.navigateUp()
                         },
@@ -221,6 +244,28 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
                     )
                 }
 
+                // Deep link to tour pass details
+                composableWithTransitions<DeepLinkTourPassDetails>(
+                    deepLinks = listOf(
+                        navDeepLink { uriPattern = "bscm://tourpass/{id}" }
+                    )
+                ) { backStackEntry ->
+                    val tourPassDetails: DeepLinkTourPassDetails = backStackEntry.toRoute()
+                    TourPassDetailsRoute(
+                        id = tourPassDetails.id,
+                        onReturn = {
+                            navController.navigateUp()
+                        },
+                        onNavigateToDetails = { item ->
+                            onNavigateToDetails(item)
+                        },
+                        onNavigateToSettings = {
+                            navController.popBackStack<MainRoute>(inclusive = false)
+                            onNavigateToSettings()
+                        }
+                    )
+                }
+
                 // Chart details
                 composableWithTransitions<ChartDetails>(
                     typeMap = mapOf(
@@ -232,6 +277,28 @@ fun MainNav(startOAuth: (Uri) -> Unit, user: SimplifiedUser?, hasUpdate: Boolean
                         chart = chartDetails.chart,
                         onReturn = {
                             navController.navigateUp()
+                        },
+                        onNavigateToSettings = {
+                            navController.popBackStack<MainRoute>(inclusive = false)
+                            onNavigateToSettings()
+                        }
+                    )
+                }
+
+                // Tour pass details
+                composableWithTransitions<TourPassDetails>(
+                    typeMap = mapOf(
+                        typeOf<TourPass>() to TourPassParameterType
+                    )
+                ) { backStackEntry ->
+                    val tourPassDetails: TourPassDetails = backStackEntry.toRoute()
+                    TourPassDetailsScreen(
+                        tourPass = tourPassDetails.tourPass,
+                        onReturn = {
+                            navController.navigateUp()
+                        },
+                        onNavigateToChart = { chart ->
+                            onNavigateToDetails(chart)
                         },
                         onNavigateToSettings = {
                             navController.popBackStack<MainRoute>(inclusive = false)

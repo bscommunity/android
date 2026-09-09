@@ -12,6 +12,7 @@ fun CatalogFilters(
     collectionsAmount: Int? = null,
     showCollection: Boolean = false,
     currentSelected: Int = 0,
+    showThemes: Boolean = true,
     onFilterSelected: (Int) -> Unit
 ) {
     val options = mutableListOf(
@@ -24,13 +25,18 @@ fun CatalogFilters(
             id = 1,
             title = stringResource(R.string.tour_passes),
             count = itemsAmount.second,
-        ),
-        ContentFilterOption(
-            id = 2,
-            title = stringResource(R.string.themes),
-            count = itemsAmount.third,
         )
     )
+
+    if (showThemes) {
+        options.add(
+            ContentFilterOption(
+                id = 2,
+                title = stringResource(R.string.themes),
+                count = itemsAmount.third,
+            )
+        )
+    }
 
     // TODO: There's probably a better solution than manually adding the
     //  collection filter at the end of the list, but for now it works

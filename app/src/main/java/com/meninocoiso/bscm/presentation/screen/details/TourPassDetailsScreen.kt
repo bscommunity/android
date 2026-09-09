@@ -1,0 +1,621 @@
+package com.meninocoiso.bscm.presentation.screen.details
+
+import DownloadEvent
+import android.util.Log
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.meninocoiso.bscm.R
+import com.meninocoiso.bscm.data.remote.ApiException
+import com.meninocoiso.bscm.domain.enums.CollectionKind
+import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.Contributor
+import com.meninocoiso.bscm.domain.model.TourPass
+import com.meninocoiso.bscm.domain.result.ContentState
+import com.meninocoiso.bscm.domain.state.DownloadState
+import com.meninocoiso.bscm.presentation.ui.components.DropdownMenuUI
+import com.meninocoiso.bscm.presentation.ui.components.details.CollectionCreateBottomSheet
+import com.meninocoiso.bscm.presentation.ui.components.details.InteractionButton
+import com.meninocoiso.bscm.presentation.ui.components.details.StatListItem
+import com.meninocoiso.bscm.presentation.ui.components.details.TourPassDownloadButton
+import com.meninocoiso.bscm.presentation.ui.components.dialog.ConfirmationDialog
+import com.meninocoiso.bscm.presentation.ui.components.layout.CoverArt
+import com.meninocoiso.bscm.presentation.ui.components.layout.Section
+import com.meninocoiso.bscm.presentation.ui.components.layout.SwipeableSnackbarHost
+import com.meninocoiso.bscm.presentation.ui.components.preview.PreviewContributors
+import com.meninocoiso.bscm.presentation.ui.components.preview.TourPassTrackPreview
+import com.meninocoiso.bscm.presentation.ui.utils.showReplacingSnackbar
+import com.meninocoiso.bscm.presentation.viewmodel.AuthViewModel
+import com.meninocoiso.bscm.presentation.viewmodel.CollectionViewModel
+import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
+import com.meninocoiso.bscm.presentation.viewmodel.InteractionViewModel
+import com.meninocoiso.bscm.util.AudioPreviewPlayer
+import com.meninocoiso.bscm.util.LinkingUtils
+import com.meninocoiso.bscm.util.StringUtils
+import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.launch
+
+private enum class TourPassDialog { None, DeleteConfirmation }
+
+/**
+ * Details screen for one tour pass: cover art, credits, stats and a
+ * tracklist grid with audio previews. The bottom bar exposes like, bookmark
+ * and download actions.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TourPassDetailsScreen(
+    tourPass: TourPass,
+    onReturn: () -> Unit,
+    onNavigateToChart: (Chart) -> Unit,
+    onNavigateToSettings: () -> Unit,
+    contentViewModel: ContentViewModel = hiltViewModel(),
+    interactionViewModel: InteractionViewModel = hiltViewModel(),
+    collectionViewModel: CollectionViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel()
+) {
+    val context = LocalContext.current
+    val resources = LocalResources.current
+
+    var playingUrl by remember { mutableStateOf<String?>(null) }
+    val audioPreviewPlayer = remember { AudioPreviewPlayer { playingUrl = it } }
+    val scrollState = rememberScrollState()
+
+    DisposableEffect(Unit) {
+        onDispose { audioPreviewPlayer.stop() }
+    }
+
+    val totalMinutesText = pluralStringResource(
+        R.plurals.tour_pass_minutes_total,
+        (tourPass.charts.sumOf { it.track.duration.toLong() } / 60).toInt(),
+        (tourPass.charts.sumOf { it.track.duration.toLong() } / 60).toInt()
+    )
+    val songsText = pluralStringResource(
+        R.plurals.songs_count,
+        tourPass.charts.size,
+        tourPass.charts.size
+    )
+    val downloadsText = pluralStringResource(
+        R.plurals.downloads_amount,
+        tourPass.downloadsSum,
+        tourPass.downloadsSum
+    )
+    val uploadedText = stringResource(
+        R.string.uploaded_at,
+        StringUtils.toRelativeString(tourPass.updatedAt ?: tourPass.createdAt)
+    )
+
+    val (tourPassAuthors, customSubtitles) = remember(tourPass) {
+        buildTourPassContributorList(tourPass)
+    }
+
+    // -------------------------------------------------------------------------
+    // Interactions (like / bookmark)
+    // -------------------------------------------------------------------------
+    val isLoggedIn by authViewModel.isLoggedInFlow
+        .collectAsStateWithLifecycle(false)
+    val savedCollections by interactionViewModel
+        .getContentCollections(tourPass.id)
+        .collectAsStateWithLifecycle()
+
+    var optimisticLiked by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    var optimisticBookmarked by rememberSaveable { mutableStateOf<Boolean?>(null) }
+
+    val hasLiveBookmarkMembership = savedCollections.any { it.kind == CollectionKind.BOOKMARKS }
+    val selectedUserCollectionIds = savedCollections
+        .filter { it.kind == CollectionKind.USER }
+        .map { it.id }
+        .toSet()
+
+    val isLiked = optimisticLiked ?: (tourPass.likedAt != null)
+    val isBookmarked =
+        optimisticBookmarked ?: (hasLiveBookmarkMembership || tourPass.bookmarkedAt != null)
+
+    // Clear optimistic state once persistence catches up
+    LaunchedEffect(tourPass.likedAt) {
+        if (optimisticLiked != null && tourPass.likedAt != null) optimisticLiked = null
+    }
+    LaunchedEffect(savedCollections, tourPass.bookmarkedAt) {
+        optimisticBookmarked?.let { optimistic ->
+            val confirmed =
+                if (optimistic) hasLiveBookmarkMembership else !hasLiveBookmarkMembership
+            if (confirmed) optimisticBookmarked = null
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Download state
+    // -------------------------------------------------------------------------
+    // Merge the live install flag (manager's manifest-seeded + optimistic
+    // signal) into the payload passed by the navigator, so the download
+    // action reflects the true state from the first frame.
+    val effectiveTourPass by contentViewModel.observeTourPassState(tourPass)
+        .collectAsStateWithLifecycle()
+    val tourPassState by contentViewModel.getTourPassDownloadState(effectiveTourPass)
+        .collectAsStateWithLifecycle()
+    val isExplicitContentAllowed by contentViewModel.isExplicitContentAllowed
+        .collectAsStateWithLifecycle()
+
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val downloadCompleteMsg = stringResource(R.string.download_complete)
+    val errorTitleMsg = stringResource(R.string.error)
+    val connectToManageFavoritesMsg = stringResource(R.string.connect_to_manage_favorites)
+    val connectToManageLikesMsg = stringResource(R.string.connect_to_manage_likes)
+    val connectLabel = stringResource(R.string.connect)
+    val tourPassDeletedMsg = stringResource(R.string.tour_pass_deleted)
+    val failedToDeleteMsg = stringResource(R.string.failed_to_delete_chart)
+    val explicitContentDisabledMsg = stringResource(R.string.explicit_content_disabled)
+    val goToSettingsLabel = stringResource(R.string.go_to_settings)
+    val addedToFavoritesMsg = stringResource(R.string.added_to_favorites)
+    val manageMsg = stringResource(R.string.manage)
+    val collectionNameExistsMsg = stringResource(R.string.collection_name_exists)
+    val savedToCollectionMsg =
+        { name: String -> resources.getString(R.string.saved_to_collection, name) }
+    val errorCreatingCollectionMsg =
+        { msg: String -> resources.getString(R.string.error_creating_collection, msg) }
+
+    // -------------------------------------------------------------------------
+    // Collection sheet state
+    // -------------------------------------------------------------------------
+    val collectionSheetState = rememberModalBottomSheetState()
+    var showCollectionSheet by rememberSaveable { mutableStateOf(false) }
+    val collectionUiState by collectionViewModel.uiState.collectAsStateWithLifecycle()
+    val userCollections = collectionUiState.userCollections.items
+    val isCollectionsLoading = collectionUiState.userCollections.state is ContentState.Loading
+    val hasError = collectionUiState.userCollections.state is ContentState.Error
+    val errorMessage = if (hasError) stringResource(R.string.failed_to_load_collections) else null
+
+    LaunchedEffect(showCollectionSheet) {
+        if (showCollectionSheet) collectionViewModel.fetchUserCollections(reset = true)
+    }
+
+    // Shared toggle handler used by the bottom-bar button and the sheet's
+    // auto-bookmarks item, mirroring the chart details screen.
+    val toggleBookmarkSelection: (Boolean) -> Unit = { shouldBeBookmarked ->
+        optimisticBookmarked = shouldBeBookmarked
+        interactionViewModel.enqueueBookmarkMutation(tourPass.id, shouldBeBookmarked)
+        if (!shouldBeBookmarked) {
+            snackbarHostState.currentSnackbarData?.dismiss()
+        }
+    }
+
+    var currentDialog by rememberSaveable { mutableStateOf(TourPassDialog.None) }
+
+    when (currentDialog) {
+        TourPassDialog.DeleteConfirmation -> ConfirmationDialog(
+            title = stringResource(R.string.delete_tour_pass),
+            message = stringResource(R.string.delete_tour_pass_description),
+            onDismiss = { currentDialog = TourPassDialog.None },
+            onConfirm = {
+                currentDialog = TourPassDialog.None
+                contentViewModel.uninstallTourPass(
+                    effectiveTourPass,
+                    onSuccess = {
+                        scope.launch { snackbarHostState.showReplacingSnackbar(tourPassDeletedMsg) }
+                    },
+                    onError = {
+                        scope.launch { snackbarHostState.showReplacingSnackbar(failedToDeleteMsg) }
+                    }
+                )
+            }
+        )
+
+        TourPassDialog.None -> {}
+    }
+
+    // Check the install state whenever the live install flag arrives or
+    // changes: the payload passed by the navigator may carry no install
+    // flag, and observeTourPassState resolves it from the manager's signal.
+    // Keying on the flag (not just the id) re-fires after install/uninstall,
+    // mirroring how the chart details screen keys on effectiveChart.
+    LaunchedEffect(effectiveTourPass.id, effectiveTourPass.isInstalled) {
+        contentViewModel.checkTourPassStatus(effectiveTourPass)
+    }
+
+    LaunchedEffect(tourPass.id) {
+        contentViewModel.events.collect { event ->
+            if (event.id != tourPass.id) return@collect
+            when (event) {
+                is DownloadEvent.Complete ->
+                    snackbarHostState.showReplacingSnackbar(downloadCompleteMsg)
+
+                is DownloadEvent.Error ->
+                    snackbarHostState.showReplacingSnackbar("$errorTitleMsg: ${event.message}")
+
+                else -> {}
+            }
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SwipeableSnackbarHost(snackbarHostState) },
+        topBar = {
+            TopAppBar(
+                modifier = Modifier.padding(horizontal = 8.dp),
+                navigationIcon = {
+                    IconButton(
+                        modifier = Modifier.padding(end = 12.dp),
+                        onClick = onReturn
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            contentDescription = stringResource(R.string.return_screen)
+                        )
+                    }
+                },
+                title = {
+                    Column {
+                        Text(tourPass.name, style = MaterialTheme.typography.titleLarge)
+                        tourPass.artist?.let {
+                            Text(it, style = MaterialTheme.typography.titleMedium)
+                        }
+                    }
+                },
+                actions = {
+                    DropdownMenuUI { dismiss ->
+                        DropdownMenuItem(
+                            contentPadding = DropdownItemPadding,
+                            text = { Text(stringResource(R.string.share)) },
+                            leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
+                            onClick = {
+                                dismiss()
+                                LinkingUtils.shareTourPass(context, tourPass.id)
+                            }
+                        )
+                        if (tourPassState == DownloadState.Installed(tourPass.id)) {
+                            DropdownMenuItem(
+                                contentPadding = DropdownItemPadding,
+                                text = { Text(stringResource(R.string.delete_tour_pass)) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Outlined.Delete,
+                                        contentDescription = null
+                                    )
+                                },
+                                onClick = {
+                                    dismiss()
+                                    currentDialog = TourPassDialog.DeleteConfirmation
+                                }
+                            )
+                        }
+                    }
+                }
+            )
+        },
+        bottomBar = {
+            BottomAppBar(
+                actions = {
+                    InteractionButton(
+                        R.drawable.baseline_bookmark_24,
+                        R.drawable.rounded_bookmark_24,
+                        isBookmarked,
+                        !isLoggedIn,
+                        onDisabled = {
+                            scope.launch {
+                                val result = snackbarHostState.showReplacingSnackbar(
+                                    message = connectToManageFavoritesMsg,
+                                    actionLabel = connectLabel,
+                                    duration = SnackbarDuration.Short
+                                )
+                                if (result == SnackbarResult.ActionPerformed) onNavigateToSettings()
+                            }
+                        },
+                        beforeToggle = { current, next ->
+                            // Unbookmark action is managed through the sheet to allow collection edits.
+                            if (current && !next) {
+                                showCollectionSheet = true
+                                false
+                            } else {
+                                true
+                            }
+                        },
+                    ) { newValue ->
+                        toggleBookmarkSelection(newValue)
+
+                        if (newValue) {
+                            scope.launch {
+                                val result = snackbarHostState.showReplacingSnackbar(
+                                    message = addedToFavoritesMsg,
+                                    actionLabel = manageMsg,
+                                    duration = SnackbarDuration.Short
+                                )
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    interactionViewModel.flushPendingBookmarkMutation(tourPass.id)
+                                    showCollectionSheet = true
+                                }
+                            }
+                        } else {
+                            snackbarHostState.currentSnackbarData?.dismiss()
+                        }
+                    }
+
+                    InteractionButton(
+                        R.drawable.baseline_favorite_24,
+                        R.drawable.rounded_favorite_24,
+                        isLiked,
+                        !isLoggedIn,
+                        onDisabled = {
+                            scope.launch {
+                                val result = snackbarHostState.showReplacingSnackbar(
+                                    message = connectToManageLikesMsg,
+                                    actionLabel = connectLabel,
+                                    duration = SnackbarDuration.Short
+                                )
+                                if (result == SnackbarResult.ActionPerformed) onNavigateToSettings()
+                            }
+                        }
+                    ) { newValue ->
+                        optimisticLiked = newValue
+                        interactionViewModel.enqueueLikeMutation(
+                            tourPass.id,
+                            newValue
+                        )
+                    }
+                },
+                floatingActionButton = {
+                    TourPassDownloadButton(
+                        tourPass = effectiveTourPass,
+                        downloadState = tourPassState,
+                        contentViewModel = contentViewModel,
+                    )
+                }
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(innerPadding),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                modifier = Modifier.padding(
+                    top = 16.dp,
+                    bottom = 8.dp,
+                    start = 16.dp,
+                    end = 16.dp
+                )
+            ) {
+                CoverArt(
+                    url = tourPass.coverUrl ?: "",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(196.dp),
+                    width = Dp.Unspecified,
+                    height = 196.dp,
+                    borderRadius = 16.dp
+                )
+            }
+
+            if (tourPassAuthors.isNotEmpty()) {
+                PreviewContributors(
+                    authors = tourPassAuthors,
+                    description = stringResource(R.string.tour_pass_contributors_list_title),
+                    customSubtitles = customSubtitles
+                )
+            }
+
+            Section(title = stringResource(R.string.stats)) {
+                Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                    StatListItem(title = totalMinutesText, icon = R.drawable.rounded_hourglass_24)
+                    StatListItem(title = songsText, icon = R.drawable.rounded_music_note_24)
+                    StatListItem(title = downloadsText, icon = R.drawable.rounded_download_24)
+                    StatListItem(title = uploadedText, icon = R.drawable.rounded_calendar_today_24)
+                }
+            }
+
+            Section(title = stringResource(R.string.tracklist)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                ) {
+                    tourPass.charts.chunked(3).forEach { rowCharts ->
+                        Row {
+                            rowCharts.forEach { chart ->
+                                Column(Modifier.weight(1f)) {
+                                    val chartStateFlow = remember(chart.id) {
+                                        contentViewModel.getDownloadState(chart.id)
+                                    }
+                                    val chartState by chartStateFlow.collectAsStateWithLifecycle()
+                                    TourPassTrackPreview(
+                                        chart = chart,
+                                        downloadState = chartState,
+                                        isDisabled = chart.isExplicit && !isExplicitContentAllowed,
+                                        isPlaying = playingUrl != null && playingUrl == chart.track.previewUrl,
+                                        onTogglePlay = {
+                                            chart.track.previewUrl?.let { url ->
+                                                audioPreviewPlayer.toggle(url)
+                                            }
+                                        },
+                                        onDisabled = {
+                                            scope.launch {
+                                                val result =
+                                                    snackbarHostState.showReplacingSnackbar(
+                                                        message = explicitContentDisabledMsg,
+                                                        actionLabel = goToSettingsLabel,
+                                                        duration = SnackbarDuration.Short
+                                                    )
+                                                if (result == SnackbarResult.ActionPerformed) {
+                                                    onNavigateToSettings()
+                                                }
+                                            }
+                                        },
+                                        onClick = { onNavigateToChart(chart) }
+                                    )
+                                }
+                            }
+                            // Keep every row at 3 columns so a partial last row
+                            // leaves a blank cell instead of stretching its items.
+                            repeat(3 - rowCharts.size) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .padding(bottom = innerPadding.calculateBottomPadding())
+                .fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            if (tourPassState is DownloadState.Downloading ||
+                tourPassState is DownloadState.Extracting
+            ) {
+                LinearProgressIndicator(
+                    progress = {
+                        when (val state = tourPassState) {
+                            is DownloadState.Downloading -> state.progress
+                            is DownloadState.Extracting -> state.progress
+                            else -> 100f
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+
+    if (showCollectionSheet) {
+        CollectionCreateBottomSheet(
+            sheetState = collectionSheetState,
+            onDismissRequest = { showCollectionSheet = false },
+            onClose = {
+                scope.launch { collectionSheetState.hide() }.invokeOnCompletion {
+                    if (!collectionSheetState.isVisible) showCollectionSheet = false
+                }
+            },
+            collections = userCollections,
+            checkedCollectionIds = selectedUserCollectionIds,
+            isBookmarked = isBookmarked,
+            isLoading = isCollectionsLoading,
+            isMutating = collectionUiState.isCreating,
+            errorMessage = errorMessage,
+            onAutoBookmarksToggle = { shouldBeBookmarked ->
+                toggleBookmarkSelection(shouldBeBookmarked)
+            },
+            onCollectionToggled = { collectionId, collectionName, shouldBeSelected ->
+                if (shouldBeSelected) {
+                    interactionViewModel.addToCollection(tourPass.id, collectionId)
+                    scope.launch {
+                        snackbarHostState.showReplacingSnackbar(
+                            savedToCollectionMsg(collectionName),
+                            duration = SnackbarDuration.Short
+                        )
+                    }
+                } else {
+                    interactionViewModel.removeFromCollection(tourPass.id, collectionId)
+                }
+            },
+            onCreateCollection = { name, isPublic ->
+                try {
+                    val newCollectionId = collectionViewModel.createCollection(name, isPublic)
+                    interactionViewModel.addToCollection(tourPass.id, newCollectionId)
+                    // Fire-and-forget: showReplacingSnackbar suspends until dismissal,
+                    // which would keep the sheet open long after creation succeeded.
+                    scope.launch {
+                        snackbarHostState.showReplacingSnackbar(
+                            savedToCollectionMsg(name),
+                            duration = SnackbarDuration.Short
+                        )
+                    }
+                    true
+                } catch (e: ApiException) {
+                    Log.e("TourPassDetailsScreen", "Error creating collection", e)
+                    scope.launch {
+                        if (e.status == HttpStatusCode.BadRequest) {
+                            snackbarHostState.showReplacingSnackbar(collectionNameExistsMsg)
+                        } else {
+                            snackbarHostState.showReplacingSnackbar(errorCreatingCollectionMsg(e.message))
+                        }
+                    }
+                    false
+                }
+            }
+        )
+    }
+}
+
+/**
+ * Builds the credits list of a tour pass: tour pass contributors first (they
+ * keep their roles), followed by chart-only contributors. Returns the list of
+ * [Contributor]s for [PreviewContributors] plus a map from user id to the
+ * chart titles that user participated in, used as the subtitle for users that
+ * have no role in the tour pass itself.
+ */
+private fun buildTourPassContributorList(
+    tourPass: TourPass
+): Pair<List<Contributor>, Map<String, String>> {
+    val tourPassContributorIds = tourPass.contributors.map { it.user.id }.toSet()
+
+    val chartOnlyContributions = tourPass.charts
+        .flatMap { chart ->
+            chart.contributors.map { contributor ->
+                contributor to chart.track.title
+            }
+        }
+        .filter { (contributor, _) -> contributor.user.id !in tourPassContributorIds }
+        .groupBy { it.first.user.id }
+
+    val customSubtitles = chartOnlyContributions.mapValues { (_, contributions) ->
+        contributions.map { it.second }.distinct().joinToString(", ")
+    }
+
+    val chartOnlyContributors = chartOnlyContributions.map { (_, contributions) ->
+        contributions.first().first
+    }
+
+    return (tourPass.contributors + chartOnlyContributors) to customSubtitles
+}

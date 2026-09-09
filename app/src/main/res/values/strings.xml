@@ -33,6 +33,14 @@
         <item quantity="one">%1$d item</item>
         <item quantity="other">%1$d items</item>
     </plurals>
+    <plurals name="songs_count">
+        <item quantity="one">%1$d song</item>
+        <item quantity="other">%1$d songs</item>
+    </plurals>
+    <plurals name="tour_pass_minutes_total">
+        <item quantity="one">~%1$d minute total</item>
+        <item quantity="other">~%1$d minutes total</item>
+    </plurals>
 
     <!-- ⏰ Time Expressions -->
     <string name="today">today</string>
@@ -79,6 +87,8 @@
     <string name="extracting_progress_description">Extracting files… %1$d%%</string>
     <string name="download_complete">Download complete</string>
     <string name="download_chart">Download chart</string>
+    <string name="download_tour_pass">Download tour pass</string>
+    <string name="tour_pass_downloads_progress">%1$d/%2$d</string>
     <string name="downloaded">Downloaded (%1$s)</string>
     <string name="concluded_progress">%1$d%% concluded</string>
     <string name="installed">Installed</string>
@@ -104,9 +114,12 @@
     <!-- 📊 Chart Information & Statistics -->
     <string name="chart_by">Chart by %1$s</string>
     <string name="contributors_list_title">The following users contributed to this chart:</string>
+    <string name="tour_pass_contributors_list_title">The following users contributed to this tour pass:</string>
     <string name="credits">Credits</string>
     <string name="stats">Stats</string>
     <string name="updated_at">Updated %1$s</string>
+    <string name="uploaded_at">Uploaded %1$s</string>
+    <string name="tracklist">Tracklist</string>
     <string name="known_issues">Known Issues</string>
     <string name="no_known_issues">No known issues</string>
     <string name="explicit">Explicit</string>
@@ -160,6 +173,8 @@
     <string name="effects_role">Effects</string>
     <string name="sync_role">Sync</string>
     <string name="gameplay_role">Gameplay</string>
+    <string name="art_role">Art</string>
+    <string name="textures_role">Textures</string>
     <string name="version_format">v%1$d</string>
 
     <!-- 🔍 Search & Filtering -->
@@ -196,6 +211,9 @@
         able to download it again later.</string>
     <string name="chart_deleted">Chart deleted</string>
     <string name="failed_to_delete_chart">Failed to delete chart</string>
+    <string name="delete_tour_pass">Delete tour pass</string>
+    <string name="delete_tour_pass_description">Are you sure you want to delete this tour pass?\nThis will remove all of its charts from your device.</string>
+    <string name="tour_pass_deleted">Tour pass deleted</string>
 
     <!-- 📋 Menu & Interface Elements -->
     <string name="more_options_menu">More options menu</string>
@@ -216,6 +234,12 @@
     <string name="no_charts_found">No charts found</string>
     <string name="no_charts_found_description">Try searching for something else</string>
     <string name="workshop_feed_end">End of charts</string>
+    <string name="no_tour_passes_found">No tour passes found</string>
+    <string name="no_tour_passes_found_description">Try searching for something else</string>
+    <string name="tour_passes_feed_end">End of tour passes</string>
+    <string name="no_themes_found">No themes found</string>
+    <string name="no_themes_found_description">Try searching for something else</string>
+    <string name="themes_feed_end">End of themes</string>
     <string name="no_liked_content">No liked content</string>
     <string name="no_bookmarked_content">No bookmarked content</string>
     <string name="no_custom_collections">No custom collections created</string>
@@ -243,6 +267,12 @@
     <string name="failed_to_load_chart_details">Failed to load chart details</string>
     <string name="failed_to_load_chart_details_description">An error occurred while loading the
         chart details</string>
+    <string name="failed_to_load_tour_pass_details">Failed to load tour pass details</string>
+    <string name="failed_to_load_tour_pass_details_description">An error occurred while loading the
+        tour pass details</string>
+    <string name="invalid_tour_pass_id">Invalid tour pass ID</string>
+    <string name="play_preview">Play preview</string>
+    <string name="stop_preview">Stop preview</string>
     <string name="failed_to_load_collection">Failed to load collection</string>
     <string name="failed_to_load_collection_description">An error occurred while loading the
         collection</string>
@@ -353,6 +383,8 @@
     <string name="manage_collection">Manage collection</string>
     <string name="collection_by">Collection by %1$s</string>
     <string name="no_content_in_collection">No content in this collection</string>
+    <string name="no_charts_in_collection">No charts in this collection</string>
+    <string name="no_tour_passes_in_collection">No tour passes in this collection</string>
 
     <!-- 📰 Activity Feed -->
     <string name="activity_followed_user">Followed a user</string>

@@ -3,13 +3,15 @@ package com.meninocoiso.bscm.domain.serialization
 import androidx.room.TypeConverter
 import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
 import com.meninocoiso.bscm.domain.enums.ActionType
+import com.meninocoiso.bscm.domain.enums.CatalogItemStatus
+import com.meninocoiso.bscm.domain.enums.CatalogItemType
 import com.meninocoiso.bscm.domain.enums.CollectionKind
-import com.meninocoiso.bscm.domain.enums.ContentType
 import com.meninocoiso.bscm.domain.enums.Difficulty
+import com.meninocoiso.bscm.domain.model.Changelog
 import com.meninocoiso.bscm.domain.model.Chart
 import com.meninocoiso.bscm.domain.model.Contributor
-import com.meninocoiso.bscm.domain.model.KnownIssue
-import com.meninocoiso.bscm.domain.model.StreamingLink
+import com.meninocoiso.bscm.domain.model.StreamingRef
+import com.meninocoiso.bscm.domain.model.Track
 import com.meninocoiso.bscm.domain.model.Version
 import kotlinx.serialization.json.Json
 import java.time.Instant
@@ -17,6 +19,8 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 
 class RoomSerializers {
+    private val json = Json { ignoreUnknownKeys = true }
+
     @TypeConverter
     fun fromTimestamp(value: Long?): LocalDateTime? {
         return value?.let {
@@ -31,40 +35,38 @@ class RoomSerializers {
         return date?.atZone(ZoneId.systemDefault())?.toInstant()?.toEpochMilli()
     }
 
-    // Chart
-    private val json = Json { ignoreUnknownKeys = true }
-    
-    // String List converters
     @TypeConverter
     fun fromStringList(strings: List<String>): String {
         return json.encodeToString(strings)
     }
-    
+
     @TypeConverter
     fun toStringList(stringsString: String): List<String> {
-        return if (stringsString.isBlank()) {
-            emptyList()
-        } else {
-            json.decodeFromString(stringsString)
-        }
-    }
-
-    // StreamingLink
-    @TypeConverter
-    fun fromStreamingLinkList(streamingLinks: List<StreamingLink>): String {
-        return json.encodeToString(streamingLinks)
+        return if (stringsString.isBlank()) emptyList()
+        else json.decodeFromString(stringsString)
     }
 
     @TypeConverter
-    fun toStreamingLinkList(streamingLinksString: String): List<StreamingLink> {
-        return if (streamingLinksString.isBlank()) {
-            emptyList()
-        } else {
-            json.decodeFromString(streamingLinksString)
-        }
+    fun fromStreamingRefList(streamingRefs: List<StreamingRef>): String {
+        return json.encodeToString(streamingRefs)
     }
 
-    // Contributors List converters
+    @TypeConverter
+    fun toStreamingRefList(streamingRefsString: String): List<StreamingRef> {
+        return if (streamingRefsString.isBlank()) emptyList()
+        else json.decodeFromString(streamingRefsString)
+    }
+
+    @TypeConverter
+    fun fromTrack(track: Track): String {
+        return json.encodeToString(track)
+    }
+
+    @TypeConverter
+    fun toTrack(trackString: String): Track {
+        return json.decodeFromString(trackString)
+    }
+
     @TypeConverter
     fun fromContributorsList(contributors: List<Contributor>): String {
         return json.encodeToString(contributors)
@@ -72,14 +74,10 @@ class RoomSerializers {
 
     @TypeConverter
     fun toContributorsList(contributorsString: String): List<Contributor> {
-        return if (contributorsString.isBlank()) {
-            emptyList()
-        } else {
-            json.decodeFromString(contributorsString)
-        }
+        return if (contributorsString.isBlank()) emptyList()
+        else json.decodeFromString(contributorsString)
     }
 
-    // Charts List converters
     @TypeConverter
     fun fromChartsList(charts: List<Chart>): String {
         return json.encodeToString(charts)
@@ -87,14 +85,10 @@ class RoomSerializers {
 
     @TypeConverter
     fun toChartsList(chartsString: String): List<Chart> {
-        return if (chartsString.isBlank()) {
-            emptyList()
-        } else {
-            json.decodeFromString(chartsString)
-        }
+        return if (chartsString.isBlank()) emptyList()
+        else json.decodeFromString(chartsString)
     }
 
-    // DifficultyEnum converters
     @TypeConverter
     fun fromDifficultyEnum(difficulty: Difficulty): String {
         return difficulty.name
@@ -105,22 +99,7 @@ class RoomSerializers {
         return try {
             Difficulty.valueOf(difficultyString)
         } catch (e: IllegalArgumentException) {
-            Difficulty.NORMAL // Default value if conversion fails
-        }
-    }
-
-    // Version
-    @TypeConverter
-    fun fromKnownIssuesList(knownIssues: List<KnownIssue>): String {
-        return json.encodeToString(knownIssues)
-    }
-
-    @TypeConverter
-    fun toKnownIssuesList(knownIssuesString: String): List<KnownIssue> {
-        return if (knownIssuesString.isBlank()) {
-            emptyList()
-        } else {
-            json.decodeFromString(knownIssuesString)
+            Difficulty.NORMAL
         }
     }
 
@@ -137,7 +116,6 @@ class RoomSerializers {
         }
     }
 
-    // ActionType converters
     @TypeConverter
     fun fromActionType(value: ActionType): String {
         return value.name
@@ -159,16 +137,36 @@ class RoomSerializers {
     }
 
     @TypeConverter
-    fun fromContentType(value: ContentType): String {
+    fun fromCatalogItemType(value: CatalogItemType): String {
         return value.name
     }
 
     @TypeConverter
-    fun toContentType(value: String): ContentType {
-        return ContentType.valueOf(value)
+    fun toCatalogItemType(value: String): CatalogItemType {
+        return CatalogItemType.valueOf(value)
     }
 
-    // SimplifiedUser converters
+    @TypeConverter
+    fun fromCatalogItemStatus(value: CatalogItemStatus): String {
+        return value.name
+    }
+
+    @TypeConverter
+    fun toCatalogItemStatus(value: String): CatalogItemStatus {
+        return CatalogItemStatus.valueOf(value)
+    }
+
+    @TypeConverter
+    fun fromChangelogList(changelogs: List<Changelog>): String {
+        return json.encodeToString(changelogs)
+    }
+
+    @TypeConverter
+    fun toChangelogList(changelogsString: String): List<Changelog> {
+        return if (changelogsString.isBlank()) emptyList()
+        else json.decodeFromString(changelogsString)
+    }
+
     @TypeConverter
     fun fromSimplifiedUser(user: SimplifiedUser): String {
         return json.encodeToString(user)

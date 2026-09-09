@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.enums.StreamingPlatform
-import com.meninocoiso.bscm.domain.model.StreamingLink
+import com.meninocoiso.bscm.domain.model.StreamingRef
 import com.meninocoiso.bscm.presentation.ui.components.RadioGroupUI
 
 val StreamingPlatformStrings = mapOf(
@@ -48,7 +48,7 @@ val StreamingPlatformIcons = mapOf(
 )
 
 fun getAvailablePlatforms(
-    streamingLinks: List<StreamingLink>
+    streamingLinks: List<StreamingRef>
 ): List<Triple<StreamingPlatform, String, Int?>> {
     return streamingLinks.mapNotNull { link ->
         val name = StreamingPlatformStrings[link.platform]
@@ -62,7 +62,7 @@ private const val TAG = "ListenTrackDialog"
 @Composable
 fun ListenTrackDialog(
     onDismiss: () -> Unit,
-    streamingLinks: List<StreamingLink>
+    streamingLinks: List<StreamingRef>
 ) {
     var platform by remember { mutableStateOf<StreamingPlatform?>(null) }
 

@@ -11,8 +11,8 @@ private const val TAG = "ContributorParser"
 
 /**
  * Service for parsing contributors from serialized format
- * Format: "userId|username|imageUrl|role1,role2||userId|username|imageUrl|role1,role2||..."
- * Role IDs: 0=AUTHOR, 1=CHART, 2=AUDIO, 3=REVISION, 4=EFFECTS, 5=SYNC, 6=GAMEPLAY
+ * Format: "userId|username|imageUrl|roleId||userId|username|imageUrl|roleId||..."
+ * Role IDs: 0=AUTHOR, 1=CHART, 2=AUDIO, 3=REVISION, 4=EFFECTS, 5=SYNC, 6=GAMEPLAY, 7=ART, 8=TEXTURES
  */
 class ContributorParser @Inject constructor() {
 
@@ -27,12 +27,9 @@ class ContributorParser @Inject constructor() {
                     if (parts.size >= 2) {
                         val username = parts[0]
                         val avatarUrl = parts[1].takeIf { it.isNotBlank() }
-                        val rolesStr = parts.getOrNull(2)
+                        val roleStr = parts.getOrNull(2)
 
-                        val roles = rolesStr?.split(",")
-                            ?.mapNotNull { roleId ->
-                                mapRole(roleId.toIntOrNull())
-                            } ?: emptyList()
+                        val role = roleStr?.toIntOrNull()?.let { mapRole(it) } ?: return@mapNotNull null
 
                         if (username.isNotBlank()) {
                             Contributor(
@@ -41,8 +38,8 @@ class ContributorParser @Inject constructor() {
                                     username = username,
                                     avatarUrl = avatarUrl,
                                 ),
-                                chartId = chartId,
-                                roles = roles,
+                                catalogItemId = chartId,
+                                role = role,
                                 joinedAt = LocalDateTime.now()
                             )
                         } else {
@@ -58,7 +55,7 @@ class ContributorParser @Inject constructor() {
         }
     }
 
-    private fun mapRole(roleId: Int?): Role? {
+    private fun mapRole(roleId: Int): Role? {
         return when (roleId) {
             0 -> Role.AUTHOR
             1 -> Role.CHART
@@ -67,8 +64,9 @@ class ContributorParser @Inject constructor() {
             4 -> Role.EFFECTS
             5 -> Role.SYNC
             6 -> Role.GAMEPLAY
+            7 -> Role.ART
+            8 -> Role.TEXTURES
             else -> null
         }
     }
 }
-

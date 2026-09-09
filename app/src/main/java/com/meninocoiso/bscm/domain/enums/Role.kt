@@ -3,5 +3,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class Role {
-    AUTHOR, CHART, AUDIO, REVISION, EFFECTS, SYNC, GAMEPLAY
+    AUTHOR, CHART, AUDIO, REVISION, EFFECTS, SYNC, GAMEPLAY, ART, TEXTURES
 }

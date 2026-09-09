@@ -9,9 +9,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -61,8 +64,6 @@ internal fun ContentSection(
         onPermissionGranted = {
             Log.d("WorkshopSection", "Storage permission granted for Beatstar folder")
             hasStoragePermission = true
-            // Rescan local charts after permission is granted
-            // viewModel.scanLocalCharts()
         },
         onInvalidSelection = {
             onSnackbar.show(
@@ -76,12 +77,28 @@ internal fun ContentSection(
         initialValue = emptyList()
     )
     val installedCharts by viewModel.installedCharts.collectAsStateWithLifecycle(initialValue = emptyList())
+    val installedTourPasses by viewModel.installedTourPasses.collectAsStateWithLifecycle(
+        initialValue = emptyList()
+    )
+    val cachedThemes by viewModel.cachedThemes.collectAsStateWithLifecycle(initialValue = emptyList())
 
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
     val cacheState by viewModel.cacheState.collectAsStateWithLifecycle()
 
+    var selectedLocalFilter by rememberSaveable { mutableIntStateOf(-1) }
+
     val itemsUpdating = remember { mutableStateListOf<String>() }
     val showLocalItemDialog = remember { mutableStateOf(false) }
+
+    // Rescan local charts whenever storage access becomes available: after a
+    // fresh reinstall the persisted folder grant is gone, so the user re-picks
+    // the beatstar folder and the scan must run again to rediscover charts and
+    // tour passes from the on-disk bscm.json manifests.
+    LaunchedEffect(hasStoragePermission) {
+        if (hasStoragePermission) {
+            viewModel.scanLocalCharts()
+        }
+    }
 
     LaunchedEffect(Unit) {
         contentViewModel.events.collect { event ->
@@ -115,7 +132,7 @@ internal fun ContentSection(
                 buttonLabel = stringResource(R.string.select_folder)
             )
         }
-    } else if (pendingUpdateCharts.isNotEmpty() || installedCharts.isNotEmpty()) {
+    } else if (pendingUpdateCharts.isNotEmpty() || installedCharts.isNotEmpty() || installedTourPasses.isNotEmpty()) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -139,6 +156,10 @@ internal fun ContentSection(
                 charts = installedCharts,
                 onNavigateToDetails = onNavigateToDetails,
                 onShowLocalItemDialog = { showLocalItemDialog.value = true },
+                tourPasses = installedTourPasses,
+                themes = cachedThemes,
+                selectedFilter = selectedLocalFilter,
+                onFilterSelected = { selectedLocalFilter = it },
             )
         }
     } else {

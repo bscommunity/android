@@ -1,6 +1,6 @@
 package com.meninocoiso.bscm.domain.repository
 
-import com.meninocoiso.bscm.domain.enums.ContentType
+import com.meninocoiso.bscm.domain.enums.CatalogItemType
 import com.meninocoiso.bscm.domain.model.CatalogItem
 import com.meninocoiso.bscm.domain.model.Collection
 import com.meninocoiso.bscm.presentation.viewmodel.profile.PagedResult
@@ -18,13 +18,14 @@ interface CollectionRepository {
         collectionId: String,
         limit: Int,
         offset: Int,
-        types: List<ContentType>? = null,
+        types: List<CatalogItemType>? = null,
         useCache: Boolean = true
     ): Result<PagedResult<CatalogItem>>
 
-    suspend fun addItemToCollection(collectionId: String, contentId: String): Result<Unit>
-    suspend fun removeItemFromCollection(collectionId: String, contentId: String): Result<Unit>
+    suspend fun addItemToCollection(collectionId: String, id: String): Result<Unit>
+    suspend fun removeItemFromCollection(collectionId: String, id: String): Result<Unit>
 
-    fun observeCollectionChartContentIds(collectionId: String): Flow<List<String>>
+    fun observeCollectionChartIds(collectionId: String): Flow<List<String>>
+    fun observeCollectionItemIds(collectionId: String): Flow<List<String>>
     fun observeUserCollections(): Flow<List<Collection>>
 }

@@ -321,6 +321,8 @@
     <string name="manage_collection">Gerenciar coleção</string>
     <string name="collection_by">Coleção por %1$s</string>
     <string name="no_content_in_collection">Nenhum conteúdo nesta coleção</string>
+    <string name="no_charts_in_collection">Nenhum chart nesta coleção</string>
+    <string name="no_tour_passes_in_collection">Nenhum passe de turnê nesta coleção</string>
     <!-- 📰 Activity Feed -->
     <string name="activity_followed_user">Seguiu um usuário</string>
     <string name="activity_unknown">Atividade</string>

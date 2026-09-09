@@ -15,30 +15,60 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.meninocoiso.bscm.R
 import com.meninocoiso.bscm.domain.model.Chart
+import com.meninocoiso.bscm.domain.model.Theme
+import com.meninocoiso.bscm.domain.model.TourPass
 import com.meninocoiso.bscm.domain.result.ContentState
 import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
+import com.meninocoiso.bscm.presentation.ui.components.SegmentedButtonUI
 import com.meninocoiso.bscm.presentation.ui.components.layout.Section
 import com.meninocoiso.bscm.presentation.ui.components.preview.ChartPreview
+import com.meninocoiso.bscm.presentation.ui.components.preview.ThemePreview
+import com.meninocoiso.bscm.presentation.ui.components.preview.TourPassPreview
+
+/**
+ * Segment indices used by the segmented control of the local section.
+ * -1 means "no filter selected" (show everything).
+ */
+private const val FILTER_ALL = -1
+private const val FILTER_CHARTS = 0
+private const val FILTER_TOUR_PASSES = 1
+private const val FILTER_THEMES = 2
 
 fun LazyListScope.localContentSection(
     state: ContentState,
     charts: List<Chart>,
     onNavigateToDetails: OnNavigateToDetails,
     onShowLocalItemDialog: () -> Unit,
+    tourPasses: List<TourPass> = emptyList(),
+    themes: List<Theme> = emptyList(),
+    selectedFilter: Int = FILTER_ALL,
+    onFilterSelected: (Int) -> Unit = {},
 ) {
+    val showAll = selectedFilter == FILTER_ALL
+    val showCharts = showAll || selectedFilter == FILTER_CHARTS
+    val showTourPasses = showAll || selectedFilter == FILTER_TOUR_PASSES
+    val showThemes = showAll || selectedFilter == FILTER_THEMES
+
+    val visibleCount = when {
+        selectedFilter == FILTER_CHARTS -> charts.size
+        selectedFilter == FILTER_TOUR_PASSES -> tourPasses.size
+        selectedFilter == FILTER_THEMES -> themes.size
+        else -> charts.size + tourPasses.size + themes.size
+    }
+
     item {
         Section(
             title = when (state) {
                 is ContentState.Success -> {
-                    if (charts.isNotEmpty()) {
-                        stringResource(R.string.downloaded, charts.size)
+                    if (visibleCount > 0) {
+                        stringResource(R.string.downloaded, visibleCount)
                     } else null
                 }
 
                 else -> null
             },
             thickness = when (state) {
-                is ContentState.Success -> if (charts.isNotEmpty()) 1.dp else 0.dp
+                is ContentState.Success -> if (visibleCount > 0) 1.dp else 0.dp
                 else -> 0.dp
             },
         ) {
@@ -53,34 +83,93 @@ fun LazyListScope.localContentSection(
                 }
 
                 else -> {
-                    // TODO: Implement other content types
-                    // SegmentedButtonUI()
-
-                    Text(
-                        text = stringResource(R.string.charts),
-                        modifier = Modifier.padding(start = 32.dp, bottom = 8.dp),
-                        style = MaterialTheme.typography.labelLarge
+                    SegmentedButtonUI(
+                        options = listOf(
+                            stringResource(R.string.charts),
+                            stringResource(R.string.tour_passes),
+                            stringResource(R.string.themes)
+                        ),
+                        selectedIndex = selectedFilter,
+                        enabled = listOf(true, true, false),
+                        onSelected = onFilterSelected
                     )
                 }
             }
         }
     }
 
-    if (state !is ContentState.Loading && charts.isNotEmpty()) {
+    if (showCharts && state !is ContentState.Loading && charts.isNotEmpty()) {
+        item {
+            Text(
+                text = stringResource(R.string.charts),
+                modifier = Modifier.padding(start = 32.dp, bottom = 8.dp),
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+
         items(charts) { chart ->
             ChartPreview(
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
                 chart = chart,
                 isSecondary = true,
-                onPress = { if (chart.contentId != null) onNavigateToDetails(chart) else onShowLocalItemDialog() },
+                onPress = { onNavigateToDetails(chart) },
+            )
+        }
+    }
+
+    if (showTourPasses && tourPasses.isNotEmpty()) {
+        item {
+            Text(
+                text = stringResource(R.string.tour_passes),
+                modifier = Modifier.padding(start = 32.dp, top = 24.dp, bottom = 8.dp),
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+
+        items(tourPasses) { tourPass ->
+            TourPassPreview(
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
+                tourPass = tourPass,
+                isLocal = true,
+                isSecondary = true,
+                onPress = { onNavigateToDetails(tourPass) },
             )
         }
 
         item {
             Spacer(modifier = Modifier.padding(bottom = 24.dp))
         }
+    } else {
+        item {
+            Spacer(modifier = Modifier.padding(bottom = 24.dp))
+        }
+    }
 
-        /*item { LocalDownloadsSectionTitle("Tour Passes") }*/
-        /*item { LocalDownloadsSectionTitle("Themes") }*/
+    if (showThemes && themes.isNotEmpty()) {
+        item {
+            Text(
+                text = stringResource(R.string.themes),
+                modifier = Modifier.padding(start = 32.dp, top = 24.dp, bottom = 8.dp),
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+
+        items(themes) { theme ->
+            ThemePreview(
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
+                theme = theme,
+                isLocal = true,
+                isSecondary = true,
+                onPress = { onNavigateToDetails(theme) },
+            )
+        }
+
+        item {
+            Spacer(modifier = Modifier.padding(bottom = 24.dp))
+        }
+    } else {
+        item {
+            Spacer(modifier = Modifier.padding(bottom = 24.dp))
+        }
     }
 }

@@ -15,7 +15,6 @@ data class ExternalContentMetadata(
     val bpm: Double? = null,
     val maxScore: Int? = null,
     val type: String? = null,
-    val contentId: String? = null,
     val duration: Float? = null,
     val notes: Int? = null,
     val effects: Int? = null,

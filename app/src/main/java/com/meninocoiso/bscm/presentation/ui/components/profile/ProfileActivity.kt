@@ -175,7 +175,7 @@ fun ProfileActivity(
 private fun getActivityText(item: ActivityItemResponse): String {
     return when (item) {
         is ChartActivityItem -> {
-            val name = item.chart.track
+            val name = item.chart.track.title
             stringResource(R.string.activity_created_content, stringResource(R.string.content_type_chart), name)
         }
         is ThemeActivityItem -> {

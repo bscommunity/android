@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -95,7 +96,8 @@ class CollectionViewModel @Inject constructor(
     /**
      * Entry point called by [com.meninocoiso.bscm.presentation.screen.collection.CollectionScreen] whenever the collection changes or
      * a pull-to-refresh is triggered. Passing a new [collectionId] automatically
-     * resets the cursor so stale data is never shown.
+     * resets the cursor so stale data is never shown. All content types are fetched
+     * into a single list; the screen splits it into per-type sections via a pager.
      */
     fun loadItems(collectionId: String, reset: Boolean = false) {
         if (itemsFetchJob?.isActive == true && collectionId == currentCollectionId) {
@@ -279,19 +281,23 @@ class CollectionViewModel @Inject constructor(
     private fun startCollectionMembershipObserver(collectionId: String) {
         collectionMembershipObserverJob?.cancel()
         collectionMembershipObserverJob = viewModelScope.launch {
-            collectionRepository.observeCollectionChartContentIds(collectionId)
+            combine(
+                collectionRepository.observeCollectionChartIds(collectionId),
+                collectionRepository.observeCollectionItemIds(collectionId),
+            ) { chartIds, allIds ->
+                chartIds.toSet() to allIds.toSet()
+            }
                 .catch { e -> Log.e(TAG, "Collection membership observer error", e) }
-                .collect { contentIds ->
-                    val ids = contentIds.toHashSet()
+                .collect { (chartIdSet, allIdSet) ->
                     val current = _uiState.value.items
 
                     // Keep currently loaded items in sync with local membership mutations
                     // (e.g. remove-from-collection in details) without issuing a full refresh.
+                    // All content types are observed so tour passes are not dropped.
                     val filtered = current.items.filter { item ->
-                        val key = item.contentId ?: item.id
-                        key in ids
+                        item.id in allIdSet
                     }
-                    val nextTotal = contentIds.size
+                    val nextTotal = allIdSet.size
 
                     if (filtered != current.items || current.total != nextTotal) {
                         _uiState.update { state ->
@@ -300,7 +306,7 @@ class CollectionViewModel @Inject constructor(
                                     items = filtered,
                                     total = nextTotal,
                                 ),
-                                itemCounts = state.itemCounts.copy(first = nextTotal)
+                                itemCounts = state.itemCounts.copy(first = chartIdSet.size)
                             )
                         }
                     }

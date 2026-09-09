@@ -1,154 +1,127 @@
 package com.meninocoiso.bscm.presentation.screen.workshop.sections
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.zIndex
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meninocoiso.bscm.R
-import com.meninocoiso.bscm.data.remote.dto.user.SimplifiedUser
-import com.meninocoiso.bscm.domain.enums.Role
-import com.meninocoiso.bscm.domain.model.Contributor
-import com.meninocoiso.bscm.domain.model.Theme
+import com.meninocoiso.bscm.domain.result.ContentState
+import com.meninocoiso.bscm.presentation.screen.details.OnNavigateToDetails
 import com.meninocoiso.bscm.presentation.ui.components.StatusMessageUI
 import com.meninocoiso.bscm.presentation.ui.components.layout.GridSectionWrapper
 import com.meninocoiso.bscm.presentation.ui.components.preview.ThemePreview
 import com.meninocoiso.bscm.presentation.ui.modifiers.fabScrollObserver
-import java.time.LocalDateTime
+import com.meninocoiso.bscm.presentation.viewmodel.WorkshopViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ThemesSection(
     onFabStateChange: (Boolean) -> Unit,
+    onNavigateToDetails: OnNavigateToDetails,
+    viewModel: WorkshopViewModel,
 ) {
-    val themes = listOf(
-        // Sample TourPass data
-        Theme(
-            id = "1",
-            name = "Bassline Yatteru (aka. Can I Friend You On Bassbook ? Lol)",
-            replaces = "Rock - Chrome Skull",
-            contentId = "1234567890",
-            coverUrl = "https://i.imgur.com/g23iXuT.png",
-            previewUrl = "https://i.imgur.com/lTPUHIN.png",
-            updatedAt = LocalDateTime.now(),
-            contributors = listOf(
-                Contributor(
-                    user = SimplifiedUser(id = "1", username = "meninocoiso", avatarUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
-                    chartId = "asdads",
-                    roles = listOf(Role.GAMEPLAY),
-                    joinedAt = LocalDateTime.now()
-                )
-            ),
-            createdAt = LocalDateTime.now()
-        ),
-        Theme(
-            id = "1",
-            name = "Daft Punk",
-            replaces = "Dance - Fastlane",
-            contentId = "1234567890",
-            coverUrl = "https://i.imgur.com/yGZjCNv.png",
-            previewUrl = "https://i.imgur.com/ux3WDfi.png",
-            isFeatured = false,
-            updatedAt = LocalDateTime.now(),
-            contributors = listOf(
-                Contributor(
-                    user = SimplifiedUser(id = "1", username = "meninocoiso", avatarUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
-                    chartId = "asdads",
-                    roles = listOf(Role.GAMEPLAY),
-                    joinedAt = LocalDateTime.now()
-                )
-            ),
-            createdAt = LocalDateTime.now()
-        ),
-        Theme(
-            id = "1",
-            name = "The Cyber Grind",
-            replaces = "Rock - Chrome Skull",
-            contentId = "1234567890",
-            coverUrl = "https://i.imgur.com/7XsJ6GC.png",
-            previewUrl = "https://i.imgur.com/KaiDZBH.png",
-            isFeatured = false,
-            updatedAt = LocalDateTime.now(),
-            contributors = listOf(
-                Contributor(
-                    user = SimplifiedUser(id = "1", username = "meninocoiso", avatarUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
-                    chartId = "asdads",
-                    roles = listOf(Role.GAMEPLAY),
-                    joinedAt = LocalDateTime.now()
-                )
-            ),
-            createdAt = LocalDateTime.now()
-        ),
-        Theme(
-            id = "1",
-            name = "Green V1",
-            replaces = "Rock - Chrome Skull",
-            contentId = "1234567890",
-            coverUrl = "https://i.imgur.com/QYpcMfh.png",
-            previewUrl = "https://i.imgur.com/7fs2XWg.png",
-            isFeatured = false,
-            updatedAt = LocalDateTime.now(),
-            contributors = listOf(
-                Contributor(
-                    user = SimplifiedUser(id = "1", username = "meninocoiso", avatarUrl = "https://i.imgur.com/5Hsj4tJ.jpeg"),
-                    chartId = "asdads",
-                    roles = listOf(Role.GAMEPLAY),
-                    joinedAt = LocalDateTime.now()
-                )
-            ),
-            createdAt = LocalDateTime.now()
-        ),
-    )
+    val themes by viewModel.feedThemes.collectAsStateWithLifecycle()
+    val searchResults by viewModel.searchThemes.collectAsStateWithLifecycle()
+    val themeState by viewModel.themeState.collectAsStateWithLifecycle()
+
+    var searchFieldState by remember { mutableStateOf(viewModel.searchFieldState) }
+    val hasActiveQuery = searchFieldState.text.isNotEmpty()
+
+    val items = if (hasActiveQuery) {
+        searchResults ?: emptyList()
+    } else {
+        themes
+    }
 
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.TopCenter,
     ) {
-        StatusMessageUI(
-            modifier = Modifier.zIndex(50f).fillMaxSize(),
-            title = stringResource(R.string.work_in_progress),
-            message = stringResource(R.string.work_in_progress_description),
-            icon = R.drawable.rounded_hourglass_24
-        )
-        GridSectionWrapper(
-            modifier = Modifier
-                .fillMaxSize()
-                // .nestedScroll(nestedScrollConnection)
-                .fabScrollObserver { shouldExtend ->
-                    // Update FAB state based on scroll delta
-                    onFabStateChange(shouldExtend)
-                }
-                .graphicsLayer {
-                    alpha = 0.35f
-                }
-            ,
-            // listState = listState,
-        ) {
-            // Add WorkshopChips as the first item in the list
-            /*item {
-                WorkshopChips(
+        if (items.isEmpty() && themeState is ContentState.Loading) {
+            Box(Modifier.fillMaxSize(), Alignment.Center) {
+                CircularProgressIndicator(Modifier.size(36.dp))
+            }
+        } else if (items.isEmpty() && themeState is ContentState.Error) {
+            StatusMessageUI(
+                modifier = Modifier.fillMaxSize(),
+                title = stringResource(R.string.something_went_wrong),
+                message = stringResource(R.string.check_connection),
+                icon = R.drawable.rounded_emergency_home_24,
+                onClick = { viewModel.fetchThemes() }
+            )
+        } else if (items.isEmpty() && hasActiveQuery) {
+            StatusMessageUI(
+                modifier = Modifier.fillMaxSize(),
+                title = stringResource(R.string.no_themes_found),
+                message = stringResource(R.string.no_themes_found_description),
+                icon = R.drawable.outline_filter_alt_24,
+                onClick = { viewModel.clearThemeSearch() },
+                buttonLabel = stringResource(R.string.clear_search)
+            )
+        } else {
+            PullToRefreshBox(
+                isRefreshing = themeState is ContentState.Loading,
+                onRefresh = { viewModel.fetchThemes() }
+            ) {
+                GridSectionWrapper(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                        .zIndex(1f), // Lower z-index since it's now part of the scrollable content
-                    currentSortOption = SortOption.MOST_DOWNLOADED,
-                    onSortOptionChange = { }
-                )
-            }*/
+                        .fillMaxSize()
+                        .fabScrollObserver { shouldExtend ->
+                            onFabStateChange(shouldExtend)
+                        },
+                    listState = viewModel.themeListState,
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp),
+                ) {
+                    items(items) { theme ->
+                        ThemePreview(
+                            theme = theme,
+                            onPress = {
+                                onNavigateToDetails(theme)
+                            },
+                        )
+                    }
 
-            items(themes) { theme ->
-                ThemePreview(
-                    theme = theme,
-                    isDisabled = true,
-                    onPress = {
-                        // onNavigateToDetails(chart)
-                    },
-                )
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        if (viewModel.isLoadingMoreThemes) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 36.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.themes_feed_end),
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }

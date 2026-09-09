@@ -71,7 +71,7 @@ fun ThemePreview(
                             shape = RoundedCornerShape(4.dp)
                         )
                         .align(Alignment.TopStart),
-                    url = theme.previewUrl,
+                    url = theme.previewUrl ?: "",
                     borderRadius = 4.dp,
                     width = 110.dp,
                     height = 200.dp
@@ -85,7 +85,7 @@ fun ThemePreview(
                             shape = RoundedCornerShape(4.dp)
                         )
                         .align(Alignment.BottomEnd),
-                    url = theme.coverUrl,
+                    url = theme.coverUrl ?: "",
                     borderRadius = 4.dp,
                     width = 75.dp,
                     height = 75.dp

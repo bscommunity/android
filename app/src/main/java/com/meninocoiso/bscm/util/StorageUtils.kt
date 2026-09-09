@@ -35,9 +35,8 @@ object StorageUtils {
         ?: throw IOException("Failed to create/access subfolder: $name")
     }
 
-    fun getChartFolderName(chartId: String, contentId: String? = null): String {
-        val preferredId = contentId?.takeIf { it.isNotBlank() } ?: chartId
-        return "$CHART_FOLDER_PREFIX$preferredId"
+    fun getChartFolderName(id: String): String {
+        return "$CHART_FOLDER_PREFIX$id"
     }
 
     fun checkIfExists(uri: Uri, context: Context): Boolean {

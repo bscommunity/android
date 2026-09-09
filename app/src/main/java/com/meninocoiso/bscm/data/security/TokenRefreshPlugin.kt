@@ -4,6 +4,7 @@ import android.util.Log
 import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.plugin
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 
 private const val TAG = "TokenRefreshPlugin"
@@ -32,8 +33,14 @@ val TokenRefreshPlugin = createClientPlugin("TokenRefreshPlugin", ::TokenRefresh
 
             if (refreshed) {
                 Log.d(TAG, "Token refreshed successfully, retrying request")
-                // Retry the request with the new token
-                // The AuthPlugin will automatically add the new token to the headers
+                // The request pipeline (AuthPlugin) only runs its State phase once,
+                // so the retried builder still carries the stale Authorization header.
+                // Replace it with the freshly issued token before re-sending.
+                val newToken = config.authInterceptor?.getAuthToken()
+                if (newToken != null) {
+                    request.headers.remove(HttpHeaders.Authorization)
+                    request.headers.append(HttpHeaders.Authorization, "Bearer $newToken")
+                }
                 return@intercept execute(request)
             } else {
                 Log.e(TAG, "Token refresh failed, returning original 401 response")

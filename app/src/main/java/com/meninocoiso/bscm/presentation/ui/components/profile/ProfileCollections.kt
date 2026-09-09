@@ -185,6 +185,8 @@ fun ProfileCollectionTabContent(
     isLoadingMore: Boolean,
     hasMore: Boolean,
     onLoadMore: () -> Unit,
+    emptyMessageResource: Int = R.string.no_bookmarked_content,
+    emptyIconRes: Int = R.drawable.outline_library_music_24,
 ) {
     OnScrollLoadMore(
         listState = listState,
@@ -202,8 +204,8 @@ fun ProfileCollectionTabContent(
             StatusMessageUI(
                 modifier = Modifier.fillMaxSize(),
                 size = StatusMessageSize.Medium,
-                message = stringResource(R.string.no_bookmarked_content),
-                icon = R.drawable.outline_library_music_24
+                message = stringResource(emptyMessageResource),
+                icon = emptyIconRes
             )
         }
     ) {

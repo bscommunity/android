@@ -30,17 +30,22 @@ data class TabItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TabsUI(pagerState: PagerState, tabs: List<TabItem>, modifier: Modifier? = Modifier) {
-	var selectedTabIndex by remember { mutableIntStateOf(0) }
+    // Initialize from the pager instead of hardcoding 0: when this screen is
+    // recreated after navigating back from a details screen, the pager state is
+    // restored to the previously selected page and the tabs must follow it.
+    // Otherwise the LaunchedEffect below would immediately scroll back to the
+    // first tab (e.g. returning from a tour pass would land on Charts).
+    var selectedTabIndex by remember { mutableIntStateOf(pagerState.currentPage) }
 
-	LaunchedEffect(selectedTabIndex) {
-		pagerState.animateScrollToPage(selectedTabIndex)
-	}
+    LaunchedEffect(selectedTabIndex) {
+        pagerState.animateScrollToPage(selectedTabIndex)
+    }
 
-	LaunchedEffect(pagerState.currentPage, pagerState.isScrollInProgress) {
-		if (!pagerState.isScrollInProgress) {
-			selectedTabIndex = pagerState.currentPage
-		}
-	}
+    LaunchedEffect(pagerState.currentPage, pagerState.isScrollInProgress) {
+        if (!pagerState.isScrollInProgress) {
+            selectedTabIndex = pagerState.currentPage
+        }
+    }
 
 	SecondaryTabRow(
 		modifier = (modifier ?: Modifier) // Combined modifier
