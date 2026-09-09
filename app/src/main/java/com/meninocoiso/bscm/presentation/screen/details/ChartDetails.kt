@@ -282,7 +282,7 @@ fun ChartDetailsScreen(
                                 LinkingUtils.shareChart(context, chart.id)
                             }
                         )
-                        DropdownMenuItem(
+                        /*DropdownMenuItem(
                             contentPadding = DropdownItemPadding,
                             text = { Text(stringResource(R.string.report)) },
                             leadingIcon = {
@@ -292,7 +292,7 @@ fun ChartDetailsScreen(
                                 dismiss()
                                 currentDialog = ChartDialog.Report
                             }
-                        )
+                        )*/
                         if (chartState == DownloadState.Installed(chart.id)) {
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,

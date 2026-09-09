@@ -16,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,6 +42,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -73,6 +75,7 @@ import com.meninocoiso.bscm.presentation.viewmodel.CollectionViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.ContentViewModel
 import com.meninocoiso.bscm.presentation.viewmodel.InteractionViewModel
 import com.meninocoiso.bscm.util.AudioPreviewPlayer
+import com.meninocoiso.bscm.util.LinkingUtils
 import com.meninocoiso.bscm.util.StringUtils
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.launch
@@ -96,10 +99,12 @@ fun TourPassDetailsScreen(
     collectionViewModel: CollectionViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+    val resources = LocalResources.current
+
     var playingUrl by remember { mutableStateOf<String?>(null) }
     val audioPreviewPlayer = remember { AudioPreviewPlayer { playingUrl = it } }
     val scrollState = rememberScrollState()
-    val resources = LocalResources.current
 
     DisposableEffect(Unit) {
         onDispose { audioPreviewPlayer.stop() }
@@ -148,7 +153,8 @@ fun TourPassDetailsScreen(
         .toSet()
 
     val isLiked = optimisticLiked ?: (tourPass.likedAt != null)
-    val isBookmarked = optimisticBookmarked ?: (hasLiveBookmarkMembership || tourPass.bookmarkedAt != null)
+    val isBookmarked =
+        optimisticBookmarked ?: (hasLiveBookmarkMembership || tourPass.bookmarkedAt != null)
 
     // Clear optimistic state once persistence catches up
     LaunchedEffect(tourPass.likedAt) {
@@ -156,7 +162,8 @@ fun TourPassDetailsScreen(
     }
     LaunchedEffect(savedCollections, tourPass.bookmarkedAt) {
         optimisticBookmarked?.let { optimistic ->
-            val confirmed = if (optimistic) hasLiveBookmarkMembership else !hasLiveBookmarkMembership
+            val confirmed =
+                if (optimistic) hasLiveBookmarkMembership else !hasLiveBookmarkMembership
             if (confirmed) optimisticBookmarked = null
         }
     }
@@ -189,8 +196,10 @@ fun TourPassDetailsScreen(
     val addedToFavoritesMsg = stringResource(R.string.added_to_favorites)
     val manageMsg = stringResource(R.string.manage)
     val collectionNameExistsMsg = stringResource(R.string.collection_name_exists)
-    val savedToCollectionMsg = { name: String -> resources.getString(R.string.saved_to_collection, name) }
-    val errorCreatingCollectionMsg = { msg: String -> resources.getString(R.string.error_creating_collection, msg) }
+    val savedToCollectionMsg =
+        { name: String -> resources.getString(R.string.saved_to_collection, name) }
+    val errorCreatingCollectionMsg =
+        { msg: String -> resources.getString(R.string.error_creating_collection, msg) }
 
     // -------------------------------------------------------------------------
     // Collection sheet state
@@ -237,6 +246,7 @@ fun TourPassDetailsScreen(
                 )
             }
         )
+
         TourPassDialog.None -> {}
     }
 
@@ -290,12 +300,26 @@ fun TourPassDetailsScreen(
                     }
                 },
                 actions = {
-                    if (tourPassState == DownloadState.Installed(tourPass.id)) {
-                        DropdownMenuUI { dismiss ->
+                    DropdownMenuUI { dismiss ->
+                        DropdownMenuItem(
+                            contentPadding = DropdownItemPadding,
+                            text = { Text(stringResource(R.string.share)) },
+                            leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
+                            onClick = {
+                                dismiss()
+                                LinkingUtils.shareTourPass(context, tourPass.id)
+                            }
+                        )
+                        if (tourPassState == DownloadState.Installed(tourPass.id)) {
                             DropdownMenuItem(
                                 contentPadding = DropdownItemPadding,
                                 text = { Text(stringResource(R.string.delete_tour_pass)) },
-                                leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Outlined.Delete,
+                                        contentDescription = null
+                                    )
+                                },
                                 onClick = {
                                     dismiss()
                                     currentDialog = TourPassDialog.DeleteConfirmation
@@ -394,10 +418,19 @@ fun TourPassDetailsScreen(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(modifier = Modifier.padding(top = 16.dp, bottom = 8.dp, start = 16.dp, end = 16.dp)) {
+            Box(
+                modifier = Modifier.padding(
+                    top = 16.dp,
+                    bottom = 8.dp,
+                    start = 16.dp,
+                    end = 16.dp
+                )
+            ) {
                 CoverArt(
                     url = tourPass.coverUrl ?: "",
-                    modifier = Modifier.fillMaxWidth().height(196.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(196.dp),
                     width = Dp.Unspecified,
                     height = 196.dp,
                     borderRadius = 16.dp
@@ -446,11 +479,12 @@ fun TourPassDetailsScreen(
                                         },
                                         onDisabled = {
                                             scope.launch {
-                                                val result = snackbarHostState.showReplacingSnackbar(
-                                                    message = explicitContentDisabledMsg,
-                                                    actionLabel = goToSettingsLabel,
-                                                    duration = SnackbarDuration.Short
-                                                )
+                                                val result =
+                                                    snackbarHostState.showReplacingSnackbar(
+                                                        message = explicitContentDisabledMsg,
+                                                        actionLabel = goToSettingsLabel,
+                                                        duration = SnackbarDuration.Short
+                                                    )
                                                 if (result == SnackbarResult.ActionPerformed) {
                                                     onNavigateToSettings()
                                                 }
